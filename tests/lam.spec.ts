@@ -76,6 +76,7 @@ test("LAM panel fits mobile viewport", async ({ page }) => {
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  expect(box!.height).toBeLessThanOrEqual(844 * 0.64);
 });
 
 test("typed Tutor mode streams a real Groq response with Study context", async ({ page }) => {
