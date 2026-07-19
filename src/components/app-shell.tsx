@@ -289,6 +289,14 @@ function CommandPalette({ open, onOpenChange, onNavigate }: { open: boolean; onO
             </CommandItem>
           ))}
         </CommandGroup>
+        <CommandGroup heading="Class 11 E-Books">
+          <CommandItem onSelect={() => { try { sessionStorage.setItem("scholar:ebook:target", JSON.stringify({ bookId: "chemistry-pt1", destination: "Reader" })); } catch {} onNavigate("ebook"); onOpenChange(false); }}>
+            <BookOpen className="h-4 w-4 mr-2 text-rose-400" /> Chemistry Part 1 — Some Basic Concepts · Structure of Atom · Clean PDF · Original Scan
+          </CommandItem>
+          <CommandItem onSelect={() => { try { sessionStorage.setItem("scholar:ebook:target", JSON.stringify({ bookId: "maths-pt1", destination: "Reader" })); } catch {} onNavigate("ebook"); onOpenChange(false); }}>
+            <BookOpen className="h-4 w-4 mr-2 text-indigo-400" /> Mathematics Part 1 — Sets · Relations and Functions
+          </CommandItem>
+        </CommandGroup>
         <CommandGroup heading="Quick Actions">
           <CommandItem onSelect={() => { onNavigate("ai-tutor"); onOpenChange(false); }}>
             <Bot className="h-4 w-4 mr-2 text-muted-foreground" /> Ask AI Tutor

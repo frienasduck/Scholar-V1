@@ -12,7 +12,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { MathsEbookSystem } from "@/components/views/maths-ebook-system";
+import { ChemistryEbookSystem, MathsEbookSystem } from "@/components/views/maths-ebook-system";
+import { BookModeReader } from "@/components/ebook/book-mode-reader";
 import { setLamPageContext } from "@/lib/lam-context";
 import {
   BookOpen, Search, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
@@ -69,6 +70,7 @@ interface PageBookmark {
   title: string;
   chapterId?: string;
   createdAt: number;
+  note?: string;
 }
 
 const BOOKS: EbookBook[] = [
@@ -92,6 +94,17 @@ const BOOKS: EbookBook[] = [
     chapters: [
       { id: "m1", title: "Sets", startPage: 1, endPage: 22, color: "#6366f1" },
       { id: "m2", title: "Relations and Functions", startPage: 23, endPage: 37, color: "#a855f7" },
+    ],
+  },
+  {
+    id: "chemistry-pt1",
+    title: "Chemistry Part 1",
+    subject: "Chemistry",
+    totalPages: 60,
+    pageDir: "ebook-pages-chemistry",
+    chapters: [
+      { id: "c1", title: "Some Basic Concepts of Chemistry", startPage: 1, endPage: 26, color: "#f43f5e" },
+      { id: "c2", title: "Structure of Atom", startPage: 27, endPage: 60, color: "#f59e0b" },
     ],
   },
 ];
@@ -127,7 +140,8 @@ export function EBookView() {
   const [activePage, setActivePage] = useState(1);
 
   useEffect(() => {
-    setLamPageContext({ ebookTitle: activeBookId === "maths-pt1" ? "Mathematics Part 1" : "Physics Part 1", sourcePageNumber: activePage });
+    const ebookTitle = activeBookId === "maths-pt1" ? "Mathematics Part 1" : activeBookId === "chemistry-pt1" ? "Chemistry Part 1" : "Physics Part 1";
+    setLamPageContext({ ebookTitle, sourcePageNumber: activePage });
     return () => setLamPageContext({});
   }, [activeBookId, activePage]);
   const [notes, setNotes] = useState<Record<number, PageNote>>({});
@@ -135,6 +149,7 @@ export function EBookView() {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [bookModeOpen, setBookModeOpen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [readerMode, setReaderMode] = useState<"single" | "continuous">("single");
   const [search, setSearch] = useState("");
@@ -153,13 +168,14 @@ export function EBookView() {
   useEffect(() => {
     try {
       const pending = JSON.parse(sessionStorage.getItem("scholar:ebook:target") ?? "null") as { bookId?: string } | null;
-      if (pending?.bookId === "maths-pt1") {
-        setActiveBookId("maths-pt1");
+      if (pending?.bookId === "maths-pt1" || pending?.bookId === "chemistry-pt1") {
+        setActiveBookId(pending.bookId);
         setView("reader");
-        localStorage.setItem("scholar:ebook:last-book", "maths-pt1");
-      } else if (localStorage.getItem("scholar:ebook:last-book") === "maths-pt1") {
-        setActiveBookId("maths-pt1");
-        setView("reader");
+        localStorage.setItem("scholar:ebook:last-book", pending.bookId);
+      } else if (["physics-pt1", "maths-pt1", "chemistry-pt1"].includes(localStorage.getItem("scholar:ebook:last-book") ?? "")) {
+        // Remember the selected card, but always open the E-Book route on its
+        // library menu. Only an explicit deep link may enter a reader directly.
+        setActiveBookId(localStorage.getItem("scholar:ebook:last-book")!);
       }
     } catch { /* use the normal library entry point */ }
   }, []);
@@ -369,10 +385,10 @@ export function EBookView() {
               SCANNED TEXTBOOK READER · CBSE CLASS 11 · {totalPages} PAGES
             </motion.div>
             <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.05] text-white">
-              Physics <span className="eb-shiny" style={{ backgroundImage: "linear-gradient(to right, #091020, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>E-Book</span>
+              {activeBook.subject} <span className="eb-shiny" style={{ backgroundImage: "linear-gradient(to right, #091020, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>E-Book</span>
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-4 text-white/60 max-w-md text-sm leading-relaxed">
-              Read your scanned Physics textbook page by page. Bookmark, tag, and take notes. OCR is optional per page.
+              Select a chapter from {activeBook.title}, continue from your saved page, or open its complete reader. Bookmarks, notes, and progress stay saved to this profile.
             </motion.p>
           </div>
 
@@ -500,6 +516,9 @@ export function EBookView() {
   if (activeBookId === "maths-pt1") {
     return <MathsEbookSystem onBack={() => setView("home")} />;
   }
+  if (activeBookId === "chemistry-pt1") {
+    return <ChemistryEbookSystem onBack={() => setView("home")} />;
+  }
 
   // ===== READER VIEW =====
   const currentChapter = getChapter(activePage);
@@ -585,6 +604,7 @@ export function EBookView() {
             <div className="w-px h-6 bg-white/10 mx-1" />
             <button onClick={() => setRotation((rotation + 90) % 360)} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"><RotateCw className="h-4 w-4" /></button>
             <button onClick={() => setFullscreen(!fullscreen)} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5">{fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button>
+            <button onClick={() => setBookModeOpen(true)} className="text-white/80 hover:text-white p-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30" aria-label="Enter Book Mode" title="Enter Book Mode"><BookOpen className="h-4 w-4" /></button>
             <div className="w-px h-6 bg-white/10 mx-1" />
             <button onClick={() => toggleBookmark(activePage)} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5">{isBookmarked ? <BookmarkCheck className="h-4 w-4 text-amber-400" /> : <Bookmark className="h-4 w-4" />}</button>
             <button onClick={() => { setPageNoteModal(activePage); setNoteText(pageNote?.text ?? ""); setNoteTags(pageNote?.tags ?? []); }} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"><PenLine className="h-4 w-4" /></button>
@@ -672,6 +692,27 @@ export function EBookView() {
           </Button>
         </div>
       </div>
+
+      <BookModeReader
+        open={bookModeOpen}
+        title={activeBook.title}
+        subject={activeBook.subject}
+        source="scan"
+        currentPage={activePage}
+        totalPages={totalPages}
+        imageUrl={(number) => pageImage(number, pageDir)}
+        chapters={chapters.map((chapter) => ({ id: chapter.id, title: chapter.title, scanPage: chapter.startPage, textPage: chapter.startPage }))}
+        searchPages={Array.from({ length: totalPages }, (_, index) => ({ page: index + 1, title: getChapter(index + 1)?.title ?? `Page ${index + 1}`, text: ocrReviewed[index + 1] ?? "" }))}
+        bookmarks={bookmarks.map((bookmark) => ({ id: bookmark.id, page: bookmark.page, note: bookmark.note, createdAt: new Date(bookmark.createdAt).toISOString() }))}
+        onClose={() => setBookModeOpen(false)}
+        onPageChange={jumpTo}
+        onToggleBookmark={toggleBookmark}
+        onBookmarkNote={(page, note) => {
+          const next = bookmarks.map((bookmark) => bookmark.page === page ? { ...bookmark, note } : bookmark);
+          setBookmarks(next);
+          persist({ bookmarks: next });
+        }}
+      />
 
       {/* Note Modal */}
       <Dialog open={noteModal !== null} onOpenChange={(o) => !o && setPageNoteModal(null)}>

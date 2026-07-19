@@ -32,7 +32,7 @@ import {
 // Downloads & Offline — Scholar (Class 9 / Class 11 aware)
 // ============================================================================
 
-type CatalogType = "notes" | "formulas" | "flashcards" | "videos" | "summaries" | "mocks" | "mindmaps" | "audio";
+type CatalogType = "notes" | "formulas" | "flashcards" | "videos" | "summaries" | "mocks" | "mindmaps" | "audio" | "ebooks";
 
 interface CatalogItem {
   id: string;
@@ -45,6 +45,8 @@ interface CatalogItem {
   description: string;
   pages?: number;
   rating: number;
+  sourceUrl?: string;
+  filename?: string;
 }
 
 interface DownloadedItem extends CatalogItem {
@@ -70,6 +72,7 @@ const TYPE_META: Record<CatalogType, { label: string; icon: any; color: string; 
   mocks:      { label: "Printable Mock Paper", icon: ClipboardList, color: "#10b981", ext: "html" },
   mindmaps:   { label: "Mind Map",      icon: Brain,          color: "#8b5cf6", ext: "svg" },
   audio:      { label: "Audio Transcript", icon: Headphones,  color: "#0ea5e9", ext: "txt" },
+  ebooks:     { label: "Textbook PDF", icon: BookOpen,          color: "#f43f5e", ext: "pdf" },
 };
 
 const STORAGE_KEY = "dl-downloaded";
@@ -90,6 +93,23 @@ function buildCatalog(curriculum: Subject[], scholarClass: 9 | 11): CatalogItem[
   const items: CatalogItem[] = [];
   let counter = 0;
   const mkId = () => `c${++counter}`;
+
+  if (scholarClass === 11 && curriculum.some((subject) => subject.id === "chemistry")) {
+    items.push(
+      {
+        id: "chemistry-part1-clean-pdf", title: "Chemistry Part 1 — Clean Reconstructed PDF", type: "ebooks", subject: "chemistry",
+        sizeMB: 0.76, pages: 80, rating: 5,
+        description: "Selectable-text Chemistry Part 1 covering Some Basic Concepts of Chemistry and Structure of Atom.",
+        sourceUrl: "/content/ebooks/class11-chemistry-part1/clean-text.pdf", filename: "chemistry-part-1-clean.pdf",
+      },
+      {
+        id: "chemistry-part1-original-scan", title: "Chemistry Part 1 — Original Scanned PDF", type: "ebooks", subject: "chemistry",
+        sizeMB: 29.81, pages: 60, rating: 5,
+        description: "Untouched original Chemistry scan with printed figures, tables, diagrams, and handwritten annotations.",
+        sourceUrl: "/content/ebooks/class11-chemistry-part1/original-scan.pdf", filename: "chemistry-part-1-scanned.pdf",
+      },
+    );
+  }
 
   curriculum.forEach((subject, subjectIdx) => {
     subject.chapters.forEach((chapter, cIdx) => {
@@ -643,6 +663,25 @@ export function DownloadsView() {
       toast.error("Not enough storage. Delete some downloads first.");
       return;
     }
+    if (item.sourceUrl) {
+      const anchor = document.createElement("a");
+      anchor.href = item.sourceUrl;
+      anchor.download = item.filename ?? `${item.title}.pdf`;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      const newItem: DownloadedItem = { ...item, downloadedAt: Date.now() };
+      setDownloaded((current) => {
+        const updated = [newItem, ...current];
+        saveDownloaded(scholarClass, updated);
+        return updated;
+      });
+      addXP(2);
+      pushActivity({ type: "note", text: `Downloaded: ${item.title}`, icon: "⬇️" });
+      toast.success(`Downloading "${item.title}" +2 XP`, { description: `${item.sizeMB} MB · PDF` });
+      return;
+    }
     const existing = downloadStates[item.id];
     if (existing && (existing.status === "generating" || existing.status === "downloading")) return;
 
@@ -749,6 +788,10 @@ export function DownloadsView() {
   // has had time to start the download. Errors during Blob generation are
   // surfaced to the user.
   const handleOpen = (item: CatalogItem) => {
+    if (item.sourceUrl) {
+      window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
     let url: string | null = null;
     let a: HTMLAnchorElement | null = null;
     try {
