@@ -102,4 +102,35 @@ test("LAM preferences are exposed in Settings and persist", async ({ page }) => 
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByRole("tab", { name: "LAM" }).click();
   await expect(page.getByRole("switch", { name: "Compact orb" })).toBeChecked();
+  await page.getByRole("switch", { name: "Enable LAM" }).click();
+  await expect(page.getByRole("button", { name: "LAM", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("switch", { name: "Enable LAM" })).not.toBeChecked();
+  await page.getByRole("switch", { name: "Enable LAM" }).click();
+  await expect(page.getByRole("button", { name: "LAM", exact: true })).toBeVisible();
+});
+
+test("Privacy controls persist and remove personal page context from LAM requests", async ({ page }) => {
+  await enterProfile(page, 11);
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
+  await page.getByRole("tab", { name: "Privacy" }).click();
+  await expect(page.getByText("LAM & AI privacy", { exact: true })).toBeVisible();
+  await page.getByRole("switch", { name: "Include profile name in AI" }).click();
+  await page.getByRole("switch", { name: "Share current page with LAM" }).click();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("tab", { name: "Privacy" }).click();
+  await expect(page.getByRole("switch", { name: "Include profile name in AI" })).not.toBeChecked();
+  await expect(page.getByRole("switch", { name: "Share current page with LAM" })).not.toBeChecked();
+
+  await page.goto("/study", { waitUntil: "domcontentloaded" });
+  await openAndOnboardLam(page);
+  const captured: { body?: { pageContext?: { profileName?: string; subjectTitle?: string; chapterTitle?: string } } } = {};
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/lam/chat")) captured.body = request.postDataJSON();
+  });
+  await page.getByRole("textbox", { name: "Message LAM" }).fill("Say hello briefly.");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByLabel("LAM personal assistant").getByRole("button", { name: "Still don’t understand?" })).toBeVisible({ timeout: 45_000 });
+  expect(captured.body?.pageContext?.profileName).toBe("Class 11 student");
+  expect(captured.body?.pageContext?.subjectTitle).toBeUndefined();
+  expect(captured.body?.pageContext?.chapterTitle).toBeUndefined();
 });

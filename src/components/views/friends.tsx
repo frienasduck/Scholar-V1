@@ -31,6 +31,7 @@ type FailedReply = { friendId: string; text: string; history: ReplyHistory };
 
 export function FriendsView() {
   const scholarClass = useStore((s) => s.user.scholarClass);
+  const privacySettings = useStore((s) => s.settings);
   const friends = (useStore((s) => s.friends) ?? []).filter((f) => (f.scholarClass ?? 9) === scholarClass);
   const friendRequests = useStore((s) => s.friendRequests) ?? [];
   const sendFriendMessage = useStore((s) => s.sendFriendMessage);
@@ -63,8 +64,12 @@ export function FriendsView() {
   }, [activeFriend?.chat.length, typing]);
 
   async function handleSend() {
-    const text = input.trim();
-    if (!text || !activeFriend) return;
+  const text = input.trim();
+  if (!text || !activeFriend) return;
+  if (privacySettings.communityMessages === false) {
+    toast.error("Community messages are disabled", { description: "Enable them in Settings → Privacy to send or receive friend messages." });
+    return;
+  }
     sendFriendMessage(activeFriend.id, text);
     setInput("");
     setTyping(true);
@@ -76,7 +81,7 @@ export function FriendsView() {
 
     // If the student has sent 2 messages and this friend is still a stranger → trigger friend request
     const newCount = activeFriend.messagesSent + 1;
-    if (activeFriend.status === "stranger" && newCount >= 2) {
+    if (privacySettings.allowFriendRequests !== false && activeFriend.status === "stranger" && newCount >= 2) {
       setTimeout(() => {
         addFriendRequest({ friendId: activeFriend.id, name: activeFriend.name, avatar: activeFriend.avatar });
         toast(`🎁 ${activeFriend.name} sent you a friend request!`, { description: "Check the Requests tab." });

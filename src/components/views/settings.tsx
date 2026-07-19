@@ -741,6 +741,15 @@ export function SettingsView() {
             {/* ===== LAM ===== */}
             <TabsContent value="lam" className="mt-2 space-y-4">
               <div className="asme-glass rounded-3xl p-6">
+                <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Enable LAM" desc="Show the LAM assistant orb throughout Scholar.">
+                  <Switch aria-label="Enable LAM" checked={lamPreferences.assistantEnabled} onCheckedChange={(value) => {
+                    updateLam({ assistantEnabled: value, ...(value ? {} : { wakeWordEnabled: false }) });
+                    toast.success(value ? "LAM enabled" : "LAM disabled", { description: value ? "The assistant orb is available again." : "The assistant orb and microphone listener are now hidden." });
+                  }} />
+                </GlassSettingRow>
+              </div>
+
+              <div className="asme-glass rounded-3xl p-6">
                 <div className="mb-3"><h3 className="font-semibold text-white flex items-center gap-2"><Mic className="h-4 w-4 text-cyan-300" />Voice activation</h3><p className="mt-1 text-sm text-white/50">Voice settings are isolated to {user.name}’s Class {user.scholarClass} profile. Browser permission is requested only when you enable wake activation or press the microphone.</p></div>
                 <div className="divide-y divide-white/10">
                   <GlassSettingRow icon={<Mic className="h-4 w-4 text-white/70" />} title="Enable “Hey Lam”" desc="While Scholar is open, listen locally for the wake phrase using browser speech recognition."><Switch checked={lamPreferences.wakeWordEnabled} onCheckedChange={(value) => { updateLam({ wakeWordEnabled: value }); toast.info(value ? "Your browser may now request microphone permission. Audio is not continuously uploaded to Scholar." : "Wake phrase disabled"); }} /></GlassSettingRow>
@@ -775,17 +784,22 @@ export function SettingsView() {
             </TabsContent>
 
             {/* ===== Privacy ===== */}
-            <TabsContent value="privacy" className="mt-2">
-              <div className="asme-glass rounded-3xl p-6 divide-y divide-white/10">
+            <TabsContent value="privacy" className="mt-2 space-y-4">
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-2"><h3 className="font-semibold text-white flex items-center gap-2"><Globe className="h-4 w-4 text-indigo-300" />Profile & discovery</h3><p className="mt-1 text-sm text-white/50">Choose what other Scholar users may see and how they can find you.</p></div>
+                <div className="divide-y divide-white/10">
                 <GlassSettingRow icon={<Trophy className="h-4 w-4 text-white/70" />} title="Show me on leaderboards" desc="Let classmates see your XP rank.">
-                  <Switch checked={settings.leaderboard ?? true} onCheckedChange={(v) => { updateSettings({ leaderboard: v }); toast.success("Privacy updated"); }} />
+                  <Switch aria-label="Show me on leaderboards" checked={settings.leaderboard ?? true} onCheckedChange={(v) => { updateSettings({ leaderboard: v }); toast.success("Privacy updated"); }} />
                 </GlassSettingRow>
-                <GlassSettingRow icon={<MessageCircle className="h-4 w-4 text-white/70" />} title="Allow community messages" desc="Receive DMs and replies from community members.">
-                  <Switch checked={settings.communityMessages ?? true} onCheckedChange={(v) => { updateSettings({ communityMessages: v }); toast.success("Privacy updated"); }} />
+                <GlassSettingRow icon={<User className="h-4 w-4 text-white/70" />} title="Show online status" desc="Let friends see when you are active in Scholar.">
+                  <Switch aria-label="Show online status" checked={settings.showOnlineStatus ?? true} onCheckedChange={(v) => updateSettings({ showOnlineStatus: v })} />
+                </GlassSettingRow>
+                <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Share study activity" desc="Show completed lessons and study milestones on your profile.">
+                  <Switch aria-label="Share study activity" checked={settings.shareStudyActivity ?? true} onCheckedChange={(v) => updateSettings({ shareStudyActivity: v })} />
                 </GlassSettingRow>
                 <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="Profile visibility" desc="Who can see your study activity.">
                   <Select value={settings.profileVisibility ?? "friends"} onValueChange={(v) => { updateSettings({ profileVisibility: v as "public" | "friends" | "private" }); toast.success("Privacy updated"); }}>
-                    <SelectTrigger className="w-32 asme-glass-input"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Profile visibility" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="public">Public</SelectItem>
                       <SelectItem value="friends">Friends</SelectItem>
@@ -793,6 +807,35 @@ export function SettingsView() {
                     </SelectContent>
                   </Select>
                 </GlassSettingRow>
+                </div>
+              </div>
+
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-2"><h3 className="font-semibold text-white flex items-center gap-2"><MessageCircle className="h-4 w-4 text-pink-300" />Communication</h3><p className="mt-1 text-sm text-white/50">Manage who may contact you through Scholar.</p></div>
+                <div className="divide-y divide-white/10">
+                  <GlassSettingRow icon={<MessageCircle className="h-4 w-4 text-white/70" />} title="Allow community messages" desc="Send and receive friend messages and community replies.">
+                    <Switch aria-label="Allow community messages" checked={settings.communityMessages ?? true} onCheckedChange={(v) => { updateSettings({ communityMessages: v }); toast.success(v ? "Community messages enabled" : "Community messages disabled"); }} />
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<User className="h-4 w-4 text-white/70" />} title="Allow friend requests" desc="Let people send you new friend requests.">
+                    <Switch aria-label="Allow friend requests" checked={settings.allowFriendRequests ?? true} onCheckedChange={(v) => updateSettings({ allowFriendRequests: v })} />
+                  </GlassSettingRow>
+                </div>
+              </div>
+
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-2"><h3 className="font-semibold text-white flex items-center gap-2"><Bot className="h-4 w-4 text-cyan-300" />LAM & AI privacy</h3><p className="mt-1 text-sm text-white/50">Control the information included with requests to the server-side Groq assistant. API keys always remain on the server.</p></div>
+                <div className="divide-y divide-white/10">
+                  <GlassSettingRow icon={<GraduationCap className="h-4 w-4 text-white/70" />} title="Include profile name in AI" desc="Send your display name and active class so LAM can personalize replies.">
+                    <Switch aria-label="Include profile name in AI" checked={settings.includeProfileInAI ?? true} onCheckedChange={(v) => updateSettings({ includeProfileInAI: v })} />
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Share current page with LAM" desc="Include the active subject, chapter, book, and page with a LAM request.">
+                    <Switch aria-label="Share current page with LAM" checked={settings.lamPageContext ?? true} onCheckedChange={(v) => updateSettings({ lamPageContext: v })} />
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="Share selected text with LAM" desc="Attach text you select on a Scholar page to your next LAM request.">
+                    <Switch aria-label="Share selected text with LAM" checked={settings.lamSelectedText ?? true} onCheckedChange={(v) => updateSettings({ lamSelectedText: v })} />
+                  </GlassSettingRow>
+                </div>
+                <div className="mt-4 rounded-2xl border border-cyan-300/10 bg-cyan-300/5 p-4 text-xs leading-5 text-white/55"><Lock className="mr-1.5 inline h-3.5 w-3.5 text-cyan-300" />LAM sends only the current request, recent conversation messages, and context enabled above. It does not send your complete Scholar database.</div>
               </div>
             </TabsContent>
 

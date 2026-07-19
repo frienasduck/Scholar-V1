@@ -205,6 +205,12 @@ export interface Settings {
   leaderboard: boolean;
   communityMessages: boolean;
   profileVisibility: "public" | "friends" | "private";
+  allowFriendRequests: boolean;
+  shareStudyActivity: boolean;
+  showOnlineStatus: boolean;
+  lamPageContext: boolean;
+  lamSelectedText: boolean;
+  includeProfileInAI: boolean;
 }
 
 export interface Friend {
@@ -784,6 +790,12 @@ function seed() {
       leaderboard: true,
       communityMessages: true,
       profileVisibility: "friends" as const,
+      allowFriendRequests: true,
+      shareStudyActivity: true,
+      showOnlineStatus: true,
+      lamPageContext: true,
+      lamSelectedText: true,
+      includeProfileInAI: true,
     },
     devMode: false,
     class9Data: null,

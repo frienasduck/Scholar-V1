@@ -35,6 +35,7 @@ export interface LamConversation {
 }
 
 export interface LamPreferences {
+  assistantEnabled: boolean;
   wakeWordEnabled: boolean;
   voiceRepliesEnabled: boolean;
   followUpListeningEnabled: boolean;
@@ -62,6 +63,7 @@ export interface LamProfileState {
 }
 
 export const DEFAULT_LAM_PREFERENCES: LamPreferences = {
+  assistantEnabled: true,
   wakeWordEnabled: false,
   voiceRepliesEnabled: false,
   followUpListeningEnabled: false,
