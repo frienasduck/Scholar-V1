@@ -97,6 +97,27 @@ function buildCatalog(curriculum: Subject[], scholarClass: 9 | 11): ResourceEntr
   let counter = 0;
   const mkId = () => `res-${++counter}`;
 
+  if (scholarClass === 11 && curriculum.some((subject) => subject.id === "chemistry")) {
+    entries.push(
+      {
+        id: "chemistry-part1-clean-pdf", title: "Chemistry Part 1 — Clean Reconstructed PDF",
+        subjectId: "chemistry", subjectName: "Chemistry", chapterId: "c1", chapterTitle: "Chemistry Part 1",
+        type: "notes", description: "The complete selectable-text Chemistry Part 1 source supplied for Scholar, covering Some Basic Concepts of Chemistry and Structure of Atom.",
+        readingTime: 180, sizeMB: 0.76, lastUpdated: now, pages: 80,
+        topics: ["Some Basic Concepts of Chemistry", "Structure of Atom", "selectable text"],
+        isExternal: true, externalUrl: "/content/ebooks/class11-chemistry-part1/clean-text.pdf",
+      },
+      {
+        id: "chemistry-part1-original-scan", title: "Chemistry Part 1 — Original Scanned PDF",
+        subjectId: "chemistry", subjectName: "Chemistry", chapterId: "c1", chapterTitle: "Chemistry Part 1",
+        type: "ncert", description: "The untouched 60-page original Chemistry scan, including its printed diagrams, figures, tables, and handwritten annotations.",
+        readingTime: 180, sizeMB: 29.81, lastUpdated: now, pages: 60,
+        topics: ["Some Basic Concepts of Chemistry", "Structure of Atom", "original scan"],
+        isExternal: true, externalUrl: "/content/ebooks/class11-chemistry-part1/original-scan.pdf",
+      },
+    );
+  }
+
   curriculum.forEach((subject) => {
     subject.chapters.forEach((chapter, chIdx) => {
       const chapterNum = chIdx + 1;
