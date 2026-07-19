@@ -246,7 +246,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   return (
     <aside className="fixed bottom-[calc(5.5rem+var(--safe-area-bottom))] right-3 z-[70] lg:bottom-5 lg:right-5" aria-label="LAM personal assistant">
       {open && !prefs.onboardingComplete && (
-        <div className={cn("mb-3 flex h-[28rem] w-[min(25rem,calc(100vw-1.5rem))] flex-col justify-between rounded-[2rem] border p-6 text-white shadow-2xl", glass)}>
+        <div className={cn("mb-3 flex h-[min(25rem,62dvh)] w-[min(23rem,calc(100vw-2rem))] flex-col justify-between overflow-y-auto rounded-[1.75rem] border p-5 text-white shadow-2xl sm:h-[28rem] sm:w-[25rem] sm:rounded-[2rem] sm:p-6", glass)}>
           <button className="ml-auto rounded-full p-2 hover:bg-white/10" onClick={() => setOpen(false)} aria-label="Close LAM"><X className="h-4 w-4" /></button>
           <div className="text-center">
             <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-500 to-violet-600 shadow-xl shadow-cyan-400/20"><Sparkles /></div>
@@ -264,7 +264,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
       )}
 
       {open && prefs.onboardingComplete && (
-        <div className={cn("mb-3 flex flex-col overflow-hidden border text-white shadow-2xl shadow-cyan-500/10 transition-[width,height]", glass, fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[2rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)]" : "h-[min(40rem,calc(100dvh-8rem))] w-[min(28rem,calc(100vw-1.5rem))] rounded-[2rem]")}>
+          <div className={cn("mb-3 flex flex-col overflow-hidden border text-white shadow-2xl shadow-cyan-500/10 transition-[width,height]", glass, fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : "h-[min(31rem,62dvh)] w-[min(24rem,calc(100vw-2rem))] rounded-[1.75rem] sm:h-[min(40rem,calc(100dvh-8rem))] sm:w-[28rem] sm:rounded-[2rem]")}>
           <header className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
             <span className={cn("relative grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-500 to-violet-600", status !== "sleeping" && "shadow-lg shadow-cyan-400/30")}><Bot className="h-4 w-4" />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
             <div className="min-w-0 flex-1"><p className="font-semibold">LAM</p><p className="truncate text-[11px] text-white/50">{status === "thinking" ? "Thinking…" : status === "listening" ? "Listening…" : status === "speaking" ? "Speaking…" : `${user.name} · ${context.currentView}`}</p></div>
