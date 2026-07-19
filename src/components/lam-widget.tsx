@@ -62,15 +62,16 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const conversation = useMemo(() => state.conversations.find((item) => item.id === state.activeConversationId) ?? state.conversations[0], [state]);
   const prefs = state.preferences;
   const context: LamPageContext = useMemo(() => ({
-    profileId, profileName: user.name, scholarClass: user.scholarClass,
+    profileId, profileName: settings.includeProfileInAI === false ? `Class ${user.scholarClass} student` : user.name, scholarClass: user.scholarClass,
     currentView: currentView ?? (typeof window !== "undefined" ? window.location.pathname.split("/").filter(Boolean)[0] : "dashboard") ?? "dashboard",
     currentRoute: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/",
-    subjectTitle: runtimeContext.subjectTitle ?? subject, chapterTitle: runtimeContext.chapterTitle ?? chapter,
-    ebookTitle: runtimeContext.ebookTitle ?? ((currentView === "ebook") ? "Mathematics Part 1" : undefined),
-    sourcePageNumber: runtimeContext.sourcePageNumber,
-    selectedQuestionId: runtimeContext.selectedQuestionId,
-    selectedText: selectedText || undefined,
-  }), [chapter, currentView, profileId, runtimeContext, selectedText, subject, user.name, user.scholarClass]);
+    subjectTitle: settings.lamPageContext === false ? undefined : runtimeContext.subjectTitle ?? subject,
+    chapterTitle: settings.lamPageContext === false ? undefined : runtimeContext.chapterTitle ?? chapter,
+    ebookTitle: settings.lamPageContext === false ? undefined : runtimeContext.ebookTitle ?? ((currentView === "ebook") ? "Mathematics Part 1" : undefined),
+    sourcePageNumber: settings.lamPageContext === false ? undefined : runtimeContext.sourcePageNumber,
+    selectedQuestionId: settings.lamPageContext === false ? undefined : runtimeContext.selectedQuestionId,
+    selectedText: settings.lamSelectedText === false ? undefined : selectedText || undefined,
+  }), [chapter, currentView, profileId, runtimeContext, selectedText, settings.includeProfileInAI, settings.lamPageContext, settings.lamSelectedText, subject, user.name, user.scholarClass]);
 
   const commit = useCallback((updater: (previous: LamProfileState) => LamProfileState) => {
     setState((previous) => { const next = updater(previous); saveLamState(next); return next; });
@@ -243,6 +244,8 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const quick = context.currentView === "ebook" ? ["Explain this page", "Quiz me from this page", "What are the key formulas?"] : context.currentView === "dashboard" ? ["Plan my study today", "Show my weakest topic", "What should I continue?"] : ["Explain what I am viewing", "Quiz me", "What should I revise first?"];
   const glass = prefs.reduceTransparency ? "bg-slate-950 border-white/25" : "bg-slate-950/78 backdrop-blur-2xl border-white/20";
 
+  if (!prefs.assistantEnabled) return null;
+
   return (
     <aside className="fixed bottom-[calc(5.5rem+var(--safe-area-bottom))] right-3 z-[70] lg:bottom-5 lg:right-5" aria-label="LAM personal assistant">
       {open && !prefs.onboardingComplete && (
@@ -281,7 +284,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
             <span className="whitespace-nowrap rounded-full bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100">{context.currentView}</span>
             {context.subjectTitle && <span className="whitespace-nowrap rounded-full bg-white/8 px-2.5 py-1 text-[11px]">{context.subjectTitle}</span>}
             {context.chapterTitle && <span className="max-w-44 truncate rounded-full bg-white/8 px-2.5 py-1 text-[11px]">{context.chapterTitle}</span>}
-            {selectedText && <button onClick={() => setSelectedText("")} className="whitespace-nowrap rounded-full bg-violet-400/15 px-2.5 py-1 text-[11px] text-violet-100">Selection ×</button>}
+            {selectedText && settings.lamSelectedText !== false && <button onClick={() => setSelectedText("")} className="whitespace-nowrap rounded-full bg-violet-400/15 px-2.5 py-1 text-[11px] text-violet-100">Selection ×</button>}
           </div>
 
           {historyOpen && <div className="absolute inset-x-3 top-16 z-20 max-h-72 overflow-y-auto rounded-2xl border border-white/15 bg-slate-950 p-2 shadow-2xl">
@@ -315,7 +318,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
       )}
 
       {!open && status === "listening" && <div className={cn("mb-2 flex items-center gap-3 rounded-full border px-4 py-2 text-sm text-white", glass)}><Mic className="h-4 w-4 text-cyan-300" />Listening…<button onClick={() => recognitionRef.current?.abort()} aria-label="Stop listening"><Square className="h-3.5 w-3.5" /></button></div>}
-      <button onClick={() => setOpen((value) => !value)} aria-expanded={open} className={cn("ml-auto flex items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-semibold text-white shadow-xl", glass)}>
+      <button onClick={() => setOpen((value) => !value)} aria-label="LAM" aria-expanded={open} className={cn("ml-auto flex items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-semibold text-white shadow-xl", glass)}>
         <span className={cn("relative grid place-items-center rounded-full bg-gradient-to-br from-cyan-300 to-violet-600", prefs.compactOrb ? "h-7 w-7" : "h-9 w-9", status !== "sleeping" && !settings.reduceMotion && "animate-pulse")}><Sparkles className="h-3.5 w-3.5" />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
         {!prefs.compactOrb && <>LAM <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} /></>}
       </button>
