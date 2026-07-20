@@ -260,14 +260,151 @@ test("Chemistry reader, inline AI answers, Book Mode, and responsive layout work
   await page.getByRole("button", { name: /Mathematics Part 1/ }).click();
   await page.getByText("Sets", { exact: true }).last().click();
   await page.getByRole("button", { name: "Enter Book Mode" }).click();
-  await expect(page.getByLabel("Mathematics Part 1 immersive book reader")).toBeVisible();
+  await expect(
+    page.getByLabel("Mathematics Part 1 immersive book reader"),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Exit Book Mode" }).click();
   await page.getByRole("button", { name: "Back to E-Book library" }).click();
   await page.getByRole("button", { name: /Physics Part 1/ }).click();
   await page.getByText("Units and Measurement", { exact: true }).last().click();
   await page.getByRole("button", { name: "Enter Book Mode" }).click();
-  await expect(page.getByLabel("Physics Part 1 immersive book reader")).toBeVisible();
+  await expect(
+    page.getByLabel("Physics Part 1 immersive book reader"),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Exit Book Mode" }).click();
+  expect(fatal).toEqual([]);
+});
+
+test("AI Slideshow Maker uses clean page ranges, complete coverage, autosave, and presentation mode", async ({
+  page,
+}) => {
+  const fatal: string[] = [];
+  page.on("pageerror", (error) => fatal.push(error.message));
+  await page.route("**/api/ai", async (route) => {
+    const body = route.request().postDataJSON() as {
+      messages?: Array<{ content?: string }>;
+    };
+    const prompt = body.messages?.at(-1)?.content ?? "";
+    const slots = [
+      ...prompt.matchAll(
+        /SLOT ([^\n]+)\nRequired type: ([^\n]+)\nWorking title: ([^\n]+)\nTopic IDs that MUST be represented: ([^\n]*)\nSource pages: ([^\n]*)/g,
+      ),
+    ];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        data: {
+          slides: slots.map((match) => ({
+            slotId: match[1].trim(),
+            type: match[2].trim(),
+            title: match[3].trim(),
+            content:
+              "This source-grounded explanation follows the selected clean pages in order and preserves the important ideas needed for complete study and revision.",
+            bullets: [
+              "Defines the central idea using details found in the selected source material.",
+              "Connects the concept to the next topic without skipping later source pages.",
+              "Preserves important definitions, symbols, units, examples, and exceptions.",
+              "Uses concise wording while retaining every topic assigned to this slide.",
+              "Provides a useful revision point rather than vague or placeholder content.",
+            ],
+            speakerNotes:
+              "Teach each point in source order and use the mapped clean ebook pages for additional explanation.",
+            sourcePages: match[5]
+              .split(",")
+              .map((value) => Number(value.trim()))
+              .filter(Boolean),
+            topicIds:
+              match[4].trim() === "none (title slide)"
+                ? []
+                : match[4]
+                    .split(",")
+                    .map((value) => value.trim())
+                    .filter(Boolean),
+            layout: "standard",
+          })),
+        },
+      }),
+    });
+  });
+
+  await enterProfile(page, 11);
+  await page.goto("/ai-tools", { waitUntil: "domcontentloaded" });
+  await page.getByText("AI Slideshow Maker", { exact: true }).first().click();
+  await page.getByRole("button", { name: /Clean E.Book Pages/i }).click();
+  await page.getByLabel("Starting page").fill("12");
+  await page.getByLabel("Ending page").fill("10");
+  await expect(
+    page.getByText("End page cannot be before the start page."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Analyse source/i }),
+  ).toBeDisabled();
+
+  await page.getByLabel("Ending page").fill("13");
+  await page.getByRole("button", { name: /Analyse source/i }).click();
+  await expect(page.getByTestId("slideshow-outline")).toBeVisible();
+  await expect(
+    page.getByText(/Selected range: Pages 12–13/).first(),
+  ).toBeVisible();
+  await expect(page.getByText(/Approximately .* words/).first()).toBeVisible();
+
+  await page.locator('input[type="number"]').nth(2).fill("3");
+  await expect(page.getByText(/heavily compressed/)).toBeVisible();
+  await page.getByRole("button", { name: "References" }).click();
+  await page
+    .getByRole("button", {
+      name: /Generate 3-slide source-complete presentation/,
+    })
+    .click();
+  await expect(page.getByTestId("coverage-panel")).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByText("Source coverage: 100%")).toBeVisible();
+  await expect(page.getByText(/3 slides/i).first()).toBeVisible();
+  await expect(
+    page.getByText(/Add content here|Image goes here|More information/, {
+      exact: false,
+    }),
+  ).toHaveCount(0);
+
+  const pptxDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export editable PPTX" }).click();
+  await expect((await pptxDownload).suggestedFilename()).toMatch(/\.pptx$/);
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 768, height: 1024 },
+    { width: 390, height: 844 },
+    { width: 360, height: 800 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth >
+        document.documentElement.clientWidth + 1,
+    );
+    expect(overflow).toBe(false);
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await page.getByRole("button", { name: "Present", exact: true }).click();
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Slide overview" }),
+  ).toBeVisible();
+  await page.keyboard.press("o");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByText("2 / 3", { exact: true }).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.waitForTimeout(1_100);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("AI Slideshow Maker", { exact: true }).first().click();
+  await expect(page.getByText(/Recent slideshows/i)).toBeVisible();
   expect(fatal).toEqual([]);
 });
 

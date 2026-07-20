@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { ArrowUpRight, Play, BookOpen, Brain, Trophy } from "lucide-react";
+import { markLoginIntroPlayed, useScholarTransition } from "@/components/scholar-transition";
 
 // ===== FadingVideo component (custom JS crossfade, no CSS transitions) =====
 function FadingVideo({ src, className, style }: { src: string; className?: string; style?: React.CSSProperties }) {
@@ -128,15 +129,23 @@ export function AuthScreen() {
   const updateUser = useStore((s) => s.updateUser);
   const switchClass = useStore((s) => s.switchClass);
   const user = useStore((s) => s.user);
+  const onboarded = useStore((s) => s.onboarded);
+  const { startTransition } = useScholarTransition();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState("");
   const [name, setName] = useState(user.name);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [selectedClass, setSelectedClass] = useState<9 | 11>(user.scholarClass ?? 9);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      setAuthError("Enter both your email and password to continue.");
+      return;
+    }
+    setAuthError("");
     setLoading(true);
     setTimeout(() => {
       const defaultName = selectedClass === 11 ? "Ishan" : "Neha Salah";
@@ -149,6 +158,9 @@ export function AuthScreen() {
         scholarClass: selectedClass,
         jeeMode: false,
       });
+      if (!onboarded && markLoginIntroPlayed()) {
+        void startTransition({ type: "login-intro", durationMs: 16_000 });
+      }
       setAuthed(true);
     }, 700);
   };
@@ -365,8 +377,9 @@ export function AuthScreen() {
                 <label className="text-xs text-white/50 lg-body block mb-1.5">Email</label>
                 <input
                   type="email"
+                  required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setAuthError(""); }}
                   placeholder="you@scholar.app"
                   className="lg-input lg-body w-full px-4 py-3 rounded-xl bg-white/5"
                 />
@@ -375,8 +388,9 @@ export function AuthScreen() {
                 <label className="text-xs text-white/50 lg-body block mb-1.5">Password</label>
                 <input
                   type="password"
+                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setAuthError(""); }}
                   className="lg-input lg-body w-full px-4 py-3 rounded-xl bg-white/5"
                 />
               </div>
@@ -413,6 +427,8 @@ export function AuthScreen() {
                   </button>
                 </div>
               </div>
+
+              {authError && <p role="alert" className="text-sm text-rose-300 lg-body">{authError}</p>}
 
               <button
                 type="submit"

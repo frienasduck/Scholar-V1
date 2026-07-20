@@ -222,7 +222,7 @@ function ForumTab() {
   const SUBJECTS = scholarClass === 11 ? SUBJECTS_CLASS11 : SUBJECTS_CLASS9;
 
   const [open, setOpen] = useState(false);
-  const [subject, setSubject] = useState("Maths");
+  const [subject, setSubject] = useState(() => scholarClass === 11 ? "Mathematics" : "Maths");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -273,10 +273,10 @@ function ForumTab() {
     });
     addXP(2);
     setReplyInputs({ ...replyInputs, [postId]: "" });
-    triggerAIReply(postId, post);
+    triggerAIReply(postId, post, text);
   }
 
-  function triggerAIReply(postId: string, post: ForumPostLite) {
+  function triggerAIReply(postId: string, post: ForumPostLite, latestStudentMessage?: string) {
     const personas = pickPersonas(post.subject, 1 + Math.floor(Math.random() * 2));
     personas.forEach((persona, idx) => {
       const startDelay = idx * 3500 + 1500 + Math.random() * 1500;
@@ -292,7 +292,26 @@ function ForumTab() {
           // Use the server-side persona `classmate-<id>` so the LLM stays
           // in-character as a real teenage classmate (not an AI tutor).
           const personaId = `classmate-${persona.id}`;
-          const prompt = `A CBSE student posted in the ${post.subject} forum. Reply as YOURSELF — a real teenager texting a classmate. Don't be a tutor. Don't be too helpful. Be casual, lowercase, maybe crack a joke or go slightly off-topic. 1-3 sentences max. Use emojis sparingly.\n\nTitle: ${post.title}\nBody: ${post.body}`;
+          const livePost = useStore.getState().forumPosts.find((item) => item.id === postId);
+          const recentThread = livePost?.replies
+            .slice(-8)
+            .map((reply) => `${reply.author}${reply.isAI ? " (AI classmate)" : ""}: ${reply.body}`)
+            .join("\n") ?? "No replies yet.";
+          const latestMessage = latestStudentMessage
+            ?? [...(livePost?.replies ?? [])].reverse().find((reply) => !reply.isAI)?.body
+            ?? post.body;
+          const prompt = `You are replying inside an existing CBSE ${post.subject} forum thread as YOURSELF — a real teenage classmate, not a tutor or moderator.
+
+Read the original post and the live discussion. Respond directly to the LATEST STUDENT MESSAGE. Do not ignore it and do not pretend it asked the original question. If it is off-topic, react naturally and briefly, then gently suggest making a separate thread or returning to the topic. If it asks about the academic topic, answer helpfully in your own casual voice. Stay coherent with the prior replies. Use 1-3 short sentences and emojis sparingly.
+
+ORIGINAL TITLE: ${post.title}
+ORIGINAL POST: ${post.body}
+
+RECENT THREAD:
+${recentThread}
+
+LATEST STUDENT MESSAGE:
+${latestMessage}`;
           const ai = await askAI(prompt, personaId, { temperature: 0.85, mode: "community-persona" });
           replyForumPost(postId, {
             author: persona.name,
@@ -559,7 +578,7 @@ function QATab() {
   const SUBJECTS = scholarClass === 11 ? SUBJECTS_CLASS11 : SUBJECTS_CLASS9;
 
   const [open, setOpen] = useState(false);
-  const [subject, setSubject] = useState("Science");
+  const [subject, setSubject] = useState(() => scholarClass === 11 ? "Physics" : "Science");
   const [question, setQuestion] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [answerInputs, setAnswerInputs] = useState<Record<string, string>>({});

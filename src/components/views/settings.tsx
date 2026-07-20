@@ -736,10 +736,46 @@ export function SettingsView() {
                 </GlassSettingRow>
                 </div>
               </div>
+
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-2">
+                  <h3 className="flex items-center gap-2 font-semibold text-white"><Volume2 className="h-4 w-4 text-indigo-300" /> Cinematic transition sound</h3>
+                  <p className="mt-1 text-sm text-white/50">Used only for the successful-login introduction and Class 9 ↔ Class 11 academic switch.</p>
+                </div>
+                <div className="divide-y divide-white/10">
+                  <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Transition music" desc="Allow the 16-second cinematic music segment during approved transitions.">
+                    <Switch aria-label="Transition music" checked={settings.transitionMusic !== false} onCheckedChange={(value) => updateSettings({ transitionMusic: value })} />
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Transition volume" desc="Set the music level used for both transition types.">
+                    <div className="flex w-48 items-center gap-3">
+                      <Slider aria-label="Transition volume" disabled={settings.transitionMusic === false} min={0} max={100} step={5} value={[settings.transitionVolume ?? 65]} onValueChange={([value]) => updateSettings({ transitionVolume: value })} />
+                      <span className="w-10 text-right text-xs tabular-nums text-white/60">{settings.transitionVolume ?? 65}%</span>
+                    </div>
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<Sparkles className="h-4 w-4 text-white/70" />} title="Login-intro music" desc="Play once per session after a successful login, during the Scholar intro.">
+                    <Switch aria-label="Login intro music" disabled={settings.transitionMusic === false} checked={settings.loginIntroMusic !== false} onCheckedChange={(value) => updateSettings({ loginIntroMusic: value })} />
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<GraduationCap className="h-4 w-4 text-white/70" />} title="Academic-switch music" desc="Play when switching Class 9 and Class 11 from Academic settings.">
+                    <Switch aria-label="Academic switch music" disabled={settings.transitionMusic === false} checked={settings.academicSwitchMusic !== false} onCheckedChange={(value) => updateSettings({ academicSwitchMusic: value })} />
+                  </GlassSettingRow>
+                </div>
+              </div>
             </TabsContent>
 
             {/* ===== LAM ===== */}
             <TabsContent value="lam" className="mt-2 space-y-4">
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-2"><h3 className="flex items-center gap-2 font-semibold text-white"><BookOpen className="h-4 w-4 text-violet-300" />E-Book ELAM</h3><p className="mt-1 text-sm text-white/50">Control the page-specific assistant shown only inside the immersive e-book reader.</p></div>
+                <div className="divide-y divide-white/10">
+                  <GlassSettingRow icon={<Bot className="h-4 w-4 text-white/70" />} title="Enable ELAM" desc="Show the glowing ELAM page assistant in e-books.">
+                    <Switch aria-label="Enable ELAM" checked={settings.elamEnabled !== false} onCheckedChange={(value) => { updateSettings({ elamEnabled: value }); toast.success(value ? "ELAM enabled" : "ELAM disabled"); }} />
+                  </GlassSettingRow>
+                  <GlassSettingRow icon={<Sparkles className="h-4 w-4 text-white/70" />} title="Compact ELAM" desc="Use a smaller orb and a more compact page-chat panel.">
+                    <Switch aria-label="Compact ELAM" disabled={settings.elamEnabled === false} checked={settings.elamCompact === true} onCheckedChange={(value) => updateSettings({ elamCompact: value })} />
+                  </GlassSettingRow>
+                </div>
+              </div>
+
               <div className="asme-glass rounded-3xl p-6">
                 <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Enable LAM" desc="Show the LAM assistant orb throughout Scholar.">
                   <Switch aria-label="Enable LAM" checked={lamPreferences.assistantEnabled} onCheckedChange={(value) => {

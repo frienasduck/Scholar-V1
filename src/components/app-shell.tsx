@@ -65,6 +65,7 @@ import { PracticalsView } from "@/components/views/practicals";
 import { PythonView } from "@/components/views/python";
 import { DerivationsView } from "@/components/views/derivations";
 import { LamWidget } from "@/components/lam-widget";
+import { useScholarTransition } from "@/components/scholar-transition";
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
@@ -376,6 +377,7 @@ export function AppShell() {
   const switchClass = useStore((s) => s.switchClass);
   const toggleJeeMode = useStore((s) => s.toggleJeeMode);
   const settings = useStore((s) => s.settings);
+  const { startTransition } = useScholarTransition();
   const [active, setActive] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
     const segment = window.location.pathname.split("/").filter(Boolean)[0];
@@ -441,15 +443,23 @@ export function AppShell() {
     const onClassSwitch = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.newClass) {
-        setLoadingText({
-          title: detail.newClass === 11 ? "Entering Class 11" : "Entering Class 9",
-          subtitle: detail.newClass === 11 ? "Ishan's Scholar • PCM + Computer Science • CBSE" : "Neha's Scholar • Loading your study profile",
-        });
-        setClassLoading(true);
-        setTimeout(() => {
-          switchClass(detail.newClass);
-          setClassLoading(false);
-        }, 2000);
+        const toClass = detail.newClass as 9 | 11;
+        if (toClass !== user.scholarClass) {
+          void startTransition({
+            type: "academic-switch",
+            fromClass: user.scholarClass,
+            toClass,
+            durationMs: 18_000,
+            prepare: async () => {
+              await Promise.all([
+                import("@/lib/curriculum"),
+                import("@/lib/curriculum-class11"),
+                import("@/lib/ebook-data"),
+              ]);
+            },
+            commit: () => switchClass(toClass),
+          });
+        }
       }
       if (detail?.jeeToggle) {
         setLoadingText({
@@ -465,7 +475,7 @@ export function AppShell() {
     };
     window.addEventListener("scholar:class-switch", onClassSwitch);
     return () => window.removeEventListener("scholar:class-switch", onClassSwitch);
-  }, [switchClass, toggleJeeMode, user.jeeMode]);
+  }, [startTransition, switchClass, toggleJeeMode, user.jeeMode, user.scholarClass]);
 
   // Keyboard shortcut for command palette
   useEffect(() => {
@@ -627,11 +637,12 @@ export function AppShell() {
         </main>
       </div>
 
-      <LamWidget currentView={active} />
+      {active !== "ebook" && <LamWidget currentView={active} />}
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 
-      {/* Class Switch / JEE Toggle Cinematic Loading Screen — 10 seconds */}
+      {/* JEE mode keeps its existing short, silent transition. Academic class
+          switching is handled by the shared transition provider. */}
       {classLoading && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -652,7 +663,7 @@ export function AppShell() {
             <h2 className="font-serif italic text-4xl md:text-5xl text-white mb-3 drop-shadow-lg">{loadingText.title}</h2>
             <p className="text-base text-white/90 mb-8 drop-shadow">{loadingText.subtitle}</p>
             <div className="w-72 h-1.5 bg-white/20 rounded-full overflow-hidden mx-auto backdrop-blur-sm">
-              <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 10, ease: "linear" }} className="h-full bg-white" />
+              <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 2, ease: "linear" }} className="h-full bg-white" />
             </div>
             <p className="text-xs text-white/70 mt-4 drop-shadow">Please wait…</p>
           </div>

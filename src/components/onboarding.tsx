@@ -4,7 +4,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Sparkles, Target, BookOpen, Trophy, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { GraduationCap, Sparkles, Target, BookOpen, Trophy, ArrowRight, ArrowLeft, Check, Volume2 } from "lucide-react";
+import { useScholarTransition } from "@/components/scholar-transition";
 
 export function Onboarding() {
   const setOnboarded = useStore((s) => s.setOnboarded);
@@ -15,6 +16,7 @@ export function Onboarding() {
   const appName = user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar";
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
+  const { transition, audioStatus, retrySound, stopTransition } = useScholarTransition();
 
   const STEPS = [
     { icon: GraduationCap, title: `Welcome, ${studentName}`, desc: `Your complete study operating system for Class ${user.scholarClass} CBSE is ready.`, color: "from-indigo-500 to-violet-500" },
@@ -24,10 +26,16 @@ export function Onboarding() {
   ];
 
   const finish = () => {
+    stopTransition();
     setDone(true);
     addXP(50);
     pushActivity({ type: "onboarding", text: "Completed onboarding (+50 XP)", icon: "✨" });
     setTimeout(() => setOnboarded(true), 900);
+  };
+
+  const skipIntro = () => {
+    stopTransition();
+    setOnboarded(true);
   };
 
   const isLast = step === STEPS.length - 1;
@@ -46,6 +54,14 @@ export function Onboarding() {
           ))}
         </div>
 
+        {transition?.type === "login-intro" && audioStatus === "blocked" && (
+          <div className="mb-4 flex justify-center">
+            <Button variant="outline" size="sm" onClick={retrySound} aria-label="Tap to enable intro sound">
+              <Volume2 className="mr-1.5 h-3.5 w-3.5" /> Tap for sound
+            </Button>
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -62,7 +78,7 @@ export function Onboarding() {
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">{cur.desc}</p>
 
             <div className="flex items-center justify-between mt-7">
-              <Button variant="ghost" size="sm" onClick={() => setOnboarded(true)} className="text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={skipIntro} className="text-muted-foreground">
                 Skip intro
               </Button>
               <div className="flex gap-2">

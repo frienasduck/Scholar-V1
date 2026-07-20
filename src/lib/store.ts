@@ -193,7 +193,13 @@ export interface Purchase {
 export interface Settings {
   theme: "dark" | "light";
   reduceMotion: boolean;
+  elamEnabled: boolean;
+  elamCompact: boolean;
   sound: boolean;
+  transitionMusic: boolean;
+  transitionVolume: number;
+  loginIntroMusic: boolean;
+  academicSwitchMusic: boolean;
   autoArchive: boolean;
   fontScale: "90" | "100" | "110" | "120";
   density: "compact" | "comfortable" | "spacious";
@@ -778,7 +784,13 @@ function seed() {
     settings: {
       theme: "dark" as const,
       reduceMotion: false,
+      elamEnabled: true,
+      elamCompact: false,
       sound: true,
+      transitionMusic: true,
+      transitionVolume: 65,
+      loginIntroMusic: true,
+      academicSwitchMusic: true,
       autoArchive: false,
       fontScale: "100" as const,
       density: "comfortable" as const,
@@ -1191,7 +1203,7 @@ export const useStore = create<AppState>()(
 
       addForumPost: (p) =>
         set((s) => ({
-          forumPosts: [{ ...p, id: uid(), at: Date.now(), replies: [] }, ...s.forumPosts],
+          forumPosts: [{ ...p, scholarClass: s.user.scholarClass, id: uid(), at: Date.now(), replies: [] }, ...s.forumPosts],
         })),
       replyForumPost: (id, r) =>
         set((s) => ({
@@ -1200,7 +1212,7 @@ export const useStore = create<AppState>()(
           ),
         })),
       addQA: (q) =>
-        set((s) => ({ qaItems: [{ ...q, id: uid(), at: Date.now(), answers: [] }, ...s.qaItems] })),
+        set((s) => ({ qaItems: [{ ...q, scholarClass: s.user.scholarClass, id: uid(), at: Date.now(), answers: [] }, ...s.qaItems] })),
       answerQA: (id, a) =>
         set((s) => ({
           qaItems: s.qaItems.map((q) =>

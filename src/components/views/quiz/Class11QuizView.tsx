@@ -31,6 +31,7 @@ import {
   shuffle, fmtTime, uid, toQuizQuestions,
 } from "./quiz-utils";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
+import { EBOOK_QUESTION_BOOKS, loadEbookQuestions, toEbookQuizQuestion } from "@/lib/ebook-question-bank";
 
 type Phase = "home" | "taking" | "results" | "aiReview";
 
@@ -129,6 +130,10 @@ export function Class11QuizView() {
   const [aiDrafts, setAiDrafts] = useState<any[]>([]);
   const [savedMistakeIds, setSavedMistakeIds] = useState<Set<string>>(new Set());
   const [customQuestions, setCustomQuestions] = useState<any[]>(() => loadCustomQuestions(scholarClass));
+  const [ebookBookId, setEbookBookId] = useState("class11-maths-part1");
+  const [ebookChapterId, setEbookChapterId] = useState("sets");
+  const [ebookMode, setEbookMode] = useState<"chapter" | "mixed">("chapter");
+  const [ebookLoading, setEbookLoading] = useState(false);
 
   // Statically-loaded quiz data (no async, no server dependency)
   const quizData = useMemo(() => loadSubjectQuizzes(subject), [subject]);
@@ -247,6 +252,34 @@ export function Class11QuizView() {
     setTimeSpent(0);
     setPhase("taking");
   }, [filteredQuizzes]);
+
+  const startEbookQuiz = async () => {
+    setEbookLoading(true);
+    try {
+      const raw = await loadEbookQuestions(ebookMode === "chapter" ? [ebookBookId] : undefined);
+      const eligible = raw.filter((q) => {
+        if (ebookMode === "chapter" && q.chapterId !== ebookChapterId) return false;
+        return Array.isArray(q.options) && q.options.length >= 2 && typeof q.correctOption === "number";
+      });
+      if (!eligible.length) {
+        toast.info("This selection has no printed MCQs with an answer key.", { description: "Choose Mathematics Part 1 or Mixed E-Books. Descriptive ebook questions are available in Mock Exam." });
+        return;
+      }
+      const picked = shuffle(eligible).slice(0, Math.min(10, eligible.length)).map(toEbookQuizQuestion);
+      setSubject(ebookMode === "mixed" ? "mixed" : picked[0]?.subject ?? "maths");
+      setQuestions(picked);
+      setResponses({});
+      setCurrent(0);
+      setStartedAt(Date.now());
+      setTimeSpent(0);
+      setPhase("taking");
+      toast.success(`Starting an exact e-book quiz with ${picked.length} printed questions.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load e-book questions.");
+    } finally {
+      setEbookLoading(false);
+    }
+  };
 
   const startAIQuiz = async (aiSubject: string, aiChapter: string, count: number, aiDifficulty: string) => {
     setAiLoading(true);
@@ -609,6 +642,22 @@ export function Class11QuizView() {
           <button onClick={() => setAiOpen(true)} className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-200 hover:bg-fuchsia-500/25 transition-colors">
             <Sparkles className="h-4 w-4" /> AI Generate Quiz
           </button>
+        </div>
+
+        {/* Exact questions extracted from the bundled e-books */}
+        <div className="cinema-glass mb-4 rounded-2xl p-4">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-500/15 text-violet-200"><BookOpen className="h-4 w-4" /></div>
+            <div><h3 className="text-sm font-semibold text-white">E-Book Question Quiz</h3><p className="text-xs leading-5 text-white/45">Uses the exact printed MCQs and answer keys from the bundled e-books—never generated placeholders.</p></div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <select aria-label="E-book quiz mode" value={ebookMode} onChange={(e) => setEbookMode(e.target.value as "chapter" | "mixed")} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+              <option value="chapter">Chapter-wise</option><option value="mixed">Mixed E-Books</option>
+            </select>
+            {ebookMode === "chapter" && <select aria-label="E-book" value={ebookBookId} onChange={(e) => { const id = e.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((b) => b.id === id)?.chapters[0]?.id ?? ""); }} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>}
+            {ebookMode === "chapter" && <select aria-label="E-book chapter" value={ebookChapterId} onChange={(e) => setEbookChapterId(e.target.value)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>}
+          </div>
+          <button onClick={() => void startEbookQuiz()} disabled={ebookLoading} className="mt-3 flex items-center gap-2 rounded-xl border border-violet-300/25 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 transition-colors hover:bg-violet-500/25 disabled:opacity-50">{ebookLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Start E-Book Quiz</button>
         </div>
 
         {/* Pre-made Quiz Decks */}

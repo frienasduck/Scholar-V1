@@ -25,14 +25,114 @@ export interface Slide {
   id: string;
   type: SlideType;
   title: string;
-  content: string;          // main text (supports simple markdown: **bold**, *italic*, `code`)
-  bullets?: string[];       // for bullet-list slides
-  formula?: string;         // for formula slides (raw expression)
-  diagramPrompt?: string;   // suggestion for an illustrative diagram
+  content: string; // main text (supports simple markdown: **bold**, *italic*, `code`)
+  bullets?: string[]; // for bullet-list slides
+  formula?: string; // for formula slides (raw expression)
+  diagramPrompt?: string; // suggestion for an illustrative diagram
   practiceQuestion?: string;
   practiceAnswer?: string;
   speakerNotes: string;
-  background?: string;      // optional CSS background override
+  background?: string; // optional CSS background override
+  sourcePages?: number[];
+  sourceBookId?: string;
+  showSourceReference?: boolean;
+  topicIds?: string[];
+  imageReference?: string;
+  layout?: "standard" | "two-column" | "visual" | "formula-focus" | "quiz";
+}
+
+export type SlideshowDensity =
+  | "concise"
+  | "balanced"
+  | "detailed"
+  | "exam-revision";
+export type SlideshowAudience =
+  | "beginner"
+  | "class-11"
+  | "exam-revision"
+  | "advanced"
+  | "teacher";
+export type SlideshowStudyMode = "standard" | "deep-study" | "exam-crash";
+
+export interface SlideshowSourcePage {
+  pageNumber: number;
+  text: string;
+  headings: string[];
+  formulas: string[];
+  figures: Array<{ id: string; caption: string; imageUrl?: string }>;
+  tables: Array<{ id: string; text: string }>;
+  chapterId?: string;
+  chapterTitle?: string;
+}
+
+export interface SlideshowOutlineItem {
+  id: string;
+  title: string;
+  sourcePages: number[];
+  subtopics: string[];
+  importance: "core" | "important" | "supporting";
+  included: boolean;
+  sourceText: string;
+  formulas: string[];
+  figureReferences: string[];
+}
+
+export interface SlideshowCoverageItem {
+  id: string;
+  title: string;
+  sourcePages: number[];
+  importance: "core" | "important" | "supporting";
+  assignedSlideIds: string[];
+  covered: boolean;
+  formulas: string[];
+  figures: string[];
+}
+
+export interface SlideshowCoverageReport {
+  percentage: number;
+  pagesCovered: number[];
+  totalPages: number[];
+  topicsCovered: number;
+  totalTopics: number;
+  formulasIncluded: number;
+  totalFormulas: number;
+  figuresIncluded: number;
+  totalFigures: number;
+  missingTopicIds: string[];
+  missingPages: number[];
+  missingFormulas: string[];
+  missingFigures: string[];
+}
+
+export interface SlideshowGenerationSettings {
+  slideCount: number;
+  density: SlideshowDensity;
+  audience: SlideshowAudience;
+  studyMode: SlideshowStudyMode;
+  includeDiagrams: boolean;
+  includeExamples: boolean;
+  includeSpeakerNotes: boolean;
+  includeSummary: boolean;
+  includeQuiz: boolean;
+  includeSourceReferences: boolean;
+}
+
+export interface SlideshowSourceMeta {
+  kind:
+    | "prompt"
+    | "topic"
+    | "notes"
+    | "chapter"
+    | "ebook-pages"
+    | "uploaded-document";
+  label: string;
+  bookId?: string;
+  ebookTitle?: string;
+  chapterId?: string;
+  startPage?: number;
+  endPage?: number;
+  pageCount?: number;
+  wordCount: number;
 }
 
 export type SlideshowTemplate =
@@ -75,6 +175,14 @@ export interface Slideshow {
   difficulty: SlideshowDifficulty;
   language: string;
   slides: Slide[];
+  source?: SlideshowSourceMeta;
+  outline?: SlideshowOutlineItem[];
+  coverageLedger?: SlideshowCoverageItem[];
+  coverage?: SlideshowCoverageReport;
+  generationSettings?: SlideshowGenerationSettings;
+  generationStatus?: "complete" | "partial" | "failed";
+  failedStage?: string;
+  lastAutosavedAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -85,13 +193,13 @@ export interface TemplateMeta {
   id: SlideshowTemplate;
   name: string;
   blurb: string;
-  swatch: string;       // CSS gradient for preview chip
+  swatch: string; // CSS gradient for preview chip
   fontFamily: string;
-  background: string;   // CSS background
-  text: string;         // text color
-  accent: string;       // accent color
-  cardBg: string;       // card / panel background
-  muted: string;        // muted text color
+  background: string; // CSS background
+  text: string; // text color
+  accent: string; // accent color
+  cardBg: string; // card / panel background
+  muted: string; // muted text color
 }
 
 export const TEMPLATES: TemplateMeta[] = [
@@ -101,7 +209,8 @@ export const TEMPLATES: TemplateMeta[] = [
     blurb: "Dark glassmorphism with neon gradients — Scholar's signature look.",
     swatch: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #312e81 100%)",
     fontFamily: "'Inter', system-ui, sans-serif",
-    background: "linear-gradient(135deg, #0a0a0f 0%, #111827 50%, #1e1b4b 100%)",
+    background:
+      "linear-gradient(135deg, #0a0a0f 0%, #111827 50%, #1e1b4b 100%)",
     text: "#f8fafc",
     accent: "#60a5fa",
     cardBg: "rgba(255,255,255,0.06)",
@@ -162,7 +271,8 @@ export const TEMPLATES: TemplateMeta[] = [
     blurb: "Handwritten-notes inspired — lined paper feel.",
     swatch: "linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)",
     fontFamily: "'Caveat', 'Comic Sans MS', cursive",
-    background: "linear-gradient(to bottom, #fefce8 0%, #fefce8 100%), repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.06) 27px, rgba(0,0,0,0.06) 28px)",
+    background:
+      "linear-gradient(to bottom, #fefce8 0%, #fefce8 100%), repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.06) 27px, rgba(0,0,0,0.06) 28px)",
     text: "#1e293b",
     accent: "#b91c1c",
     cardBg: "rgba(255,255,255,0.5)",
@@ -201,16 +311,56 @@ export function getTemplate(id: SlideshowTemplate): TemplateMeta {
 // ===== Modes & difficulty (for UI) =====
 
 export const MODES: { id: SlideshowMode; name: string; hint: string }[] = [
-  { id: "school-project", name: "School Project", hint: "Polished, structured project deck." },
-  { id: "chapter-explanation", name: "Chapter Explanation", hint: "Teach a chapter step-by-step." },
-  { id: "revision", name: "Revision Presentation", hint: "Quick recap before tests." },
-  { id: "teacher-lesson", name: "Teacher-Style Lesson", hint: "Full lesson with examples & practice." },
-  { id: "seminar", name: "Seminar", hint: "Formal talk with deep concept coverage." },
-  { id: "viva", name: "Viva Presentation", hint: "Defend concepts under questioning." },
-  { id: "formula-deck", name: "Formula Presentation", hint: "Every key formula + worked example." },
-  { id: "experiment", name: "Experiment Explanation", hint: "Aim, apparatus, procedure, result." },
-  { id: "board-revision", name: "Board Exam Revision", hint: "High-yield points for CBSE boards." },
-  { id: "jee-deck", name: "JEE Concept Deck", hint: "Advanced problem-solving orientation." },
+  {
+    id: "school-project",
+    name: "School Project",
+    hint: "Polished, structured project deck.",
+  },
+  {
+    id: "chapter-explanation",
+    name: "Chapter Explanation",
+    hint: "Teach a chapter step-by-step.",
+  },
+  {
+    id: "revision",
+    name: "Revision Presentation",
+    hint: "Quick recap before tests.",
+  },
+  {
+    id: "teacher-lesson",
+    name: "Teacher-Style Lesson",
+    hint: "Full lesson with examples & practice.",
+  },
+  {
+    id: "seminar",
+    name: "Seminar",
+    hint: "Formal talk with deep concept coverage.",
+  },
+  {
+    id: "viva",
+    name: "Viva Presentation",
+    hint: "Defend concepts under questioning.",
+  },
+  {
+    id: "formula-deck",
+    name: "Formula Presentation",
+    hint: "Every key formula + worked example.",
+  },
+  {
+    id: "experiment",
+    name: "Experiment Explanation",
+    hint: "Aim, apparatus, procedure, result.",
+  },
+  {
+    id: "board-revision",
+    name: "Board Exam Revision",
+    hint: "High-yield points for CBSE boards.",
+  },
+  {
+    id: "jee-deck",
+    name: "JEE Concept Deck",
+    hint: "Advanced problem-solving orientation.",
+  },
 ];
 
 export const DIFFICULTIES: { id: SlideshowDifficulty; name: string }[] = [
@@ -252,48 +402,73 @@ export function getSlideTypeMeta(id: SlideType) {
 // ===== Persistence (localStorage) =====
 
 const STORAGE_KEY = "scholar-slideshows";
+const storageKeyForClass = (classProfile: 9 | 11) =>
+  `${STORAGE_KEY}:class-${classProfile}:v2`;
 
-export function loadSlideshows(): Slideshow[] {
+export function loadSlideshows(classProfile?: 9 | 11): Slideshow[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const data = JSON.parse(raw);
-    if (!Array.isArray(data)) return [];
-    return data.filter((s) => s && s.id && Array.isArray(s.slides));
+    const read = (key: string) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return [];
+      const data = JSON.parse(raw);
+      return Array.isArray(data)
+        ? (data.filter(
+            (s) => s && s.id && Array.isArray(s.slides),
+          ) as Slideshow[])
+        : [];
+    };
+    if (!classProfile) return read(STORAGE_KEY);
+    const scoped = read(storageKeyForClass(classProfile));
+    if (scoped.length) return scoped;
+    const migrated = read(STORAGE_KEY).filter(
+      (slideshow) => slideshow.classProfile === classProfile,
+    );
+    if (migrated.length) saveSlideshows(migrated, classProfile);
+    return migrated;
   } catch {
     return [];
   }
 }
 
-export function saveSlideshows(list: Slideshow[]): void {
+export function saveSlideshows(list: Slideshow[], classProfile?: 9 | 11): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    const resolvedClass = classProfile ?? list[0]?.classProfile;
+    localStorage.setItem(
+      resolvedClass ? storageKeyForClass(resolvedClass) : STORAGE_KEY,
+      JSON.stringify(list),
+    );
   } catch {
     // quota or privacy mode — silently ignore
   }
 }
 
 export function upsertSlideshow(slideshow: Slideshow): Slideshow[] {
-  const list = loadSlideshows();
+  const list = loadSlideshows(slideshow.classProfile);
   const idx = list.findIndex((s) => s.id === slideshow.id);
   slideshow.updatedAt = Date.now();
   if (idx >= 0) list[idx] = slideshow;
   else list.unshift(slideshow);
-  saveSlideshows(list);
+  saveSlideshows(list, slideshow.classProfile);
   return list;
 }
 
-export function deleteSlideshow(id: string): Slideshow[] {
-  const list = loadSlideshows().filter((s) => s.id !== id);
-  saveSlideshows(list);
+export function deleteSlideshow(
+  id: string,
+  classProfile: 9 | 11 = 11,
+): Slideshow[] {
+  const list = loadSlideshows(classProfile).filter((s) => s.id !== id);
+  saveSlideshows(list, classProfile);
   return list;
 }
 
 // ===== Helpers =====
 
-export function newSlide(type: SlideType = "concept", partial: Partial<Slide> = {}): Slide {
+export function newSlide(
+  type: SlideType = "concept",
+  partial: Partial<Slide> = {},
+): Slide {
   return {
     id: `s-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     type,
@@ -306,6 +481,12 @@ export function newSlide(type: SlideType = "concept", partial: Partial<Slide> = 
     practiceAnswer: partial.practiceAnswer,
     speakerNotes: partial.speakerNotes ?? "",
     background: partial.background,
+    sourcePages: partial.sourcePages,
+    sourceBookId: partial.sourceBookId,
+    showSourceReference: partial.showSourceReference,
+    topicIds: partial.topicIds,
+    imageReference: partial.imageReference,
+    layout: partial.layout,
   };
 }
 
@@ -322,6 +503,14 @@ export function newSlideshow(partial: Partial<Slideshow> = {}): Slideshow {
     difficulty: partial.difficulty ?? "standard",
     language: partial.language ?? "English",
     slides: partial.slides ?? [],
+    source: partial.source,
+    outline: partial.outline,
+    coverageLedger: partial.coverageLedger,
+    coverage: partial.coverage,
+    generationSettings: partial.generationSettings,
+    generationStatus: partial.generationStatus ?? "complete",
+    failedStage: partial.failedStage,
+    lastAutosavedAt: partial.lastAutosavedAt,
     createdAt: now,
     updatedAt: now,
   };
@@ -351,12 +540,22 @@ export function buildSlideshowPrompt(opts: {
     ? "JEE Mode is ON — go deeper than CBSE, include competitive-style worked examples and shortcuts."
     : "Stay strictly within CBSE syllabus and difficulty.";
   const features: string[] = [];
-  if (opts.includeDiagrams) features.push("diagram slides with a concrete `diagramPrompt` describing what to draw");
-  if (opts.includeExamples) features.push("worked-example slides with step-by-step solutions");
-  if (opts.includePractice) features.push("practice-question slides with both `practiceQuestion` and `practiceAnswer`");
+  if (opts.includeDiagrams)
+    features.push(
+      "diagram slides with a concrete `diagramPrompt` describing what to draw",
+    );
+  if (opts.includeExamples)
+    features.push("worked-example slides with step-by-step solutions");
+  if (opts.includePractice)
+    features.push(
+      "practice-question slides with both `practiceQuestion` and `practiceAnswer`",
+    );
   if (opts.includeSummary) features.push("a summary slide near the end");
-  if (opts.includeReferences) features.push("a final slide listing NCERT chapter & standard references");
-  const featureList = features.length ? features.join("; ") : "no optional features";
+  if (opts.includeReferences)
+    features.push("a final slide listing NCERT chapter & standard references");
+  const featureList = features.length
+    ? features.join("; ")
+    : "no optional features";
 
   return `You are an expert educational content designer for CBSE students. Generate a COMPLETE, POLISHED slideshow as STRICT JSON.
 
@@ -410,18 +609,29 @@ Return ONLY the JSON object. No markdown fences, no prose before or after.`;
 
 // ===== Validation & repair =====
 
-export function validateAIResponse(raw: any): { title?: string; slides: Slide[]; partial?: boolean } | null {
+export function validateAIResponse(
+  raw: any,
+): { title?: string; slides: Slide[]; partial?: boolean } | null {
   if (!raw || typeof raw !== "object") return null;
   let obj = raw;
   // If the model wrapped it in a string, try to parse
   if (typeof raw === "string") {
-    try { obj = JSON.parse(raw); } catch { return null; }
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
   if (!obj || !Array.isArray(obj.slides)) return null;
 
   const validTypes = new Set(SLIDE_TYPES.map((s) => s.id));
   const slides: Slide[] = obj.slides
-    .filter((s: any) => s && typeof s === "object" && (s.title || s.content || (s.bullets && s.bullets.length)))
+    .filter(
+      (s: any) =>
+        s &&
+        typeof s === "object" &&
+        (s.title || s.content || (s.bullets && s.bullets.length)),
+    )
     .map((s: any, i: number) => {
       const type: SlideType = validTypes.has(s.type) ? s.type : "concept";
       // Accept "content" as a valid type alias for concept (model often uses this)
@@ -433,13 +643,50 @@ export function validateAIResponse(raw: any): { title?: string; slides: Slide[];
         title: String(s.title ?? "Untitled Slide").slice(0, 200),
         content: String(s.content ?? "").slice(0, 2000),
         bullets: Array.isArray(s.bullets)
-          ? s.bullets.map((b: any) => String(b).slice(0, 300)).filter(Boolean).slice(0, 8)
+          ? s.bullets
+              .map((b: any) => String(b).slice(0, 300))
+              .filter(Boolean)
+              .slice(0, 8)
           : undefined,
         formula: s.formula ? String(s.formula).slice(0, 400) : undefined,
-        diagramPrompt: s.diagramPrompt ? String(s.diagramPrompt).slice(0, 500) : undefined,
-        practiceQuestion: s.practiceQuestion ? String(s.practiceQuestion).slice(0, 800) : undefined,
-        practiceAnswer: s.practiceAnswer ? String(s.practiceAnswer).slice(0, 800) : undefined,
+        diagramPrompt: s.diagramPrompt
+          ? String(s.diagramPrompt).slice(0, 500)
+          : undefined,
+        practiceQuestion: s.practiceQuestion
+          ? String(s.practiceQuestion).slice(0, 800)
+          : undefined,
+        practiceAnswer: s.practiceAnswer
+          ? String(s.practiceAnswer).slice(0, 800)
+          : undefined,
         speakerNotes: String(s.speakerNotes ?? "").slice(0, 1500),
+        sourcePages: Array.isArray(s.sourcePages)
+          ? [
+              ...new Set(
+                s.sourcePages
+                  .map(Number)
+                  .filter((page: number) => Number.isInteger(page) && page > 0),
+              ),
+            ]
+          : undefined,
+        sourceBookId: s.sourceBookId
+          ? String(s.sourceBookId).slice(0, 120)
+          : undefined,
+        showSourceReference: Boolean(s.showSourceReference),
+        topicIds: Array.isArray(s.topicIds)
+          ? s.topicIds.map(String).filter(Boolean).slice(0, 40)
+          : undefined,
+        imageReference: s.imageReference
+          ? String(s.imageReference).slice(0, 500)
+          : undefined,
+        layout: [
+          "standard",
+          "two-column",
+          "visual",
+          "formula-focus",
+          "quiz",
+        ].includes(s.layout)
+          ? s.layout
+          : undefined,
       };
     });
 
