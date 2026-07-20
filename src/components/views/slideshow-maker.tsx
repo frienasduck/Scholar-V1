@@ -2,28 +2,99 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Sparkles, Loader2, Plus, Trash2, Copy, ArrowUp, ArrowDown, Edit3, Eye,
-  Presentation, FileText, Wand2, RefreshCw, Download, Play, X, ChevronLeft,
-  ChevronRight, Save, Search, Filter, Image as ImageIcon, Code2, Mic,
-  Lightbulb, AlertTriangle, Trophy, BookOpen, Clock, Layers, Maximize2,
-  Minimize2, Keyboard, ListChecks, FileDown, Link2,
+  Sparkles,
+  Loader2,
+  Plus,
+  Trash2,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Edit3,
+  Eye,
+  Presentation,
+  FileText,
+  Wand2,
+  RefreshCw,
+  Download,
+  Play,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Search,
+  Filter,
+  Image as ImageIcon,
+  Code2,
+  Mic,
+  Lightbulb,
+  AlertTriangle,
+  Trophy,
+  BookOpen,
+  Clock,
+  Layers,
+  Maximize2,
+  Keyboard,
+  ListChecks,
+  FileDown,
+  Link2,
+  CheckCircle2,
+  BarChart3,
+  GripVertical,
+  Merge,
+  ExternalLink,
+  FileUp,
 } from "lucide-react";
 
 import { askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
 import { useCurriculum } from "@/lib/use-curriculum";
 import {
-  type Slide, type Slideshow, type SlideshowTemplate, type SlideshowMode,
-  type SlideshowDifficulty, type SlideType,
-  TEMPLATES, MODES, DIFFICULTIES, SLIDE_TYPES,
-  getTemplate, getSlideTypeMeta,
-  loadSlideshows, upsertSlideshow, deleteSlideshow,
-  newSlide, newSlideshow,
-  buildSlideshowPrompt, validateAIResponse,
+  type Slide,
+  type Slideshow,
+  type SlideshowTemplate,
+  type SlideshowMode,
+  type SlideshowDifficulty,
+  type SlideType,
+  TEMPLATES,
+  MODES,
+  DIFFICULTIES,
+  SLIDE_TYPES,
+  getTemplate,
+  getSlideTypeMeta,
+  loadSlideshows,
+  upsertSlideshow,
+  deleteSlideshow,
+  newSlide,
+  newSlideshow,
+  type SlideshowDensity,
+  type SlideshowAudience,
+  type SlideshowStudyMode,
+  type SlideshowOutlineItem,
+  type SlideshowSourceMeta,
+  type SlideshowSourcePage,
+  type SlideshowGenerationSettings,
 } from "@/lib/slideshow";
+import {
+  EBOOK_SLIDESHOW_SOURCES,
+  loadEbookSource,
+  extractEbookPages,
+  analyseSourcePages,
+  analysePlainText,
+  sourceStatistics,
+  recommendSlideCounts,
+  allocateSlides,
+  buildSlideBatchPrompt,
+  parseSlideBatch,
+  makeCoverageLedger,
+  validateCoverage,
+  repairMissingCoverage,
+  compactOutlineForStorage,
+  formatPageRange,
+} from "@/lib/slideshow-pipeline";
 import { cn } from "@/lib/utils";
 import { NarratedSlideshowMaker } from "@/components/views/narrated-slideshow";
 
@@ -35,7 +106,7 @@ async function askAIJSONWithTimeout(
   message: string,
   persona: string,
   opts: { temperature?: number },
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<any | null> {
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), timeoutMs);
@@ -63,7 +134,11 @@ async function askAIJSONWithTimeout(
     if (!res.ok) return null;
     const text = await res.text();
     let data: { ok?: boolean; data?: any };
-    try { data = JSON.parse(text); } catch { return null; }
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return null;
+    }
     if (!data.ok || !data.data) return null;
     return data.data;
   } catch (e: any) {
@@ -77,14 +152,53 @@ async function askAIJSONWithTimeout(
 // AI Slideshow Maker
 // ============================================================================
 
-type InputMode = "prompt" | "topic" | "notes" | "chapter";
+type InputMode =
+  | "prompt"
+  | "topic"
+  | "notes"
+  | "chapter"
+  | "ebook"
+  | "document";
 
-const INPUT_MODES: { id: InputMode; name: string; icon: any; hint: string }[] = [
-  { id: "prompt", name: "Prompt", icon: Wand2, hint: "Type a free-form prompt." },
-  { id: "topic", name: "Topic", icon: BookOpen, hint: "Pick subject, chapter, audience." },
-  { id: "notes", name: "Paste Notes", icon: FileText, hint: "Turn rough notes into slides." },
-  { id: "chapter", name: "Chapter", icon: Layers, hint: "Generate from a curriculum chapter." },
-];
+const INPUT_MODES: { id: InputMode; name: string; icon: any; hint: string }[] =
+  [
+    {
+      id: "prompt",
+      name: "Prompt",
+      icon: Wand2,
+      hint: "Type a free-form prompt.",
+    },
+    {
+      id: "topic",
+      name: "Topic",
+      icon: BookOpen,
+      hint: "Pick subject, chapter, audience.",
+    },
+    {
+      id: "notes",
+      name: "Paste Notes",
+      icon: FileText,
+      hint: "Turn rough notes into slides.",
+    },
+    {
+      id: "chapter",
+      name: "Chapter",
+      icon: Layers,
+      hint: "Generate from a curriculum chapter.",
+    },
+    {
+      id: "ebook",
+      name: "Clean E‑Book Pages",
+      icon: FileUp,
+      hint: "Choose an exact selectable-text page range.",
+    },
+    {
+      id: "document",
+      name: "Upload Text File",
+      icon: FileText,
+      hint: "Use a TXT, Markdown, JSON, or CSV document.",
+    },
+  ];
 
 export function SlideshowMaker() {
   const scholarClass = useStore((s) => s.user.scholarClass);
@@ -101,7 +215,14 @@ export function SlideshowMaker() {
   const [subjectId, setSubjectId] = useState<string>("");
   const [chapterId, setChapterId] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [uploadedDocumentName, setUploadedDocumentName] = useState("");
+  const [uploadedDocumentText, setUploadedDocumentText] = useState("");
   const [slideCount, setSlideCount] = useState(12);
+  const [density, setDensity] = useState<SlideshowDensity>("detailed");
+  const [audience, setAudience] = useState<SlideshowAudience>(
+    scholarClass === 11 ? "class-11" : "beginner",
+  );
+  const [studyMode, setStudyMode] = useState<SlideshowStudyMode>("standard");
   const [mode, setMode] = useState<SlideshowMode>("chapter-explanation");
   const [difficulty, setDifficulty] = useState<SlideshowDifficulty>("standard");
   const [template, setTemplate] = useState<SlideshowTemplate>("scholar-glass");
@@ -110,10 +231,22 @@ export function SlideshowMaker() {
   const [includeDiagrams, setIncludeDiagrams] = useState(true);
   const [includeExamples, setIncludeExamples] = useState(true);
   const [includePractice, setIncludePractice] = useState(true);
+  const [includeQuiz, setIncludeQuiz] = useState(true);
   const [includeSummary, setIncludeSummary] = useState(true);
   const [includeReferences, setIncludeReferences] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genStage, setGenStage] = useState("");
+  const [generationStageIndex, setGenerationStageIndex] = useState(-1);
+  const [ebookId, setEbookId] = useState(EBOOK_SLIDESHOW_SOURCES[0].id);
+  const [ebookChapterId, setEbookChapterId] = useState("");
+  const [startPage, setStartPage] = useState(1);
+  const [endPage, setEndPage] = useState(EBOOK_SLIDESHOW_SOURCES[0].pageCount);
+  const [sourcePages, setSourcePages] = useState<SlideshowSourcePage[]>([]);
+  const [sourceMeta, setSourceMeta] = useState<SlideshowSourceMeta | null>(
+    null,
+  );
+  const [outline, setOutline] = useState<SlideshowOutlineItem[]>([]);
+  const [analysing, setAnalysing] = useState(false);
 
   // ===== Editor state =====
   const [active, setActive] = useState<Slideshow | null>(null);
@@ -129,35 +262,251 @@ export function SlideshowMaker() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    setSaved(loadSlideshows());
+    setSaved(loadSlideshows(scholarClass));
+  }, [scholarClass]);
+
+  useEffect(() => {
+    if (scholarClass !== 11 && inputMode === "ebook") setInputMode("prompt");
+  }, [scholarClass, inputMode]);
+
+  const selectedEbook = useMemo(
+    () =>
+      EBOOK_SLIDESHOW_SOURCES.find((book) => book.id === ebookId) ??
+      EBOOK_SLIDESHOW_SOURCES[0],
+    [ebookId],
+  );
+
+  const generationStages = [
+    "Reading selected pages",
+    "Detecting topics",
+    "Building complete outline",
+    "Planning slide coverage",
+    "Generating slide content",
+    "Adding formulas and figures",
+    "Checking for missing topics",
+    "Finalising presentation",
+  ];
+
+  const clearAnalysis = useCallback(() => {
+    setOutline([]);
+    setSourcePages([]);
+    setSourceMeta(null);
   }, []);
+
+  useEffect(() => {
+    clearAnalysis();
+  }, [
+    inputMode,
+    prompt,
+    notes,
+    topic,
+    subjectId,
+    chapterId,
+    ebookId,
+    ebookChapterId,
+    startPage,
+    endPage,
+    uploadedDocumentName,
+    uploadedDocumentText,
+    clearAnalysis,
+  ]);
 
   // Build the prompt text for any input mode
   const buildPromptText = useCallback((): string => {
     if (inputMode === "prompt") return prompt.trim();
-    if (inputMode === "notes") return `Convert these rough notes into a structured presentation:\n\n${notes.trim()}`;
+    if (inputMode === "notes")
+      return `Convert these rough notes into a structured presentation:\n\n${notes.trim()}`;
+    if (inputMode === "document") return uploadedDocumentText.trim();
     if (inputMode === "topic") {
       const sub = curriculum.find((s) => s.id === subjectId)?.name ?? subjectId;
       return `Create a presentation on "${topic || "the selected topic"}" for Class ${scholarClass} ${sub}. Audience: Class ${scholarClass} students.`;
     }
+    if (inputMode === "ebook") {
+      const chapter = selectedEbook.chapters.find(
+        (item) => item.id === ebookChapterId,
+      );
+      return `${selectedEbook.title}${chapter ? ` — ${chapter.title}` : ""}, clean pages ${startPage}–${endPage}`;
+    }
     // chapter
     const sub = curriculum.find((s) => s.id === subjectId);
     const ch = sub?.chapters.find((c) => c.id === chapterId);
-    const concepts = ch?.concepts?.length ? `Key concepts: ${ch.concepts.join(", ")}.` : "";
-    const formulas = ch?.formulas?.length ? `Important formulas: ${ch.formulas.join(", ")}.` : "";
+    const concepts = ch?.concepts?.length
+      ? `Key concepts: ${ch.concepts.join(", ")}.`
+      : "";
+    const formulas = ch?.formulas?.length
+      ? `Important formulas: ${ch.formulas.join(", ")}.`
+      : "";
     return `Create a presentation on Class ${scholarClass} ${sub?.name ?? ""} — Chapter: "${ch?.title ?? ""}". ${concepts} ${formulas} Cover the chapter thoroughly with definitions, formulas, worked examples, and practice questions.`;
-  }, [inputMode, prompt, notes, topic, subjectId, chapterId, scholarClass, curriculum]);
+  }, [
+    inputMode,
+    prompt,
+    notes,
+    topic,
+    subjectId,
+    chapterId,
+    scholarClass,
+    curriculum,
+    selectedEbook,
+    ebookChapterId,
+    startPage,
+    endPage,
+    uploadedDocumentText,
+  ]);
 
-  const canGenerate = useMemo(() => {
-    if (generating) return false;
+  const canAnalyse = useMemo(() => {
+    if (generating || analysing) return false;
     if (inputMode === "prompt") return prompt.trim().length > 5;
     if (inputMode === "notes") return notes.trim().length > 20;
+    if (inputMode === "document")
+      return uploadedDocumentText.trim().length > 20;
     if (inputMode === "topic") return topic.trim().length > 1 && !!subjectId;
     if (inputMode === "chapter") return !!subjectId && !!chapterId;
+    if (inputMode === "ebook")
+      return (
+        startPage >= 1 &&
+        endPage >= startPage &&
+        endPage <= selectedEbook.pageCount
+      );
     return false;
-  }, [inputMode, prompt, notes, topic, subjectId, chapterId, generating]);
+  }, [
+    inputMode,
+    prompt,
+    notes,
+    topic,
+    subjectId,
+    chapterId,
+    generating,
+    analysing,
+    startPage,
+    endPage,
+    selectedEbook.pageCount,
+    uploadedDocumentText,
+  ]);
 
-  const handleGenerate = async () => {
+  const canGenerate =
+    !generating && !analysing && outline.some((item) => item.included);
+
+  const prepareSource = useCallback(async (): Promise<{
+    pages: SlideshowSourcePage[];
+    outline: SlideshowOutlineItem[];
+    meta: SlideshowSourceMeta;
+  }> => {
+    setGenerationStageIndex(0);
+    setGenStage(
+      inputMode === "ebook"
+        ? "Reading clean ebook pages…"
+        : "Reading source material…",
+    );
+    if (inputMode === "ebook") {
+      const loaded = await loadEbookSource(ebookId);
+      const pages = extractEbookPages(
+        loaded,
+        startPage,
+        endPage,
+        ebookChapterId || undefined,
+      );
+      setGenerationStageIndex(1);
+      setGenStage("Detecting headings, formulas, figures, and examples…");
+      const detected = analyseSourcePages(pages);
+      const stats = sourceStatistics(detected);
+      const chapter = selectedEbook.chapters.find(
+        (item) => item.id === ebookChapterId,
+      );
+      return {
+        pages,
+        outline: detected,
+        meta: {
+          kind: "ebook-pages",
+          label: `${selectedEbook.title}${chapter ? ` — ${chapter.title}` : ""}, pages ${startPage}–${endPage}`,
+          bookId: selectedEbook.id,
+          ebookTitle: selectedEbook.title,
+          chapterId: chapter?.id,
+          startPage,
+          endPage,
+          pageCount: pages.length,
+          wordCount: stats.wordCount,
+        },
+      };
+    }
+
+    const text = buildPromptText();
+    setGenerationStageIndex(1);
+    setGenStage("Detecting topics, formulas, examples, and source order…");
+    const detected = analysePlainText(text);
+    const stats = sourceStatistics(detected);
+    const sub = curriculum.find((item) => item.id === subjectId);
+    const chapter = sub?.chapters.find((item) => item.id === chapterId);
+    return {
+      pages: [],
+      outline: detected,
+      meta: {
+        kind: inputMode === "document" ? "uploaded-document" : inputMode,
+        label:
+          inputMode === "chapter"
+            ? `${sub?.name ?? "Class material"} — ${chapter?.title ?? "Selected chapter"}`
+            : inputMode === "topic"
+              ? topic.trim()
+              : inputMode === "notes"
+                ? "Pasted study notes"
+                : inputMode === "document"
+                  ? uploadedDocumentName || "Uploaded text document"
+                  : prompt.trim().slice(0, 100),
+        chapterId: chapter?.id,
+        wordCount: stats.wordCount,
+      },
+    };
+  }, [
+    inputMode,
+    ebookId,
+    startPage,
+    endPage,
+    ebookChapterId,
+    selectedEbook,
+    buildPromptText,
+    curriculum,
+    subjectId,
+    chapterId,
+    topic,
+    prompt,
+    uploadedDocumentName,
+  ]);
+
+  const handleAnalyse = async () => {
+    if (!canAnalyse) {
+      toast.error("Please complete the source selection first.");
+      return;
+    }
+    setAnalysing(true);
+    try {
+      const prepared = await prepareSource();
+      setGenerationStageIndex(2);
+      setGenStage("Building a complete ordered outline…");
+      setSourcePages(prepared.pages);
+      setSourceMeta(prepared.meta);
+      setOutline(prepared.outline);
+      toast.success(
+        `Detected ${prepared.outline.length} ordered source topics.`,
+      );
+    } catch (error) {
+      toast.error("Source analysis failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "The selected source could not be read.",
+      });
+    } finally {
+      setAnalysing(false);
+      setGenStage("");
+      setGenerationStageIndex(-1);
+    }
+  };
+
+  const handleGenerate = () => {
+    void handleGenerateFromCoverage();
+  };
+
+  /* Legacy single-request generator retained in repository history only.
+  const handleLegacyGenerate = async () => {
     if (!canGenerate) {
       toast.error("Please fill in the required fields first.");
       return;
@@ -166,8 +515,13 @@ export function SlideshowMaker() {
     setGenStage("Composing prompt…");
     try {
       const finalPrompt = buildPromptText();
-      const subName = curriculum.find((s) => s.id === subjectId)?.name ?? (inputMode === "prompt" ? "" : "");
-      const chName = curriculum.find((s) => s.id === subjectId)?.chapters.find((c) => c.id === chapterId)?.title ?? "";
+      const subName =
+        curriculum.find((s) => s.id === subjectId)?.name ??
+        (inputMode === "prompt" ? "" : "");
+      const chName =
+        curriculum
+          .find((s) => s.id === subjectId)
+          ?.chapters.find((c) => c.id === chapterId)?.title ?? "";
 
       const baseOpts = {
         prompt: finalPrompt,
@@ -189,19 +543,42 @@ export function SlideshowMaker() {
 
       // Strategy: try with requested count first; if AI returns empty/truncated,
       // automatically retry ONCE with a smaller count (more likely to fit in token budget).
-      const tryCounts = slideCount > 20 ? [slideCount, Math.min(20, slideCount), 12] : slideCount > 12 ? [slideCount, 12] : [slideCount];
+      const tryCounts =
+        slideCount > 20
+          ? [slideCount, Math.min(20, slideCount), 12]
+          : slideCount > 12
+            ? [slideCount, 12]
+            : [slideCount];
 
       let lastErr: any = null;
-      let parsed: { title?: string; slides: Slide[]; partial?: boolean } | null = null;
+      let parsed: {
+        title?: string;
+        slides: Slide[];
+        partial?: boolean;
+      } | null = null;
       let usedCount = slideCount;
 
       for (const tryCount of tryCounts) {
-        const fullPrompt = buildSlideshowPrompt({ ...baseOpts, slideCount: tryCount });
-        setGenStage(tryCount === slideCount ? "Calling AI…" : `Retrying with ${tryCount} slides…`);
+        const fullPrompt = buildSlideshowPrompt({
+          ...baseOpts,
+          slideCount: tryCount,
+        });
+        setGenStage(
+          tryCount === slideCount
+            ? "Calling AI…"
+            : `Retrying with ${tryCount} slides…`,
+        );
         try {
-          const result = await askAIJSONWithTimeout(fullPrompt, "default", { temperature: 0.55 }, 110_000);
+          const result = await askAIJSONWithTimeout(
+            fullPrompt,
+            "default",
+            { temperature: 0.55 },
+            110_000,
+          );
           if (!result) {
-            lastErr = new Error("AI returned an empty response. The model may have hit its output limit.");
+            lastErr = new Error(
+              "AI returned an empty response. The model may have hit its output limit.",
+            );
             continue;
           }
           setGenStage("Validating slides…");
@@ -220,11 +597,18 @@ export function SlideshowMaker() {
       }
 
       if (!parsed || !parsed.slides.length) {
-        throw lastErr ?? new Error("AI returned an empty response. Please try fewer slides or a simpler prompt.");
+        throw (
+          lastErr ??
+          new Error(
+            "AI returned an empty response. Please try fewer slides or a simpler prompt.",
+          )
+        );
       }
 
       const slideshow = newSlideshow({
-        title: parsed.title ?? (inputMode === "prompt" ? prompt.slice(0, 60) : "New Presentation"),
+        title:
+          parsed.title ??
+          (inputMode === "prompt" ? prompt.slice(0, 60) : "New Presentation"),
         subject: subName,
         chapter: chName,
         classProfile: scholarClass,
@@ -244,16 +628,25 @@ export function SlideshowMaker() {
       setPreviewMode(false);
       addXP(8);
       addCoins(4);
-      pushActivity({ type: "slideshow", text: `Created slideshow: ${slideshow.title.slice(0, 40)}`, icon: "📽️" });
+      pushActivity({
+        type: "slideshow",
+        text: `Created slideshow: ${slideshow.title.slice(0, 40)}`,
+        icon: "📽️",
+      });
 
       if (parsed.partial || parsed.slides.length < usedCount) {
-        toast.success(`Generated ${parsed.slides.length} slides (requested ${usedCount}). · +8 XP, +4 coins`, {
-          description: parsed.partial
-            ? "The AI hit its output limit. You got partial slides — you can add more in the editor."
-            : undefined,
-        });
+        toast.success(
+          `Generated ${parsed.slides.length} slides (requested ${usedCount}). · +8 XP, +4 coins`,
+          {
+            description: parsed.partial
+              ? "The AI hit its output limit. You got partial slides — you can add more in the editor."
+              : undefined,
+          },
+        );
       } else {
-        toast.success(`Generated ${parsed.slides.length} slides! · +8 XP, +4 coins`);
+        toast.success(
+          `Generated ${parsed.slides.length} slides! · +8 XP, +4 coins`,
+        );
       }
     } catch (e: any) {
       const msg = e?.message || "Please try again in a moment.";
@@ -265,11 +658,227 @@ export function SlideshowMaker() {
       setGenStage("");
     }
   };
+  */
+
+  const handleGenerateFromCoverage = async () => {
+    if (!canGenerate || !sourceMeta) {
+      toast.error(
+        "Analyse the source and keep at least one outline topic first.",
+      );
+      return;
+    }
+    setGenerating(true);
+    setGenerationStageIndex(3);
+    setGenStage("Planning complete slide coverage…");
+    let checkpoint: Slideshow | null = null;
+    try {
+      const subName =
+        inputMode === "ebook"
+          ? selectedEbook.subject
+          : (curriculum.find((s) => s.id === subjectId)?.name ?? "");
+      const chName =
+        inputMode === "ebook"
+          ? (selectedEbook.chapters.find((item) => item.id === ebookChapterId)
+              ?.title ?? "Selected pages")
+          : (curriculum
+              .find((s) => s.id === subjectId)
+              ?.chapters.find((c) => c.id === chapterId)?.title ?? "");
+      const settings: SlideshowGenerationSettings = {
+        slideCount,
+        density,
+        audience,
+        studyMode,
+        includeSpeakerNotes,
+        includeDiagrams,
+        includeExamples,
+        includeSummary,
+        includeQuiz,
+        includeSourceReferences: includeReferences,
+      };
+      const plans = allocateSlides(outline, settings);
+      const ledger = makeCoverageLedger(outline, plans);
+      checkpoint = newSlideshow({
+        title: sourceMeta.label.slice(0, 120),
+        subject: subName,
+        chapter: chName,
+        classProfile: scholarClass,
+        mode,
+        template,
+        difficulty,
+        language,
+        slides: [],
+        source: sourceMeta,
+        outline: compactOutlineForStorage(outline),
+        coverageLedger: ledger,
+        generationSettings: settings,
+        generationStatus: "partial",
+      });
+
+      let generatedSlides: Slide[] = [];
+      let recoveredBatches = 0;
+      const batches: (typeof plans)[] = [];
+      let currentBatch: typeof plans = [];
+      let currentChars = 0;
+      plans.forEach((plan) => {
+        const size = Math.min(plan.sourceText.length, 18_000);
+        if (
+          currentBatch.length &&
+          (currentBatch.length >= 4 || currentChars + size > 38_000)
+        ) {
+          batches.push(currentBatch);
+          currentBatch = [];
+          currentChars = 0;
+        }
+        currentBatch.push(plan);
+        currentChars += size;
+      });
+      if (currentBatch.length) batches.push(currentBatch);
+
+      setGenerationStageIndex(4);
+      for (let index = 0; index < batches.length; index += 1) {
+        const batch = batches[index];
+        setGenStage(
+          `Generating source-grounded slides — batch ${index + 1} of ${batches.length}…`,
+        );
+        const result = await askAIJSONWithTimeout(
+          buildSlideBatchPrompt({
+            plans: batch,
+            settings,
+            source: sourceMeta,
+            language,
+            subject: subName,
+            classProfile: scholarClass,
+          }),
+          "default",
+          { temperature: 0.35 },
+          120_000,
+        );
+        if (!result) recoveredBatches += 1;
+        const batchSlides = parseSlideBatch(
+          result,
+          batch,
+          includeSpeakerNotes,
+          density,
+        ).map((slide) => ({
+          ...slide,
+          sourceBookId: sourceMeta.bookId,
+          showSourceReference: includeReferences,
+        }));
+        generatedSlides = [...generatedSlides, ...batchSlides];
+        checkpoint = {
+          ...checkpoint,
+          slides: generatedSlides,
+          generationStatus: "partial",
+          failedStage: undefined,
+        };
+        setSaved(upsertSlideshow(checkpoint));
+      }
+
+      setGenerationStageIndex(5);
+      setGenStage("Adding formulas, figures, notes, and source references…");
+      setGenerationStageIndex(6);
+      setGenStage("Checking every topic and selected page…");
+      const expectedPages = sourcePages.map((page) => page.pageNumber);
+      let coverage = validateCoverage(generatedSlides, ledger, expectedPages);
+      if (
+        coverage.report.missingTopicIds.length ||
+        coverage.report.missingFormulas.length
+      ) {
+        generatedSlides = repairMissingCoverage(
+          generatedSlides,
+          outline,
+          coverage.report,
+        );
+        coverage = validateCoverage(generatedSlides, ledger, expectedPages);
+      }
+      setGenerationStageIndex(7);
+      setGenStage("Finalising and autosaving presentation…");
+      const slideshow: Slideshow = {
+        ...checkpoint,
+        slides: generatedSlides,
+        coverageLedger: coverage.ledger.map((item) => ({
+          ...item,
+          assignedSlideIds: generatedSlides
+            .filter((slide) => slide.topicIds?.includes(item.id))
+            .map((slide) => slide.id),
+        })),
+        coverage: coverage.report,
+        generationStatus:
+          coverage.report.percentage === 100 ? "complete" : "partial",
+        lastAutosavedAt: Date.now(),
+      };
+      setSaved(upsertSlideshow(slideshow));
+      setActive(slideshow);
+      setActiveSlideIdx(0);
+      setPreviewMode(false);
+      addXP(8);
+      addCoins(4);
+      pushActivity({
+        type: "slideshow",
+        text: `Created slideshow: ${slideshow.title.slice(0, 40)}`,
+        icon: "📽️",
+      });
+      toast.success(
+        `Generated ${slideshow.slides.length} complete slides · +8 XP, +4 coins`,
+        {
+          description: recoveredBatches
+            ? `${recoveredBatches} interrupted AI batch${recoveredBatches === 1 ? " was" : "es were"} safely rebuilt from the selected source.`
+            : `Validated ${coverage.report.percentage}% topic and page coverage.`,
+        },
+      );
+    } catch {
+      if (checkpoint) {
+        checkpoint = {
+          ...checkpoint,
+          generationStatus: "failed",
+          failedStage: genStage || "Generation",
+        };
+        setSaved(upsertSlideshow(checkpoint));
+      }
+      toast.error("Slideshow generation failed", {
+        description:
+          "Completed work was autosaved. Review the source and retry the failed stage.",
+      });
+    } finally {
+      setGenerating(false);
+      setGenStage("");
+      setGenerationStageIndex(-1);
+    }
+  };
 
   // ===== Editor actions =====
   const updateActive = useCallback((updated: Slideshow) => {
+    if (updated.coverageLedger?.length) {
+      const expectedPages =
+        updated.source?.startPage && updated.source?.endPage
+          ? Array.from(
+              { length: updated.source.endPage - updated.source.startPage + 1 },
+              (_, index) => updated.source!.startPage! + index,
+            )
+          : undefined;
+      const coverage = validateCoverage(
+        updated.slides,
+        updated.coverageLedger,
+        expectedPages,
+      );
+      setActive({
+        ...updated,
+        coverageLedger: coverage.ledger,
+        coverage: coverage.report,
+      });
+      return;
+    }
     setActive(updated);
   }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setTimeout(() => {
+      const autosaved = { ...active, lastAutosavedAt: Date.now() };
+      setSaved(upsertSlideshow(autosaved));
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [active]);
 
   const persistActive = useCallback(() => {
     if (!active) return;
@@ -295,9 +904,13 @@ export function SlideshowMaker() {
       toast.error("Cannot delete the only slide.");
       return;
     }
-    const next = { ...active, slides: active.slides.filter((_, i) => i !== idx) };
+    const next = {
+      ...active,
+      slides: active.slides.filter((_, i) => i !== idx),
+    };
     updateActive(next);
-    if (activeSlideIdx >= next.slides.length) setActiveSlideIdx(next.slides.length - 1);
+    if (activeSlideIdx >= next.slides.length)
+      setActiveSlideIdx(next.slides.length - 1);
   };
 
   const handleDuplicateSlide = (idx: number) => {
@@ -324,14 +937,79 @@ export function SlideshowMaker() {
     setActiveSlideIdx(newIdx);
   };
 
+  const handleSplitSlide = (idx: number) => {
+    if (!active) return;
+    const original = active.slides[idx];
+    const bullets = original.bullets ?? [];
+    const midpoint = Math.max(1, Math.ceil(bullets.length / 2));
+    const first = { ...original, bullets: bullets.slice(0, midpoint) };
+    const second = newSlide(original.type, {
+      ...original,
+      title: `${original.title} — continued`,
+      content: bullets.length
+        ? ""
+        : original.content.slice(Math.ceil(original.content.length / 2)),
+      bullets: bullets.slice(midpoint),
+      sourcePages: original.sourcePages,
+      sourceBookId: original.sourceBookId,
+      topicIds: original.topicIds,
+    });
+    if (!bullets.length)
+      first.content = original.content.slice(
+        0,
+        Math.ceil(original.content.length / 2),
+      );
+    const slides = [...active.slides];
+    slides.splice(idx, 1, first, second);
+    updateActive({ ...active, slides });
+    setActiveSlideIdx(idx + 1);
+  };
+
+  const handleMergeNextSlide = (idx: number) => {
+    if (!active || idx >= active.slides.length - 1) return;
+    const first = active.slides[idx];
+    const second = active.slides[idx + 1];
+    const merged: Slide = {
+      ...first,
+      title: `${first.title} + ${second.title}`,
+      content: [first.content, second.content].filter(Boolean).join("\n\n"),
+      bullets: [
+        ...new Set([...(first.bullets ?? []), ...(second.bullets ?? [])]),
+      ],
+      sourcePages: [
+        ...new Set([
+          ...(first.sourcePages ?? []),
+          ...(second.sourcePages ?? []),
+        ]),
+      ].sort((a, b) => a - b),
+      topicIds: [
+        ...new Set([...(first.topicIds ?? []), ...(second.topicIds ?? [])]),
+      ],
+      speakerNotes: [first.speakerNotes, second.speakerNotes]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+    updateActive({
+      ...active,
+      slides: [
+        ...active.slides.slice(0, idx),
+        merged,
+        ...active.slides.slice(idx + 2),
+      ],
+    });
+  };
+
   const handleUpdateSlide = (slideId: string, patch: Partial<Slide>) => {
     if (!active) return;
     const next = {
       ...active,
-      slides: active.slides.map((s) => (s.id === slideId ? { ...s, ...patch } : s)),
+      slides: active.slides.map((s) =>
+        s.id === slideId ? { ...s, ...patch } : s,
+      ),
     };
     updateActive(next);
-    if (editingSlide?.id === slideId) setEditingSlide({ ...editingSlide, ...patch });
+    if (editingSlide?.id === slideId)
+      setEditingSlide({ ...editingSlide, ...patch });
   };
 
   const handleRegenerateSlide = async (idx: number) => {
@@ -341,7 +1019,8 @@ export function SlideshowMaker() {
     try {
       const promptText = `Rewrite ONLY this slide's content and speaker notes for a Class ${active.classProfile} ${active.subject} presentation. Make it clearer, more engaging, and academically rigorous. Return JSON.
 
-Current slide:
+Source pages: ${(slide.sourcePages ?? []).join(", ") || "not page-based"}
+Current source-grounded slide:
 ${JSON.stringify({ type: slide.type, title: slide.title, content: slide.content, bullets: slide.bullets, formula: slide.formula, speakerNotes: slide.speakerNotes, practiceQuestion: slide.practiceQuestion, practiceAnswer: slide.practiceAnswer }, null, 2)}
 
 Return ONLY JSON in this exact shape:
@@ -355,32 +1034,64 @@ Return ONLY JSON in this exact shape:
   "practiceAnswer": "..."
 }
 Omit any field that doesn't apply. No markdown fences.`;
-      const result = await askAIJSON<any>(promptText, "default", { temperature: 0.6 });
+      const result = await askAIJSON<any>(promptText, "default", {
+        temperature: 0.6,
+      });
       if (!result) throw new Error("AI returned empty");
       const patch: Partial<Slide> = {};
       if (typeof result.title === "string") patch.title = result.title;
       if (typeof result.content === "string") patch.content = result.content;
-      if (Array.isArray(result.bullets)) patch.bullets = result.bullets.filter((b: any) => typeof b === "string");
+      if (Array.isArray(result.bullets))
+        patch.bullets = result.bullets.filter(
+          (b: any) => typeof b === "string",
+        );
       if (typeof result.formula === "string") patch.formula = result.formula;
-      if (typeof result.speakerNotes === "string") patch.speakerNotes = result.speakerNotes;
-      if (typeof result.practiceQuestion === "string") patch.practiceQuestion = result.practiceQuestion;
-      if (typeof result.practiceAnswer === "string") patch.practiceAnswer = result.practiceAnswer;
+      if (typeof result.speakerNotes === "string")
+        patch.speakerNotes = result.speakerNotes;
+      if (typeof result.practiceQuestion === "string")
+        patch.practiceQuestion = result.practiceQuestion;
+      if (typeof result.practiceAnswer === "string")
+        patch.practiceAnswer = result.practiceAnswer;
       handleUpdateSlide(slide.id, patch);
       toast.success("Slide regenerated");
-    } catch (e: any) {
-      toast.error("Regeneration failed", { description: e?.message });
+    } catch {
+      toast.error("Regeneration failed", {
+        description: "The original slide is unchanged. Please retry.",
+      });
     }
   };
 
-  const handleRewriteSlide = async (idx: number, action: "expand" | "shorten" | "simplify") => {
+  const handleRewriteSlide = async (
+    idx: number,
+    action:
+      | "expand"
+      | "shorten"
+      | "simplify"
+      | "example"
+      | "formula"
+      | "table"
+      | "exam",
+  ) => {
     if (!active) return;
     const slide = active.slides[idx];
     const map = {
-      expand: "Expand this slide's content — add more detail, examples, and depth.",
-      shorten: "Shorten this slide — make every bullet punchier and remove fluff.",
-      simplify: "Simplify this slide's language so a younger student can understand it.",
+      expand:
+        "Expand this slide's content — add more detail, examples, and depth.",
+      shorten:
+        "Shorten this slide — make every bullet punchier and remove fluff.",
+      simplify:
+        "Simplify this slide's language so a younger student can understand it.",
+      example:
+        "Add one accurate worked or concrete example using only the facts already present in this source-grounded slide.",
+      formula:
+        "Add or improve the formula explanation, defining symbols and units without inventing formulas.",
+      table:
+        "Convert the material to a concise editable comparison table. Put one row per bullet and separate cells with |.",
+      exam: "Add high-yield exam points, likely confusions, and common mistakes grounded in this slide.",
     };
-    toast.info(`${action === "expand" ? "Expanding" : action === "shorten" ? "Shortening" : "Simplifying"}…`);
+    toast.info(
+      `${action === "expand" ? "Expanding" : action === "shorten" ? "Shortening" : "Simplifying"}…`,
+    );
     try {
       const promptText = `${map[action]} Return ONLY JSON of the updated slide.
 
@@ -389,28 +1100,99 @@ ${JSON.stringify({ type: slide.type, title: slide.title, content: slide.content,
 
 Return ONLY: { "title": "...", "content": "...", "bullets": ["..."], "speakerNotes": "..." }
 No markdown fences.`;
-      const result = await askAIJSON<any>(promptText, "default", { temperature: 0.55 });
+      const result = await askAIJSON<any>(promptText, "default", {
+        temperature: 0.55,
+      });
       if (!result) throw new Error("AI returned empty");
       const patch: Partial<Slide> = {};
       if (typeof result.title === "string") patch.title = result.title;
       if (typeof result.content === "string") patch.content = result.content;
-      if (Array.isArray(result.bullets)) patch.bullets = result.bullets.filter((b: any) => typeof b === "string");
-      if (typeof result.speakerNotes === "string") patch.speakerNotes = result.speakerNotes;
+      if (Array.isArray(result.bullets))
+        patch.bullets = result.bullets.filter(
+          (b: any) => typeof b === "string",
+        );
+      if (typeof result.speakerNotes === "string")
+        patch.speakerNotes = result.speakerNotes;
+      if (action === "table") patch.type = "table";
       handleUpdateSlide(slide.id, patch);
       toast.success(`Slide ${action}ed`);
-    } catch (e: any) {
-      toast.error("Rewrite failed", { description: e?.message });
+    } catch {
+      toast.error("Rewrite failed", {
+        description: "The original slide is unchanged. Please retry.",
+      });
     }
   };
 
   const handleDeleteSlideshow = (id: string) => {
-    const next = deleteSlideshow(id);
+    const next = deleteSlideshow(id, scholarClass);
     setSaved(next);
     if (active?.id === id) {
       setActive(null);
       setActiveSlideIdx(0);
     }
     toast.success("Slideshow deleted");
+  };
+
+  const handleFixCoverage = () => {
+    if (!active?.coverage || !active.coverageLedger || !active.outline) return;
+    const repaired = repairMissingCoverage(
+      active.slides,
+      active.outline,
+      active.coverage,
+    );
+    const checked = validateCoverage(
+      repaired,
+      active.coverageLedger,
+      active.coverage.totalPages,
+    );
+    updateActive({
+      ...active,
+      slides: repaired,
+      coverageLedger: checked.ledger,
+      coverage: checked.report,
+    });
+    toast.success(
+      checked.report.percentage === 100
+        ? "Missing source coverage repaired"
+        : "Coverage repair applied",
+    );
+  };
+
+  const moveOutlineItem = (index: number, direction: -1 | 1) => {
+    setOutline((current) => {
+      const target = index + direction;
+      if (target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const mergeOutlineWithNext = (index: number) => {
+    setOutline((current) => {
+      if (index >= current.length - 1) return current;
+      const first = current[index];
+      const second = current[index + 1];
+      const merged: SlideshowOutlineItem = {
+        ...first,
+        title: `${first.title} + ${second.title}`,
+        sourcePages: [
+          ...new Set([...first.sourcePages, ...second.sourcePages]),
+        ].sort((a, b) => a - b),
+        subtopics: [...new Set([...first.subtopics, ...second.subtopics])],
+        sourceText: `${first.sourceText}\n\n${second.sourceText}`,
+        formulas: [...new Set([...first.formulas, ...second.formulas])],
+        figureReferences: [
+          ...new Set([...first.figureReferences, ...second.figureReferences]),
+        ],
+        importance:
+          first.importance === "core" || second.importance === "core"
+            ? "core"
+            : "important",
+        included: first.included || second.included,
+      };
+      return [...current.slice(0, index), merged, ...current.slice(index + 2)];
+    });
   };
 
   // ===== If a slideshow is active, show the editor =====
@@ -430,20 +1212,31 @@ No markdown fences.`;
         setNarrationMode={setNarrationMode}
         onUpdate={updateActive}
         onPersist={persistActive}
-        onExit={() => { setActive(null); setEditingSlide(null); setPreviewMode(false); setNarrationMode(false); }}
+        onExit={() => {
+          setActive(null);
+          setEditingSlide(null);
+          setPreviewMode(false);
+          setNarrationMode(false);
+        }}
         onAddSlide={handleAddSlide}
         onDeleteSlide={handleDeleteSlide}
         onDuplicateSlide={handleDuplicateSlide}
         onMoveSlide={handleMoveSlide}
+        onSplitSlide={handleSplitSlide}
+        onMergeNextSlide={handleMergeNextSlide}
         onUpdateSlide={handleUpdateSlide}
         onRegenerateSlide={handleRegenerateSlide}
         onRewriteSlide={handleRewriteSlide}
+        onFixCoverage={handleFixCoverage}
       />
     );
   }
 
   // ===== Generation form =====
   const selectedSubject = curriculum.find((s) => s.id === subjectId);
+  const analysedStats = outline.length ? sourceStatistics(outline) : null;
+  const recommendations = outline.length ? recommendSlideCounts(outline) : null;
+  const selectedRecommendation = recommendations?.[density];
 
   return (
     <div className="space-y-6">
@@ -451,7 +1244,8 @@ No markdown fences.`;
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-xs text-white/50 flex items-center gap-2">
           <Presentation className="h-3.5 w-3.5" />
-          Class {scholarClass}{jeeMode ? " · JEE Mode" : ""}
+          Class {scholarClass}
+          {jeeMode ? " · JEE Mode" : ""}
         </div>
         <button
           onClick={() => setLibraryOpen(true)}
@@ -459,7 +1253,9 @@ No markdown fences.`;
         >
           <Layers className="h-3.5 w-3.5" /> My Slideshows
           {saved.length > 0 && (
-            <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-200 text-[10px] font-bold">{saved.length}</span>
+            <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/30 text-violet-200 text-[10px] font-bold">
+              {saved.length}
+            </span>
           )}
         </button>
       </div>
@@ -468,8 +1264,15 @@ No markdown fences.`;
       {saved.length > 0 && (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Recent slideshows</p>
-            <button onClick={() => setLibraryOpen(true)} className="text-[10px] text-violet-300 hover:text-violet-200">View all →</button>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">
+              Recent slideshows
+            </p>
+            <button
+              onClick={() => setLibraryOpen(true)}
+              className="text-[10px] text-violet-300 hover:text-violet-200"
+            >
+              View all →
+            </button>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {saved.slice(0, 6).map((s) => {
@@ -477,13 +1280,20 @@ No markdown fences.`;
               return (
                 <button
                   key={s.id}
-                  onClick={() => { setActive(s); setActiveSlideIdx(0); }}
+                  onClick={() => {
+                    setActive(s);
+                    setActiveSlideIdx(0);
+                  }}
                   className="shrink-0 w-40 rounded-lg overflow-hidden border border-white/10 hover:border-violet-500/40 transition-colors text-left group"
                 >
                   <div className="h-16" style={{ background: tpl.swatch }} />
                   <div className="p-2 bg-white/[0.02]">
-                    <p className="text-[11px] text-white/80 truncate group-hover:text-white">{s.title}</p>
-                    <p className="text-[9px] text-white/40">{s.slides.length} slides · {s.subject || "General"}</p>
+                    <p className="text-[11px] text-white/80 truncate group-hover:text-white">
+                      {s.title}
+                    </p>
+                    <p className="text-[9px] text-white/40">
+                      {s.slides.length} slides · {s.subject || "General"}
+                    </p>
                   </div>
                 </button>
               );
@@ -493,8 +1303,10 @@ No markdown fences.`;
       )}
 
       {/* Input mode tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {INPUT_MODES.map((m) => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2">
+        {INPUT_MODES.filter(
+          (item) => item.id !== "ebook" || scholarClass === 11,
+        ).map((m) => {
           const Icon = m.icon;
           const isActive = inputMode === m.id;
           return (
@@ -505,12 +1317,14 @@ No markdown fences.`;
                 "flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all",
                 isActive
                   ? "bg-violet-500/15 border-violet-500/40 text-white"
-                  : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
+                  : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10",
               )}
             >
               <Icon className="h-4 w-4" />
               <span className="text-xs font-medium">{m.name}</span>
-              <span className="text-[10px] text-white/40 leading-tight">{m.hint}</span>
+              <span className="text-[10px] text-white/40 leading-tight">
+                {m.hint}
+              </span>
             </button>
           );
         })}
@@ -520,7 +1334,9 @@ No markdown fences.`;
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
         {inputMode === "prompt" && (
           <div>
-            <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Your prompt</label>
+            <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+              Your prompt
+            </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -533,7 +1349,9 @@ No markdown fences.`;
 
         {inputMode === "notes" && (
           <div>
-            <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Paste your notes</label>
+            <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+              Paste your notes
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -544,10 +1362,74 @@ No markdown fences.`;
           </div>
         )}
 
+        {inputMode === "document" && (
+          <div className="space-y-3">
+            <label className="block cursor-pointer rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-center hover:border-violet-400/40 hover:bg-violet-400/[0.04] transition-colors">
+              <FileUp className="h-6 w-6 mx-auto text-violet-300" />
+              <span className="mt-2 block text-sm font-medium text-white">
+                Choose a text-based study document
+              </span>
+              <span className="mt-1 block text-[10px] text-white/40">
+                TXT, Markdown, JSON, or CSV · maximum 2 MB
+              </span>
+              <input
+                type="file"
+                accept=".txt,.md,.markdown,.json,.csv,text/plain,text/markdown,application/json,text/csv"
+                className="sr-only"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 2_000_000) {
+                    toast.error("That document is larger than 2 MB.");
+                    event.target.value = "";
+                    return;
+                  }
+                  try {
+                    const text = await file.text();
+                    if (text.trim().length < 20) throw new Error();
+                    setUploadedDocumentName(file.name);
+                    setUploadedDocumentText(text);
+                    toast.success("Document text loaded");
+                  } catch {
+                    toast.error(
+                      "The selected file does not contain readable text.",
+                    );
+                    event.target.value = "";
+                  }
+                }}
+              />
+            </label>
+            {uploadedDocumentName && (
+              <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100 flex items-center justify-between gap-2">
+                <span className="truncate">
+                  {uploadedDocumentName} · Approximately{" "}
+                  {uploadedDocumentText
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .length.toLocaleString()}{" "}
+                  words
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadedDocumentName("");
+                    setUploadedDocumentText("");
+                  }}
+                  className="text-emerald-100/60 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {inputMode === "topic" && (
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Topic</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+                Topic
+              </label>
               <input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
@@ -556,7 +1438,9 @@ No markdown fences.`;
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Subject</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+                Subject
+              </label>
               <select
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
@@ -564,7 +1448,9 @@ No markdown fences.`;
               >
                 <option value="">Pick subject…</option>
                 {curriculum.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -574,31 +1460,168 @@ No markdown fences.`;
         {inputMode === "chapter" && (
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Subject</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+                Subject
+              </label>
               <select
                 value={subjectId}
-                onChange={(e) => { setSubjectId(e.target.value); setChapterId(""); }}
+                onChange={(e) => {
+                  setSubjectId(e.target.value);
+                  setChapterId("");
+                }}
                 className="mt-1.5 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
               >
                 <option value="">Pick subject…</option>
                 {curriculum.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Chapter</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+                Chapter
+              </label>
               <select
                 value={chapterId}
                 onChange={(e) => setChapterId(e.target.value)}
                 disabled={!selectedSubject}
                 className="mt-1.5 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50"
               >
-                <option value="">{selectedSubject ? "Pick chapter…" : "Pick a subject first"}</option>
+                <option value="">
+                  {selectedSubject ? "Pick chapter…" : "Pick a subject first"}
+                </option>
                 {selectedSubject?.chapters.map((c) => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
                 ))}
               </select>
+            </div>
+          </div>
+        )}
+
+        {inputMode === "ebook" && (
+          <div className="space-y-3">
+            <div className="grid sm:grid-cols-3 gap-3">
+              <Field label="Subject">
+                <select
+                  value={selectedEbook.subject}
+                  onChange={(event) => {
+                    const book = EBOOK_SLIDESHOW_SOURCES.find(
+                      (item) => item.subject === event.target.value,
+                    );
+                    if (!book) return;
+                    setEbookId(book.id);
+                    setEbookChapterId("");
+                    setStartPage(1);
+                    setEndPage(book.pageCount);
+                  }}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                >
+                  {[
+                    ...new Set(
+                      EBOOK_SLIDESHOW_SOURCES.map((item) => item.subject),
+                    ),
+                  ].map((subject) => (
+                    <option key={subject} value={subject}>
+                      {subject}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Clean ebook">
+                <select
+                  value={ebookId}
+                  onChange={(event) => {
+                    const book = EBOOK_SLIDESHOW_SOURCES.find(
+                      (item) => item.id === event.target.value,
+                    );
+                    if (!book) return;
+                    setEbookId(book.id);
+                    setEbookChapterId("");
+                    setStartPage(1);
+                    setEndPage(book.pageCount);
+                  }}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                >
+                  {EBOOK_SLIDESHOW_SOURCES.map((book) => (
+                    <option key={book.id} value={book.id}>
+                      {book.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Chapter (optional)">
+                <select
+                  value={ebookChapterId}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    setEbookChapterId(id);
+                    const chapter = selectedEbook.chapters.find(
+                      (item) => item.id === id,
+                    );
+                    if (chapter) {
+                      setStartPage(chapter.startPage);
+                      setEndPage(chapter.endPage);
+                    } else {
+                      setStartPage(1);
+                      setEndPage(selectedEbook.pageCount);
+                    }
+                  }}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                >
+                  <option value="">Whole ebook</option>
+                  {selectedEbook.chapters.map((chapter) => (
+                    <option key={chapter.id} value={chapter.id}>
+                      {chapter.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Starting page">
+                <input
+                  aria-label="Starting page"
+                  type="number"
+                  min={1}
+                  max={selectedEbook.pageCount}
+                  value={startPage}
+                  onChange={(event) => setStartPage(Number(event.target.value))}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                />
+              </Field>
+              <Field label="Ending page">
+                <input
+                  aria-label="Ending page"
+                  type="number"
+                  min={1}
+                  max={selectedEbook.pageCount}
+                  value={endPage}
+                  onChange={(event) => setEndPage(Number(event.target.value))}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                />
+              </Field>
+            </div>
+            <div
+              className={cn(
+                "rounded-xl border px-3 py-2 text-xs",
+                startPage >= 1 &&
+                  endPage >= startPage &&
+                  endPage <= selectedEbook.pageCount
+                  ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-100"
+                  : "border-rose-500/30 bg-rose-500/10 text-rose-100",
+              )}
+            >
+              {startPage < 1
+                ? "Start page must be at least 1."
+                : endPage < startPage
+                  ? "End page cannot be before the start page."
+                  : endPage > selectedEbook.pageCount
+                    ? `End page cannot exceed ${selectedEbook.pageCount}.`
+                    : `Selected range: Pages ${startPage}–${endPage} · ${endPage - startPage + 1} pages${sourceMeta ? ` · Approximately ${sourceMeta.wordCount.toLocaleString()} words` : ""}`}
             </div>
           </div>
         )}
@@ -607,48 +1630,184 @@ No markdown fences.`;
       {/* Settings */}
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
         <div className="flex items-center gap-2 text-xs font-medium text-white/70">
-          <Sparkles className="h-3.5 w-3.5 text-violet-300" /> Generation Settings
+          <Sparkles className="h-3.5 w-3.5 text-violet-300" /> Generation
+          Settings
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <Field label="Slides">
             <input
-              type="number" min={3} max={40} value={slideCount}
-              onChange={(e) => setSlideCount(Math.max(3, Math.min(40, +e.target.value || 12)))}
+              type="number"
+              min={3}
+              max={40}
+              value={slideCount}
+              onChange={(e) =>
+                setSlideCount(Math.max(3, Math.min(40, +e.target.value || 12)))
+              }
               className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
             />
           </Field>
+          <Field label="Content density">
+            <select
+              value={density}
+              onChange={(e) => setDensity(e.target.value as SlideshowDensity)}
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              <option value="concise">Concise</option>
+              <option value="balanced">Balanced</option>
+              <option value="detailed">Detailed</option>
+              <option value="exam-revision">Exam Revision</option>
+            </select>
+          </Field>
+          <Field label="Audience level">
+            <select
+              value={audience}
+              onChange={(e) => setAudience(e.target.value as SlideshowAudience)}
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              <option value="beginner">Beginner</option>
+              <option value="class-11">Class 11</option>
+              <option value="exam-revision">Exam revision</option>
+              <option value="advanced">Advanced</option>
+              <option value="teacher">Teacher presentation</option>
+            </select>
+          </Field>
           <Field label="Mode">
-            <select value={mode} onChange={(e) => setMode(e.target.value as SlideshowMode)}
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40">
-              {MODES.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as SlideshowMode)}
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              {MODES.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Difficulty">
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as SlideshowDifficulty)}
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40">
-              {DIFFICULTIES.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            <select
+              value={difficulty}
+              onChange={(e) =>
+                setDifficulty(e.target.value as SlideshowDifficulty)
+              }
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              {DIFFICULTIES.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Language">
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40">
-              {["English", "Hindi", "Bilingual (English + Hindi)"].map((l) => <option key={l} value={l}>{l}</option>)}
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              {["English", "Hindi", "Bilingual (English + Hindi)"].map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Template">
-            <select value={template} onChange={(e) => setTemplate(e.target.value as SlideshowTemplate)}
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40">
-              {TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <select
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as SlideshowTemplate)}
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              {TEMPLATES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
             </select>
           </Field>
         </div>
 
+        <div className="grid sm:grid-cols-3 gap-2">
+          {(
+            [
+              { id: "standard", label: "Standard", hint: "Custom settings" },
+              {
+                id: "deep-study",
+                label: "Deep Study Slideshow",
+                hint: "Detailed learning deck",
+              },
+              {
+                id: "exam-crash",
+                label: "Exam Crash Revision",
+                hint: "Complete high-yield review",
+              },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setStudyMode(item.id);
+                if (item.id === "deep-study") {
+                  setDensity("detailed");
+                  setIncludeSpeakerNotes(true);
+                  setIncludeExamples(true);
+                  setIncludeDiagrams(true);
+                  setIncludeSummary(true);
+                  setIncludeQuiz(true);
+                  if (outline.length) {
+                    const range = recommendSlideCounts(outline).detailed;
+                    setSlideCount(
+                      Math.min(
+                        40,
+                        Math.max(16, Math.round((range.min + range.max) / 2)),
+                      ),
+                    );
+                  }
+                }
+                if (item.id === "exam-crash") {
+                  setDensity("exam-revision");
+                  setAudience("exam-revision");
+                  setIncludeSummary(true);
+                  setIncludeQuiz(true);
+                  if (outline.length) {
+                    const range =
+                      recommendSlideCounts(outline)["exam-revision"];
+                    setSlideCount(
+                      Math.min(
+                        40,
+                        Math.max(10, Math.round((range.min + range.max) / 2)),
+                      ),
+                    );
+                  }
+                }
+              }}
+              className={cn(
+                "rounded-xl border p-3 text-left transition-colors",
+                studyMode === item.id
+                  ? "border-cyan-400/40 bg-cyan-400/10 text-white"
+                  : "border-white/10 bg-white/[0.03] text-white/60 hover:text-white",
+              )}
+            >
+              <span className="block text-xs font-semibold">{item.label}</span>
+              <span className="mt-0.5 block text-[10px] opacity-60">
+                {item.hint}
+              </span>
+            </button>
+          ))}
+        </div>
+
         {/* Template swatch preview */}
         <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-2">
-          <div className="h-10 w-16 rounded-md shrink-0" style={{ background: getTemplate(template).swatch }} />
+          <div
+            className="h-10 w-16 rounded-md shrink-0"
+            style={{ background: getTemplate(template).swatch }}
+          />
           <div className="text-xs">
-            <p className="text-white/80 font-medium">{getTemplate(template).name}</p>
+            <p className="text-white/80 font-medium">
+              {getTemplate(template).name}
+            </p>
             <p className="text-white/40">{getTemplate(template).blurb}</p>
           </div>
         </div>
@@ -656,12 +1815,48 @@ No markdown fences.`;
         {/* Toggles */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
-            { label: "Speaker Notes", v: includeSpeakerNotes, set: setIncludeSpeakerNotes, icon: Presentation },
-            { label: "Diagrams", v: includeDiagrams, set: setIncludeDiagrams, icon: ImageIcon },
-            { label: "Examples", v: includeExamples, set: setIncludeExamples, icon: Lightbulb },
-            { label: "Practice Qs", v: includePractice, set: setIncludePractice, icon: ListChecks },
-            { label: "Summary", v: includeSummary, set: setIncludeSummary, icon: Trophy },
-            { label: "References", v: includeReferences, set: setIncludeReferences, icon: Link2 },
+            {
+              label: "Speaker Notes",
+              v: includeSpeakerNotes,
+              set: setIncludeSpeakerNotes,
+              icon: Presentation,
+            },
+            {
+              label: "Diagrams",
+              v: includeDiagrams,
+              set: setIncludeDiagrams,
+              icon: ImageIcon,
+            },
+            {
+              label: "Examples",
+              v: includeExamples,
+              set: setIncludeExamples,
+              icon: Lightbulb,
+            },
+            {
+              label: "Practice Qs",
+              v: includePractice,
+              set: setIncludePractice,
+              icon: ListChecks,
+            },
+            {
+              label: "Quiz",
+              v: includeQuiz,
+              set: setIncludeQuiz,
+              icon: ListChecks,
+            },
+            {
+              label: "Summary",
+              v: includeSummary,
+              set: setIncludeSummary,
+              icon: Trophy,
+            },
+            {
+              label: "References",
+              v: includeReferences,
+              set: setIncludeReferences,
+              icon: Link2,
+            },
           ].map((t) => {
             const Icon = t.icon;
             return (
@@ -672,17 +1867,233 @@ No markdown fences.`;
                   "flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-colors",
                   t.v
                     ? "bg-violet-500/15 border-violet-500/40 text-white"
-                    : "bg-white/5 border-white/10 text-white/50 hover:text-white"
+                    : "bg-white/5 border-white/10 text-white/50 hover:text-white",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
                 {t.label}
-                <span className={cn("ml-auto h-2 w-2 rounded-full", t.v ? "bg-violet-400" : "bg-white/20")} />
+                <span
+                  className={cn(
+                    "ml-auto h-2 w-2 rounded-full",
+                    t.v ? "bg-violet-400" : "bg-white/20",
+                  )}
+                />
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* Source analysis and complete outline */}
+      {!outline.length ? (
+        <button
+          onClick={handleAnalyse}
+          disabled={!canAnalyse}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-all",
+            canAnalyse
+              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-blue-500"
+              : "bg-white/5 text-white/30 cursor-not-allowed",
+          )}
+        >
+          {analysing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ListChecks className="h-4 w-4" />
+          )}
+          {analysing
+            ? genStage || "Analysing source…"
+            : "Analyse source & review complete outline"}
+        </button>
+      ) : (
+        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] overflow-hidden">
+          <div className="p-4 border-b border-white/10 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-white flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-300" /> Complete
+                ordered outline
+              </p>
+              <p className="text-[11px] text-white/45 mt-1">
+                {analysedStats?.topicCount} topics ·{" "}
+                {analysedStats?.subtopicCount} subtopics ·{" "}
+                {analysedStats?.formulaCount} formulas ·{" "}
+                {analysedStats?.figureCount} figures
+              </p>
+              {sourceMeta && (
+                <p className="text-[11px] text-cyan-100/70 mt-1">
+                  {sourceMeta.startPage
+                    ? `Selected range: Pages ${sourceMeta.startPage}–${sourceMeta.endPage} · ${sourceMeta.pageCount} pages · `
+                    : ""}
+                  Approximately {sourceMeta.wordCount.toLocaleString()} words
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleAnalyse}
+              className="text-[11px] px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/60 hover:text-white flex items-center gap-1.5"
+            >
+              <RefreshCw className="h-3 w-3" /> Analyse again
+            </button>
+          </div>
+
+          {selectedRecommendation && analysedStats && (
+            <div className="m-3 rounded-xl border border-violet-400/20 bg-violet-400/[0.06] p-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs text-white/70">
+                <span className="font-semibold text-white">
+                  Recommended for {density.replace("-", " ")}:
+                </span>{" "}
+                {selectedRecommendation.min}–{selectedRecommendation.max} slides
+                <span className="text-white/35"> · Selected: {slideCount}</span>
+              </div>
+              <button
+                onClick={() =>
+                  setSlideCount(
+                    Math.min(
+                      40,
+                      Math.round(
+                        (selectedRecommendation.min +
+                          selectedRecommendation.max) /
+                          2,
+                      ),
+                    ),
+                  )
+                }
+                className="text-[11px] rounded-lg bg-violet-500/20 border border-violet-400/30 px-2.5 py-1.5 text-violet-100 hover:bg-violet-500/30"
+              >
+                Use recommendation
+              </button>
+            </div>
+          )}
+
+          {selectedRecommendation &&
+            slideCount < selectedRecommendation.min && (
+              <div className="mx-3 mb-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs text-amber-100 flex gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>
+                  This source contains many topics. All included topics will
+                  remain covered, but explanations will be heavily compressed.
+                </span>
+              </div>
+            )}
+
+          <div
+            className="max-h-80 overflow-y-auto p-3 space-y-2"
+            data-testid="slideshow-outline"
+          >
+            {outline.map((item, index) => (
+              <div
+                key={item.id}
+                className={cn(
+                  "rounded-xl border p-2.5 flex items-start gap-2",
+                  item.included
+                    ? "border-white/10 bg-white/[0.03]"
+                    : "border-white/5 bg-black/10 opacity-55",
+                )}
+              >
+                <GripVertical className="h-4 w-4 text-white/25 mt-1 shrink-0" />
+                <button
+                  type="button"
+                  aria-label={`${item.included ? "Exclude" : "Include"} ${item.title}`}
+                  onClick={() =>
+                    setOutline((current) =>
+                      current.map((entry) =>
+                        entry.id === item.id
+                          ? { ...entry, included: !entry.included }
+                          : entry,
+                      ),
+                    )
+                  }
+                  className={cn(
+                    "mt-1 h-4 w-4 rounded border shrink-0",
+                    item.included
+                      ? "border-emerald-400 bg-emerald-400/25"
+                      : "border-white/20",
+                  )}
+                />
+                <div className="flex-1 min-w-0">
+                  <input
+                    aria-label={`Outline topic ${index + 1}`}
+                    value={item.title}
+                    onChange={(event) =>
+                      setOutline((current) =>
+                        current.map((entry) =>
+                          entry.id === item.id
+                            ? { ...entry, title: event.target.value }
+                            : entry,
+                        ),
+                      )
+                    }
+                    className="w-full bg-transparent text-xs font-medium text-white outline-none border-b border-transparent focus:border-violet-400/40"
+                  />
+                  <p className="mt-1 text-[10px] text-white/40 line-clamp-2">
+                    {formatPageRange(item.sourcePages) || "Pasted source"} ·{" "}
+                    {item.subtopics.slice(0, 3).join(" · ")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    aria-label="Move topic up"
+                    onClick={() => moveOutlineItem(index, -1)}
+                    disabled={index === 0}
+                    className="p-1 text-white/40 hover:text-white disabled:opacity-20"
+                  >
+                    <ArrowUp className="h-3 w-3" />
+                  </button>
+                  <button
+                    aria-label="Move topic down"
+                    onClick={() => moveOutlineItem(index, 1)}
+                    disabled={index === outline.length - 1}
+                    className="p-1 text-white/40 hover:text-white disabled:opacity-20"
+                  >
+                    <ArrowDown className="h-3 w-3" />
+                  </button>
+                  <button
+                    aria-label="Merge with next topic"
+                    title="Merge with next"
+                    onClick={() => mergeOutlineWithNext(index)}
+                    disabled={index === outline.length - 1}
+                    className="p-1 text-white/40 hover:text-cyan-200 disabled:opacity-20"
+                  >
+                    <Merge className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-white/10 px-4 py-2.5 text-[10px] text-white/40">
+            Every topic is included by default. Exclusions happen only when you
+            turn a topic off.
+          </div>
+        </div>
+      )}
+
+      {(generating || analysing) && generationStageIndex >= 0 && (
+        <div
+          className="rounded-xl border border-violet-400/20 bg-violet-400/[0.05] p-3"
+          aria-live="polite"
+        >
+          <p className="text-xs font-medium text-white">
+            {genStage || generationStages[generationStageIndex]}
+          </p>
+          <div className="mt-2 grid grid-cols-4 sm:grid-cols-8 gap-1">
+            {generationStages.map((stage, index) => (
+              <div
+                key={stage}
+                className={cn(
+                  "h-1.5 rounded-full",
+                  index <= generationStageIndex
+                    ? "bg-violet-400"
+                    : "bg-white/10",
+                )}
+                title={stage}
+              />
+            ))}
+          </div>
+          <p className="text-[10px] text-white/35 mt-1.5">
+            Stage {generationStageIndex + 1} of {generationStages.length}
+          </p>
+        </div>
+      )}
 
       {/* Generate button */}
       <button
@@ -692,7 +2103,7 @@ No markdown fences.`;
           "w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-all",
           canGenerate
             ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 shadow-lg shadow-violet-500/25"
-            : "bg-white/5 text-white/30 cursor-not-allowed"
+            : "bg-white/5 text-white/30 cursor-not-allowed",
         )}
       >
         {generating ? (
@@ -703,103 +2114,166 @@ No markdown fences.`;
         ) : (
           <>
             <Sparkles className="h-4 w-4" />
-            Generate {slideCount}-slide presentation
+            Generate {slideCount}-slide source-complete presentation
           </>
         )}
       </button>
 
       {!canGenerate && !generating && (
         <p className="text-center text-xs text-white/40">
-          {inputMode === "prompt" && "Write at least a few words to enable generation."}
-          {inputMode === "notes" && "Paste a meaningful chunk of notes (20+ characters)."}
-          {inputMode === "topic" && "Pick a subject and type a topic."}
-          {inputMode === "chapter" && "Pick a subject and chapter."}
+          {outline.length
+            ? "Keep at least one outline topic included."
+            : canAnalyse
+              ? "Analyse the source and review its complete outline before generation."
+              : inputMode === "prompt"
+                ? "Write at least a few words to analyse."
+                : inputMode === "notes"
+                  ? "Paste a meaningful chunk of notes (20+ characters)."
+                  : inputMode === "topic"
+                    ? "Pick a subject and type a topic."
+                    : inputMode === "chapter"
+                      ? "Pick a subject and chapter."
+                      : inputMode === "document"
+                        ? "Choose a readable text document."
+                        : "Choose a valid clean ebook page range."}
         </p>
       )}
 
       {/* Saved library modal */}
       <AnimatePresence>
-        {libraryOpen && typeof document !== "undefined" && createPortal(
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setLibraryOpen(false)}
-            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm grid place-items-center p-4"
-          >
+        {libraryOpen &&
+          typeof document !== "undefined" &&
+          createPortal(
             <motion.div
-              initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl border border-white/15 bg-zinc-950/95 backdrop-blur-xl flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLibraryOpen(false)}
+              className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm grid place-items-center p-4"
             >
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <div>
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Layers className="h-4 w-4" /> Saved Slideshows</h3>
-                  <p className="text-[11px] text-white/40 mt-0.5">{saved.length} presentation{saved.length === 1 ? "" : "s"} saved locally</p>
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.96, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl border border-white/15 bg-zinc-950/95 backdrop-blur-xl flex flex-col"
+              >
+                <div className="flex items-center justify-between p-4 border-b border-white/10">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <Layers className="h-4 w-4" /> Saved Slideshows
+                    </h3>
+                    <p className="text-[11px] text-white/40 mt-0.5">
+                      {saved.length} presentation{saved.length === 1 ? "" : "s"}{" "}
+                      saved locally
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setLibraryOpen(false)}
+                    className="text-white/50 hover:text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <button onClick={() => setLibraryOpen(false)} className="text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
-              </div>
-              <div className="p-3 border-b border-white/10">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search by title, subject, or chapter…"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 pl-9 pr-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
-                  />
+                <div className="p-3 border-b border-white/10">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search by title, subject, or chapter…"
+                      className="w-full rounded-lg bg-white/5 border border-white/10 pl-9 pr-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {saved.length === 0 && (
-                  <div className="text-center py-10 text-white/40 text-sm">No saved slideshows yet. Generate one above!</div>
-                )}
-                {saved
-                  .filter((s) =>
-                    !search ||
-                    s.title.toLowerCase().includes(search.toLowerCase()) ||
-                    s.subject.toLowerCase().includes(search.toLowerCase()) ||
-                    s.chapter.toLowerCase().includes(search.toLowerCase())
-                  )
-                  .map((s) => {
-                    const tpl = getTemplate(s.template);
-                    return (
-                      <div key={s.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 hover:bg-white/[0.06] transition-colors">
-                        <div className="h-12 w-16 rounded-md shrink-0" style={{ background: tpl.swatch }} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">{s.title}</p>
-                          <p className="text-[11px] text-white/40 truncate">
-                            Class {s.classProfile} · {s.subject || "—"} · {s.chapter || "—"} · {s.slides.length} slides · {tpl.name}
-                          </p>
-                          <p className="text-[10px] text-white/30 mt-0.5">
-                            Created {new Date(s.createdAt).toLocaleDateString()} · Updated {new Date(s.updatedAt).toLocaleDateString()}
-                          </p>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {saved.length === 0 && (
+                    <div className="text-center py-10 text-white/40 text-sm">
+                      No saved slideshows yet. Generate one above!
+                    </div>
+                  )}
+                  {saved
+                    .filter(
+                      (s) =>
+                        !search ||
+                        s.title.toLowerCase().includes(search.toLowerCase()) ||
+                        s.subject
+                          .toLowerCase()
+                          .includes(search.toLowerCase()) ||
+                        s.chapter.toLowerCase().includes(search.toLowerCase()),
+                    )
+                    .map((s) => {
+                      const tpl = getTemplate(s.template);
+                      return (
+                        <div
+                          key={s.id}
+                          className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 hover:bg-white/[0.06] transition-colors"
+                        >
+                          <div
+                            className="h-12 w-16 rounded-md shrink-0"
+                            style={{ background: tpl.swatch }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">
+                              {s.title}
+                            </p>
+                            <p className="text-[11px] text-white/40 truncate">
+                              Class {s.classProfile} · {s.subject || "—"} ·{" "}
+                              {s.chapter || "—"} · {s.slides.length} slides ·{" "}
+                              {tpl.name}
+                            </p>
+                            <p className="text-[10px] text-white/30 mt-0.5">
+                              Created{" "}
+                              {new Date(s.createdAt).toLocaleDateString()} ·
+                              Updated{" "}
+                              {new Date(s.updatedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                setActive(s);
+                                setActiveSlideIdx(0);
+                                setLibraryOpen(false);
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-200 text-xs hover:bg-violet-500/30"
+                            >
+                              Open
+                            </button>
+                            <button
+                              onClick={() => {
+                                const dup = {
+                                  ...s,
+                                  id: `slideshow-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                                  title: `${s.title} (copy)`,
+                                  createdAt: Date.now(),
+                                  updatedAt: Date.now(),
+                                };
+                                const next = upsertSlideshow(dup);
+                                setSaved(next);
+                                toast.success("Duplicated");
+                              }}
+                              className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white"
+                              title="Duplicate"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSlideshow(s.id)}
+                              className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-rose-300 hover:border-rose-500/30"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => { setActive(s); setActiveSlideIdx(0); setLibraryOpen(false); }}
-                            className="px-3 py-1.5 rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-200 text-xs hover:bg-violet-500/30"
-                          >Open</button>
-                          <button
-                            onClick={() => {
-                              const dup = { ...s, id: `slideshow-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title: `${s.title} (copy)`, createdAt: Date.now(), updatedAt: Date.now() };
-                              const next = upsertSlideshow(dup); setSaved(next); toast.success("Duplicated");
-                            }}
-                            className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white"
-                            title="Duplicate"
-                          ><Copy className="h-3.5 w-3.5" /></button>
-                          <button
-                            onClick={() => handleDeleteSlideshow(s.id)}
-                            className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-rose-300 hover:border-rose-500/30"
-                            title="Delete"
-                          ><Trash2 className="h-3.5 w-3.5" /></button>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </motion.div>
-          </motion.div>,
-          document.body
-        )}
+                      );
+                    })}
+                </div>
+              </motion.div>
+            </motion.div>,
+            document.body,
+          )}
       </AnimatePresence>
     </div>
   );
@@ -828,21 +2302,50 @@ interface EditorProps {
   onDeleteSlide: (idx: number) => void;
   onDuplicateSlide: (idx: number) => void;
   onMoveSlide: (idx: number, dir: -1 | 1) => void;
+  onSplitSlide: (idx: number) => void;
+  onMergeNextSlide: (idx: number) => void;
   onUpdateSlide: (id: string, patch: Partial<Slide>) => void;
   onRegenerateSlide: (idx: number) => void;
-  onRewriteSlide: (idx: number, action: "expand" | "shorten" | "simplify") => void;
+  onRewriteSlide: (
+    idx: number,
+    action:
+      | "expand"
+      | "shorten"
+      | "simplify"
+      | "example"
+      | "formula"
+      | "table"
+      | "exam",
+  ) => void;
+  onFixCoverage: () => void;
 }
 
 function SlideshowEditor(props: EditorProps) {
   const {
-    slideshow, activeSlideIdx, setActiveSlideIdx,
-    editingSlide, setEditingSlide,
-    previewMode, setPreviewMode,
-    fullscreenPreview, setFullscreenPreview,
-    narrationMode, setNarrationMode,
-    onUpdate, onPersist, onExit,
-    onAddSlide, onDeleteSlide, onDuplicateSlide, onMoveSlide, onUpdateSlide,
-    onRegenerateSlide, onRewriteSlide,
+    slideshow,
+    activeSlideIdx,
+    setActiveSlideIdx,
+    editingSlide,
+    setEditingSlide,
+    previewMode,
+    setPreviewMode,
+    fullscreenPreview,
+    setFullscreenPreview,
+    narrationMode,
+    setNarrationMode,
+    onUpdate,
+    onPersist,
+    onExit,
+    onAddSlide,
+    onDeleteSlide,
+    onDuplicateSlide,
+    onMoveSlide,
+    onSplitSlide,
+    onMergeNextSlide,
+    onUpdateSlide,
+    onRegenerateSlide,
+    onRewriteSlide,
+    onFixCoverage,
   } = props;
 
   const tpl = getTemplate(slideshow.template);
@@ -851,10 +2354,16 @@ function SlideshowEditor(props: EditorProps) {
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
       if (e.key === "ArrowRight" || e.key === "PageDown") {
         e.preventDefault();
-        setActiveSlideIdx(Math.min(slideshow.slides.length - 1, activeSlideIdx + 1));
+        setActiveSlideIdx(
+          Math.min(slideshow.slides.length - 1, activeSlideIdx + 1),
+        );
       } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         setActiveSlideIdx(Math.max(0, activeSlideIdx - 1));
@@ -867,15 +2376,25 @@ function SlideshowEditor(props: EditorProps) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeSlideIdx, slideshow.slides.length, fullscreenPreview, setActiveSlideIdx, setFullscreenPreview]);
+  }, [
+    activeSlideIdx,
+    slideshow.slides.length,
+    fullscreenPreview,
+    setActiveSlideIdx,
+    setFullscreenPreview,
+  ]);
 
   // Title editing
   const [titleEdit, setTitleEdit] = useState(false);
   const [titleDraft, setTitleDraft] = useState(slideshow.title);
   useEffect(() => {
     let cancelled = false;
-    queueMicrotask(() => { if (!cancelled) setTitleDraft(slideshow.title); });
-    return () => { cancelled = true; };
+    queueMicrotask(() => {
+      if (!cancelled) setTitleDraft(slideshow.title);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [slideshow.title]);
 
   // ===== Fullscreen preview =====
@@ -911,7 +2430,9 @@ function SlideshowEditor(props: EditorProps) {
             <ChevronLeft className="h-3.5 w-3.5" /> Back to editor
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-white/50">{activeSlideIdx + 1} / {slideshow.slides.length}</span>
+            <span className="text-xs text-white/50">
+              {activeSlideIdx + 1} / {slideshow.slides.length}
+            </span>
             <button
               onClick={() => setFullscreenPreview(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-violet-500/20 border border-violet-500/40 text-violet-200 hover:bg-violet-500/30 transition-colors"
@@ -921,7 +2442,11 @@ function SlideshowEditor(props: EditorProps) {
           </div>
         </div>
         <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-          <SlideStage slide={activeSlide} tpl={tpl} className="aspect-video w-full" />
+          <SlideStage
+            slide={activeSlide}
+            tpl={tpl}
+            className="aspect-video w-full"
+          />
         </div>
         <div className="flex items-center justify-between gap-2">
           <button
@@ -931,9 +2456,15 @@ function SlideshowEditor(props: EditorProps) {
           >
             <ChevronLeft className="h-3.5 w-3.5" /> Prev
           </button>
-          <span className="text-xs text-white/50 truncate max-w-[60%]">{activeSlide.title}</span>
+          <span className="text-xs text-white/50 truncate max-w-[60%]">
+            {activeSlide.title}
+          </span>
           <button
-            onClick={() => setActiveSlideIdx(Math.min(slideshow.slides.length - 1, activeSlideIdx + 1))}
+            onClick={() =>
+              setActiveSlideIdx(
+                Math.min(slideshow.slides.length - 1, activeSlideIdx + 1),
+              )
+            }
             disabled={activeSlideIdx === slideshow.slides.length - 1}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white disabled:opacity-40 transition-colors"
           >
@@ -957,7 +2488,9 @@ function SlideshowEditor(props: EditorProps) {
             <ChevronLeft className="h-3.5 w-3.5" /> New
           </button>
           <button
-            onClick={() => { onPersist(); }}
+            onClick={() => {
+              onPersist();
+            }}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors shrink-0"
             title="My saved slideshows"
           >
@@ -968,8 +2501,16 @@ function SlideshowEditor(props: EditorProps) {
               autoFocus
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={() => { onUpdate({ ...slideshow, title: titleDraft || "Untitled" }); setTitleEdit(false); }}
-              onKeyDown={(e) => { if (e.key === "Enter") { onUpdate({ ...slideshow, title: titleDraft || "Untitled" }); setTitleEdit(false); } }}
+              onBlur={() => {
+                onUpdate({ ...slideshow, title: titleDraft || "Untitled" });
+                setTitleEdit(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onUpdate({ ...slideshow, title: titleDraft || "Untitled" });
+                  setTitleEdit(false);
+                }
+              }}
               className="text-sm bg-white/5 border border-white/15 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40 min-w-0"
             />
           ) : (
@@ -982,7 +2523,7 @@ function SlideshowEditor(props: EditorProps) {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex w-full sm:w-auto items-center gap-1.5 flex-wrap sm:justify-end">
           <button
             onClick={() => setPreviewMode(true)}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
@@ -1012,10 +2553,28 @@ function SlideshowEditor(props: EditorProps) {
         </div>
       </div>
 
+      {slideshow.source && (
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/50">
+          <span className="truncate">
+            <strong className="text-white/75">Source:</strong>{" "}
+            {slideshow.source.label}
+          </span>
+          <span>
+            {slideshow.lastAutosavedAt
+              ? `Autosaved ${new Date(slideshow.lastAutosavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+              : "Autosave active"}
+          </span>
+        </div>
+      )}
+
+      {slideshow.coverage && (
+        <CoveragePanel slideshow={slideshow} onFix={onFixCoverage} />
+      )}
+
       {/* Layout: thumbnails | main stage | edit panel */}
       <div className="grid grid-cols-12 gap-3">
         {/* Left: thumbnails */}
-        <div className="col-span-12 lg:col-span-3 order-1">
+        <div className="col-span-12 lg:col-span-3 order-2 lg:order-1">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-2 max-h-[calc(100vh-20rem)] overflow-y-auto sticky top-2">
             <div className="text-[10px] font-medium uppercase tracking-wider text-white/40 px-2 py-1.5 sticky top-0 bg-zinc-950/95 backdrop-blur-sm z-10">
               {slideshow.slides.length} slides
@@ -1028,7 +2587,10 @@ function SlideshowEditor(props: EditorProps) {
                   index={i}
                   active={i === activeSlideIdx}
                   tpl={tpl}
-                  onClick={() => { setActiveSlideIdx(i); setEditingSlide(null); }}
+                  onClick={() => {
+                    setActiveSlideIdx(i);
+                    setEditingSlide(null);
+                  }}
                 />
               ))}
               <button
@@ -1042,9 +2604,13 @@ function SlideshowEditor(props: EditorProps) {
         </div>
 
         {/* Center: main stage */}
-        <div className="col-span-12 lg:col-span-6 order-2">
+        <div className="col-span-12 lg:col-span-6 order-1 lg:order-2">
           <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-            <SlideStage slide={activeSlide} tpl={tpl} className="aspect-video w-full" />
+            <SlideStage
+              slide={activeSlide}
+              tpl={tpl}
+              className="aspect-video w-full"
+            />
           </div>
           {/* Stage controls */}
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -1054,37 +2620,54 @@ function SlideshowEditor(props: EditorProps) {
                 disabled={activeSlideIdx === 0}
                 className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white disabled:opacity-40"
                 title="Move up"
-              ><ArrowUp className="h-3.5 w-3.5" /></button>
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
               <button
                 onClick={() => onMoveSlide(activeSlideIdx, 1)}
                 disabled={activeSlideIdx === slideshow.slides.length - 1}
                 className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white disabled:opacity-40"
                 title="Move down"
-              ><ArrowDown className="h-3.5 w-3.5" /></button>
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
               <button
                 onClick={() => onDuplicateSlide(activeSlideIdx)}
                 className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white"
                 title="Duplicate"
-              ><Copy className="h-3.5 w-3.5" /></button>
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
               <button
                 onClick={() => onDeleteSlide(activeSlideIdx)}
                 className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-rose-300 hover:border-rose-500/30"
                 title="Delete"
-              ><Trash2 className="h-3.5 w-3.5" /></button>
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-white/50">
-              <span>{activeSlideIdx + 1} / {slideshow.slides.length}</span>
+              <span>
+                {activeSlideIdx + 1} / {slideshow.slides.length}
+              </span>
               <span className="text-white/30">·</span>
-              <span>{getSlideTypeMeta(activeSlide.type).icon} {getSlideTypeMeta(activeSlide.type).name}</span>
+              <span>
+                {getSlideTypeMeta(activeSlide.type).icon}{" "}
+                {getSlideTypeMeta(activeSlide.type).name}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setEditingSlide(editingSlide?.id === activeSlide.id ? null : activeSlide)}
+                onClick={() =>
+                  setEditingSlide(
+                    editingSlide?.id === activeSlide.id ? null : activeSlide,
+                  )
+                }
                 className={cn(
                   "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border",
                   editingSlide?.id === activeSlide.id
                     ? "bg-violet-500/15 border-violet-500/40 text-violet-200"
-                    : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                    : "bg-white/5 border-white/10 text-white/60 hover:text-white",
                 )}
               >
                 <Edit3 className="h-3.5 w-3.5" /> Edit
@@ -1094,21 +2677,66 @@ function SlideshowEditor(props: EditorProps) {
 
           {/* AI rewrite actions */}
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => onRegenerateSlide(activeSlideIdx)}
-              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white">
+            <button
+              onClick={() => onRegenerateSlide(activeSlideIdx)}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
               <RefreshCw className="h-3 w-3" /> Regenerate
             </button>
-            <button onClick={() => onRewriteSlide(activeSlideIdx, "expand")}
-              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white">
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "expand")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
               <Plus className="h-3 w-3" /> Expand
             </button>
-            <button onClick={() => onRewriteSlide(activeSlideIdx, "shorten")}
-              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white">
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "shorten")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
               <RefreshCw className="h-3 w-3" /> Shorten
             </button>
-            <button onClick={() => onRewriteSlide(activeSlideIdx, "simplify")}
-              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white">
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "simplify")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
               <Lightbulb className="h-3 w-3" /> Simplify
+            </button>
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "example")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
+              <Plus className="h-3 w-3" /> Add example
+            </button>
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "formula")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
+              <Code2 className="h-3 w-3" /> Explain formula
+            </button>
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "table")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
+              <Layers className="h-3 w-3" /> Comparison table
+            </button>
+            <button
+              onClick={() => onRewriteSlide(activeSlideIdx, "exam")}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
+              <Trophy className="h-3 w-3" /> Exam points
+            </button>
+            <button
+              onClick={() => onSplitSlide(activeSlideIdx)}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white"
+            >
+              <Layers className="h-3 w-3" /> Split slide
+            </button>
+            <button
+              onClick={() => onMergeNextSlide(activeSlideIdx)}
+              disabled={activeSlideIdx >= slideshow.slides.length - 1}
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 hover:text-white disabled:opacity-30"
+            >
+              <Merge className="h-3 w-3" /> Merge next
             </button>
           </div>
 
@@ -1119,21 +2747,35 @@ function SlideshowEditor(props: EditorProps) {
                 <Presentation className="h-3 w-3" /> Speaker Notes
               </span>
               <button
-                onClick={() => setEditingSlide(editingSlide?.id === activeSlide.id ? null : activeSlide)}
+                onClick={() =>
+                  setEditingSlide(
+                    editingSlide?.id === activeSlide.id ? null : activeSlide,
+                  )
+                }
                 className="text-[10px] text-white/50 hover:text-white"
-              >{editingSlide?.id === activeSlide.id ? "Done" : "Edit"}</button>
+              >
+                {editingSlide?.id === activeSlide.id ? "Done" : "Edit"}
+              </button>
             </div>
             {editingSlide?.id === activeSlide.id ? (
               <textarea
                 value={editingSlide.speakerNotes}
-                onChange={(e) => onUpdateSlide(activeSlide.id, { speakerNotes: e.target.value })}
+                onChange={(e) =>
+                  onUpdateSlide(activeSlide.id, {
+                    speakerNotes: e.target.value,
+                  })
+                }
                 rows={3}
                 placeholder="What should the presenter say while showing this slide?"
                 className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-y"
               />
             ) : (
               <p className="text-xs text-white/60 leading-relaxed whitespace-pre-wrap">
-                {activeSlide.speakerNotes || <span className="text-white/30 italic">No speaker notes yet.</span>}
+                {activeSlide.speakerNotes || (
+                  <span className="text-white/30 italic">
+                    No speaker notes yet.
+                  </span>
+                )}
               </p>
             )}
           </div>
@@ -1159,10 +2801,137 @@ function SlideshowEditor(props: EditorProps) {
 }
 
 // ============================================================================
+// Coverage panel
+// ============================================================================
+
+function CoveragePanel({
+  slideshow,
+  onFix,
+}: {
+  slideshow: Slideshow;
+  onFix: () => void;
+}) {
+  const coverage = slideshow.coverage!;
+  const pageLabel = coverage.totalPages.length
+    ? `${coverage.pagesCovered.length} of ${coverage.totalPages.length} · ${formatPageRange(coverage.totalPages)}`
+    : "Not page-based";
+  const missingTitles = (slideshow.coverageLedger ?? [])
+    .filter((item) => coverage.missingTopicIds.includes(item.id))
+    .map((item) => item.title);
+
+  const openFirstSourcePage = () => {
+    const firstPage = coverage.pagesCovered[0] ?? slideshow.source?.startPage;
+    if (!firstPage || !slideshow.source?.bookId) return;
+    const bookId = slideshow.source.bookId.includes("maths")
+      ? "maths-pt1"
+      : "chemistry-pt1";
+    sessionStorage.setItem(
+      "scholar:ebook:target",
+      JSON.stringify({ bookId, page: firstPage, source: "text" }),
+    );
+    window.location.href = "/ebook";
+  };
+
+  return (
+    <div
+      className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"
+      data-testid="coverage-panel"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-emerald-300" />
+          <div>
+            <p className="text-xs font-semibold text-white">
+              Source coverage: {coverage.percentage}%
+            </p>
+            <p className="text-[10px] text-white/40">
+              Validated from slide topic IDs and source-page mappings
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {slideshow.source?.bookId && (
+            <button
+              onClick={openFirstSourcePage}
+              className="text-[10px] rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-white/60 hover:text-white flex items-center gap-1"
+            >
+              <ExternalLink className="h-3 w-3" /> Open source
+            </button>
+          )}
+          {coverage.percentage < 100 && (
+            <button
+              onClick={onFix}
+              className="text-[10px] rounded-lg border border-amber-400/30 bg-amber-400/10 px-2.5 py-1.5 text-amber-100 hover:bg-amber-400/20"
+            >
+              Fix missing content
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-2 text-[10px]">
+        <div className="rounded-lg bg-black/15 p-2">
+          <span className="block text-white/35">Pages covered</span>
+          <span className="text-white/75">{pageLabel}</span>
+        </div>
+        <div className="rounded-lg bg-black/15 p-2">
+          <span className="block text-white/35">Topics covered</span>
+          <span className="text-white/75">
+            {coverage.topicsCovered} of {coverage.totalTopics}
+          </span>
+        </div>
+        <div className="rounded-lg bg-black/15 p-2">
+          <span className="block text-white/35">Formulas included</span>
+          <span className="text-white/75">
+            {coverage.formulasIncluded} of {coverage.totalFormulas}
+          </span>
+        </div>
+        <div className="rounded-lg bg-black/15 p-2">
+          <span className="block text-white/35">Figures included</span>
+          <span className="text-white/75">
+            {coverage.figuresIncluded} of {coverage.totalFigures}
+          </span>
+        </div>
+      </div>
+      {(missingTitles.length > 0 ||
+        coverage.missingPages.length > 0 ||
+        coverage.missingFormulas.length > 0 ||
+        coverage.missingFigures.length > 0) && (
+        <div className="mt-2 text-[10px] text-amber-100/80">
+          {missingTitles.length > 0 && (
+            <p>Missing topics: {missingTitles.join(", ")}</p>
+          )}
+          {coverage.missingPages.length > 0 && (
+            <p>Missing pages: {coverage.missingPages.join(", ")}</p>
+          )}
+          {coverage.missingFormulas.length > 0 && (
+            <p>
+              Missing formulas:{" "}
+              {coverage.missingFormulas.slice(0, 8).join(" · ")}
+              {coverage.missingFormulas.length > 8 ? "…" : ""}
+            </p>
+          )}
+          {coverage.missingFigures.length > 0 && (
+            <p>Unused source figures: {coverage.missingFigures.length}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // Slide Stage (renders one slide with the template styling)
 // ============================================================================
 
-export function SlideStage({ slide, tpl, className, fullscreen, highlightKeywords, isNarrating, revealAnswer }: {
+export function SlideStage({
+  slide,
+  tpl,
+  className,
+  fullscreen,
+  highlightKeywords,
+  isNarrating,
+  revealAnswer,
+}: {
   slide: Slide;
   tpl: ReturnType<typeof getTemplate>;
   className?: string;
@@ -1219,22 +2988,36 @@ export function SlideStage({ slide, tpl, className, fullscreen, highlightKeyword
                 key={i}
                 className="w-1 rounded-full bg-violet-300"
                 animate={{ height: [4, 12, 4] }}
-                transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                transition={{
+                  duration: 0.6,
+                  repeat: Infinity,
+                  delay: i * 0.15,
+                }}
                 style={{ height: 4 }}
               />
             ))}
           </span>
-          <span className="text-[9px] text-white/60 uppercase tracking-wider">Narrating</span>
+          <span className="text-[9px] text-white/60 uppercase tracking-wider">
+            Narrating
+          </span>
         </div>
       )}
 
-      <div className={cn("relative z-10 h-full w-full flex flex-col", fullscreen ? "p-8 sm:p-12 lg:p-16" : "p-5 sm:p-6 lg:p-7")}>
+      <div
+        className={cn(
+          "relative z-10 h-full w-full flex flex-col",
+          fullscreen ? "p-8 sm:p-12 lg:p-16" : "p-5 sm:p-6 lg:p-7",
+        )}
+      >
         {/* Type badge */}
         {slide.type !== "title" && slide.type !== "thanks" && (
           <div className="flex items-center gap-2 mb-3 shrink-0">
             <span
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-              style={{ background: `${typeColor[slide.type]}20`, color: typeColor[slide.type] }}
+              style={{
+                background: `${typeColor[slide.type]}20`,
+                color: typeColor[slide.type],
+              }}
             >
               <span>{meta.icon}</span>
               {meta.name}
@@ -1243,15 +3026,55 @@ export function SlideStage({ slide, tpl, className, fullscreen, highlightKeyword
         )}
 
         {/* Title */}
-        <SlideTitle slide={slide} tpl={tpl} fullscreen={fullscreen} highlightKeywords={highlightKeywords} />
+        <SlideTitle
+          slide={slide}
+          tpl={tpl}
+          fullscreen={fullscreen}
+          highlightKeywords={highlightKeywords}
+        />
 
         {/* Body */}
-        <SlideBody slide={slide} tpl={tpl} typeColor={typeColor} fullscreen={fullscreen} highlightKeywords={highlightKeywords} revealAnswer={revealAnswer} />
+        <SlideBody
+          slide={slide}
+          tpl={tpl}
+          typeColor={typeColor}
+          fullscreen={fullscreen}
+          highlightKeywords={highlightKeywords}
+          revealAnswer={revealAnswer}
+        />
+
+        {slide.showSourceReference &&
+          slide.sourcePages &&
+          slide.sourcePages.length > 0 && (
+            <a
+              href="/ebook"
+              onClick={() => {
+                if (!slide.sourceBookId) return;
+                const bookId = slide.sourceBookId.includes("maths")
+                  ? "maths-pt1"
+                  : "chemistry-pt1";
+                sessionStorage.setItem(
+                  "scholar:ebook:target",
+                  JSON.stringify({
+                    bookId,
+                    page: slide.sourcePages?.[0],
+                    source: "text",
+                  }),
+                );
+              }}
+              className="mt-2 self-end text-[9px] opacity-45 hover:opacity-90 underline underline-offset-2 shrink-0"
+            >
+              Source: {formatPageRange(slide.sourcePages)}
+            </a>
+          )}
 
         {/* Footer for title slide */}
         {slide.type === "title" && (
           <div className="mt-auto pt-4 text-xs opacity-60 shrink-0">
-            <p>Class {useStore.getState().user.scholarClass} · {new Date().getFullYear()}</p>
+            <p>
+              Class {useStore.getState().user.scholarClass} ·{" "}
+              {new Date().getFullYear()}
+            </p>
           </div>
         )}
       </div>
@@ -1260,8 +3083,17 @@ export function SlideStage({ slide, tpl, className, fullscreen, highlightKeyword
 }
 
 // Helper: highlight keywords in a text string
-function HighlightedText({ text, keywords, baseClass }: { text: string; keywords?: string[]; baseClass?: string }) {
-  if (!keywords || !keywords.length) return <span className={baseClass}>{text}</span>;
+function HighlightedText({
+  text,
+  keywords,
+  baseClass,
+}: {
+  text: string;
+  keywords?: string[];
+  baseClass?: string;
+}) {
+  if (!keywords || !keywords.length)
+    return <span className={baseClass}>{text}</span>;
   // Build a regex that matches any keyword (case-insensitive, word-boundary)
   const escaped = keywords
     .filter((k) => k && k.length > 1)
@@ -1273,26 +3105,55 @@ function HighlightedText({ text, keywords, baseClass }: { text: string; keywords
     <span className={baseClass}>
       {parts.map((part, i) =>
         keywords.some((k) => k.toLowerCase() === part.toLowerCase()) ? (
-          <mark key={i} className="bg-yellow-300/30 text-inherit rounded px-0.5">{part}</mark>
+          <mark
+            key={i}
+            className="bg-yellow-300/30 text-inherit rounded px-0.5"
+          >
+            {part}
+          </mark>
         ) : (
           <span key={i}>{part}</span>
-        )
+        ),
       )}
     </span>
   );
 }
 
-function SlideTitle({ slide, tpl, fullscreen, highlightKeywords }: { slide: Slide; tpl: ReturnType<typeof getTemplate>; fullscreen?: boolean; highlightKeywords?: string[] }) {
-  const titleSize = fullscreen ? "text-4xl sm:text-5xl lg:text-6xl" : "text-2xl sm:text-3xl";
-  const headingSize = fullscreen ? "text-3xl sm:text-4xl lg:text-5xl" : "text-xl sm:text-2xl";
+function SlideTitle({
+  slide,
+  tpl,
+  fullscreen,
+  highlightKeywords,
+}: {
+  slide: Slide;
+  tpl: ReturnType<typeof getTemplate>;
+  fullscreen?: boolean;
+  highlightKeywords?: string[];
+}) {
+  const titleSize = fullscreen
+    ? "text-4xl sm:text-5xl lg:text-6xl"
+    : "text-2xl sm:text-3xl";
+  const headingSize = fullscreen
+    ? "text-3xl sm:text-4xl lg:text-5xl"
+    : "text-xl sm:text-2xl";
   if (slide.type === "title") {
     return (
       <div className="mt-auto mb-auto text-center">
-        <h1 className={cn("font-bold leading-tight mb-3", titleSize)} style={{ color: tpl.text }}>
+        <h1
+          className={cn("font-bold leading-tight mb-3", titleSize)}
+          style={{ color: tpl.text }}
+        >
           <HighlightedText text={slide.title} keywords={highlightKeywords} />
         </h1>
         {slide.content && (
-          <p className={cn("opacity-70 max-w-xl mx-auto", fullscreen ? "text-base sm:text-lg" : "text-sm sm:text-base")}>{slide.content}</p>
+          <p
+            className={cn(
+              "opacity-70 max-w-xl mx-auto",
+              fullscreen ? "text-base sm:text-lg" : "text-sm sm:text-base",
+            )}
+          >
+            {slide.content}
+          </p>
         )}
       </div>
     );
@@ -1300,21 +3161,40 @@ function SlideTitle({ slide, tpl, fullscreen, highlightKeywords }: { slide: Slid
   if (slide.type === "thanks") {
     return (
       <div className="mt-auto mb-auto text-center">
-        <div className={cn("mb-4", fullscreen ? "text-6xl" : "text-5xl")}>🙏</div>
-        <h1 className={cn("font-bold mb-2", headingSize)} style={{ color: tpl.text }}>{slide.title}</h1>
-        {slide.content && <p className={cn("opacity-70", fullscreen ? "text-base" : "text-sm")}>{slide.content}</p>}
+        <div className={cn("mb-4", fullscreen ? "text-6xl" : "text-5xl")}>
+          🙏
+        </div>
+        <h1
+          className={cn("font-bold mb-2", headingSize)}
+          style={{ color: tpl.text }}
+        >
+          {slide.title}
+        </h1>
+        {slide.content && (
+          <p className={cn("opacity-70", fullscreen ? "text-base" : "text-sm")}>
+            {slide.content}
+          </p>
+        )}
       </div>
     );
   }
   return (
-    <h2 className={cn("font-bold mb-4 leading-tight shrink-0", headingSize)} style={{ color: tpl.text }}>
+    <h2
+      className={cn("font-bold mb-4 leading-tight shrink-0", headingSize)}
+      style={{ color: tpl.text }}
+    >
       <HighlightedText text={slide.title} keywords={highlightKeywords} />
     </h2>
   );
 }
 
 function SlideBody({
-  slide, tpl, typeColor, fullscreen, highlightKeywords, revealAnswer,
+  slide,
+  tpl,
+  typeColor,
+  fullscreen,
+  highlightKeywords,
+  revealAnswer,
 }: {
   slide: Slide;
   tpl: ReturnType<typeof getTemplate>;
@@ -1326,8 +3206,12 @@ function SlideBody({
   const accent = typeColor[slide.type];
   const textBase = fullscreen ? "text-base sm:text-lg" : "text-xs sm:text-sm";
   const textLarge = fullscreen ? "text-lg sm:text-xl" : "text-sm sm:text-base";
-  const textBullet = fullscreen ? "text-base sm:text-lg" : "text-sm sm:text-base";
-  const textFormula = fullscreen ? "text-3xl sm:text-4xl lg:text-5xl" : "text-xl sm:text-2xl lg:text-3xl";
+  const textBullet = fullscreen
+    ? "text-base sm:text-lg"
+    : "text-sm sm:text-base";
+  const textFormula = fullscreen
+    ? "text-3xl sm:text-4xl lg:text-5xl"
+    : "text-xl sm:text-2xl lg:text-3xl";
 
   // Formula slide
   if (slide.type === "formula" && slide.formula) {
@@ -1337,16 +3221,27 @@ function SlideBody({
           className="rounded-2xl p-6 sm:p-8 text-center"
           style={{ background: tpl.cardBg, border: `1px solid ${accent}40` }}
         >
-          <p className={cn("font-mono font-bold mb-3", textFormula)} style={{ color: accent }}>
+          <p
+            className={cn("font-mono font-bold mb-3", textFormula)}
+            style={{ color: accent }}
+          >
             {slide.formula}
           </p>
-          {slide.content && <p className={cn("opacity-70", textBase)}>{slide.content}</p>}
+          {slide.content && (
+            <p className={cn("opacity-70", textBase)}>{slide.content}</p>
+          )}
         </div>
         {slide.bullets && slide.bullets.length > 0 && (
           <ul className="mt-4 space-y-2">
             {slide.bullets.map((b, i) => (
-              <li key={i} className={cn("flex items-start gap-2 opacity-90", textBullet)}>
-                <span className="mt-1.5 h-1 w-1 rounded-full shrink-0" style={{ background: accent }} />
+              <li
+                key={i}
+                className={cn("flex items-start gap-2 opacity-90", textBullet)}
+              >
+                <span
+                  className="mt-1.5 h-1 w-1 rounded-full shrink-0"
+                  style={{ background: accent }}
+                />
                 <span>{b}</span>
               </li>
             ))}
@@ -1362,17 +3257,32 @@ function SlideBody({
       <div className="flex-1 space-y-3">
         {slide.content && (
           <div className="rounded-xl p-4" style={{ background: tpl.cardBg }}>
-            <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Problem</p>
+            <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">
+              Problem
+            </p>
             <p className={cn(textLarge)}>{slide.content}</p>
           </div>
         )}
         {slide.bullets && slide.bullets.length > 0 && (
-          <div className="rounded-xl p-4 border" style={{ borderColor: `${accent}40`, background: `${accent}10` }}>
-            <p className="text-[10px] uppercase tracking-wider opacity-60 mb-2" style={{ color: accent }}>Solution</p>
+          <div
+            className="rounded-xl p-4 border"
+            style={{ borderColor: `${accent}40`, background: `${accent}10` }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-wider opacity-60 mb-2"
+              style={{ color: accent }}
+            >
+              Solution
+            </p>
             <ol className="space-y-2">
               {slide.bullets.map((b, i) => (
                 <li key={i} className={cn("flex items-start gap-2", textBase)}>
-                  <span className="font-bold shrink-0" style={{ color: accent }}>{i + 1}.</span>
+                  <span
+                    className="font-bold shrink-0"
+                    style={{ color: accent }}
+                  >
+                    {i + 1}.
+                  </span>
                   <span>{b}</span>
                 </li>
               ))}
@@ -1389,34 +3299,60 @@ function SlideBody({
       <div className="flex-1 space-y-3">
         {slide.practiceQuestion && (
           <div className="rounded-xl p-4" style={{ background: tpl.cardBg }}>
-            <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">Try it</p>
-            <p className={cn("font-medium", textLarge)}>{slide.practiceQuestion}</p>
+            <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">
+              Try it
+            </p>
+            <p className={cn("font-medium", textLarge)}>
+              {slide.practiceQuestion}
+            </p>
           </div>
         )}
-        {slide.practiceAnswer && (
-          revealAnswer !== undefined ? (
+        {slide.practiceAnswer &&
+          (revealAnswer !== undefined ? (
             // During narration playback — only show if revealAnswer is true
             revealAnswer && (
-              <div className="rounded-xl p-4 border" style={{ borderColor: `${accent}40`, background: `${accent}10` }}>
-                <p className="text-[10px] uppercase tracking-wider opacity-70 mb-1" style={{ color: accent }}>Answer</p>
+              <div
+                className="rounded-xl p-4 border"
+                style={{
+                  borderColor: `${accent}40`,
+                  background: `${accent}10`,
+                }}
+              >
+                <p
+                  className="text-[10px] uppercase tracking-wider opacity-70 mb-1"
+                  style={{ color: accent }}
+                >
+                  Answer
+                </p>
                 <p className={textBase}>{slide.practiceAnswer}</p>
               </div>
             )
           ) : (
             // Normal editor view — collapsible
-            <details className="rounded-xl p-4 border" style={{ borderColor: `${accent}40`, background: `${accent}10` }}>
-              <summary className="text-[10px] uppercase tracking-wider cursor-pointer opacity-70" style={{ color: accent }}>
+            <details
+              className="rounded-xl p-4 border"
+              style={{ borderColor: `${accent}40`, background: `${accent}10` }}
+            >
+              <summary
+                className="text-[10px] uppercase tracking-wider cursor-pointer opacity-70"
+                style={{ color: accent }}
+              >
                 Show answer
               </summary>
               <p className={cn("mt-2", textBase)}>{slide.practiceAnswer}</p>
             </details>
-          )
-        )}
+          ))}
         {slide.bullets && slide.bullets.length > 0 && (
           <ul className="space-y-2">
             {slide.bullets.map((b, i) => (
-              <li key={i} className={cn("flex items-start gap-2 opacity-80", textBase)}>
-                <span className="mt-1.5 h-1 w-1 rounded-full shrink-0" style={{ background: accent }} />
+              <li
+                key={i}
+                className={cn("flex items-start gap-2 opacity-80", textBase)}
+              >
+                <span
+                  className="mt-1.5 h-1 w-1 rounded-full shrink-0"
+                  style={{ background: accent }}
+                />
                 <HighlightedText text={b} keywords={highlightKeywords} />
               </li>
             ))}
@@ -1430,36 +3366,78 @@ function SlideBody({
   if (slide.type === "quiz") {
     return (
       <div className="flex-1 space-y-3">
-        {slide.content && <p className={cn("font-medium", textLarge)}>{slide.content}</p>}
+        {slide.content && (
+          <p className={cn("font-medium", textLarge)}>{slide.content}</p>
+        )}
         {slide.bullets && slide.bullets.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {slide.bullets.map((b, i) => (
-              <div key={i} className="rounded-lg p-3 border" style={{ borderColor: `${accent}30`, background: tpl.cardBg }}>
-                <span className="text-xs font-bold opacity-60 mr-2">{String.fromCharCode(65 + i)}.</span>
+              <div
+                key={i}
+                className="rounded-lg p-3 border"
+                style={{ borderColor: `${accent}30`, background: tpl.cardBg }}
+              >
+                <span className="text-xs font-bold opacity-60 mr-2">
+                  {String.fromCharCode(65 + i)}.
+                </span>
                 <span className={cn(textBase)}>{b}</span>
               </div>
             ))}
           </div>
         )}
-        {slide.practiceAnswer && (
-          <p className="text-[10px] opacity-50 italic">Answer: {slide.practiceAnswer}</p>
-        )}
+        {slide.practiceAnswer &&
+          (revealAnswer ? (
+            <div
+              className="rounded-lg border p-3 text-sm"
+              style={{ borderColor: `${accent}40`, background: `${accent}12` }}
+            >
+              <span className="font-semibold" style={{ color: accent }}>
+                Answer:
+              </span>{" "}
+              {slide.practiceAnswer}
+            </div>
+          ) : revealAnswer === undefined ? (
+            <details
+              className="rounded-lg border p-2 text-xs"
+              style={{ borderColor: `${accent}30` }}
+            >
+              <summary className="cursor-pointer">Reveal answer</summary>
+              <p className="mt-2">{slide.practiceAnswer}</p>
+            </details>
+          ) : null)}
       </div>
     );
   }
 
   // Comparison slide (2-column bullets)
-  if (slide.type === "comparison" && slide.bullets && slide.bullets.length >= 2) {
+  if (
+    slide.type === "comparison" &&
+    slide.bullets &&
+    slide.bullets.length >= 2
+  ) {
     const half = Math.ceil(slide.bullets.length / 2);
     const left = slide.bullets.slice(0, half);
     const right = slide.bullets.slice(half);
     return (
       <div className="flex-1 grid grid-cols-2 gap-3">
         {[left, right].map((col, ci) => (
-          <div key={ci} className="rounded-xl p-4" style={{ background: tpl.cardBg }}>
+          <div
+            key={ci}
+            className="rounded-xl p-4"
+            style={{ background: tpl.cardBg }}
+          >
             {col.map((b, i) => (
-              <p key={i} className={cn("mb-2 last:mb-0 flex items-start gap-2", textBase)}>
-                <span className="mt-1.5 h-1 w-1 rounded-full shrink-0" style={{ background: accent }} />
+              <p
+                key={i}
+                className={cn(
+                  "mb-2 last:mb-0 flex items-start gap-2",
+                  textBase,
+                )}
+              >
+                <span
+                  className="mt-1.5 h-1 w-1 rounded-full shrink-0"
+                  style={{ background: accent }}
+                />
                 <span>{b}</span>
               </p>
             ))}
@@ -1473,20 +3451,47 @@ function SlideBody({
   if (slide.type === "table" && slide.bullets && slide.bullets.length > 0) {
     return (
       <div className="flex-1">
-        <div className="rounded-xl overflow-hidden border" style={{ borderColor: `${accent}30` }}>
+        <div
+          className="rounded-xl overflow-hidden border"
+          style={{ borderColor: `${accent}30` }}
+        >
           {slide.bullets.map((b, i) => {
             const cells = b.split("|").map((c) => c.trim());
             if (cells.length < 2) {
               return (
-                <div key={i} className={cn("px-4 py-2", textBase)} style={{ background: i === 0 ? `${accent}20` : tpl.cardBg, fontWeight: i === 0 ? 600 : 400 }}>
+                <div
+                  key={i}
+                  className={cn("px-4 py-2", textBase)}
+                  style={{
+                    background: i === 0 ? `${accent}20` : tpl.cardBg,
+                    fontWeight: i === 0 ? 600 : 400,
+                  }}
+                >
                   {b}
                 </div>
               );
             }
             return (
-              <div key={i} className="grid" style={{ gridTemplateColumns: `repeat(${cells.length}, 1fr)`, background: i === 0 ? `${accent}20` : tpl.cardBg }}>
+              <div
+                key={i}
+                className="grid"
+                style={{
+                  gridTemplateColumns: `repeat(${cells.length}, 1fr)`,
+                  background: i === 0 ? `${accent}20` : tpl.cardBg,
+                }}
+              >
                 {cells.map((c, ci) => (
-                  <div key={ci} className={cn("px-3 py-2 border-r last:border-r-0", textBase)} style={{ borderColor: `${accent}20`, fontWeight: i === 0 ? 600 : 400 }}>
+                  <div
+                    key={ci}
+                    className={cn(
+                      "px-3 py-2 border-r last:border-r-0",
+                      textBase,
+                    )}
+                    style={{
+                      borderColor: `${accent}20`,
+                      fontWeight: i === 0 ? 600 : 400,
+                    }}
+                  >
                     {c}
                   </div>
                 ))}
@@ -1494,7 +3499,9 @@ function SlideBody({
             );
           })}
         </div>
-        {slide.content && <p className={cn("mt-3 opacity-60", textBase)}>{slide.content}</p>}
+        {slide.content && (
+          <p className={cn("mt-3 opacity-60", textBase)}>{slide.content}</p>
+        )}
       </div>
     );
   }
@@ -1504,10 +3511,16 @@ function SlideBody({
     return (
       <div className="flex-1">
         <div className="relative pl-6">
-          <div className="absolute left-2 top-0 bottom-0 w-0.5" style={{ background: `${accent}40` }} />
+          <div
+            className="absolute left-2 top-0 bottom-0 w-0.5"
+            style={{ background: `${accent}40` }}
+          />
           {slide.bullets.map((b, i) => (
             <div key={i} className="relative mb-4 last:mb-0">
-              <div className="absolute -left-[18px] top-1 h-3 w-3 rounded-full border-2" style={{ background: tpl.background, borderColor: accent }} />
+              <div
+                className="absolute -left-[18px] top-1 h-3 w-3 rounded-full border-2"
+                style={{ background: tpl.background, borderColor: accent }}
+              />
               <p className={textBase}>{b}</p>
             </div>
           ))}
@@ -1521,18 +3534,50 @@ function SlideBody({
     return (
       <div className="flex-1 flex flex-col justify-center">
         <div
-          className="rounded-2xl p-6 border-2 border-dashed text-center"
+          className="rounded-2xl p-3 border text-center"
           style={{ borderColor: `${accent}40`, background: tpl.cardBg }}
         >
-          <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" style={{ color: accent }} />
-          <p className="text-[10px] uppercase tracking-wider opacity-60 mb-2">Diagram placeholder</p>
-          <p className={cn("opacity-80", textBase)}>{slide.diagramPrompt || "Draw a labelled diagram here."}</p>
+          {slide.imageReference ? (
+            <div
+              className={cn(
+                "relative mx-auto w-full overflow-hidden rounded-lg bg-black/10",
+                fullscreen ? "h-[42vh]" : "h-36 sm:h-44",
+              )}
+            >
+              <Image
+                src={slide.imageReference}
+                alt={slide.diagramPrompt || slide.title}
+                fill
+                sizes="(max-width: 768px) 90vw, 700px"
+                className="object-contain"
+              />
+            </div>
+          ) : (
+            <>
+              <ImageIcon
+                className="h-8 w-8 mx-auto mb-2 opacity-50"
+                style={{ color: accent }}
+              />
+              <p className="text-[10px] uppercase tracking-wider opacity-60 mb-2">
+                Source diagram description
+              </p>
+              <p className={cn("opacity-80", textBase)}>
+                {slide.diagramPrompt || slide.content}
+              </p>
+            </>
+          )}
         </div>
         {slide.bullets && slide.bullets.length > 0 && (
           <ul className="mt-3 space-y-1">
             {slide.bullets.map((b, i) => (
-              <li key={i} className={cn("flex items-start gap-2 opacity-80", textBase)}>
-                <span className="mt-1.5 h-1 w-1 rounded-full shrink-0" style={{ background: accent }} />
+              <li
+                key={i}
+                className={cn("flex items-start gap-2 opacity-80", textBase)}
+              >
+                <span
+                  className="mt-1.5 h-1 w-1 rounded-full shrink-0"
+                  style={{ background: accent }}
+                />
                 <span>{b}</span>
               </li>
             ))}
@@ -1543,20 +3588,41 @@ function SlideBody({
   }
 
   // Definitions / mistakes / exam-tips / recap / takeaways — list with strong styling
-  if (["definitions", "mistakes", "exam-tips", "recap", "takeaways"].includes(slide.type) && slide.bullets && slide.bullets.length > 0) {
+  if (
+    ["definitions", "mistakes", "exam-tips", "recap", "takeaways"].includes(
+      slide.type,
+    ) &&
+    slide.bullets &&
+    slide.bullets.length > 0
+  ) {
     return (
       <div className="flex-1 space-y-2">
-        {slide.content && <p className={cn("opacity-70 mb-2", textBase)}>{slide.content}</p>}
+        {slide.content && (
+          <p className={cn("opacity-70 mb-2", textBase)}>{slide.content}</p>
+        )}
         {slide.bullets.map((b, i) => {
           const [term, ...rest] = b.split(":").map((x) => x.trim());
           const def = rest.join(":");
           return (
-            <div key={i} className="rounded-lg p-3 flex items-start gap-3" style={{ background: tpl.cardBg }}>
-              <span className="text-xs font-bold shrink-0 px-1.5 py-0.5 rounded" style={{ background: `${accent}20`, color: accent }}>
+            <div
+              key={i}
+              className="rounded-lg p-3 flex items-start gap-3"
+              style={{ background: tpl.cardBg }}
+            >
+              <span
+                className="text-xs font-bold shrink-0 px-1.5 py-0.5 rounded"
+                style={{ background: `${accent}20`, color: accent }}
+              >
                 {i + 1}
               </span>
               <p className={textBase}>
-                {def ? <><span className="font-semibold">{term}:</span> {def}</> : term}
+                {def ? (
+                  <>
+                    <span className="font-semibold">{term}:</span> {def}
+                  </>
+                ) : (
+                  term
+                )}
               </p>
             </div>
           );
@@ -1570,9 +3636,23 @@ function SlideBody({
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-1 w-16 mx-auto rounded-full mb-4" style={{ background: accent }} />
-          <h2 className={cn("font-bold opacity-90", fullscreen ? "text-3xl sm:text-4xl lg:text-5xl" : "text-xl sm:text-2xl lg:text-3xl")}>{slide.title}</h2>
-          {slide.content && <p className={cn("opacity-50 mt-2", textBase)}>{slide.content}</p>}
+          <div
+            className="h-1 w-16 mx-auto rounded-full mb-4"
+            style={{ background: accent }}
+          />
+          <h2
+            className={cn(
+              "font-bold opacity-90",
+              fullscreen
+                ? "text-3xl sm:text-4xl lg:text-5xl"
+                : "text-xl sm:text-2xl lg:text-3xl",
+            )}
+          >
+            {slide.title}
+          </h2>
+          {slide.content && (
+            <p className={cn("opacity-50 mt-2", textBase)}>{slide.content}</p>
+          )}
         </div>
       </div>
     );
@@ -1582,11 +3662,21 @@ function SlideBody({
   if (slide.bullets && slide.bullets.length > 0) {
     return (
       <div className="flex-1">
-        {slide.content && <p className={cn("opacity-70 mb-3", textBase)}><HighlightedText text={slide.content} keywords={highlightKeywords} /></p>}
+        {slide.content && (
+          <p className={cn("opacity-70 mb-3", textBase)}>
+            <HighlightedText
+              text={slide.content}
+              keywords={highlightKeywords}
+            />
+          </p>
+        )}
         <ul className="space-y-2">
           {slide.bullets.map((b, i) => (
             <li key={i} className={cn("flex items-start gap-3", textBullet)}>
-              <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: accent }} />
+              <span
+                className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
+                style={{ background: accent }}
+              />
               <HighlightedText text={b} keywords={highlightKeywords} />
             </li>
           ))}
@@ -1599,12 +3689,28 @@ function SlideBody({
   if (slide.content) {
     return (
       <div className="flex-1">
-        <p className={cn("opacity-85 leading-relaxed whitespace-pre-wrap", textLarge)}><HighlightedText text={slide.content} keywords={highlightKeywords} /></p>
+        <p
+          className={cn(
+            "opacity-85 leading-relaxed whitespace-pre-wrap",
+            textLarge,
+          )}
+        >
+          <HighlightedText text={slide.content} keywords={highlightKeywords} />
+        </p>
       </div>
     );
   }
 
-  return <div className={cn("flex-1 grid place-items-center opacity-40 italic", textBase)}>Empty slide</div>;
+  return (
+    <div
+      className={cn(
+        "flex-1 grid place-items-center opacity-40 italic",
+        textBase,
+      )}
+    >
+      Empty slide
+    </div>
+  );
 }
 
 // ============================================================================
@@ -1612,9 +3718,17 @@ function SlideBody({
 // ============================================================================
 
 function ThumbCard({
-  slide, index, active, tpl, onClick,
+  slide,
+  index,
+  active,
+  tpl,
+  onClick,
 }: {
-  slide: Slide; index: number; active: boolean; tpl: ReturnType<typeof getTemplate>; onClick: () => void;
+  slide: Slide;
+  index: number;
+  active: boolean;
+  tpl: ReturnType<typeof getTemplate>;
+  onClick: () => void;
 }) {
   const meta = getSlideTypeMeta(slide.type);
   return (
@@ -1622,22 +3736,36 @@ function ThumbCard({
       onClick={onClick}
       className={cn(
         "w-full rounded-lg overflow-hidden border transition-all text-left",
-        active ? "border-violet-500/60 ring-2 ring-violet-500/30" : "border-white/10 hover:border-white/25"
+        active
+          ? "border-violet-500/60 ring-2 ring-violet-500/30"
+          : "border-white/10 hover:border-white/25",
       )}
     >
       <div
         className="aspect-video p-2 relative overflow-hidden"
-        style={{ background: tpl.background, color: tpl.text, fontFamily: tpl.fontFamily }}
+        style={{
+          background: tpl.background,
+          color: tpl.text,
+          fontFamily: tpl.fontFamily,
+        }}
       >
-        <div className="text-[8px] uppercase tracking-wide opacity-50 mb-0.5">{meta.icon} {meta.name}</div>
-        <p className="text-[10px] font-semibold leading-tight line-clamp-2">{slide.title}</p>
+        <div className="text-[8px] uppercase tracking-wide opacity-50 mb-0.5">
+          {meta.icon} {meta.name}
+        </div>
+        <p className="text-[10px] font-semibold leading-tight line-clamp-2">
+          {slide.title}
+        </p>
         {slide.bullets && slide.bullets.length > 0 && (
-          <p className="text-[7px] opacity-50 mt-0.5 line-clamp-2">{slide.bullets[0]}</p>
+          <p className="text-[7px] opacity-50 mt-0.5 line-clamp-2">
+            {slide.bullets[0]}
+          </p>
         )}
       </div>
       <div className="px-2 py-1 bg-white/[0.02] flex items-center justify-between">
         <span className="text-[10px] text-white/40">#{index + 1}</span>
-        <span className="text-[10px] text-white/30">{slide.bullets?.length ?? 0} bullets</span>
+        <span className="text-[10px] text-white/30">
+          {slide.bullets?.length ?? 0} bullets
+        </span>
       </div>
     </button>
   );
@@ -1648,7 +3776,15 @@ function ThumbCard({
 // ============================================================================
 
 function EditPanel({
-  slide, tpl, isEditing, onStartEdit, onStopEdit, onUpdate, onAddSlide, onTemplateChange, currentTemplate,
+  slide,
+  tpl,
+  isEditing,
+  onStartEdit,
+  onStopEdit,
+  onUpdate,
+  onAddSlide,
+  onTemplateChange,
+  currentTemplate,
 }: {
   slide: Slide;
   tpl: ReturnType<typeof getTemplate>;
@@ -1664,7 +3800,9 @@ function EditPanel({
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 max-h-[calc(100vh-20rem)] overflow-y-auto sticky top-2 space-y-3">
       {/* Template switcher */}
       <div>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-1.5">Template</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-1.5">
+          Template
+        </p>
         <div className="grid grid-cols-2 gap-1.5">
           {TEMPLATES.map((t) => (
             <button
@@ -1672,11 +3810,15 @@ function EditPanel({
               onClick={() => onTemplateChange(t.id)}
               className={cn(
                 "rounded-md overflow-hidden border text-left transition-all",
-                currentTemplate === t.id ? "border-violet-500/60 ring-1 ring-violet-500/30" : "border-white/10 hover:border-white/25"
+                currentTemplate === t.id
+                  ? "border-violet-500/60 ring-1 ring-violet-500/30"
+                  : "border-white/10 hover:border-white/25",
               )}
             >
               <div className="h-8" style={{ background: t.swatch }} />
-              <p className="text-[9px] text-white/60 px-1.5 py-0.5 truncate">{t.name}</p>
+              <p className="text-[9px] text-white/60 px-1.5 py-0.5 truncate">
+                {t.name}
+              </p>
             </button>
           ))}
         </div>
@@ -1684,12 +3826,16 @@ function EditPanel({
 
       <div className="border-t border-white/10 pt-3">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Slide editor</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">
+            Slide editor
+          </p>
           <button
             onClick={isEditing ? onStopEdit : onStartEdit}
             className={cn(
               "text-[10px] px-2 py-0.5 rounded-full",
-              isEditing ? "bg-violet-500/20 text-violet-200 border border-violet-500/40" : "bg-white/5 text-white/60 border border-white/10"
+              isEditing
+                ? "bg-violet-500/20 text-violet-200 border border-violet-500/40"
+                : "bg-white/5 text-white/60 border border-white/10",
             )}
           >
             {isEditing ? "Editing" : "Edit"}
@@ -1698,18 +3844,26 @@ function EditPanel({
 
         <div className="space-y-2">
           <div>
-            <label className="text-[9px] text-white/40 uppercase tracking-wider">Type</label>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Type
+            </label>
             <select
               value={slide.type}
               onChange={(e) => onUpdate({ type: e.target.value as SlideType })}
               className="mt-0.5 w-full rounded-md bg-white/5 border border-white/10 px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500/40"
             >
-              {SLIDE_TYPES.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+              {SLIDE_TYPES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.icon} {s.name}
+                </option>
+              ))}
             </select>
           </div>
 
           <div>
-            <label className="text-[9px] text-white/40 uppercase tracking-wider">Title</label>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Title
+            </label>
             <input
               value={slide.title}
               onChange={(e) => onUpdate({ title: e.target.value })}
@@ -1718,7 +3872,9 @@ function EditPanel({
           </div>
 
           <div>
-            <label className="text-[9px] text-white/40 uppercase tracking-wider">Content</label>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Content
+            </label>
             <textarea
               value={slide.content}
               onChange={(e) => onUpdate({ content: e.target.value })}
@@ -1729,10 +3885,18 @@ function EditPanel({
           </div>
 
           <div>
-            <label className="text-[9px] text-white/40 uppercase tracking-wider">Bullets (one per line)</label>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Bullets (one per line)
+            </label>
             <textarea
               value={(slide.bullets ?? []).join("\n")}
-              onChange={(e) => onUpdate({ bullets: e.target.value.split("\n").filter((b) => b.trim() || true) })}
+              onChange={(e) =>
+                onUpdate({
+                  bullets: e.target.value
+                    .split("\n")
+                    .filter((b) => b.trim() || true),
+                })
+              }
               rows={4}
               placeholder="One bullet per line"
               className="mt-0.5 w-full rounded-md bg-white/5 border border-white/10 px-2 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-violet-500/40 resize-y font-mono"
@@ -1741,7 +3905,9 @@ function EditPanel({
 
           {(slide.type === "formula" || slide.formula) && (
             <div>
-              <label className="text-[9px] text-white/40 uppercase tracking-wider">Formula</label>
+              <label className="text-[9px] text-white/40 uppercase tracking-wider">
+                Formula
+              </label>
               <input
                 value={slide.formula ?? ""}
                 onChange={(e) => onUpdate({ formula: e.target.value })}
@@ -1753,7 +3919,9 @@ function EditPanel({
 
           {(slide.type === "diagram" || slide.diagramPrompt) && (
             <div>
-              <label className="text-[9px] text-white/40 uppercase tracking-wider">Diagram description</label>
+              <label className="text-[9px] text-white/40 uppercase tracking-wider">
+                Diagram description
+              </label>
               <textarea
                 value={slide.diagramPrompt ?? ""}
                 onChange={(e) => onUpdate({ diagramPrompt: e.target.value })}
@@ -1767,16 +3935,22 @@ function EditPanel({
           {(slide.type === "practice" || slide.practiceQuestion) && (
             <>
               <div>
-                <label className="text-[9px] text-white/40 uppercase tracking-wider">Practice question</label>
+                <label className="text-[9px] text-white/40 uppercase tracking-wider">
+                  Practice question
+                </label>
                 <textarea
                   value={slide.practiceQuestion ?? ""}
-                  onChange={(e) => onUpdate({ practiceQuestion: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate({ practiceQuestion: e.target.value })
+                  }
                   rows={2}
                   className="mt-0.5 w-full rounded-md bg-white/5 border border-white/10 px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500/40 resize-y"
                 />
               </div>
               <div>
-                <label className="text-[9px] text-white/40 uppercase tracking-wider">Practice answer</label>
+                <label className="text-[9px] text-white/40 uppercase tracking-wider">
+                  Practice answer
+                </label>
                 <textarea
                   value={slide.practiceAnswer ?? ""}
                   onChange={(e) => onUpdate({ practiceAnswer: e.target.value })}
@@ -1788,7 +3962,9 @@ function EditPanel({
           )}
 
           <div>
-            <label className="text-[9px] text-white/40 uppercase tracking-wider">Speaker notes</label>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Speaker notes
+            </label>
             <textarea
               value={slide.speakerNotes}
               onChange={(e) => onUpdate({ speakerNotes: e.target.value })}
@@ -1797,14 +3973,64 @@ function EditPanel({
               className="mt-0.5 w-full rounded-md bg-white/5 border border-white/10 px-2 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-violet-500/40 resize-y"
             />
           </div>
+
+          <div>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Source pages (comma separated)
+            </label>
+            <input
+              value={(slide.sourcePages ?? []).join(", ")}
+              onChange={(event) =>
+                onUpdate({
+                  sourcePages: [
+                    ...new Set(
+                      event.target.value
+                        .split(",")
+                        .map((value) => Number(value.trim()))
+                        .filter(
+                          (value) => Number.isInteger(value) && value > 0,
+                        ),
+                    ),
+                  ],
+                })
+              }
+              placeholder="e.g., 12, 13, 14"
+              className="mt-0.5 w-full rounded-md bg-white/5 border border-white/10 px-2 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+            />
+          </div>
+
+          <div>
+            <label className="text-[9px] text-white/40 uppercase tracking-wider">
+              Source figure URL
+            </label>
+            <input
+              value={slide.imageReference ?? ""}
+              onChange={(event) =>
+                onUpdate({ imageReference: event.target.value || undefined })
+              }
+              placeholder="Existing ebook figure/page image"
+              className="mt-0.5 w-full rounded-md bg-white/5 border border-white/10 px-2 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+            />
+          </div>
         </div>
       </div>
 
       {/* Quick-add slide buttons */}
       <div className="border-t border-white/10 pt-3">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-1.5">Quick add</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-1.5">
+          Quick add
+        </p>
         <div className="grid grid-cols-3 gap-1">
-          {(["concept", "formula", "example", "practice", "summary", "section"] as SlideType[]).map((t) => {
+          {(
+            [
+              "concept",
+              "formula",
+              "example",
+              "practice",
+              "summary",
+              "section",
+            ] as SlideType[]
+          ).map((t) => {
             const meta = getSlideTypeMeta(t);
             return (
               <button
@@ -1827,23 +4053,43 @@ function EditPanel({
 // Fullscreen Presentation Mode
 // ============================================================================
 
-function FullscreenPreview({ slideshow, initialIdx, onExit }: {
-  slideshow: Slideshow; initialIdx: number; onExit: () => void;
+function FullscreenPreview({
+  slideshow,
+  initialIdx,
+  onExit,
+}: {
+  slideshow: Slideshow;
+  initialIdx: number;
+  onExit: () => void;
 }) {
   const [idx, setIdx] = useState(initialIdx);
   const [showNotes, setShowNotes] = useState(true);
+  const [showOverview, setShowOverview] = useState(false);
+  const [revealedAnswers, setRevealedAnswers] = useState<
+    Record<string, boolean>
+  >({});
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const tpl = getTemplate(slideshow.template);
   const slide = slideshow.slides[idx];
 
   useEffect(() => {
-    const i = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 500);
+    const i = setInterval(
+      () => setElapsed(Math.floor((Date.now() - startTime) / 1000)),
+      500,
+    );
     return () => clearInterval(i);
   }, [startTime]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      )
+        return;
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
         setIdx((i) => Math.min(slideshow.slides.length - 1, i + 1));
@@ -1854,6 +4100,11 @@ function FullscreenPreview({ slideshow, initialIdx, onExit }: {
         onExit();
       } else if (e.key === "n") {
         setShowNotes((s) => !s);
+      } else if (e.key.toLowerCase() === "o") {
+        setShowOverview((value) => !value);
+      } else if (e.key.toLowerCase() === "f") {
+        if (document.fullscreenElement) void document.exitFullscreen();
+        else void document.documentElement.requestFullscreen?.();
       } else if (e.key === "Home") {
         setIdx(0);
       } else if (e.key === "End") {
@@ -1864,45 +4115,159 @@ function FullscreenPreview({ slideshow, initialIdx, onExit }: {
     return () => window.removeEventListener("keydown", handler);
   }, [slideshow.slides.length, onExit]);
 
-  const mm = Math.floor(elapsed / 60).toString().padStart(2, "0");
+  const mm = Math.floor(elapsed / 60)
+    .toString()
+    .padStart(2, "0");
   const ss = (elapsed % 60).toString().padStart(2, "0");
   const estMin = Math.ceil((slideshow.slides.length * 90) / 60); // ~90s/slide
 
   // Use portal to escape any parent containing-block (backdrop-filter, transform, etc.)
   const content = (
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col" style={{ contain: "layout" }}>
+    <div
+      className="fixed inset-0 z-[200] bg-black flex flex-col"
+      style={{ contain: "layout" }}
+    >
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 bg-gradient-to-b from-black/80 to-transparent text-white">
         <div className="flex items-center gap-3 text-xs min-w-0">
-          <span className="opacity-70 truncate max-w-[200px]">{slideshow.title}</span>
+          <span className="opacity-70 truncate max-w-[200px]">
+            {slideshow.title}
+          </span>
           <span className="opacity-40 shrink-0">·</span>
-          <span className="opacity-70 shrink-0">{idx + 1} / {slideshow.slides.length}</span>
+          <span className="opacity-70 shrink-0">
+            {idx + 1} / {slideshow.slides.length}
+          </span>
         </div>
         <div className="flex items-center gap-3 text-xs shrink-0">
           <Clock className="h-3.5 w-3.5 opacity-60" />
-          <span className="font-mono opacity-80">{mm}:{ss}</span>
+          <span className="font-mono opacity-80">
+            {mm}:{ss}
+          </span>
           <span className="opacity-40 hidden sm:inline">/ ~{estMin}m est</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
+            onClick={() => setShowOverview(true)}
+            className="px-2.5 py-1 rounded-md text-[11px] bg-white/5 border border-white/15 text-white/60 hover:text-white"
+            title="Overview (O)"
+          >
+            Overview
+          </button>
+          <button
+            onClick={() =>
+              document.fullscreenElement
+                ? void document.exitFullscreen()
+                : void document.documentElement.requestFullscreen?.()
+            }
+            className="p-1.5 rounded-md bg-white/5 border border-white/15 text-white/60 hover:text-white"
+            title="Fullscreen (F)"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={() => setShowNotes((s) => !s)}
-            className={cn("px-2.5 py-1 rounded-md text-[11px] border transition-colors", showNotes ? "bg-violet-500/20 border-violet-500/40 text-violet-200" : "bg-white/5 border-white/15 text-white/60 hover:text-white")}
+            className={cn(
+              "px-2.5 py-1 rounded-md text-[11px] border transition-colors",
+              showNotes
+                ? "bg-violet-500/20 border-violet-500/40 text-violet-200"
+                : "bg-white/5 border-white/15 text-white/60 hover:text-white",
+            )}
             title="Toggle speaker notes (N)"
           >
             {showNotes ? "Notes on" : "Notes off"}
           </button>
-          <button onClick={onExit} className="px-2.5 py-1 rounded-md text-[11px] bg-white/5 border border-white/15 text-white/60 hover:text-white hover:bg-white/10 transition-colors" title="Exit (Esc)">
+          <button
+            onClick={onExit}
+            className="px-2.5 py-1 rounded-md text-[11px] bg-white/5 border border-white/15 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            title="Exit (Esc)"
+          >
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
       {/* Main slide — fills the entire viewport minus small padding */}
-      <div className="flex-1 grid place-items-center p-4 sm:p-8 pt-16">
+      <div
+        className="flex-1 grid place-items-center p-4 sm:p-8 pt-16 touch-pan-y"
+        onPointerDown={(event) => {
+          pointerStart.current = { x: event.clientX, y: event.clientY };
+        }}
+        onPointerUp={(event) => {
+          const start = pointerStart.current;
+          pointerStart.current = null;
+          if (!start) return;
+          const dx = event.clientX - start.x;
+          const dy = event.clientY - start.y;
+          if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+          setIdx((value) =>
+            dx < 0
+              ? Math.min(slideshow.slides.length - 1, value + 1)
+              : Math.max(0, value - 1),
+          );
+        }}
+      >
         <div className="w-full h-full max-w-[1400px] max-h-[780px] aspect-video shadow-2xl rounded-2xl overflow-hidden">
-          <SlideStage slide={slide} tpl={tpl} className="w-full h-full" fullscreen />
+          <SlideStage
+            slide={slide}
+            tpl={tpl}
+            className="w-full h-full"
+            fullscreen
+            revealAnswer={Boolean(revealedAnswers[slide.id])}
+          />
         </div>
       </div>
+
+      <AnimatePresence>
+        {showOverview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 bg-zinc-950/95 p-5 sm:p-8 overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-4 text-white">
+              <div>
+                <h2 className="font-semibold">Slide overview</h2>
+                <p className="text-xs text-white/40">
+                  Choose any slide to jump there
+                </p>
+              </div>
+              <button
+                onClick={() => setShowOverview(false)}
+                className="p-2 rounded-lg border border-white/10 bg-white/5"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+              {slideshow.slides.map((item, index) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setIdx(index);
+                    setShowOverview(false);
+                  }}
+                  className={cn(
+                    "rounded-xl overflow-hidden border text-left",
+                    index === idx
+                      ? "border-violet-400 ring-2 ring-violet-400/30"
+                      : "border-white/10",
+                  )}
+                >
+                  <SlideStage
+                    slide={item}
+                    tpl={tpl}
+                    className="aspect-video w-full pointer-events-none"
+                  />
+                  <div className="bg-black/30 px-2 py-1 text-[10px] text-white/60">
+                    {index + 1}. {item.title}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Speaker notes overlay */}
       <AnimatePresence>
@@ -1916,7 +4281,9 @@ function FullscreenPreview({ slideshow, initialIdx, onExit }: {
             <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1 flex items-center gap-1.5">
               <Presentation className="h-3 w-3" /> Speaker notes
             </p>
-            <p className="text-xs text-white/80 leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto">{slide.speakerNotes}</p>
+            <p className="text-xs text-white/80 leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto">
+              {slide.speakerNotes}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1930,9 +4297,26 @@ function FullscreenPreview({ slideshow, initialIdx, onExit }: {
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-xs text-white/60 px-2 font-mono">{idx + 1} / {slideshow.slides.length}</span>
+        <span className="text-xs text-white/60 px-2 font-mono">
+          {idx + 1} / {slideshow.slides.length}
+        </span>
+        {slide.type === "quiz" && slide.practiceAnswer && (
+          <button
+            onClick={() =>
+              setRevealedAnswers((current) => ({
+                ...current,
+                [slide.id]: !current[slide.id],
+              }))
+            }
+            className="px-2.5 py-1 rounded-full bg-violet-500/20 text-[10px] text-violet-100"
+          >
+            {revealedAnswers[slide.id] ? "Hide answer" : "Reveal answer"}
+          </button>
+        )}
         <button
-          onClick={() => setIdx((i) => Math.min(slideshow.slides.length - 1, i + 1))}
+          onClick={() =>
+            setIdx((i) => Math.min(slideshow.slides.length - 1, i + 1))
+          }
           disabled={idx === slideshow.slides.length - 1}
           className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
         >
@@ -1944,7 +4328,10 @@ function FullscreenPreview({ slideshow, initialIdx, onExit }: {
       <div className="absolute top-0 left-0 right-0 h-1 bg-white/5 z-30">
         <div
           className="h-full transition-all duration-300"
-          style={{ width: `${((idx + 1) / slideshow.slides.length) * 100}%`, background: tpl.accent }}
+          style={{
+            width: `${((idx + 1) / slideshow.slides.length) * 100}%`,
+            background: tpl.accent,
+          }}
         />
       </div>
     </div>
@@ -1966,7 +4353,8 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -1974,10 +4362,12 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
 
   const exportHTML = () => {
     const tpl = getTemplate(slideshow.template);
-    const slidesHTML = slideshow.slides.map((s, i) => {
-      const meta = getSlideTypeMeta(s.type);
-      const bullets = s.bullets?.map((b) => `<li>${escapeHtml(b)}</li>`).join("") ?? "";
-      return `
+    const slidesHTML = slideshow.slides
+      .map((s, i) => {
+        const meta = getSlideTypeMeta(s.type);
+        const bullets =
+          s.bullets?.map((b) => `<li>${escapeHtml(b)}</li>`).join("") ?? "";
+        return `
         <section class="slide" data-type="${s.type}" data-index="${i}">
           <div class="badge">${meta.icon} ${meta.name}</div>
           <h2>${escapeHtml(s.title)}</h2>
@@ -1986,10 +4376,12 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
           ${s.formula ? `<div class="formula">${escapeHtml(s.formula)}</div>` : ""}
           ${s.practiceQuestion ? `<div class="practice"><strong>Try:</strong> ${escapeHtml(s.practiceQuestion)}</div>` : ""}
           ${s.practiceAnswer ? `<details><summary>Show answer</summary><p>${escapeHtml(s.practiceAnswer)}</p></details>` : ""}
+          ${s.showSourceReference && s.sourcePages?.length ? `<p class="source">Source: ${escapeHtml(formatPageRange(s.sourcePages))}</p>` : ""}
           ${s.speakerNotes ? `<div class="notes"><strong>Speaker notes:</strong> ${escapeHtml(s.speakerNotes)}</div>` : ""}
         </section>
       `;
-    }).join("");
+      })
+      .join("");
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -2011,6 +4403,7 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
   .practice { padding: 16px; background: ${tpl.cardBg}; border-radius: 8px; margin: 8px 0; }
   details { margin-top: 12px; }
   .notes { margin-top: 24px; padding-top: 16px; border-top: 1px dashed ${tpl.muted}; font-size: 12px; opacity: 0.6; }
+  .source { text-align: right; font-size: 11px; opacity: 0.5; }
   @media print { .slide { border-radius: 0; border: 0; page-break-after: always; } body { background: white; } }
 </style>
 </head>
@@ -2034,11 +4427,7 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
   };
 
   const exportPDF = () => {
-    // Use browser's print dialog (the HTML export has print CSS)
-    exportHTML();
-    setTimeout(() => window.print(), 500);
-    toast.info("Open the print dialog and choose 'Save as PDF'");
-    setOpen(false);
+    printDeck(false);
   };
 
   const copyOutline = async () => {
@@ -2059,6 +4448,342 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
     setOpen(false);
   };
 
+  const downloadText = (content: string, suffix: string) => {
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${slideshow.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${suffix}.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportSpeakerNotes = () => {
+    downloadText(
+      [
+        `# ${slideshow.title} — Speaker Notes`,
+        "",
+        ...slideshow.slides.flatMap((slide, index) => [
+          `## ${index + 1}. ${slide.title}`,
+          slide.sourcePages?.length
+            ? `Source: ${formatPageRange(slide.sourcePages)}`
+            : "",
+          slide.speakerNotes || "No speaker notes.",
+          "",
+        ]),
+      ].join("\n"),
+      "speaker-notes",
+    );
+    toast.success("Speaker notes exported");
+    setOpen(false);
+  };
+
+  const exportStudyNotes = () => {
+    downloadText(
+      [
+        `# ${slideshow.title}`,
+        slideshow.source ? `Source: ${slideshow.source.label}` : "",
+        "",
+        ...slideshow.slides.flatMap((slide, index) => [
+          `## ${index + 1}. ${slide.title}`,
+          slide.content,
+          ...(slide.bullets ?? []).map((bullet) => `- ${bullet}`),
+          slide.formula ? `\n**Formula:** ${slide.formula}` : "",
+          slide.practiceQuestion
+            ? `\n**Question:** ${slide.practiceQuestion}`
+            : "",
+          slide.practiceAnswer ? `\n**Answer:** ${slide.practiceAnswer}` : "",
+          slide.sourcePages?.length
+            ? `\n_Source: ${formatPageRange(slide.sourcePages)}_`
+            : "",
+          "",
+        ]),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      "study-notes",
+    );
+    toast.success("Study notes exported");
+    setOpen(false);
+  };
+
+  const printDeck = (handout = false) => {
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    if (!popup) {
+      toast.error("The print window was blocked. Allow popups and retry.");
+      return;
+    }
+    const slides = slideshow.slides
+      .map(
+        (slide, index) => `
+      <section class="slide">
+        <small>${index + 1} / ${slideshow.slides.length} · ${escapeHtml(slide.type)}</small>
+        <h2>${escapeHtml(slide.title)}</h2>
+        ${slide.content ? `<p>${escapeHtml(slide.content)}</p>` : ""}
+        ${slide.bullets?.length ? `<ul>${slide.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("")}</ul>` : ""}
+        ${slide.formula ? `<div class="formula">${escapeHtml(slide.formula)}</div>` : ""}
+        ${slide.practiceQuestion ? `<p><strong>Question:</strong> ${escapeHtml(slide.practiceQuestion)}</p>` : ""}
+        ${slide.practiceAnswer ? `<p class="answer"><strong>Answer:</strong> ${escapeHtml(slide.practiceAnswer)}</p>` : ""}
+        ${slide.showSourceReference && slide.sourcePages?.length ? `<footer>Source: ${escapeHtml(formatPageRange(slide.sourcePages))}</footer>` : ""}
+        ${slide.speakerNotes && !handout ? `<aside><strong>Speaker notes:</strong> ${escapeHtml(slide.speakerNotes)}</aside>` : ""}
+      </section>`,
+      )
+      .join("");
+    popup.document
+      .write(`<!doctype html><html><head><title>${escapeHtml(slideshow.title)}</title><style>
+      @page { size: ${handout ? "A4 portrait" : "A4 landscape"}; margin: 10mm; }
+      * { box-sizing: border-box; } body { font-family: Inter, Arial, sans-serif; margin: 0; color: #111827; }
+      .slide { ${handout ? "height: 126mm;" : "min-height: 180mm;"} border: 1px solid #cbd5e1; padding: 12mm; margin: 0 0 8mm; page-break-inside: avoid; position: relative; }
+      ${handout ? ".slide:nth-of-type(2n) { page-break-after: always; }" : ".slide { page-break-after: always; }"}
+      h2 { font-size: ${handout ? "22px" : "34px"}; margin: 8px 0 14px; } p, li { font-size: ${handout ? "13px" : "18px"}; line-height: 1.5; }
+      .formula { font: bold ${handout ? "18px" : "26px"} ui-monospace, monospace; background: #eef2ff; padding: 12px; border-radius: 8px; }
+      small, footer { color: #64748b; } footer { position: absolute; right: 12mm; bottom: 8mm; font-size: 11px; }
+      aside { border-top: 1px dashed #94a3b8; margin-top: 14px; padding-top: 10px; font-size: 12px; color: #475569; }
+      .answer { color: #475569; }
+    </style></head><body>${slides}<script>window.onload=()=>window.print()<\/script></body></html>`);
+    popup.document.close();
+    toast.info(handout ? "Printable handout opened" : "PDF print view opened");
+    setOpen(false);
+  };
+
+  const exportPPTX = async () => {
+    setOpen(false);
+    const toastId = toast.loading("Building editable PPTX…");
+    try {
+      const { default: PptxGenJS } = await import("pptxgenjs");
+      const pptx = new PptxGenJS();
+      pptx.layout = "LAYOUT_WIDE";
+      pptx.author = "Scholar V2";
+      pptx.subject = slideshow.source?.label ?? slideshow.chapter;
+      pptx.title = slideshow.title;
+      pptx.company = "Scholar V2";
+      pptx.theme = {
+        headFontFace: "Aptos Display",
+        bodyFontFace: "Aptos",
+      };
+      const palette: Record<
+        SlideshowTemplate,
+        { background: string; text: string; accent: string; card: string }
+      > = {
+        "scholar-glass": {
+          background: "0B1020",
+          text: "F8FAFC",
+          accent: "60A5FA",
+          card: "172033",
+        },
+        "minimal-white": {
+          background: "FFFFFF",
+          text: "0F172A",
+          accent: "3B82F6",
+          card: "F1F5F9",
+        },
+        blackboard: {
+          background: "132413",
+          text: "F0FFF0",
+          accent: "FDE047",
+          card: "203520",
+        },
+        "science-lab": {
+          background: "0C4A6E",
+          text: "ECFEFF",
+          accent: "67E8F9",
+          card: "155E75",
+        },
+        space: {
+          background: "090B24",
+          text: "E0E7FF",
+          accent: "A78BFA",
+          card: "1E1B4B",
+        },
+        notebook: {
+          background: "FEFCE8",
+          text: "1E293B",
+          accent: "B91C1C",
+          card: "FEF9C3",
+        },
+        corporate: {
+          background: "1E293B",
+          text: "F1F5F9",
+          accent: "38BDF8",
+          card: "334155",
+        },
+        "exam-revision": {
+          background: "FAFAFA",
+          text: "171717",
+          accent: "DC2626",
+          card: "FFFFFF",
+        },
+      };
+      const colors = palette[slideshow.template];
+
+      const imageData = async (url: string) => {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        return await new Promise<{
+          data: string;
+          width: number;
+          height: number;
+        } | null>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const data = String(reader.result);
+            const image = new window.Image();
+            image.onload = () =>
+              resolve({
+                data,
+                width: image.naturalWidth,
+                height: image.naturalHeight,
+              });
+            image.onerror = () => resolve(null);
+            image.src = data;
+          };
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+      };
+
+      for (let index = 0; index < slideshow.slides.length; index += 1) {
+        const sourceSlide = slideshow.slides[index];
+        const slide = pptx.addSlide();
+        slide.background = { color: colors.background };
+        slide.addText(sourceSlide.title, {
+          x: 0.65,
+          y: sourceSlide.type === "title" ? 2.15 : 0.45,
+          w: 12,
+          h: sourceSlide.type === "title" ? 1.1 : 0.65,
+          fontFace: "Aptos Display",
+          fontSize: sourceSlide.type === "title" ? 34 : 25,
+          bold: true,
+          align: sourceSlide.type === "title" ? "center" : "left",
+          color: colors.text,
+          margin: 0,
+          breakLine: false,
+        });
+        const hasImage = Boolean(sourceSlide.imageReference);
+        const textWidth = hasImage ? 6.4 : 11.8;
+        let y = sourceSlide.type === "title" ? 3.4 : 1.35;
+        if (sourceSlide.content) {
+          slide.addText(sourceSlide.content, {
+            x: 0.75,
+            y,
+            w: textWidth,
+            h: 1.15,
+            fontSize: sourceSlide.type === "title" ? 20 : 15,
+            color: colors.text,
+            valign: "top",
+            margin: 0.04,
+            breakLine: false,
+          });
+          y += 1.2;
+        }
+        if (sourceSlide.formula) {
+          slide.addText(sourceSlide.formula, {
+            x: 0.75,
+            y,
+            w: textWidth,
+            h: 0.72,
+            fontFace: "Cambria Math",
+            fontSize: 22,
+            bold: true,
+            color: colors.accent,
+            fill: { color: colors.card },
+            margin: 0.12,
+            align: "center",
+            valign: "middle",
+          });
+          y += 0.85;
+        }
+        if (sourceSlide.bullets?.length) {
+          slide.addText(
+            sourceSlide.bullets.map((bullet) => `• ${bullet}`).join("\n"),
+            {
+              x: 0.85,
+              y,
+              w: textWidth - 0.1,
+              h: Math.max(1.2, 6.45 - y),
+              fontSize: 15,
+              color: colors.text,
+              breakLine: false,
+              margin: 0.03,
+              valign: "top",
+              paraSpaceAfter: 8,
+              fit: "shrink",
+            },
+          );
+        }
+        if (sourceSlide.practiceQuestion) {
+          slide.addText(`Question: ${sourceSlide.practiceQuestion}`, {
+            x: 0.75,
+            y: 5.4,
+            w: textWidth,
+            h: 0.65,
+            fontSize: 14,
+            bold: true,
+            color: colors.text,
+            fill: { color: colors.card },
+            margin: 0.1,
+            fit: "shrink",
+          });
+        }
+        if (sourceSlide.imageReference) {
+          const image = await imageData(sourceSlide.imageReference);
+          if (image) {
+            const box = { x: 7.65, y: 1.35, w: 4.85, h: 4.95 };
+            const scale = Math.min(box.w / image.width, box.h / image.height);
+            const w = image.width * scale;
+            const h = image.height * scale;
+            slide.addImage({
+              data: image.data,
+              x: box.x + (box.w - w) / 2,
+              y: box.y + (box.h - h) / 2,
+              w,
+              h,
+            });
+          }
+        }
+        if (
+          sourceSlide.showSourceReference &&
+          sourceSlide.sourcePages?.length
+        ) {
+          slide.addText(`Source: ${formatPageRange(sourceSlide.sourcePages)}`, {
+            x: 9.5,
+            y: 7.08,
+            w: 3.1,
+            h: 0.18,
+            fontSize: 8,
+            color: colors.text,
+            transparency: 45,
+            align: "right",
+            margin: 0,
+          });
+        }
+        slide.addText(`${index + 1} / ${slideshow.slides.length}`, {
+          x: 0.7,
+          y: 7.08,
+          w: 1.2,
+          h: 0.18,
+          fontSize: 8,
+          color: colors.text,
+          transparency: 45,
+          margin: 0,
+        });
+        if (sourceSlide.speakerNotes) slide.addNotes(sourceSlide.speakerNotes);
+      }
+      await pptx.writeFile({
+        fileName: `${slideshow.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "scholar-slideshow"}.pptx`,
+        compression: true,
+      });
+      toast.success("Editable PPTX exported", { id: toastId });
+    } catch {
+      toast.error("PPTX export failed", {
+        id: toastId,
+        description:
+          "Your slideshow is unchanged. Try again or use PDF export.",
+      });
+    }
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -2075,19 +4800,49 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
             exit={{ opacity: 0, y: -4 }}
             className="absolute right-0 top-full mt-1.5 z-30 w-56 rounded-xl border border-white/15 bg-zinc-950/95 backdrop-blur-xl p-1.5 shadow-2xl"
           >
-            <button onClick={exportHTML} className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5">
+            <button
+              onClick={exportHTML}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
               <FileDown className="h-3.5 w-3.5" /> Export as HTML
             </button>
-            <button onClick={exportPDF} className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5">
-              <FileDown className="h-3.5 w-3.5" /> Export as PDF (via print)
+            <button
+              onClick={exportPDF}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
+              <FileDown className="h-3.5 w-3.5" /> Export as PDF
             </button>
-            <button onClick={copyOutline} className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5">
+            <button
+              onClick={() => void exportPPTX()}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
+              <Presentation className="h-3.5 w-3.5" /> Export editable PPTX
+            </button>
+            <button
+              onClick={() => printDeck(true)}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
+              <FileText className="h-3.5 w-3.5" /> Printable handout
+            </button>
+            <button
+              onClick={copyOutline}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
               <Copy className="h-3.5 w-3.5" /> Copy slide outline
             </button>
             <div className="border-t border-white/10 my-1" />
-            <div className="px-2.5 py-1.5 text-[10px] text-white/40 flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400/60" /> PPTX export coming soon
-            </div>
+            <button
+              onClick={exportSpeakerNotes}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
+              <Mic className="h-3.5 w-3.5" /> Speaker-notes export
+            </button>
+            <button
+              onClick={exportStudyNotes}
+              className="w-full flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5"
+            >
+              <BookOpen className="h-3.5 w-3.5" /> Study-notes export
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -2099,10 +4854,18 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
 // Helpers
 // ============================================================================
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">{label}</label>
+      <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+        {label}
+      </label>
       <div className="mt-1.5">{children}</div>
     </div>
   );

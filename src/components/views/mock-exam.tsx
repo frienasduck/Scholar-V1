@@ -8,6 +8,7 @@ import { useCurriculum } from "@/lib/use-curriculum";
 import { loadSubjectQuizzes, type QuizMCQ } from "@/lib/quizzes-loader";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
+import { EBOOK_QUESTION_BOOKS, loadEbookQuestions, splitPrintedAnswer } from "@/lib/ebook-question-bank";
 import { StatCard, EmptyState, ProgressRing } from "@/lib/shared";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { toast } from "sonner";
 import {
   ClipboardCheck, Sparkles, Clock, Trophy, Brain, Play, ChevronRight, ChevronLeft,
   Download, CheckCircle2, XCircle, AlertCircle, FileText, Award, Settings, History,
-  Medal, Timer, Zap, Target, TrendingUp, Crown, Users, Flag, RotateCcw,
+  Medal, Timer, Zap, Target, TrendingUp, Crown, Users, Flag, RotateCcw, BookOpen, Loader2,
 } from "lucide-react";
 
 // ============================================================================
@@ -131,7 +132,11 @@ export function MockExamView() {
   const [generating, setGenerating] = useState(false);
   const [reviewQs, setReviewQs] = useState<ExamQuestion[] | null>(null);
   const [generationError, setGenerationError] = useState(false);
-  const [reviewSource, setReviewSource] = useState<"ai" | "local-question-bank">("ai");
+  const [reviewSource, setReviewSource] = useState<"ai" | "local-question-bank" | "ebook">("ai");
+  const [ebookMode, setEbookMode] = useState<"chapter" | "mixed">("chapter");
+  const [ebookBookId, setEbookBookId] = useState("class11-maths-part1");
+  const [ebookChapterId, setEbookChapterId] = useState("sets");
+  const [ebookGenerating, setEbookGenerating] = useState(false);
 
   // Exam-runner state
   const [examQs, setExamQs] = useState<ExamQuestion[] | null>(null);
@@ -294,6 +299,42 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
     toast.info(`Created ${localQuestions.length} questions from Scholar's local question bank. Review them before starting.`);
   };
 
+  const generateEbookPaper = async () => {
+    setEbookGenerating(true);
+    setGenerationError(false);
+    try {
+      const raw = await loadEbookQuestions(ebookMode === "chapter" ? [ebookBookId] : undefined);
+      const pool = raw.filter((question) => ebookMode === "mixed" || question.chapterId === ebookChapterId);
+      if (!pool.length) throw new Error("No printed questions were found for this selection.");
+      const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(config.numQuestions, pool.length));
+      const mapped: ExamQuestion[] = shuffled.map((source, index) => {
+        const printed = splitPrintedAnswer(source.prompt);
+        const options = source.options?.map(String);
+        const answerIndex = typeof source.correctOption === "number" ? source.correctOption : -1;
+        const isMcq = Boolean(options?.length && answerIndex >= 0 && options[answerIndex]);
+        const longTypes = new Set(["long-answer", "proof", "multi-part", "diagram", "graph"]);
+        const type: QType = isMcq ? "mcq" : longTypes.has(source.questionType) ? "long" : "short";
+        const sourceNote = `${source.subject} · ${source.chapterTitle} · printed page ${source.sourcePage}`;
+        return {
+          id: `ebook-${source.id}-${index}`,
+          type,
+          question: printed.question,
+          options: isMcq ? options : undefined,
+          answer: isMcq ? options![answerIndex] : printed.answer || `Evaluate the response by solving this exact CBSE Class 11 ${source.subject} ebook question.`,
+          explanation: source.answerExplanation || sourceNote,
+          marks: type === "mcq" ? 1 : type === "long" ? 5 : 3,
+        };
+      });
+      setReviewQs(mapped);
+      setReviewSource("ebook");
+      toast.success(`Loaded ${mapped.length} exact printed e-book questions.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load e-book questions.");
+    } finally {
+      setEbookGenerating(false);
+    }
+  };
+
   const startExamFromReview = () => {
     if (!reviewQs) return;
     setExamQs(reviewQs);
@@ -307,7 +348,11 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
     toast.success(`Paper started! ${reviewQs.length} questions • ${config.duration} min`, { description: "Good luck — focus and pace yourself." });
   };
 
-  const regenerateFromReview = () => { setReviewQs(null); generatePaper(); };
+  const regenerateFromReview = () => {
+    setReviewQs(null);
+    if (reviewSource === "ebook") void generateEbookPaper();
+    else void generatePaper();
+  };
 
   // ===== Auto-evaluate =====
   const endExam = async (autoSubmit = false) => {
@@ -632,6 +677,22 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                 </Button>
               </div>
 
+              <div className="mt-5 rounded-2xl border border-violet-300/20 bg-violet-500/[0.07] p-4">
+                <div className="mb-3 flex items-start gap-3">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-400/15 text-violet-200"><BookOpen className="h-4 w-4" /></div>
+                  <div><h4 className="text-sm font-semibold text-white">E-Book Question Mock Test</h4><p className="mt-0.5 text-xs leading-5 text-white/50">Build a paper only from questions printed in the bundled Mathematics and Chemistry e-books. No question wording is generated or rewritten.</p></div>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <button onClick={() => setEbookMode("chapter")} className={cn("rounded-xl border p-3 text-left", ebookMode === "chapter" ? "border-violet-300/40 bg-violet-400/15" : "border-white/10 bg-white/[0.03]")}><span className="text-sm font-medium text-white">Chapter-wise</span><span className="mt-0.5 block text-[11px] text-white/45">Choose one exact ebook chapter</span></button>
+                  <button onClick={() => setEbookMode("mixed")} className={cn("rounded-xl border p-3 text-left", ebookMode === "mixed" ? "border-violet-300/40 bg-violet-400/15" : "border-white/10 bg-white/[0.03]")}><span className="text-sm font-medium text-white">Mixed E-Books</span><span className="mt-0.5 block text-[11px] text-white/45">Mix all available books and chapters</span></button>
+                  <button onClick={() => void generateEbookPaper()} disabled={ebookGenerating} className="flex items-center justify-center gap-2 rounded-xl border border-violet-300/25 bg-violet-500/20 px-4 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/30 disabled:opacity-50">{ebookGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Create E-Book Paper</button>
+                </div>
+                {ebookMode === "chapter" && <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <select aria-label="E-book mock exam book" value={ebookBookId} onChange={(event) => { const id = event.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((book) => book.id === id)?.chapters[0]?.id ?? ""); }} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>
+                  <select aria-label="E-book mock exam chapter" value={ebookChapterId} onChange={(event) => setEbookChapterId(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>
+                </div>}
+              </div>
+
               {generationError && (
                 <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
                   <p className="text-sm font-semibold text-amber-200">AI paper generation is unavailable.</p>
@@ -650,7 +711,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                     <div>
                       <h3 className="text-white font-semibold flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-emerald-400" /> Review Generated Paper</h3>
-                      <p className="text-xs text-white/60 mt-0.5">{reviewQs.length} questions · {reviewQs.reduce((a, q) => a + q.marks, 0)} marks · {config.duration} min · {reviewSource === "ai" ? "AI generated" : "Local question bank"}</p>
+                      <p className="text-xs text-white/60 mt-0.5">{reviewQs.length} questions · {reviewQs.reduce((a, q) => a + q.marks, 0)} marks · {config.duration} min · {reviewSource === "ai" ? "AI generated" : reviewSource === "ebook" ? "Exact e-book questions" : "Local question bank"}</p>
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       <Button variant="outline" onClick={regenerateFromReview} disabled={generating} className="border-white/20 text-white/70 hover:bg-white/5"><RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Regenerate</Button>

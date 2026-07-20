@@ -65,6 +65,7 @@ import {
   BookModeReader,
   type BookModeBookmark,
 } from "@/components/ebook/book-mode-reader";
+import { ElamAssistant } from "@/components/ebook/elam-assistant";
 
 type SectionType =
   | "heading"
@@ -705,7 +706,31 @@ function EnhancedEbookSystem({
       .then(([book]) => {
         if (active) {
           setData(book);
-          setState(readState(config));
+          const restored = readState(config);
+          try {
+            const pending = JSON.parse(
+              sessionStorage.getItem("scholar:ebook:target") ?? "null",
+            ) as {
+              page?: number;
+              source?: "scan" | "text";
+            } | null;
+            if (pending?.page && Number.isInteger(pending.page)) {
+              const textPage = Math.max(
+                1,
+                Math.min(book.book.pageCountText, pending.page),
+              );
+              setState({
+                ...restored,
+                source: pending.source ?? "text",
+                textPage,
+              });
+              sessionStorage.removeItem("scholar:ebook:target");
+            } else {
+              setState(restored);
+            }
+          } catch {
+            setState(restored);
+          }
           setLoading(false);
         }
       })
@@ -728,10 +753,10 @@ function EnhancedEbookSystem({
     try {
       const pending = JSON.parse(
         sessionStorage.getItem("scholar:ebook:target") ?? "null",
-      ) as { destination?: Nav } | null;
+      ) as { destination?: Nav; page?: number } | null;
       if (pending?.destination && NAV.includes(pending.destination))
         setNav(pending.destination);
-      sessionStorage.removeItem("scholar:ebook:target");
+      if (!pending?.page) sessionStorage.removeItem("scholar:ebook:target");
     } catch {
       /* remain on Reader */
     }
@@ -1210,12 +1235,23 @@ function EnhancedEbookSystem({
 
   const togglePageBookmark = (pageNumber: number) => {
     updateState((current) => {
-      const existing = current.pageBookmarks.find((bookmark) => bookmark.page === pageNumber);
+      const existing = current.pageBookmarks.find(
+        (bookmark) => bookmark.page === pageNumber,
+      );
       return {
         ...current,
         pageBookmarks: existing
-          ? current.pageBookmarks.filter((bookmark) => bookmark.page !== pageNumber)
-          : [{ id: `page-bookmark-${Date.now()}`, page: pageNumber, createdAt: new Date().toISOString() }, ...current.pageBookmarks],
+          ? current.pageBookmarks.filter(
+              (bookmark) => bookmark.page !== pageNumber,
+            )
+          : [
+              {
+                id: `page-bookmark-${Date.now()}`,
+                page: pageNumber,
+                createdAt: new Date().toISOString(),
+              },
+              ...current.pageBookmarks,
+            ],
       };
     });
   };
@@ -1223,21 +1259,36 @@ function EnhancedEbookSystem({
   const updatePageBookmarkNote = (pageNumber: number, note: string) => {
     updateState((current) => ({
       ...current,
-      pageBookmarks: current.pageBookmarks.map((bookmark) => bookmark.page === pageNumber ? { ...bookmark, note } : bookmark),
+      pageBookmarks: current.pageBookmarks.map((bookmark) =>
+        bookmark.page === pageNumber ? { ...bookmark, note } : bookmark,
+      ),
     }));
   };
 
   const bookModeQuestions = pageQuestions.length ? (
     <div className="space-y-3">
       {pageQuestions.map((question) => (
-        <article key={`book-${question.id}`} className="rounded-2xl border border-white/10 bg-white/[.035] p-4">
-          <p className="text-[10px] uppercase tracking-wider text-indigo-300">{question.section.replaceAll("-", " ")} {question.questionNumber}</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/85">{question.prompt}</p>
-          <div className="mt-3 flex flex-wrap gap-2">{renderInlineQuestionAI(question)}</div>
+        <article
+          key={`book-${question.id}`}
+          className="rounded-2xl border border-white/10 bg-white/[.035] p-4"
+        >
+          <p className="text-[10px] uppercase tracking-wider text-indigo-300">
+            {question.section.replaceAll("-", " ")} {question.questionNumber}
+          </p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/85">
+            {question.prompt}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {renderInlineQuestionAI(question)}
+          </div>
         </article>
       ))}
     </div>
-  ) : <p className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-white/40">No extracted questions are linked to this page.</p>;
+  ) : (
+    <p className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-white/40">
+      No extracted questions are linked to this page.
+    </p>
+  );
 
   const saveAttempt = (status: Attempt["status"] = "draft") => {
     if (!answerQuestion) return;
@@ -1489,8 +1540,14 @@ function EnhancedEbookSystem({
                 </button>
               </div>
               <div className="flex items-center gap-1">
-                <Button size="sm" onClick={() => setBookModeOpen(true)} className="mr-1 bg-indigo-500 hover:bg-indigo-600" aria-label="Enter Book Mode">
-                  <BookOpen className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Book Mode</span>
+                <Button
+                  size="sm"
+                  onClick={() => setBookModeOpen(true)}
+                  className="mr-1 bg-indigo-500 hover:bg-indigo-600"
+                  aria-label="Enter Book Mode"
+                >
+                  <BookOpen className="mr-1.5 h-4 w-4" />{" "}
+                  <span className="hidden sm:inline">Book Mode</span>
                 </Button>
                 <button
                   onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))}
@@ -2088,6 +2145,17 @@ function EnhancedEbookSystem({
         </div>
       )}
 
+      {(nav === "Reader" || bookModeOpen) && page && (
+        <ElamAssistant
+          bookId={data.book.id}
+          bookTitle={config.title}
+          subject={config.subject}
+          page={pageNumber}
+          chapter={page.chapterTitle}
+          pageText={page.rawText}
+        />
+      )}
+
       <BookModeReader
         open={bookModeOpen}
         title={config.title}
@@ -2095,13 +2163,21 @@ function EnhancedEbookSystem({
         source={state.source}
         currentPage={pageNumber}
         totalPages={maxPage}
-        imageUrl={(number, source) => `/${source === "scan" ? config.scanPageDir : config.cleanPageDir}/page-${String(number).padStart(3, "0")}.png`}
+        imageUrl={(number, source) =>
+          `/${source === "scan" ? config.scanPageDir : config.cleanPageDir}/page-${String(number).padStart(3, "0")}.png`
+        }
         chapters={config.chapters}
-        searchPages={data.pages.map((bookPage) => ({ page: bookPage.textPdfPageNumber, title: bookPage.title ?? bookPage.chapterTitle, text: bookPage.rawText }))}
+        searchPages={data.pages.map((bookPage) => ({
+          page: bookPage.textPdfPageNumber,
+          title: bookPage.title ?? bookPage.chapterTitle,
+          text: bookPage.rawText,
+        }))}
         bookmarks={state.pageBookmarks}
         questions={bookModeQuestions}
         onClose={() => setBookModeOpen(false)}
-        onPageChange={(number) => state.source === "scan" ? goToScanPage(number) : goToTextPage(number)}
+        onPageChange={(number) =>
+          state.source === "scan" ? goToScanPage(number) : goToTextPage(number)
+        }
         onSourceChange={switchSource}
         onToggleBookmark={togglePageBookmark}
         onBookmarkNote={updatePageBookmarkNote}
@@ -2201,7 +2277,13 @@ function EnhancedEbookSystem({
               Submit & AI check
             </Button>
             {answerQuestion && (
-              <Button variant="ghost" onClick={() => { void generateInlineAnswer(answerQuestion); setAnswerQuestion(null); }}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  void generateInlineAnswer(answerQuestion);
+                  setAnswerQuestion(null);
+                }}
+              >
                 Generate AI Answer inline
               </Button>
             )}
