@@ -94,6 +94,10 @@ import {
   repairMissingCoverage,
   compactOutlineForStorage,
   formatPageRange,
+  normalizeSlideshowIntent,
+  containsInstructionLeakage,
+  assessSlideshowQuality,
+  repairSlideQuality,
 } from "@/lib/slideshow-pipeline";
 import { cn } from "@/lib/utils";
 import { NarratedSlideshowMaker } from "@/components/views/narrated-slideshow";
@@ -217,7 +221,7 @@ export function SlideshowMaker() {
   const [notes, setNotes] = useState("");
   const [uploadedDocumentName, setUploadedDocumentName] = useState("");
   const [uploadedDocumentText, setUploadedDocumentText] = useState("");
-  const [slideCount, setSlideCount] = useState(12);
+  const [slideCount, setSlideCount] = useState(28);
   const [density, setDensity] = useState<SlideshowDensity>("detailed");
   const [audience, setAudience] = useState<SlideshowAudience>(
     scholarClass === 11 ? "class-11" : "beginner",
@@ -255,6 +259,7 @@ export function SlideshowMaker() {
   const [previewMode, setPreviewMode] = useState(false);
   const [fullscreenPreview, setFullscreenPreview] = useState(false);
   const [narrationMode, setNarrationMode] = useState(false);
+  const autoRepairedDecks = useRef(new Set<string>());
 
   // ===== Saved library =====
   const [saved, setSaved] = useState<Slideshow[]>([]);
@@ -275,6 +280,60 @@ export function SlideshowMaker() {
       EBOOK_SLIDESHOW_SOURCES[0],
     [ebookId],
   );
+
+  const normalizedIntent = useMemo(() => {
+    const curriculumSubject = curriculum.find((item) => item.id === subjectId);
+    const curriculumChapter = curriculumSubject?.chapters.find((item) => item.id === chapterId);
+    const ebookChapter = selectedEbook.chapters.find((item) => item.id === ebookChapterId || (!ebookChapterId && startPage >= item.startPage && endPage <= item.endPage));
+    return normalizeSlideshowIntent({
+      userInstruction: inputMode === "prompt" ? prompt : undefined,
+      subject: inputMode === "ebook" ? selectedEbook.subject : curriculumSubject?.name,
+      classLevel: `Class ${scholarClass}`,
+      chapter: inputMode === "ebook" ? ebookChapter?.title : curriculumChapter?.title || (inputMode === "topic" ? topic : undefined),
+      sourceTitle: inputMode === "document" ? uploadedDocumentName : inputMode === "notes" ? "Study Notes" : undefined,
+    });
+  }, [chapterId, curriculum, ebookChapterId, endPage, inputMode, prompt, scholarClass, selectedEbook, startPage, subjectId, topic, uploadedDocumentName]);
+
+  useEffect(() => {
+    if (!active || autoRepairedDecks.current.has(active.id)) return;
+    const needsRepair = !active.quality || active.quality.score < 80 || active.quality.overflowCount > 0 || active.quality.duplicateContent > 0;
+    if (!needsRepair) return;
+    autoRepairedDecks.current.add(active.id);
+    let cancelled = false;
+    void (async () => {
+      const sourceBook = EBOOK_SLIDESHOW_SOURCES.find((book) => book.id === active.source?.bookId);
+      const inferredChapter = sourceBook?.chapters.find((chapter) => (active.source?.startPage ?? 0) >= chapter.startPage && (active.source?.endPage ?? Number.MAX_SAFE_INTEGER) <= chapter.endPage);
+      const intent = normalizeSlideshowIntent({ subject: active.subject, classLevel: `Class ${active.classProfile}`, chapter: (active.chapter && active.chapter !== "Selected pages" ? active.chapter : inferredChapter?.title) || undefined, sourceTitle: active.source?.ebookTitle || active.title });
+      let sourceOutline = active.outline ?? [];
+      let expectedPages = active.coverage?.totalPages;
+      const lowQuality = !active.quality || active.quality.score < 70;
+      if (sourceBook && active.source?.startPage && active.source?.endPage && lowQuality) {
+        try {
+          const loaded = await loadEbookSource(sourceBook.id);
+          const pages = extractEbookPages(loaded, active.source.startPage, active.source.endPage, active.source.chapterId || inferredChapter?.id);
+          sourceOutline = analyseSourcePages(pages);
+          expectedPages = pages.map((page) => page.pageNumber);
+        } catch { /* retain the saved outline if the local source cannot be reloaded */ }
+      }
+      let slides = repairSlideQuality(active.slides, intent);
+      let ledger = active.coverageLedger;
+      if (sourceOutline.length && lowQuality) {
+        const generationSettings = active.generationSettings ?? { slideCount: active.slides.length, density: "detailed", audience: "class-11", studyMode: "standard", includeDiagrams: true, includeExamples: true, includeSpeakerNotes: true, includeSummary: true, includeQuiz: true, includeSourceReferences: true };
+        const plans = allocateSlides(sourceOutline, generationSettings, intent);
+        ledger = makeCoverageLedger(sourceOutline, plans);
+        slides = repairSlideQuality(parseSlideBatch(null, plans, generationSettings.includeSpeakerNotes, generationSettings.density).map((slide) => ({ ...slide, sourceBookId: active.source?.bookId, showSourceReference: generationSettings.includeSourceReferences })), intent);
+      }
+      const coverage = ledger ? validateCoverage(slides, ledger, expectedPages) : null;
+      const percentage = coverage?.report.percentage ?? active.coverage?.percentage ?? 0;
+      const quality = assessSlideshowQuality(slides, percentage);
+      const repaired: Slideshow = { ...active, title: intent.title, chapter: intent.chapter || active.chapter, slides, outline: sourceOutline.length ? compactOutlineForStorage(sourceOutline) : active.outline, coverageLedger: coverage?.ledger ?? ledger, coverage: coverage?.report ?? active.coverage, quality, metadata: active.metadata ? { ...active.metadata, generatedSlideCount: slides.length, detectedTopicCount: sourceOutline.length || active.metadata.detectedTopicCount, coveragePercentage: percentage, qualityScore: quality.score, updatedAt: new Date().toISOString() } : active.metadata, lastAutosavedAt: Date.now() };
+      if (cancelled) return;
+      setActive(repaired);
+      setSaved(upsertSlideshow(repaired));
+      toast.success("Rebuilt the low-quality presentation", { description: `${active.slides.length - slides.length > 0 ? `${active.slides.length - slides.length} repeated slides removed. ` : ""}Titles, source mappings, formulas, and fit were revalidated.` });
+    })();
+    return () => { cancelled = true; };
+  }, [active]);
 
   const generationStages = [
     "Reading selected pages",
@@ -313,17 +372,22 @@ export function SlideshowMaker() {
 
   // Build the prompt text for any input mode
   const buildPromptText = useCallback((): string => {
-    if (inputMode === "prompt") return prompt.trim();
-    if (inputMode === "notes")
-      return `Convert these rough notes into a structured presentation:\n\n${notes.trim()}`;
+    if (inputMode === "prompt") {
+      const value = prompt.trim();
+      if (containsInstructionLeakage(value) && value.split(/\s+/).length < 120)
+        throw new Error("The prompt contains an instruction but no complete source. Select an e-book chapter/page range, upload a text document, or paste source notes before generating.");
+      return value;
+    }
+    if (inputMode === "notes") return notes.trim();
     if (inputMode === "document") return uploadedDocumentText.trim();
     if (inputMode === "topic") {
-      const sub = curriculum.find((s) => s.id === subjectId)?.name ?? subjectId;
-      return `Create a presentation on "${topic || "the selected topic"}" for Class ${scholarClass} ${sub}. Audience: Class ${scholarClass} students.`;
+      const matching = curriculum.find((s) => s.id === subjectId)?.chapters.find((chapter) => chapter.title.toLowerCase().includes(topic.trim().toLowerCase()) || topic.trim().toLowerCase().includes(chapter.title.toLowerCase()));
+      if (!matching) throw new Error("A topic name is not enough source material. Select its curriculum chapter, choose an e-book range, or paste source text.");
+      return [matching.title, matching.summary, ...(matching.concepts ?? []), ...(matching.formulas ?? []), ...(matching.questions ?? [])].filter(Boolean).join("\n\n");
     }
     if (inputMode === "ebook") {
       const chapter = selectedEbook.chapters.find(
-        (item) => item.id === ebookChapterId,
+        (item) => item.id === ebookChapterId || (!ebookChapterId && startPage >= item.startPage && endPage <= item.endPage),
       );
       return `${selectedEbook.title}${chapter ? ` — ${chapter.title}` : ""}, clean pages ${startPage}–${endPage}`;
     }
@@ -336,7 +400,7 @@ export function SlideshowMaker() {
     const formulas = ch?.formulas?.length
       ? `Important formulas: ${ch.formulas.join(", ")}.`
       : "";
-    return `Create a presentation on Class ${scholarClass} ${sub?.name ?? ""} — Chapter: "${ch?.title ?? ""}". ${concepts} ${formulas} Cover the chapter thoroughly with definitions, formulas, worked examples, and practice questions.`;
+    return [ch?.title, ch?.summary, concepts, formulas, ...(ch?.questions ?? [])].filter(Boolean).join("\n\n");
   }, [
     inputMode,
     prompt,
@@ -695,10 +759,10 @@ export function SlideshowMaker() {
         includeQuiz,
         includeSourceReferences: includeReferences,
       };
-      const plans = allocateSlides(outline, settings);
+      const plans = allocateSlides(outline, settings, normalizedIntent);
       const ledger = makeCoverageLedger(outline, plans);
       checkpoint = newSlideshow({
-        title: sourceMeta.label.slice(0, 120),
+        title: normalizedIntent.title,
         subject: subName,
         chapter: chName,
         classProfile: scholarClass,
@@ -748,6 +812,7 @@ export function SlideshowMaker() {
             language,
             subject: subName,
             classProfile: scholarClass,
+            intent: normalizedIntent,
           }),
           "default",
           { temperature: 0.35 },
@@ -779,6 +844,7 @@ export function SlideshowMaker() {
       setGenerationStageIndex(6);
       setGenStage("Checking every topic and selected page…");
       const expectedPages = sourcePages.map((page) => page.pageNumber);
+      generatedSlides = repairSlideQuality(generatedSlides, normalizedIntent);
       let coverage = validateCoverage(generatedSlides, ledger, expectedPages);
       if (
         coverage.report.missingTopicIds.length ||
@@ -789,7 +855,12 @@ export function SlideshowMaker() {
           outline,
           coverage.report,
         );
+        generatedSlides = repairSlideQuality(generatedSlides, normalizedIntent);
         coverage = validateCoverage(generatedSlides, ledger, expectedPages);
+      }
+      const quality = assessSlideshowQuality(generatedSlides, coverage.report.percentage);
+      if (quality.issues.some((issue) => issue.severity === "critical")) {
+        throw new Error("Critical presentation-quality validation failed.");
       }
       setGenerationStageIndex(7);
       setGenStage("Finalising and autosaving presentation…");
@@ -803,8 +874,25 @@ export function SlideshowMaker() {
             .map((slide) => slide.id),
         })),
         coverage: coverage.report,
+        quality,
+        metadata: {
+          sourceType: sourceMeta.kind,
+          sourceId: sourceMeta.bookId || sourceMeta.chapterId,
+          sourceTitle: sourceMeta.label,
+          sourceStartPage: sourceMeta.startPage,
+          sourceEndPage: sourceMeta.endPage,
+          sourceWordCount: sourceMeta.wordCount,
+          detectedTopicCount: outline.filter((item) => item.included).length,
+          generatedSlideCount: generatedSlides.length,
+          densityMode: density,
+          generationModel: "server-configured",
+          coveragePercentage: coverage.report.percentage,
+          qualityScore: quality.score,
+          createdAt: new Date(checkpoint.createdAt).toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
         generationStatus:
-          coverage.report.percentage === 100 ? "complete" : "partial",
+          coverage.report.percentage === 100 && quality.passed ? "complete" : "partial",
         lastAutosavedAt: Date.now(),
       };
       setSaved(upsertSlideshow(slideshow));
@@ -1135,21 +1223,29 @@ No markdown fences.`;
 
   const handleFixCoverage = () => {
     if (!active?.coverage || !active.coverageLedger || !active.outline) return;
+    const inferredSourceChapter = EBOOK_SLIDESHOW_SOURCES.find((book) => book.id === active.source?.bookId)?.chapters.find((chapter) => (active.source?.startPage ?? 0) >= chapter.startPage && (active.source?.endPage ?? Number.MAX_SAFE_INTEGER) <= chapter.endPage)?.title;
     const repaired = repairMissingCoverage(
       active.slides,
       active.outline,
       active.coverage,
     );
+    const fitted = repairSlideQuality(repaired, normalizeSlideshowIntent({
+      subject: active.subject,
+      classLevel: `Class ${active.classProfile}`,
+      chapter: (active.chapter && active.chapter !== "Selected pages" ? active.chapter : inferredSourceChapter) || undefined,
+      sourceTitle: active.source?.ebookTitle || active.title,
+    }));
     const checked = validateCoverage(
-      repaired,
+      fitted,
       active.coverageLedger,
       active.coverage.totalPages,
     );
     updateActive({
       ...active,
-      slides: repaired,
+      slides: fitted,
       coverageLedger: checked.ledger,
       coverage: checked.report,
+      quality: assessSlideshowQuality(fitted, checked.report.percentage),
     });
     toast.success(
       checked.report.percentage === 100
@@ -1239,7 +1335,7 @@ No markdown fences.`;
   const selectedRecommendation = recommendations?.[density];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="slideshow-maker">
       {/* Top bar: saved library — ALWAYS visible */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-xs text-white/50 flex items-center gap-2">
@@ -1639,10 +1735,10 @@ No markdown fences.`;
             <input
               type="number"
               min={3}
-              max={40}
+              max={45}
               value={slideCount}
               onChange={(e) =>
-                setSlideCount(Math.max(3, Math.min(40, +e.target.value || 12)))
+                setSlideCount(Math.max(3, Math.min(45, +e.target.value || 28)))
               }
               className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
             />
@@ -1760,7 +1856,7 @@ No markdown fences.`;
                     const range = recommendSlideCounts(outline).detailed;
                     setSlideCount(
                       Math.min(
-                        40,
+                        45,
                         Math.max(16, Math.round((range.min + range.max) / 2)),
                       ),
                     );
@@ -1776,7 +1872,7 @@ No markdown fences.`;
                       recommendSlideCounts(outline)["exam-revision"];
                     setSlideCount(
                       Math.min(
-                        40,
+                        45,
                         Math.max(10, Math.round((range.min + range.max) / 2)),
                       ),
                     );
@@ -1949,7 +2045,7 @@ No markdown fences.`;
                 onClick={() =>
                   setSlideCount(
                     Math.min(
-                      40,
+                      45,
                       Math.round(
                         (selectedRecommendation.min +
                           selectedRecommendation.max) /
@@ -1970,8 +2066,7 @@ No markdown fences.`;
               <div className="mx-3 mb-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs text-amber-100 flex gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span>
-                  This source contains many topics. All included topics will
-                  remain covered, but explanations will be heavily compressed.
+                  This source contains approximately {analysedStats?.topicCount} major source sections. {slideCount} slides will produce a heavily compressed overview. Recommended: {selectedRecommendation.min}–{selectedRecommendation.max} slides. If you continue, Scholar will distribute every section across the available slides instead of skipping the end of the source.
                 </span>
               </div>
             )}
@@ -2570,6 +2665,7 @@ function SlideshowEditor(props: EditorProps) {
       {slideshow.coverage && (
         <CoveragePanel slideshow={slideshow} onFix={onFixCoverage} />
       )}
+      {slideshow.quality && <QualityPanel slideshow={slideshow} onFix={onFixCoverage} />}
 
       {/* Layout: thumbnails | main stage | edit panel */}
       <div className="grid grid-cols-12 gap-3">
@@ -2804,6 +2900,26 @@ function SlideshowEditor(props: EditorProps) {
 // Coverage panel
 // ============================================================================
 
+function QualityPanel({ slideshow, onFix }: { slideshow: Slideshow; onFix: () => void }) {
+  const quality = slideshow.quality!;
+  return (
+    <div className="rounded-2xl border border-violet-400/20 bg-violet-400/[0.04] p-3" data-testid="slideshow-quality-panel">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2"><CheckCircle2 className={cn("h-4 w-4", quality.passed ? "text-emerald-300" : "text-amber-300")} /><div><p className="text-xs font-semibold text-white">Presentation quality: {quality.score}/100</p><p className="text-[10px] text-white/40">Validated content, fit, grounding, and repetition</p></div></div>
+        {!quality.passed && <button onClick={onFix} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-2.5 py-1.5 text-[10px] text-violet-100 hover:bg-violet-400/20">Fix all source issues</button>}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-5">
+        <div className="rounded-lg bg-black/15 p-2"><span className="block text-white/35">Content coverage</span><span className="text-white/75">{quality.contentCoverage}%</span></div>
+        <div className="rounded-lg bg-black/15 p-2"><span className="block text-white/35">Readability</span><span className="text-white/75">{quality.readability}%</span></div>
+        <div className="rounded-lg bg-black/15 p-2"><span className="block text-white/35">Source grounding</span><span className="text-white/75">{quality.sourceGrounding}%</span></div>
+        <div className="rounded-lg bg-black/15 p-2"><span className="block text-white/35">Duplicate content</span><span className="text-white/75">{quality.duplicateContent ? quality.duplicateContent : "None"}</span></div>
+        <div className="rounded-lg bg-black/15 p-2"><span className="block text-white/35">Overflow</span><span className="text-white/75">{quality.overflowCount ? `${quality.overflowCount} slides` : "None"}</span></div>
+      </div>
+      {quality.issues.length > 0 && <div className="mt-2 rounded-xl border border-amber-300/15 bg-amber-300/[0.05] p-2 text-[10px] leading-5 text-amber-100/80">{quality.issues.slice(0, 4).map((issue) => <p key={`${issue.slideId}-${issue.category}-${issue.message}`}>• {issue.message}</p>)}</div>}
+    </div>
+  );
+}
+
 function CoveragePanel({
   slideshow,
   onFix,
@@ -2968,6 +3084,8 @@ export function SlideStage({
   return (
     <div
       className={cn("relative overflow-hidden flex flex-col", className)}
+      data-slide-renderer="shared"
+      data-slide-type={slide.type}
       style={{
         background: slide.background || tpl.background,
         color: tpl.text,
@@ -3006,7 +3124,7 @@ export function SlideStage({
       <div
         className={cn(
           "relative z-10 h-full w-full flex flex-col",
-          fullscreen ? "p-8 sm:p-12 lg:p-16" : "p-5 sm:p-6 lg:p-7",
+          fullscreen ? "p-5 sm:p-7 lg:p-9" : "p-5 sm:p-6 lg:p-7",
         )}
       >
         {/* Type badge */}
@@ -3034,14 +3152,16 @@ export function SlideStage({
         />
 
         {/* Body */}
-        <SlideBody
-          slide={slide}
-          tpl={tpl}
-          typeColor={typeColor}
-          fullscreen={fullscreen}
-          highlightKeywords={highlightKeywords}
-          revealAnswer={revealAnswer}
-        />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <SlideBody
+            slide={slide}
+            tpl={tpl}
+            typeColor={typeColor}
+            fullscreen={fullscreen}
+            highlightKeywords={highlightKeywords}
+            revealAnswer={revealAnswer}
+          />
+        </div>
 
         {slide.showSourceReference &&
           slide.sourcePages &&
@@ -3131,16 +3251,16 @@ function SlideTitle({
   highlightKeywords?: string[];
 }) {
   const titleSize = fullscreen
-    ? "text-4xl sm:text-5xl lg:text-6xl"
+    ? "text-3xl sm:text-4xl lg:text-5xl"
     : "text-2xl sm:text-3xl";
   const headingSize = fullscreen
-    ? "text-3xl sm:text-4xl lg:text-5xl"
+    ? "text-2xl sm:text-3xl lg:text-4xl"
     : "text-xl sm:text-2xl";
   if (slide.type === "title") {
     return (
       <div className="mt-auto mb-auto text-center">
         <h1
-          className={cn("font-bold leading-tight mb-3", titleSize)}
+          className={cn("font-bold leading-tight mb-3 line-clamp-2", titleSize)}
           style={{ color: tpl.text }}
         >
           <HighlightedText text={slide.title} keywords={highlightKeywords} />
@@ -3180,7 +3300,7 @@ function SlideTitle({
   }
   return (
     <h2
-      className={cn("font-bold mb-4 leading-tight shrink-0", headingSize)}
+      className={cn("font-bold mb-4 leading-tight shrink-0 line-clamp-2", headingSize)}
       style={{ color: tpl.text }}
     >
       <HighlightedText text={slide.title} keywords={highlightKeywords} />
@@ -3204,13 +3324,13 @@ function SlideBody({
   revealAnswer?: boolean;
 }) {
   const accent = typeColor[slide.type];
-  const textBase = fullscreen ? "text-base sm:text-lg" : "text-xs sm:text-sm";
-  const textLarge = fullscreen ? "text-lg sm:text-xl" : "text-sm sm:text-base";
+  const textBase = fullscreen ? "text-sm sm:text-base" : "text-xs sm:text-sm";
+  const textLarge = fullscreen ? "text-base sm:text-lg" : "text-sm sm:text-base";
   const textBullet = fullscreen
-    ? "text-base sm:text-lg"
+    ? "text-sm sm:text-base"
     : "text-sm sm:text-base";
   const textFormula = fullscreen
-    ? "text-3xl sm:text-4xl lg:text-5xl"
+    ? "text-2xl sm:text-3xl lg:text-4xl"
     : "text-xl sm:text-2xl lg:text-3xl";
 
   // Formula slide
@@ -3218,7 +3338,7 @@ function SlideBody({
     return (
       <div className="flex-1 flex flex-col justify-center">
         <div
-          className="rounded-2xl p-6 sm:p-8 text-center"
+          className={cn("rounded-2xl text-center", fullscreen ? "p-4 sm:p-5" : "p-6 sm:p-8")}
           style={{ background: tpl.cardBg, border: `1px solid ${accent}40` }}
         >
           <p
@@ -3232,7 +3352,7 @@ function SlideBody({
           )}
         </div>
         {slide.bullets && slide.bullets.length > 0 && (
-          <ul className="mt-4 space-y-2">
+          <ul className={cn("mt-3", fullscreen ? "space-y-1.5" : "space-y-2")}>
             {slide.bullets.map((b, i) => (
               <li
                 key={i}

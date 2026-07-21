@@ -2,6 +2,18 @@
 
 import type { Slideshow, Slide, SlideType } from "./slideshow";
 
+const narrationInstructionLeakage = /\b(?:create|make|generate|prepare|build)\s+(?:me\s+)?(?:a\s+)?(?:presentation|slideshow|slide deck)\b|\bi want (?:a\s+)?(?:presentation|slideshow)\b/i;
+
+function sanitizeNarration(value: string): string {
+  return String(value ?? "").replace(/(?:create|make|generate|prepare|build)\s+(?:me\s+)?(?:a\s+)?(?:presentation|slideshow|slide deck)\s+(?:on|about|for)\s+/gi, "").trim();
+}
+
+export function estimateNarrationDuration(script: string, type: SlideType, rate = 1): number {
+  const words = script.trim().split(/\s+/).filter(Boolean).length;
+  const minimum = type === "title" || type === "thanks" ? 6 : type === "formula" ? 18 : type === "quiz" || type === "practice" ? 20 : 12;
+  return Math.max(minimum, Math.min(180, Math.ceil((words / (Math.max(0.5, rate) * 145)) * 60)));
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -139,6 +151,8 @@ REQUIREMENTS:
 12. Use ${slideshow.language || "English"} for all narration.
 13. Keep each script under 100 words to fit within output limits.
 14. CRITICAL: Return a SINGLE complete JSON object. Do NOT cut off mid-JSON.
+15. Never mention or repeat generation instructions such as "create a presentation", "make a slideshow", or "generate slides".
+16. Narration must add explanation and transitions; it must not repeat the title or simply read the visible bullets in order.
 
 OUTPUT FORMAT — return ONLY a JSON object (no markdown fences, no explanation):
 {
@@ -179,11 +193,13 @@ export function validateNarrationResponse(
   for (const n of obj.narrations) {
     if (!n || !n.slideId || !slideMap.has(n.slideId)) continue;
     const slide = slideMap.get(n.slideId)!;
+    let script = sanitizeNarration(String(n.script ?? buildFallbackScript(slide))).slice(0, 4000);
+    if (narrationInstructionLeakage.test(script)) script = buildFallbackScript(slide);
     narrations.push({
       slideId: n.slideId,
-      script: String(n.script ?? buildFallbackScript(slide)).slice(0, 4000),
+      script,
       caption: String(n.caption ?? slide.title).slice(0, 200),
-      durationSec: Math.max(3, Math.min(180, Number(n.durationSec) || 12)),
+      durationSec: estimateNarrationDuration(script, slide.type),
       highlightKeywords: Array.isArray(n.highlightKeywords)
         ? n.highlightKeywords.map((k: any) => String(k).slice(0, 80)).filter(Boolean).slice(0, 6)
         : [],
@@ -214,7 +230,7 @@ export function mergeNarrations(
       slideId: s.id,
       script: buildFallbackScript(s),
       caption: s.title,
-      durationSec: 12,
+      durationSec: estimateNarrationDuration(buildFallbackScript(s), s.type),
       highlightKeywords: [],
       pauseAfter: s.type === "practice",
       pausePrompt: s.type === "practice" ? "Pause here and try solving this yourself." : undefined,
@@ -224,12 +240,12 @@ export function mergeNarrations(
 
 function buildFallbackScript(slide: Slide): string {
   const parts: string[] = [];
-  if (slide.title) parts.push(slide.title + ".");
-  if (slide.content) parts.push(slide.content);
-  if (slide.bullets?.length) parts.push(slide.bullets.join(". ") + ".");
-  if (slide.formula) parts.push(`The formula is: ${slide.formula}.`);
-  if (slide.practiceQuestion) parts.push(slide.practiceQuestion);
-  return parts.join(" ").slice(0, 2000) || "This slide has no narration.";
+  if (slide.type === "title") return `Welcome. We will study ${slide.title} in source order, connect the important ideas, and pause at the end to review what matters most.`;
+  if (slide.content) parts.push(`The central idea here is ${slide.content.replace(/[.!?]+$/, "")}.`);
+  if (slide.bullets?.length) parts.push(`Notice how these points connect: ${slide.bullets.slice(0, 4).join("; ")}.`);
+  if (slide.formula) parts.push(`Focus on the relationship ${slide.formula}. Identify each quantity and check the required units before applying it.`);
+  if (slide.practiceQuestion) parts.push(`Now apply the idea to this question: ${slide.practiceQuestion}`);
+  return sanitizeNarration(parts.join(" ").slice(0, 2000)) || "Use this moment to connect the current idea with the previous source section.";
 }
 
 // ============================================================================

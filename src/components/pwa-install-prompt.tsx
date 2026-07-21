@@ -94,6 +94,7 @@ export function PWAInstallPrompt() {
     <AnimatePresence>
       {showPrompt && (
         <motion.div
+          key="pwa-install-banner"
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
@@ -143,7 +144,7 @@ export function PWAInstallPrompt() {
       )}
 
       {/* iOS Installation Guide */}
-      <AnimatePresence>
+      <AnimatePresence key="pwa-ios-guide">
         {showIOSGuide && (
           <motion.div
             initial={{ opacity: 0 }}

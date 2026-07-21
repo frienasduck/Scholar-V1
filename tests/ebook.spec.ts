@@ -62,6 +62,21 @@ test("Mathematics clean reader has no horizontal overflow at supported mobile si
   await expect(page.getByRole("button", { name: "Clean Text" })).toBeVisible();
 });
 
+test("mobile Book Mode uses a compact two-row toolbar", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterProfile(page, 11);
+  await openMaths(page);
+  await page.getByRole("button", { name: "Enter Book Mode" }).click();
+  const reader = page.getByLabel(/immersive book reader/);
+  await expect(reader).toBeVisible();
+  await expect(reader.getByRole("button", { name: "Exit Book Mode" })).toBeVisible();
+  await expect(reader.getByRole("button", { name: "Zoom out" })).toBeVisible();
+  await expect(reader.getByRole("button", { name: "Reading settings" })).toBeVisible();
+  await expect(reader.getByText("Exit", { exact: true })).toBeHidden();
+  const overflow = await reader.evaluate((element) => element.scrollWidth - element.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
 test("printed MCQ options give clear wrong and correct glass feedback", async ({ page }) => {
   await enterProfile(page, 11);
   await openMaths(page, "Questions");

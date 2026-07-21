@@ -11,7 +11,54 @@ import {
   type SlideshowOutlineItem,
   type SlideshowSourceMeta,
   type SlideshowSourcePage,
+  type SlideshowQualityIssue,
+  type SlideshowQualityReport,
 } from "./slideshow";
+
+export type NormalizedSlideshowIntent = {
+  title: string;
+  subtitle?: string;
+  subject?: string;
+  classLevel?: string;
+  chapter?: string;
+  presentationGoal: string;
+  requestedModes: string[];
+};
+
+const instructionLeakage = /\b(?:create|make|generate|prepare|build)\s+(?:me\s+)?(?:a\s+)?(?:presentation|slideshow|slide deck)\b|\bi want (?:a\s+)?(?:presentation|slideshow)\b|\bexplain (?:the )?chapter\b/i;
+
+export function containsInstructionLeakage(value: string): boolean {
+  return instructionLeakage.test(cleanText(value));
+}
+
+export function normalizeSlideshowIntent(options: {
+  userInstruction?: string;
+  subject?: string;
+  classLevel?: string;
+  chapter?: string;
+  sourceTitle?: string;
+}): NormalizedSlideshowIntent {
+  const instruction = cleanText(options.userInstruction);
+  let inferred = cleanText(options.chapter || options.sourceTitle);
+  if (!inferred && instruction) {
+    const chapterMatch = instruction.match(/(?:chapter\s*:?\s*)?["“]?([A-Z][\w\s,'’()\-]{3,80})["”]?\s*$/i);
+    inferred = cleanText(chapterMatch?.[1] || instruction)
+      .replace(/^(?:create|make|generate|prepare|build)\s+(?:me\s+)?(?:a\s+)?(?:presentation|slideshow|slide deck)\s+(?:on|about|for)\s+/i, "")
+      .replace(/^class\s*\d+\s+(?:chemistry|physics|mathematics|computer science)\s*[-—:]\s*/i, "");
+  }
+  const title = shorten(inferred || options.subject || "Study Presentation", 90);
+  const classLevel = cleanText(options.classLevel);
+  const subject = cleanText(options.subject);
+  return {
+    title,
+    subtitle: [classLevel, subject].filter(Boolean).join(" ") || undefined,
+    subject: subject || undefined,
+    classLevel: classLevel || undefined,
+    chapter: cleanText(options.chapter) || undefined,
+    presentationGoal: "Teach the selected source completely in source order",
+    requestedModes: [],
+  };
+}
 
 export type EbookSourceDefinition = {
   id: string;
@@ -106,6 +153,8 @@ export type SlidePlan = {
   sourceText: string;
   formulas: string[];
   figureReferences: string[];
+  targetWordCount?: number;
+  layoutHint?: string;
 };
 
 const meaningfulSectionTypes = new Set([
@@ -156,6 +205,11 @@ function shorten(value: string, max: number): string {
   return text.length <= max
     ? text
     : `${text.slice(0, max).replace(/\s+\S*$/, "")}…`;
+}
+
+function isCredibleSourceFormula(value: string): boolean {
+  const formula = cleanText(value);
+  return formula.length >= 3 && formula.length <= 180 && wordCount(formula) <= 24 && !/^(?:answer|solution|given|therefore|hence)\s*:/i.test(formula) && /(?:=|→|⇌|≥|≤|×|\^|\d\s*[A-Za-z]+\s*[+→])/u.test(formula);
 }
 
 export async function loadEbookSource(
@@ -225,7 +279,7 @@ export function extractEbookPages(
         sections
           .filter((section) => section.type === "formula")
           .map((section) => cleanText(section.text))
-          .filter((formula) => formula.length > 1),
+          .filter(isCredibleSourceFormula),
       ).slice(0, 30);
       const scannedPage = page.mappedScannedPages?.[0] ?? pageNumber;
       const figures = sections
@@ -255,6 +309,7 @@ export function extractEbookPages(
         tables,
         chapterId: page.chapterId,
         chapterTitle: page.chapterTitle,
+        segments: sections.map((section) => ({ type: section.type ?? "paragraph", text: cleanText(section.text) })).filter((section) => section.text),
       };
     });
 
@@ -268,46 +323,72 @@ export function extractEbookPages(
 
 function bestPageTitle(page: SlideshowSourcePage): string {
   const heading = page.headings.find(
-    (value) => value.length >= 4 && value.length <= 90,
+    (value) => value.length >= 4 && value.length <= 82 && wordCount(value) <= 10 && !/^(?:day\s*\d+|page\s*\d+|keep it in mind|board question|homework|try yourself|space for keynotes|know your heroes)$/i.test(value),
   );
   if (heading) return heading;
-  if (page.chapterTitle)
-    return `${page.chapterTitle} — Page ${page.pageNumber}`;
   const firstSentence = page.text
     .split(/(?<=[.!?])\s+|\n/)
     .find((value) => value.trim().length >= 5);
-  return shorten(firstSentence || `Source page ${page.pageNumber}`, 80);
+  if (firstSentence) return shorten(firstSentence.replace(/[.!?]+$/, ""), 72);
+  if (page.chapterTitle) return `${page.chapterTitle} — Page ${page.pageNumber}`;
+  return `Source page ${page.pageNumber}`;
 }
 
 export function analyseSourcePages(
   pages: SlideshowSourcePage[],
 ): SlideshowOutlineItem[] {
-  return pages.map((page, index) => {
-    const subtopics = unique(
-      page.headings.filter((heading) => !genericHeading.test(heading)),
-    ).slice(0, 12);
-    const hasCoreMaterial =
-      page.formulas.length > 0 ||
-      page.figures.length > 0 ||
-      /definition|law|theorem|principle/i.test(page.text);
-    return {
-      id: `topic-page-${page.pageNumber}-${index + 1}`,
-      title: bestPageTitle(page),
-      sourcePages: [page.pageNumber],
-      subtopics: subtopics.length ? subtopics : [bestPageTitle(page)],
-      importance: hasCoreMaterial
-        ? "core"
-        : wordCount(page.text) > 180
-          ? "important"
-          : "supporting",
-      included: true,
-      sourceText: page.text,
-      formulas: page.formulas,
-      figureReferences: page.figures
-        .map((figure) => figure.imageUrl)
-        .filter((value): value is string => Boolean(value)),
+  const outline: SlideshowOutlineItem[] = [];
+  const ignoredHeading = /^(?:day\s*\d+|page\s*\d+|keep it in mind|board question|homework|try yourself|space for keynotes|know your heroes|structure of atom)$/i;
+  const credibleHeading = (value: string) => {
+    const text = cleanText(value).replace(/^\[Figure\]\s*/i, "");
+    const words = wordCount(text);
+    const upper = text === text.toUpperCase() && /[A-Z]{3}/.test(text);
+    return text.length >= 4 && text.length <= 82 && words <= 10 && !genericHeading.test(text) && !ignoredHeading.test(text) && !/^\d+[.)]/.test(text) && (upper || /^(?:discovery|properties|rutherford|thomson|bohr|radioactivity|electromagnetic|quantum|atomic|electronic|limitations|observations|conclusions)/i.test(text));
+  };
+  const titleCase = (value: string) => cleanText(value).toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()).replace(/\b(Of|The|And|In|To|For)\b/g, (word) => word.toLowerCase());
+
+  pages.forEach((page) => {
+    const segments = page.segments?.length ? page.segments : [{ type: "paragraph", text: page.text }];
+    const groups: Array<{ title: string; parts: string[]; formulas: string[]; figures: string[] }> = [];
+    let current: { title: string; parts: string[]; formulas: string[]; figures: string[] } | null = null;
+    const fallbackTitle = bestPageTitle(page);
+    const start = (title: string) => {
+      if (current?.parts.length) groups.push(current);
+      current = { title: titleCase(title), parts: [], formulas: [], figures: [] };
     };
+    for (const segment of segments) {
+      if (segment.type === "subheading" && credibleHeading(segment.text)) {
+        start(segment.text);
+        continue;
+      }
+      if (!current) current = { title: fallbackTitle, parts: [], formulas: [], figures: [] };
+      if (!ignoredHeading.test(segment.text) && !genericHeading.test(segment.text)) current.parts.push(segment.text);
+      if (segment.type === "formula" && isCredibleSourceFormula(segment.text)) current.formulas.push(segment.text);
+      if (segment.type === "diagram") current.figures.push(...page.figures.map((figure) => figure.imageUrl).filter((value): value is string => Boolean(value)));
+    }
+    if (current?.parts.length) groups.push(current);
+    if (!groups.length) groups.push({ title: fallbackTitle, parts: [page.text], formulas: page.formulas, figures: page.figures.map((figure) => figure.imageUrl).filter((value): value is string => Boolean(value)) });
+
+    groups.forEach((group, groupIndex) => {
+      const sourceText = cleanText(group.parts.join("\n"));
+      if (wordCount(sourceText) < 4) return;
+      const subtopics = unique(group.parts.filter((part) => part.length >= 4 && part.length <= 130)).slice(0, 10);
+      const formulas = unique([...group.formulas, ...page.formulas.filter((formula) => sourceText.includes(formula))]);
+      const figures = unique(group.figures);
+      outline.push({
+        id: `topic-page-${page.pageNumber}-${groupIndex + 1}`,
+        title: shorten(group.title, 82),
+        sourcePages: [page.pageNumber],
+        subtopics: subtopics.length ? subtopics : [group.title],
+        importance: formulas.length || figures.length || /experiment|model|principle|discovery|conclusion/i.test(group.title) ? "core" : wordCount(sourceText) > 100 ? "important" : "supporting",
+        included: true,
+        sourceText,
+        formulas,
+        figureReferences: figures,
+      });
+    });
   });
+  return outline;
 }
 
 export function analysePlainText(text: string): SlideshowOutlineItem[] {
@@ -375,21 +456,16 @@ export function sourceStatistics(outline: SlideshowOutlineItem[]) {
 
 export function recommendSlideCounts(outline: SlideshowOutlineItem[]) {
   const stats = sourceStatistics(outline);
-  const complexity =
-    stats.topicCount +
-    Math.ceil(stats.subtopicCount / 6) +
-    Math.ceil(stats.formulaCount / 4) +
-    Math.ceil(stats.figureCount / 3);
-  const base = Math.max(4, Math.ceil(stats.wordCount / 260), complexity);
-  const range = (factor: number, spread: number) => {
-    const low = Math.max(3, Math.round(base * factor));
-    return { min: low, max: Math.max(low + 2, Math.round(low * spread)) };
+  const complexity = Math.max(1, stats.topicCount + Math.ceil(stats.subtopicCount / 8) + Math.ceil(stats.formulaCount / 3) + Math.ceil(stats.figureCount / 2) + Math.ceil(stats.wordCount / 700));
+  const bounded = (factor: number, min: number, max: number) => {
+    const target = Math.max(min, Math.min(max, Math.round(complexity * factor)));
+    return { min: Math.max(min, Math.round(target * 0.82)), max: Math.max(min + 2, Math.min(max, Math.round(target * 1.16))) };
   };
   return {
-    concise: range(0.48, 1.35),
-    balanced: range(0.72, 1.3),
-    detailed: range(1, 1.25),
-    "exam-revision": range(0.65, 1.3),
+    concise: bounded(0.35, 8, 14),
+    balanced: bounded(0.6, 16, 28),
+    detailed: bounded(0.88, 25, 45),
+    "exam-revision": bounded(0.65, 18, 35),
   } satisfies Record<SlideshowDensity, { min: number; max: number }>;
 }
 
@@ -421,23 +497,28 @@ function planTypeFor(
 export function allocateSlides(
   outline: SlideshowOutlineItem[],
   settings: SlideshowGenerationSettings,
+  intent?: NormalizedSlideshowIntent,
 ): SlidePlan[] {
   const topics = outline.filter((item) => item.included);
   if (!topics.length)
     throw new Error("At least one outline topic must remain selected.");
   const reserved =
     1 + (settings.includeSummary ? 1 : 0) + (settings.includeQuiz ? 1 : 0);
-  const contentSlots = Math.max(1, settings.slideCount - reserved);
+  // A plan slot must own distinct source material. Repeating a page merely to
+  // satisfy a requested count creates duplicate slides and dishonest density.
+  const contentSlots = Math.max(1, Math.min(topics.length, settings.slideCount - reserved));
   const plans: SlidePlan[] = [
     {
       id: "slot-title",
       type: "title",
-      title: topics[0].title,
+      title: intent?.title || topics[0].title,
       topicIds: [],
       sourcePages: [],
-      sourceText: "",
+      sourceText: intent?.subtitle || "",
       formulas: [],
       figureReferences: [],
+      targetWordCount: 12,
+      layoutHint: "short title, subtitle, and one elegant visual accent",
     },
   ];
   for (let slot = 0; slot < contentSlots; slot += 1) {
@@ -463,6 +544,8 @@ export function allocateSlides(
       figureReferences: unique(
         assigned.flatMap((item) => item.figureReferences),
       ),
+      targetWordCount: settings.density === "concise" ? 55 : settings.density === "detailed" ? 90 : 72,
+      layoutHint: assigned.some((item) => item.formulas.length) ? "formula with symbols, units, and conditions" : assigned.length > 1 ? "two-column grouped summary" : "focused concept with 3-5 key points",
     });
   }
   if (settings.includeSummary) {
@@ -532,6 +615,7 @@ export function buildSlideBatchPrompt(options: {
   language: string;
   subject: string;
   classProfile: 9 | 11;
+  intent?: NormalizedSlideshowIntent;
 }): string {
   const { plans, settings, source } = options;
   const planText = plans
@@ -540,6 +624,8 @@ export function buildSlideBatchPrompt(options: {
 SLOT ${plan.id}
 Required type: ${plan.type}
 Working title: ${plan.title}
+Layout hint: ${plan.layoutHint || "focused educational layout"}
+Target visible word count: ${plan.targetWordCount || 75}
 Topic IDs that MUST be represented: ${plan.topicIds.join(", ") || "none (title slide)"}
 Source pages: ${plan.sourcePages.join(", ") || "not page-based"}
 Important formulas: ${plan.formulas.join(" | ") || "none detected"}
@@ -568,6 +654,11 @@ NON-NEGOTIABLE RULES:
 14. ${audienceGuidance(settings.audience)}
 15. Language: ${options.language}. Class: ${options.classProfile}. Subject: ${options.subject || "General"}.
 16. Source: ${source.label}.
+17. The user's instruction is intent metadata, never source content. Never include command phrases such as "create a presentation", "make a slideshow", or "generate slides" in any output field.
+18. Slide titles must be distinct, no more than 12 words, and normally fit in two lines. Body text must fit a 16:9 slide: 3-6 bullets, each normally 8-22 words.
+19. A formula slide is allowed only when formula contains a real mathematical or chemical expression. Otherwise return a concept slide.
+20. Visible content, speaker notes, and narration serve different purposes. Notes must explain rather than repeat visible text.
+21. Presentation intent: ${options.intent ? JSON.stringify(options.intent) : "source-grounded teaching deck"}.
 
 Return only this JSON object:
 {
@@ -653,6 +744,8 @@ export function makeCoverageLedger(
         .filter((plan) => plan.topicIds.includes(item.id))
         .map((plan) => plan.id),
       covered: false,
+      status: "missing" as const,
+      weight: item.importance === "core" ? 5 : item.importance === "important" ? 3 : 1,
       formulas: item.formulas,
       figures: item.figureReferences,
     }));
@@ -669,6 +762,140 @@ function slideText(slide: Slide): string {
   ]
     .join(" ")
     .trim();
+}
+
+function normalizedTokens(value: string): Set<string> {
+  return new Set(cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").split(" ").filter((word) => word.length > 2));
+}
+
+export function textSimilarity(a: string, b: string): number {
+  const left = normalizedTokens(a);
+  const right = normalizedTokens(b);
+  if (!left.size || !right.size) return 0;
+  const intersection = [...left].filter((token) => right.has(token)).length;
+  return intersection / (left.size + right.size - intersection);
+}
+
+export function isValidFormula(value?: string): boolean {
+  const formula = cleanText(value);
+  if (!formula || containsInstructionLeakage(formula) || wordCount(formula) > 28) return false;
+  return /(?:=|≥|≤|≈|→|⇌|Δ|λ|ν|π|²|³|\^|\/)/.test(formula) && /[A-Za-zΑ-ω0-9]/.test(formula);
+}
+
+export type SlideFitResult = {
+  fits: boolean;
+  overflowScore: number;
+  reasons: string[];
+  suggestedAction: "none" | "shorten" | "two-column" | "split" | "change-layout";
+};
+
+export function validateSlideFit(slide: Slide): SlideFitResult {
+  const reasons: string[] = [];
+  const titleWords = wordCount(slide.title);
+  const contentWords = wordCount(slide.content || "");
+  const bullets = slide.bullets ?? [];
+  if (titleWords > 12 || slide.title.length > 90) reasons.push("Title exceeds the two-line safe limit");
+  if (contentWords > 85) reasons.push("Body paragraph is too long");
+  if (bullets.length > 6) reasons.push("More than six bullets");
+  if (bullets.some((bullet) => wordCount(bullet) > 24)) reasons.push("A bullet is too long");
+  if (slide.type === "formula" && !isValidFormula(slide.formula)) reasons.push("Formula slide has no valid expression");
+  const overflowScore = Math.min(100, reasons.length * 22 + Math.max(0, contentWords - 70) + Math.max(0, bullets.length - 5) * 8);
+  return { fits: reasons.length === 0, overflowScore, reasons, suggestedAction: !reasons.length ? "none" : bullets.length > 6 || contentWords > 100 ? "split" : titleWords > 12 ? "shorten" : "two-column" };
+}
+
+function cleanInstructionText(value: string): string {
+  if (!containsInstructionLeakage(value)) return cleanText(value);
+  return cleanText(value)
+    .replace(/(?:create|make|generate|prepare|build)\s+(?:me\s+)?(?:a\s+)?(?:presentation|slideshow|slide deck)\s+(?:on|about|for)\s+/gi, "")
+    .replace(/\bi want (?:a\s+)?(?:presentation|slideshow)\s+(?:on|about|for)?\s*/gi, "");
+}
+
+function collapseRepeatedTitle(value: string): string {
+  const parts = cleanInstructionText(value).split(/\s+[—–]\s+/).map(cleanText).filter(Boolean);
+  const kept: string[] = [];
+  for (const part of parts) {
+    if (!kept.some((existing) => existing.toLowerCase() === part.toLowerCase() || textSimilarity(existing, part) > 0.92)) kept.push(part);
+  }
+  return shorten(kept.join(" — ") || cleanInstructionText(value), 90);
+}
+
+function fitSlide(slide: Slide): Slide {
+  const title = collapseRepeatedTitle(slide.title);
+  const content = shorten(cleanInstructionText(slide.content || ""), 520);
+  const bullets = unique((slide.bullets ?? []).map((bullet) => shorten(cleanInstructionText(bullet), 165)).filter(Boolean)).slice(0, 6);
+  const formulaValid = isValidFormula(slide.formula);
+  const type = slide.type === "formula" && !formulaValid ? "concept" : slide.type;
+  const notes = cleanInstructionText(slide.speakerNotes || "");
+  return {
+    ...slide,
+    type,
+    title,
+    content: content.toLowerCase().startsWith(title.toLowerCase()) ? cleanText(content.slice(title.length).replace(/^\s*[:—-]\s*/, "")) : content,
+    bullets,
+    formula: formulaValid ? cleanText(slide.formula) : undefined,
+    speakerNotes: notes && textSimilarity(notes, [content, ...bullets].join(" ")) < 0.86 ? notes : `Explain the idea in source order, connect it to the previous slide, and clarify why it matters.`,
+    layout: bullets.length > 4 && !slide.layout ? "two-column" : slide.layout,
+  };
+}
+
+export function finalizeSlides(slides: Slide[], intent?: NormalizedSlideshowIntent): Slide[] {
+  const usedTitles: string[] = [];
+  return slides.map((raw, index) => {
+    let slide = fitSlide(raw);
+    if (index === 0 && intent) {
+      slide = { ...slide, type: "title", title: intent.title, content: intent.subtitle || slide.content, bullets: undefined, formula: undefined };
+    }
+    if (usedTitles.some((title) => textSimilarity(title, slide.title) > 0.82)) {
+      const page = slide.sourcePages?.[0];
+      slide = { ...slide, title: shorten(`${slide.title.replace(/\s*\(Part \d+\)$/i, "")} — ${page ? `Page ${page}` : `Part ${index + 1}`}`, 90) };
+    }
+    usedTitles.push(slide.title);
+    return slide;
+  });
+}
+
+export function repairSlideQuality(slides: Slide[], intent?: NormalizedSlideshowIntent): Slide[] {
+  const fitted = finalizeSlides(slides, intent);
+  const kept: Slide[] = [];
+  for (const slide of fitted) {
+    if (slide.type === "title") {
+      if (!kept.some((item) => item.type === "title")) kept.push(slide);
+      continue;
+    }
+    const duplicate = kept.some((previous) => {
+      if (["summary", "recap", "quiz"].includes(slide.type) || ["summary", "recap", "quiz"].includes(previous.type)) return false;
+      const sameMapping = Boolean(slide.topicIds?.some((id) => previous.topicIds?.includes(id))) || Boolean(slide.sourcePages?.some((page) => previous.sourcePages?.includes(page)));
+      return sameMapping && (textSimilarity(previous.title, slide.title) > 0.82 || textSimilarity(slideText(previous), slideText(slide)) > 0.82);
+    });
+    if (!duplicate) kept.push(slide);
+  }
+  return finalizeSlides(kept, intent);
+}
+
+export function assessSlideshowQuality(slides: Slide[], coveragePercentage = 0): SlideshowQualityReport {
+  const issues: SlideshowQualityIssue[] = [];
+  slides.forEach((slide, index) => {
+    const text = slideText(slide);
+    if (containsInstructionLeakage(text)) issues.push({ slideId: slide.id, severity: "critical", category: "instruction", message: `Slide ${index + 1} contains generation instructions.` });
+    const fit = validateSlideFit(slide);
+    if (!fit.fits) issues.push({ slideId: slide.id, severity: "warning", category: "overflow", message: `Slide ${index + 1}: ${fit.reasons.join("; ")}.` });
+    if (slide.type !== "title" && wordCount(text) < 16) issues.push({ slideId: slide.id, severity: "warning", category: "content", message: `Slide ${index + 1} is too thin to teach its topic.` });
+    if (!(slide.sourcePages?.length || slide.topicIds?.length) && slide.type !== "title") issues.push({ slideId: slide.id, severity: "warning", category: "source", message: `Slide ${index + 1} has no source mapping.` });
+    for (let previous = 0; previous < index; previous += 1) {
+      if (textSimilarity(slides[previous].title, slide.title) > 0.82 || textSimilarity(slideText(slides[previous]), text) > 0.86) {
+        issues.push({ slideId: slide.id, severity: "warning", category: "duplicate", message: `Slide ${index + 1} substantially repeats slide ${previous + 1}.` });
+        break;
+      }
+    }
+  });
+  const critical = issues.filter((issue) => issue.severity === "critical").length;
+  const overflowCount = issues.filter((issue) => issue.category === "overflow").length;
+  const duplicateCount = issues.filter((issue) => issue.category === "duplicate").length;
+  const readability = Math.max(0, 100 - overflowCount * 8);
+  const groundingIssues = issues.filter((issue) => issue.category === "source" || issue.category === "instruction").length;
+  const sourceGrounding = Math.max(0, 100 - groundingIssues * 12);
+  const score = Math.max(0, Math.round(coveragePercentage * 0.35 + readability * 0.3 + sourceGrounding * 0.25 + Math.max(0, 100 - duplicateCount * 12) * 0.1));
+  return { passed: critical === 0 && overflowCount === 0 && score >= 80, score, contentCoverage: coveragePercentage, readability, sourceGrounding, duplicateContent: duplicateCount, overflowCount, issues };
 }
 
 function hasUsefulContent(slide: Slide, density: SlideshowDensity): boolean {
@@ -690,9 +917,10 @@ function fallbackSlide(plan: SlidePlan, includeSpeakerNotes: boolean): Slide {
   const sentences = plan.sourceText
     .split(/\n|(?<=[.!?])\s+/)
     .map(cleanText)
-    .filter((value) => value.length >= 12 && !genericHeading.test(value));
+    .map((value) => value.replace(/^\[[^\]]+\]\s*/, ""))
+    .filter((value) => value.length >= 12 && !genericHeading.test(value) && textSimilarity(value, plan.title) < 0.78 && !/^(?:keep it in mind|board question|homework|try yourself|page\s*\d+)/i.test(value));
   const bullets = unique([
-    ...plan.formulas.slice(0, 2).map((formula) => `Formula: ${formula}`),
+    ...plan.formulas.filter(isValidFormula).slice(0, 2).map((formula) => `Formula: ${formula}`),
     ...sentences.slice(0, 6),
   ])
     .map((value) => shorten(value, 230))
@@ -705,7 +933,7 @@ function fallbackSlide(plan: SlidePlan, includeSpeakerNotes: boolean): Slide {
     title: shorten(plan.title, 160),
     content,
     bullets: plan.type === "title" ? undefined : bullets,
-    formula: plan.formulas[0],
+    formula: plan.formulas.find(isValidFormula),
     speakerNotes: includeSpeakerNotes
       ? `Explain the visible points in source order. Refer to ${formatPageRange(plan.sourcePages) || "the selected source"}.`
       : "",
@@ -776,6 +1004,7 @@ export function validateCoverage(
   const nextLedger = ledger.map((item) => ({
     ...item,
     covered: topicIds.has(item.id),
+    status: topicIds.has(item.id) ? "covered" as const : "missing" as const,
   }));
   const allFormulas = unique(ledger.flatMap((item) => item.formulas));
   const normalizedPresentation = slides
@@ -808,8 +1037,10 @@ export function validateCoverage(
   const missingPages = allPages.filter((page) => !pagesCovered.includes(page));
   const totalFormulas = allFormulas.length;
   const totalFigures = allFigures.length;
-  const topicCoverage = ledger.length
-    ? (ledger.length - missingTopicIds.length) / ledger.length
+  const totalTopicWeight = ledger.reduce((sum, item) => sum + (item.weight ?? (item.importance === "core" ? 5 : item.importance === "important" ? 3 : 1)), 0);
+  const coveredTopicWeight = nextLedger.filter((item) => item.covered).reduce((sum, item) => sum + (item.weight ?? (item.importance === "core" ? 5 : item.importance === "important" ? 3 : 1)), 0);
+  const topicCoverage = totalTopicWeight
+    ? coveredTopicWeight / totalTopicWeight
     : 1;
   const pageCoverage = allPages.length
     ? (allPages.length - missingPages.length) / allPages.length
@@ -817,9 +1048,8 @@ export function validateCoverage(
   const formulaCoverage = allFormulas.length
     ? includedFormulas.length / allFormulas.length
     : 1;
-  const percentage = Math.round(
-    Math.min(topicCoverage, pageCoverage, formulaCoverage) * 100,
-  );
+  const figureCoverage = allFigures.length ? includedFigures.length / allFigures.length : 1;
+  const percentage = Math.round(Math.min(1, topicCoverage * 0.5 + pageCoverage * 0.25 + formulaCoverage * 0.15 + figureCoverage * 0.1) * 100);
   return {
     ledger: nextLedger,
     report: {
