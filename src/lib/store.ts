@@ -138,6 +138,10 @@ export interface FileItem {
   type: string;
   size: number;
   dataUrl?: string;
+  /** Original browser-reported MIME type. The previewer also checks the extension. */
+  mimeType?: string;
+  /** Optional authenticated/signed storage URL used by hosted deployments. */
+  url?: string;
   tags: string[];
   uploadedAt: number;
 }
@@ -1195,7 +1199,7 @@ export const useStore = create<AppState>()(
       addFile: (f) =>
         set((s) => ({
           files: [
-            { id: uid(), name: f.name ?? "file", type: f.type ?? "file", size: f.size ?? 0, dataUrl: f.dataUrl, tags: f.tags ?? [], uploadedAt: Date.now() },
+            { id: uid(), name: f.name ?? "file", type: f.type ?? "file", mimeType: f.mimeType, url: f.url, size: f.size ?? 0, dataUrl: f.dataUrl, tags: f.tags ?? [], uploadedAt: Date.now() },
             ...s.files,
           ],
         })),

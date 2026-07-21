@@ -411,12 +411,42 @@ export function BookModeReader({
       />
 
       <motion.header
+        animate={{ opacity: controlsVisible || panel ? 1 : 0, y: controlsVisible || panel ? 0 : -14 }}
+        transition={{ duration: reducedMotion ? 0 : 0.2 }}
+        className="absolute inset-x-0 top-0 z-40 border-b border-white/10 bg-black/75 px-2 pb-2 pt-[max(.5rem,env(safe-area-inset-top))] backdrop-blur-xl sm:hidden"
+      >
+        <div className="flex h-11 min-w-0 items-center gap-1">
+          <Button size="icon" variant="ghost" onClick={onClose} aria-label="Exit Book Mode" className="h-10 w-10 shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
+          <div className="min-w-0 flex-1 px-1">
+            <p className="truncate text-xs font-bold">{title}</p>
+            <p className="truncate text-[9px] text-white/45">{source === "scan" ? "Original scan" : "Clean text"}</p>
+          </div>
+          <Button size="icon" variant="ghost" onClick={previous} disabled={currentPage <= 1} aria-label="Previous page" className="h-10 w-9 shrink-0"><ChevronLeft className="h-5 w-5" /></Button>
+          <form onSubmit={(event) => { event.preventDefault(); goTo(Number(jumpPage), false); }} className="flex shrink-0 items-center gap-1">
+            <Input aria-label="Jump to page" type="number" min={1} max={totalPages} value={jumpPage} onChange={(event) => setJumpPage(event.target.value)} className="h-9 w-12 rounded-xl border-white/15 bg-white/5 px-1 text-center text-base font-semibold" />
+            <span className="text-[10px] text-white/45">/{totalPages}</span>
+          </form>
+          <Button size="icon" variant="ghost" onClick={next} disabled={currentPage >= totalPages} aria-label="Next page" className="h-10 w-9 shrink-0"><ChevronRight className="h-5 w-5" /></Button>
+        </div>
+        <div className="mt-1 grid grid-cols-8 gap-0.5 rounded-2xl border border-white/[.06] bg-white/[.025] p-1">
+          {onSourceChange && <button onClick={() => onSourceChange(source === "scan" ? "text" : "scan")} className="grid h-10 place-items-center rounded-xl text-[9px] font-semibold text-white/75 hover:bg-white/10" aria-label={source === "scan" ? "Switch to clean text" : "Switch to original scan"}>{source === "scan" ? "TEXT" : "SCAN"}</button>}
+          <Button size="icon" variant="ghost" onClick={() => setZoom((value) => Math.max(0.6, value - 0.1))} aria-label="Zoom out" className="h-10 w-full"><Minus className="h-5 w-5" /></Button>
+          <Button size="icon" variant="ghost" onClick={() => setZoom((value) => Math.min(2.5, value + 0.1))} aria-label="Zoom in" className="h-10 w-full"><Plus className="h-5 w-5" /></Button>
+          <Button size="icon" variant="ghost" onClick={() => setPanel(panel === "toc" ? null : "toc")} aria-label="Open table of contents" className="h-10 w-full"><List className="h-5 w-5" /></Button>
+          <Button size="icon" variant="ghost" onClick={() => setPanel(panel === "search" ? null : "search")} aria-label="Search inside book" className="h-10 w-full"><Search className="h-5 w-5" /></Button>
+          <Button size="icon" variant="ghost" onClick={() => onToggleBookmark(currentPage)} aria-label={bookmarked ? "Remove page bookmark" : "Bookmark page"} className="h-10 w-full">{bookmarked ? <BookmarkCheck className="h-5 w-5 text-amber-300" /> : <Bookmark className="h-5 w-5" />}</Button>
+          {questions ? <Button size="icon" variant="ghost" onClick={() => setPanel(panel === "questions" ? null : "questions")} aria-label="Open page questions" className="h-10 w-full"><FileQuestion className="h-5 w-5" /></Button> : <span />}
+          <Button size="icon" variant="ghost" onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-label="Reading settings" className="h-10 w-full"><Settings2 className="h-5 w-5" /></Button>
+        </div>
+      </motion.header>
+
+      <motion.header
         animate={{
           opacity: controlsVisible || panel ? 1 : 0,
           y: controlsVisible || panel ? 0 : -18,
         }}
         transition={{ duration: reducedMotion ? 0 : 0.2 }}
-        className="absolute inset-x-0 top-0 z-40 flex flex-wrap items-center gap-1 border-b border-white/10 bg-black/65 px-2 py-2 backdrop-blur-xl sm:px-4"
+        className="absolute inset-x-0 top-0 z-40 hidden flex-wrap items-center gap-1 border-b border-white/10 bg-black/65 px-4 py-2 backdrop-blur-xl sm:flex"
       >
         <Button
           size="sm"
@@ -618,7 +648,7 @@ export function BookModeReader({
         </Button>
       </motion.header>
 
-      <main className="relative z-10 flex h-full items-center justify-center overflow-auto px-3 pb-12 pt-16 sm:px-8 sm:pb-14 sm:pt-20">
+      <main className="relative z-10 flex h-full items-center justify-center overflow-auto px-3 pb-12 pt-28 sm:px-8 sm:pb-14 sm:pt-20">
         <div
           className="relative flex max-h-full max-w-full items-center justify-center gap-1 [perspective:1800px]"
           onPointerDown={(event) => {
@@ -655,7 +685,7 @@ export function BookModeReader({
             <div
               key={`${source}-${pageNumber}`}
               className={cn(
-                "relative max-h-[calc(100dvh-8rem)] overflow-hidden bg-white",
+                "relative max-h-[calc(100dvh-11rem)] overflow-hidden bg-white sm:max-h-[calc(100dvh-8rem)]",
                 preferences.shadows && "shadow-[0_22px_70px_rgba(0,0,0,.55)]",
                 spreadPages.length === 2 && pageNumber === spreadPages[0]
                   ? "rounded-l-lg"
@@ -672,7 +702,7 @@ export function BookModeReader({
                 alt={`${title} page ${pageNumber}`}
                 draggable={false}
                 className={cn(
-                  "max-h-[calc(100dvh-8rem)] select-none object-contain",
+                  "max-h-[calc(100dvh-11rem)] select-none object-contain sm:max-h-[calc(100dvh-8rem)]",
                   fit === "width" ? "h-auto w-full" : "h-full w-auto",
                 )}
               />

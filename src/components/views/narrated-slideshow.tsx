@@ -9,6 +9,7 @@ import {
   Gauge, X, ChevronLeft, ChevronRight, RefreshCw, Loader2, Edit3,
   Captions, Highlighter, Clock, Save, Download, Copy, Settings2,
   Type, Sparkles, AlertCircle, CheckCircle2, Headphones, Rewind, FastForward,
+  Maximize2, Minimize2,
 } from "lucide-react";
 
 import { askAIJSON } from "@/lib/ai";
@@ -23,11 +24,12 @@ import {
   buildNarrationPrompt, buildChunkedNarrationPrompt,
   validateNarrationResponse, mergeNarrations,
   newNarratedSlideshow, upsertNarratedSlideshow,
-  recalcDuration, fmtTime,
+  recalcDuration, fmtTime, estimateNarrationDuration,
 } from "@/lib/narration";
 import { useSpeechSynthesis, type VoiceInfo } from "@/lib/use-speech";
 import { cn } from "@/lib/utils";
 import { SlideStage } from "./slideshow-maker";
+import { repairSlideQuality } from "@/lib/slideshow-pipeline";
 
 // ============================================================================
 // Narrated Slideshow Maker — sub-feature of AI Slideshow Maker
@@ -160,7 +162,9 @@ export function NarratedSlideshowMaker({ slideshow, onExit }: NarratedSlideshowM
   // === Update single narration ===
   const updateNarration = (slideId: string, patch: Partial<SlideNarration>) => {
     setNarrations((prev) => {
-      const next = prev.map((n) => (n.slideId === slideId ? { ...n, ...patch } : n));
+      const slide = slideshow.slides.find((item) => item.id === slideId);
+      const adjusted = patch.script && slide ? { ...patch, durationSec: estimateNarrationDuration(patch.script, slide.type, settings.rate) } : patch;
+      const next = prev.map((n) => (n.slideId === slideId ? { ...n, ...adjusted } : n));
       // Auto-persist
       try {
         const ns = newNarratedSlideshow(slideshow, next, settings);
@@ -876,15 +880,18 @@ function AutoLecturePlayer({
 }) {
   const speech = useSpeechSynthesis();
   const tpl = getTemplate(slideshow.template);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const [idx, setIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCaptions, setShowCaptions] = useState(settings.showCaptions);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(() => typeof window === "undefined" ? true : window.innerWidth >= 1100);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [pausedForPractice, setPausedForPractice] = useState(false);
   const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
 
   const slide = slideshow.slides[idx];
+  const displaySlide = useMemo(() => repairSlideQuality([slide])[0] ?? slide, [slide]);
   const narration = narrations[idx];
   const totalDuration = narrations.reduce((s, n) => s + n.durationSec, 0);
   const elapsedBefore = narrations.slice(0, idx).reduce((s, n) => s + n.durationSec, 0);
@@ -965,6 +972,21 @@ function AutoLecturePlayer({
     return () => { speech.cancel(); };
   }, []);
 
+  useEffect(() => {
+    const sync = () => setIsFullscreen(document.fullscreenElement === playerRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await playerRef.current?.requestFullscreen?.();
+    } catch {
+      toast.error("Fullscreen is unavailable in this browser.");
+    }
+  };
+
   const goToSlide = (newIdx: number) => {
     const clamped = Math.max(0, Math.min(slideshow.slides.length - 1, newIdx));
     speech.cancel();
@@ -979,9 +1001,10 @@ function AutoLecturePlayer({
       if (e.key === " ") { e.preventDefault(); handlePlayPause(); }
       else if (e.key === "ArrowRight") { e.preventDefault(); goToSlide(idx + 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goToSlide(idx - 1); }
-      else if (e.key === "Escape") { onExit(); }
+      else if (e.key === "Escape" && !document.fullscreenElement) { onExit(); }
       else if (e.key === "c") { setShowCaptions((s) => !s); }
       else if (e.key === "s") { setShowSidebar((s) => !s); }
+      else if (e.key.toLowerCase() === "f") { void toggleFullscreen(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1017,7 +1040,7 @@ function AutoLecturePlayer({
   };
 
   const content = (
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col" style={{ contain: "layout" }}>
+    <div ref={playerRef} className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden" style={{ contain: "layout" }} data-testid="auto-lecture-player">
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-3 bg-gradient-to-b from-black/80 to-transparent text-white">
         <div className="flex items-center gap-3 text-xs min-w-0">
@@ -1049,16 +1072,24 @@ function AutoLecturePlayer({
           >
             <Type className="h-3.5 w-3.5" />
           </button>
+          <button
+            onClick={() => void toggleFullscreen()}
+            className={cn("px-2.5 py-1 rounded-md text-[11px] border transition-colors", isFullscreen ? "bg-violet-500/20 border-violet-500/40 text-violet-200" : "bg-white/5 border-white/15 text-white/60 hover:text-white")}
+            title={isFullscreen ? "Exit fullscreen (F)" : "Enter fullscreen (F)"}
+            aria-label={isFullscreen ? "Exit Auto-Lecture fullscreen" : "Enter Auto-Lecture fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </button>
         </div>
       </div>
 
       {/* Main layout */}
-      <div className="flex-1 flex pt-12 pb-32 min-h-0">
+      <div className="flex-1 flex pt-12 pb-28 min-h-0 overflow-hidden">
         {/* Slide area */}
-        <div className="flex-1 grid place-items-center p-4 sm:p-8 min-w-0">
-          <div className="w-full h-full max-w-[1100px] max-h-[620px] aspect-video shadow-2xl rounded-2xl overflow-hidden relative">
+        <div className="flex-1 grid place-items-center p-3 sm:p-5 min-w-0 min-h-0 overflow-hidden">
+          <div className="w-full max-w-[min(1100px,calc((100dvh-12.5rem)*16/9))] aspect-video shadow-2xl rounded-2xl overflow-hidden relative" data-testid="auto-lecture-slide-canvas">
             <SlideStage
-              slide={slide}
+              slide={displaySlide}
               tpl={tpl}
               className="w-full h-full"
               fullscreen
@@ -1079,7 +1110,7 @@ function AutoLecturePlayer({
                   <h3 className="text-lg font-semibold text-white mb-2">Pause & try it yourself</h3>
                   <p className="text-sm text-white/60 mb-4">{narration?.pausePrompt || "Take a moment to work through this slide."}</p>
                   <div className="flex items-center justify-center gap-2 flex-wrap">
-                    {!revealedAnswers[idx] && slide.practiceAnswer && (
+                    {!revealedAnswers[idx] && displaySlide.practiceAnswer && (
                       <button
                         onClick={handlePracticeReveal}
                         className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/15"

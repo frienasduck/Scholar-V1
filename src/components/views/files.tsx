@@ -8,11 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { FilePreviewModal, detectPreviewType } from "@/components/files/file-preview-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Trash2, Download, Sparkles, FileText, Image as ImageIcon,
-  FileVideo, FileAudio, File as FileIcon, Search, Loader2, X, HardDrive,
+  FileVideo, FileAudio, File as FileIcon, Search, Loader2, X, HardDrive, MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,13 +33,7 @@ const TYPE_META: Record<string, { icon: typeof FileIcon; color: string }> = {
 };
 
 function getType(name: string, type: string): string {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  if (TYPE_META[ext]) return ext;
-  if (type.startsWith("image/")) return "image";
-  if (type.startsWith("video/")) return "video";
-  if (type.startsWith("audio/")) return "audio";
-  if (type === "application/pdf") return "pdf";
-  return "file";
+  return detectPreviewType({ name, type, mimeType: type });
 }
 
 function formatSize(bytes: number): string {
@@ -86,8 +81,9 @@ export function FilesView() {
     for (const file of Array.from(fileList)) {
       const type = getType(file.name, file.type);
       let dataUrl: string | undefined;
-      // Store dataUrl for images, PDFs, and small videos/audio (under 10MB) so they can be previewed
-      if (["image", "pdf", "video", "audio"].includes(type) && file.size < 10 * 1024 * 1024) {
+      // Retain the original bytes in this local-first build. Hosted storage may
+      // populate FileItem.url with an authenticated, short-lived signed URL.
+      if (file.size <= 20 * 1024 * 1024) {
         dataUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -97,6 +93,7 @@ export function FilesView() {
       addFile({
         name: file.name,
         type,
+        mimeType: file.type || "application/octet-stream",
         size: file.size,
         dataUrl,
         tags: [],
@@ -229,6 +226,11 @@ export function FilesView() {
                       }
                     }}
                   >
+                    {detectPreviewType(f) === "image" && f.dataUrl && (
+                      <div className="-mx-4 -mt-4 mb-4 h-28 overflow-hidden rounded-t-xl bg-muted">
+                        <img src={f.dataUrl} alt="" loading="lazy" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-3">
                       <div
                         className="grid place-items-center h-11 w-11 rounded-xl shrink-0"
@@ -247,6 +249,26 @@ export function FilesView() {
                           }}
                         >
                           Open
+                        </Button>
+                        {f.dataUrl && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Download ${f.name}`}
+                            className="h-7 w-7 opacity-70 hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const anchor = document.createElement("a");
+                              anchor.href = f.dataUrl!;
+                              anchor.download = f.name;
+                              anchor.click();
+                            }}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" aria-label="More file actions" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                          <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -284,7 +306,7 @@ export function FilesView() {
       )}
 
       {/* Preview modal */}
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+      <Dialog open={false}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="pr-8 break-all">{preview?.name}</DialogTitle>
@@ -381,6 +403,21 @@ export function FilesView() {
           )}
         </DialogContent>
       </Dialog>
+      {preview && (
+        <FilePreviewModal
+          file={preview}
+          files={filtered}
+          onClose={() => setPreview(null)}
+          onPrevious={() => {
+            const index = filtered.findIndex((file) => file.id === preview.id);
+            setPreview(filtered[(index - 1 + filtered.length) % filtered.length]);
+          }}
+          onNext={() => {
+            const index = filtered.findIndex((file) => file.id === preview.id);
+            setPreview(filtered[(index + 1) % filtered.length]);
+          }}
+        />
+      )}
     </div>
   );
 }

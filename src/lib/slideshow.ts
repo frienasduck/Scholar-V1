@@ -63,6 +63,7 @@ export interface SlideshowSourcePage {
   tables: Array<{ id: string; text: string }>;
   chapterId?: string;
   chapterTitle?: string;
+  segments?: Array<{ type: string; text: string }>;
 }
 
 export interface SlideshowOutlineItem {
@@ -84,6 +85,8 @@ export interface SlideshowCoverageItem {
   importance: "core" | "important" | "supporting";
   assignedSlideIds: string[];
   covered: boolean;
+  status?: "covered" | "partial" | "missing";
+  weight?: number;
   formulas: string[];
   figures: string[];
 }
@@ -102,6 +105,41 @@ export interface SlideshowCoverageReport {
   missingPages: number[];
   missingFormulas: string[];
   missingFigures: string[];
+}
+
+export interface SlideshowQualityIssue {
+  slideId?: string;
+  severity: "critical" | "warning";
+  category: "instruction" | "duplicate" | "overflow" | "formula" | "source" | "narration" | "content";
+  message: string;
+}
+
+export interface SlideshowQualityReport {
+  passed: boolean;
+  score: number;
+  contentCoverage: number;
+  readability: number;
+  sourceGrounding: number;
+  duplicateContent: number;
+  overflowCount: number;
+  issues: SlideshowQualityIssue[];
+}
+
+export interface SlideshowMetadata {
+  sourceType: string;
+  sourceId?: string;
+  sourceTitle: string;
+  sourceStartPage?: number;
+  sourceEndPage?: number;
+  sourceWordCount?: number;
+  detectedTopicCount: number;
+  generatedSlideCount: number;
+  densityMode: string;
+  generationModel?: string;
+  coveragePercentage: number;
+  qualityScore: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SlideshowGenerationSettings {
@@ -179,6 +217,8 @@ export interface Slideshow {
   outline?: SlideshowOutlineItem[];
   coverageLedger?: SlideshowCoverageItem[];
   coverage?: SlideshowCoverageReport;
+  quality?: SlideshowQualityReport;
+  metadata?: SlideshowMetadata;
   generationSettings?: SlideshowGenerationSettings;
   generationStatus?: "complete" | "partial" | "failed";
   failedStage?: string;
