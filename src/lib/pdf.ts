@@ -1,5 +1,7 @@
 "use client";
 
+import { prepareAcademicMarkdownForExport } from "@/lib/ai/export";
+
 // ============================================================================
 // Scholar — Publication-grade PDF generator (Class 9 / Class 11 aware)
 // ----------------------------------------------------------------------------
@@ -1161,12 +1163,14 @@ function htmlShell(opts: {
   css: string;
   body: string;
 }): string {
+  const inheritedStyles = typeof document === "undefined" ? "" : Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map((link) => `<link rel="stylesheet" href="${escAttr(link.href)}"/>`).join("");
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${escAttr(opts.title)}</title>
+${inheritedStyles}
 <style>${opts.css}</style>
 </head>
 <body>
@@ -1506,7 +1510,8 @@ ${cover}
 // ---------------------------------------------------------------------------
 
 export function mdToHtml(md: string): string {
-  const src = md.replace(/\r\n/g, "\n");
+  const academic = prepareAcademicMarkdownForExport(md);
+  const src = academic.source.replace(/\r\n/g, "\n");
   const lines = src.split("\n");
   let html = "";
   let inUl = false;
@@ -1695,5 +1700,5 @@ export function mdToHtml(md: string): string {
   closeLists();
   closeTable();
   closeBq();
-  return html;
+  return academic.restore(html);
 }

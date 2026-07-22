@@ -7,6 +7,7 @@ import type { Subject } from "@/lib/curriculum";
 import { askAI, askAIJSON, askAIStream } from "@/lib/ai";
 import { navigateTo } from "@/lib/nav-event";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -829,7 +830,7 @@ Practice 5-10 problems from your NCERT textbook to reinforce the concepts covere
               {checkpointQ && stage === "checkpoint" && (
                 <div className="lv-glass rounded-2xl p-4">
                   <p className="text-sm font-semibold text-white mb-3">Checkpoint Question</p>
-                  <p className="text-sm text-white/80 mb-3">{checkpointQ.question}</p>
+            <ScholarAIContent content={checkpointQ.question} mode="compact" className="mb-3 text-sm text-white/80" />
                   <div className="space-y-2">
                     {checkpointQ.options.map((opt, i) => {
                       const isPicked = pickedAnswer === i;
@@ -853,7 +854,7 @@ Practice 5-10 problems from your NCERT textbook to reinforce the concepts covere
                   {checked && (
                     <div className={`mt-3 rounded-xl p-3 text-xs ${isCorrect ? "bg-emerald-500/10 text-emerald-200" : "bg-red-500/10 text-red-200"}`}>
                       <p className="font-semibold mb-1">{isCorrect ? "✓ Correct!" : "✗ Not quite."}</p>
-                      {checkpointQ.explanation && <p className="text-white/80">{checkpointQ.explanation}</p>}
+              {checkpointQ.explanation && <ScholarAIContent content={checkpointQ.explanation} mode="compact" className="text-white/80" />}
                     </div>
                   )}
                 </div>

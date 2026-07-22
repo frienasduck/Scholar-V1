@@ -7,6 +7,7 @@ import { useCurriculum } from "@/lib/use-curriculum";
 import { useUserName } from "@/lib/use-user-name";
 import { askAI, askAIJSON, askAIStream } from "@/lib/ai";
 import { ProgressRing, Markdown } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogClose, DialogTitle,
@@ -988,7 +989,7 @@ function AIQuizItem({ index, question, accent }: { index: number; question: { q:
           <p className="text-[11px] text-white/60 mb-0.5">
             {picked === question.answer ? "✅ Correct!" : `❌ Correct answer: ${String.fromCharCode(65 + question.answer)}`}
           </p>
-          <p className="text-[11px] text-white/50 leading-relaxed">{question.explanation}</p>
+                      <ScholarAIContent content={question.explanation} mode="compact" className="text-[11px] text-white/50" />
         </div>
       )}
     </div>

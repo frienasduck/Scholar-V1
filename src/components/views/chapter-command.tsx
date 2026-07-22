@@ -15,6 +15,7 @@ import {
 import { useStore } from "@/lib/store";
 import { useCurriculum, type Subject, type Chapter } from "@/lib/use-curriculum";
 import { askAI, askAIJSON } from "@/lib/ai";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import {
   getChapterCommandData, getChapterChecklist, getChecklistProgress,
   getChapterStatus, STATUS_META, type ChapterCommandData, type ChecklistItem,
@@ -1200,7 +1201,7 @@ Answer concisely and helpfully. Use markdown. Never reveal you are an AI.`;
                   : "bg-white/5 text-white/80 mr-4"
               )}
             >
-              <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+              {m.role === "assistant" ? <ScholarAIContent content={m.content} mode="compact" /> : <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>}
             </div>
           ))}
           {loading && (

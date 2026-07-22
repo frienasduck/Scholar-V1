@@ -5,8 +5,8 @@ import { Mic, Square } from "lucide-react";
 import { LamMark } from "@/components/lam/lam-mark";
 import { cn } from "@/lib/utils";
 
-export function GlassWaveListening({ transcript, onStop }: { transcript?: string; onStop: () => void }) {
-  return <motion.section initial={{ opacity: 0, scale: .88, y: -12, filter: "blur(12px)" }} animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }} transition={{ type: "spring", stiffness: 360, damping: 28 }} className="lam-listening-capsule mx-auto w-full max-w-xl rounded-[1.65rem] p-3">
+export function GlassWaveListening({ transcript, onStop, optimized = false }: { transcript?: string; onStop: () => void; optimized?: boolean }) {
+  return <motion.section initial={optimized ? { opacity: 0, scale: .94, y: -6 } : { opacity: 0, scale: .88, y: -12, filter: "blur(12px)" }} animate={optimized ? { opacity: 1, scale: 1, y: 0 } : { opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }} transition={optimized ? { duration: .26, ease: [0.16, 1, 0.3, 1] } : { type: "spring", stiffness: 360, damping: 28 }} className="lam-listening-capsule mx-auto w-full max-w-xl rounded-[1.65rem] p-3">
     <span className="lam-glass-reflection" aria-hidden="true" />
     <div className="flex items-center gap-3">
       <span className="lam-listening-orb grid h-11 w-11 shrink-0 place-items-center rounded-full"><Mic className="h-4 w-4 text-white" /></span>
@@ -17,8 +17,8 @@ export function GlassWaveListening({ transcript, onStop }: { transcript?: string
   </motion.section>;
 }
 
-export function LamThinkingState({ request, transcribing = false, onStop }: { request?: string; transcribing?: boolean; onStop?: () => void }) {
-  return <motion.section layout initial={{ opacity: 0, scaleX: .72, y: -6 }} animate={{ opacity: 1, scaleX: 1, y: 0 }} transition={{ type: "spring", stiffness: 310, damping: 30 }} className="lam-thinking-capsule mx-auto w-full max-w-2xl rounded-full px-3 py-2.5">
+export function LamThinkingState({ request, transcribing = false, onStop, optimized = false }: { request?: string; transcribing?: boolean; onStop?: () => void; optimized?: boolean }) {
+  return <motion.section layout initial={{ opacity: 0, scaleX: optimized ? .9 : .72, y: -6 }} animate={{ opacity: 1, scaleX: 1, y: 0 }} transition={optimized ? { duration: .3, ease: [0.16, 1, 0.3, 1] } : { type: "spring", stiffness: 310, damping: 30 }} className="lam-thinking-capsule mx-auto w-full max-w-2xl rounded-full px-3 py-2.5">
     <span className="lam-glass-reflection" aria-hidden="true" />
     <div className="flex items-center gap-3">
       <span className="lam-thinking-glyph grid h-10 w-10 shrink-0 place-items-center rounded-full"><LamMark active className="text-violet-100" /></span>
@@ -32,4 +32,3 @@ export function LamThinkingState({ request, transcribing = false, onStop }: { re
 export function LamQuickActionChip({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return <motion.button type="button" whileHover={{ y: -1, scale: 1.015 }} whileTap={{ scale: .97 }} onClick={onClick} className={cn("lam-quick-chip whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-medium text-white/72 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300/50")}>{children}</motion.button>;
 }
-

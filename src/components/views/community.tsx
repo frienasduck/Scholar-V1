@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SectionHeader, EmptyState } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -815,9 +816,7 @@ function QATab() {
                                   {timeAgo(a.at)}
                                 </span>
                               </div>
-                              <p className="text-sm mt-0.5 whitespace-pre-wrap break-words">
-                                {a.body}
-                              </p>
+                              {a.isAI ? <ScholarAIContent content={a.body} mode="compact" className="mt-0.5 text-sm" /> : <p className="mt-0.5 whitespace-pre-wrap break-words text-sm">{a.body}</p>}
                             </div>
                           </div>
                         ))}

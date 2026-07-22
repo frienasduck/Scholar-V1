@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { X, Video, VideoOff, Keyboard, Check, Flame, Trophy, Bookmark, BookmarkCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import type { Class11Flashcard } from "@/lib/flashcards-physics";
 import {
   VIDEO_URL, SUBJECT_INFO, TYPE_INFO, DIFFICULTY_INFO, RATINGS,
@@ -192,7 +193,7 @@ export function RevisionPortal({
                     {card.explanation && (
                       <div className="mt-3 p-3 rounded-xl bg-black/30 border border-white/10">
                         <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1">Explanation</p>
-                        <p className="text-sm text-white/80 leading-relaxed">{card.explanation}</p>
+          <ScholarAIContent content={card.explanation} mode="compact" className="text-sm text-white/80" />
                       </div>
                     )}
                   </div>

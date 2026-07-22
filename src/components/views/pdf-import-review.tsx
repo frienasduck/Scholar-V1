@@ -13,6 +13,7 @@ import type { PracticeQuestion } from "@/lib/question-bank";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 
 // ============================================================================
 // PDF Import Review Mode
@@ -441,7 +442,7 @@ function QuestionReviewCard({
 
       {/* Explanation */}
       {!isEditing && question.explanation && (
-        <p className="text-[10px] text-white/40 italic mb-2">{question.explanation}</p>
+                          <ScholarAIContent content={question.explanation} mode="compact" className="mb-2 text-[10px] italic text-white/40" />
       )}
 
       {/* Actions */}

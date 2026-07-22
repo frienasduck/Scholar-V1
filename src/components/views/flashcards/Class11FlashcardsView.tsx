@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Badge } from "@/components/ui/badge";
 import {
   SUBJECT_INFO, SUBJECT_ORDER, TYPE_INFO, DIFFICULTY_INFO,
@@ -412,12 +413,12 @@ export function Class11FlashcardsView() {
                         {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5 text-amber-300" /> : <Bookmark className="h-3.5 w-3.5" />}
                       </button>
                     </div>
-                    <p className="text-sm font-medium text-white leading-snug mb-1">{card.front}</p>
+                    <ScholarAIContent content={card.front} mode="compact" className="mb-1 text-sm font-medium text-white" />
                     <p className="text-[10px] text-white/40">{card.chapter} · {card.topic}</p>
                     {isExpanded && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-2 pt-2 border-t border-white/10">
-                        <p className="text-sm text-white/80 leading-relaxed">{card.back}</p>
-                        {card.explanation && <p className="text-[11px] text-white/50 mt-1 italic">{card.explanation}</p>}
+                        <ScholarAIContent content={card.back} mode="compact" className="text-sm text-white/80" />
+                        {card.explanation && <ScholarAIContent content={card.explanation} mode="compact" className="mt-1 text-[11px] italic text-white/50" />}
                       </motion.div>
                     )}
                   </div>

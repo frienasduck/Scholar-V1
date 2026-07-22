@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { askAI } from "@/lib/ai";
-import { sanitizeHtml } from "@/lib/utils";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { ALL_PRACTICE_QUESTIONS, ALL_PHYSICS_QUESTIONS, PHYSICS_CHAPTER_QUESTIONS, isReviewNeeded, type PracticeQuestion } from "@/lib/question-bank";
 import { PdfImportReview } from "@/components/views/pdf-import-review";
 import { toast } from "sonner";
@@ -318,7 +318,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
             {isAnswered && selectedOption === question.answerIndex && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-medium">✓ Correct</span>}
             {isAnswered && selectedOption !== null && selectedOption !== question.answerIndex && <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-medium">✗ Wrong</span>}
           </div>
-          <p className="text-sm font-medium text-white/90 leading-relaxed whitespace-pre-wrap">{question.question}</p>
+          <ScholarAIContent content={question.question} mode="compact" className="text-sm font-medium text-white/90" />
         </div>
       </div>
       {isMCQ && question.options && (
@@ -334,7 +334,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
             }
             return (
               <button key={i} onClick={() => handleMCQSelect(i)} disabled={selectedOption !== null} className={`text-left text-xs px-3 py-2 rounded-lg border transition-all ${cls}`}>
-                <span className="font-mono mr-2 font-bold">{String.fromCharCode(65 + i)}.</span>{opt}
+                <span className="font-mono mr-2 font-bold">{String.fromCharCode(65 + i)}.</span><ScholarAIContent content={opt} mode="compact" className="inline" />
                 {selectedOption !== null && isCorrect && <Check className="inline-block h-3.5 w-3.5 ml-1.5" />}
                 {selectedOption !== null && isSelected && !isCorrect && <X className="inline-block h-3.5 w-3.5 ml-1.5" />}
               </button>
@@ -353,12 +353,12 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="ml-10 mt-3 space-y-3">
           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
             <p className="text-[10px] uppercase tracking-wide text-emerald-400 font-semibold mb-1">{isMCQ ? `Answer: ${question.answer}` : "Answer"}</p>
-            <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{isMCQ ? question.options?.[question.answerIndex ?? 0] : question.answer}</p>
+            <ScholarAIContent content={isMCQ ? question.options?.[question.answerIndex ?? 0] || "" : question.answer} mode="compact" className="text-sm text-white/80" />
           </div>
           {question.explanation && (
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <p className="text-[10px] uppercase tracking-wide text-white/40 font-semibold mb-1">Explanation</p>
-              <p className="text-sm text-white/70 leading-relaxed">{question.explanation}</p>
+              <ScholarAIContent content={question.explanation} mode="compact" className="text-sm text-white/70" />
             </div>
           )}
           <div>
@@ -368,7 +368,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
             {aiExplanation && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-2 rounded-lg border border-violet-500/20 bg-violet-500/5 p-3">
                 <p className="text-[10px] uppercase tracking-wide text-violet-400 font-semibold mb-1.5 flex items-center gap-1.5"><Sparkles className="h-3 w-3" /> AI Explanation</p>
-                <div className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: sanitizeHtml(aiExplanation.replace(/\n/g, "<br>")) }} />
+                <ScholarAIContent content={aiExplanation} className="text-sm text-white/80" />
               </motion.div>
             )}
           </div>

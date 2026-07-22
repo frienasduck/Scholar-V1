@@ -50,6 +50,8 @@ import {
 } from "lucide-react";
 
 import { askAIJSON } from "@/lib/ai";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
+import { renderAcademicFormulaToPng, renderAcademicTextToHtml } from "@/lib/ai/export";
 import { useStore } from "@/lib/store";
 import { useCurriculum } from "@/lib/use-curriculum";
 import {
@@ -3341,14 +3343,14 @@ function SlideBody({
           className={cn("rounded-2xl text-center", fullscreen ? "p-4 sm:p-5" : "p-6 sm:p-8")}
           style={{ background: tpl.cardBg, border: `1px solid ${accent}40` }}
         >
-          <p
-            className={cn("font-mono font-bold mb-3", textFormula)}
+          <ScholarAIContent
+            content={slide.formula.startsWith("\\(") || slide.formula.startsWith("$") ? slide.formula : `\\[${slide.formula}\\]`}
+            mode="slide"
+            className={cn("mb-3 font-bold", textFormula)}
             style={{ color: accent }}
-          >
-            {slide.formula}
-          </p>
+          />
           {slide.content && (
-            <p className={cn("opacity-70", textBase)}>{slide.content}</p>
+            <ScholarAIContent content={slide.content} mode="slide" className={cn("opacity-70", textBase)} />
           )}
         </div>
         {slide.bullets && slide.bullets.length > 0 && (
@@ -3362,7 +3364,7 @@ function SlideBody({
                   className="mt-1.5 h-1 w-1 rounded-full shrink-0"
                   style={{ background: accent }}
                 />
-                <span>{b}</span>
+                <ScholarAIContent content={b} mode="slide" />
               </li>
             ))}
           </ul>
@@ -3380,7 +3382,7 @@ function SlideBody({
             <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">
               Problem
             </p>
-            <p className={cn(textLarge)}>{slide.content}</p>
+            <ScholarAIContent content={slide.content} mode="slide" className={cn(textLarge)} />
           </div>
         )}
         {slide.bullets && slide.bullets.length > 0 && (
@@ -3403,7 +3405,7 @@ function SlideBody({
                   >
                     {i + 1}.
                   </span>
-                  <span>{b}</span>
+                  <ScholarAIContent content={b} mode="slide" />
                 </li>
               ))}
             </ol>
@@ -3422,9 +3424,7 @@ function SlideBody({
             <p className="text-[10px] uppercase tracking-wider opacity-50 mb-1">
               Try it
             </p>
-            <p className={cn("font-medium", textLarge)}>
-              {slide.practiceQuestion}
-            </p>
+            <ScholarAIContent content={slide.practiceQuestion} mode="slide" className={cn("font-medium", textLarge)} />
           </div>
         )}
         {slide.practiceAnswer &&
@@ -3444,7 +3444,7 @@ function SlideBody({
                 >
                   Answer
                 </p>
-                <p className={textBase}>{slide.practiceAnswer}</p>
+                <ScholarAIContent content={slide.practiceAnswer} mode="slide" className={textBase} />
               </div>
             )
           ) : (
@@ -3459,7 +3459,7 @@ function SlideBody({
               >
                 Show answer
               </summary>
-              <p className={cn("mt-2", textBase)}>{slide.practiceAnswer}</p>
+              <ScholarAIContent content={slide.practiceAnswer} mode="slide" className={cn("mt-2", textBase)} />
             </details>
           ))}
         {slide.bullets && slide.bullets.length > 0 && (
@@ -3487,7 +3487,7 @@ function SlideBody({
     return (
       <div className="flex-1 space-y-3">
         {slide.content && (
-          <p className={cn("font-medium", textLarge)}>{slide.content}</p>
+          <ScholarAIContent content={slide.content} mode="slide" className={cn("font-medium", textLarge)} />
         )}
         {slide.bullets && slide.bullets.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -3500,7 +3500,7 @@ function SlideBody({
                 <span className="text-xs font-bold opacity-60 mr-2">
                   {String.fromCharCode(65 + i)}.
                 </span>
-                <span className={cn(textBase)}>{b}</span>
+                <ScholarAIContent content={b} mode="slide" className={cn(textBase)} />
               </div>
             ))}
           </div>
@@ -3514,7 +3514,7 @@ function SlideBody({
               <span className="font-semibold" style={{ color: accent }}>
                 Answer:
               </span>{" "}
-              {slide.practiceAnswer}
+              <ScholarAIContent content={slide.practiceAnswer} mode="slide" className="inline" />
             </div>
           ) : revealAnswer === undefined ? (
             <details
@@ -3522,7 +3522,7 @@ function SlideBody({
               style={{ borderColor: `${accent}30` }}
             >
               <summary className="cursor-pointer">Reveal answer</summary>
-              <p className="mt-2">{slide.practiceAnswer}</p>
+              <ScholarAIContent content={slide.practiceAnswer} mode="slide" className="mt-2" />
             </details>
           ) : null)}
       </div>
@@ -3558,7 +3558,7 @@ function SlideBody({
                   className="mt-1.5 h-1 w-1 rounded-full shrink-0"
                   style={{ background: accent }}
                 />
-                <span>{b}</span>
+                <ScholarAIContent content={b} mode="slide" />
               </p>
             ))}
           </div>
@@ -3587,7 +3587,7 @@ function SlideBody({
                     fontWeight: i === 0 ? 600 : 400,
                   }}
                 >
-                  {b}
+                  <ScholarAIContent content={b} mode="slide" />
                 </div>
               );
             }
@@ -3612,7 +3612,7 @@ function SlideBody({
                       fontWeight: i === 0 ? 600 : 400,
                     }}
                   >
-                    {c}
+                    <ScholarAIContent content={c} mode="slide" />
                   </div>
                 ))}
               </div>
@@ -3620,7 +3620,7 @@ function SlideBody({
           })}
         </div>
         {slide.content && (
-          <p className={cn("mt-3 opacity-60", textBase)}>{slide.content}</p>
+          <ScholarAIContent content={slide.content} mode="slide" className={cn("mt-3 opacity-60", textBase)} />
         )}
       </div>
     );
@@ -3641,7 +3641,7 @@ function SlideBody({
                 className="absolute -left-[18px] top-1 h-3 w-3 rounded-full border-2"
                 style={{ background: tpl.background, borderColor: accent }}
               />
-              <p className={textBase}>{b}</p>
+              <ScholarAIContent content={b} mode="slide" className={textBase} />
             </div>
           ))}
         </div>
@@ -3681,9 +3681,7 @@ function SlideBody({
               <p className="text-[10px] uppercase tracking-wider opacity-60 mb-2">
                 Source diagram description
               </p>
-              <p className={cn("opacity-80", textBase)}>
-                {slide.diagramPrompt || slide.content}
-              </p>
+              <ScholarAIContent content={slide.diagramPrompt || slide.content || ""} mode="slide" className={cn("opacity-80", textBase)} />
             </>
           )}
         </div>
@@ -3698,7 +3696,7 @@ function SlideBody({
                   className="mt-1.5 h-1 w-1 rounded-full shrink-0"
                   style={{ background: accent }}
                 />
-                <span>{b}</span>
+                <ScholarAIContent content={b} mode="slide" />
               </li>
             ))}
           </ul>
@@ -3718,7 +3716,7 @@ function SlideBody({
     return (
       <div className="flex-1 space-y-2">
         {slide.content && (
-          <p className={cn("opacity-70 mb-2", textBase)}>{slide.content}</p>
+          <ScholarAIContent content={slide.content} mode="slide" className={cn("opacity-70 mb-2", textBase)} />
         )}
         {slide.bullets.map((b, i) => {
           const [term, ...rest] = b.split(":").map((x) => x.trim());
@@ -3735,15 +3733,7 @@ function SlideBody({
               >
                 {i + 1}
               </span>
-              <p className={textBase}>
-                {def ? (
-                  <>
-                    <span className="font-semibold">{term}:</span> {def}
-                  </>
-                ) : (
-                  term
-                )}
-              </p>
+              <ScholarAIContent content={def ? `**${term}:** ${def}` : term} mode="slide" className={textBase} />
             </div>
           );
         })}
@@ -3771,7 +3761,7 @@ function SlideBody({
             {slide.title}
           </h2>
           {slide.content && (
-            <p className={cn("opacity-50 mt-2", textBase)}>{slide.content}</p>
+            <ScholarAIContent content={slide.content} mode="slide" className={cn("opacity-50 mt-2", textBase)} />
           )}
         </div>
       </div>
@@ -3783,12 +3773,7 @@ function SlideBody({
     return (
       <div className="flex-1">
         {slide.content && (
-          <p className={cn("opacity-70 mb-3", textBase)}>
-            <HighlightedText
-              text={slide.content}
-              keywords={highlightKeywords}
-            />
-          </p>
+          <ScholarAIContent content={slide.content} mode="slide" className={cn("opacity-70 mb-3", textBase)} />
         )}
         <ul className="space-y-2">
           {slide.bullets.map((b, i) => (
@@ -3797,7 +3782,7 @@ function SlideBody({
                 className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
                 style={{ background: accent }}
               />
-              <HighlightedText text={b} keywords={highlightKeywords} />
+              <ScholarAIContent content={b} mode="slide" />
             </li>
           ))}
         </ul>
@@ -3809,14 +3794,7 @@ function SlideBody({
   if (slide.content) {
     return (
       <div className="flex-1">
-        <p
-          className={cn(
-            "opacity-85 leading-relaxed whitespace-pre-wrap",
-            textLarge,
-          )}
-        >
-          <HighlightedText text={slide.content} keywords={highlightKeywords} />
-        </p>
+        <ScholarAIContent content={slide.content} mode="slide" className={cn("opacity-85", textLarge)} />
       </div>
     );
   }
@@ -4486,16 +4464,16 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
       .map((s, i) => {
         const meta = getSlideTypeMeta(s.type);
         const bullets =
-          s.bullets?.map((b) => `<li>${escapeHtml(b)}</li>`).join("") ?? "";
+          s.bullets?.map((b) => `<li>${renderAcademicTextToHtml(b)}</li>`).join("") ?? "";
         return `
         <section class="slide" data-type="${s.type}" data-index="${i}">
           <div class="badge">${meta.icon} ${meta.name}</div>
           <h2>${escapeHtml(s.title)}</h2>
-          ${s.content ? `<p class="content">${escapeHtml(s.content)}</p>` : ""}
+          ${s.content ? `<div class="content">${renderAcademicTextToHtml(s.content)}</div>` : ""}
           ${bullets ? `<ul>${bullets}</ul>` : ""}
-          ${s.formula ? `<div class="formula">${escapeHtml(s.formula)}</div>` : ""}
-          ${s.practiceQuestion ? `<div class="practice"><strong>Try:</strong> ${escapeHtml(s.practiceQuestion)}</div>` : ""}
-          ${s.practiceAnswer ? `<details><summary>Show answer</summary><p>${escapeHtml(s.practiceAnswer)}</p></details>` : ""}
+          ${s.formula ? `<div class="formula">${renderAcademicTextToHtml(s.formula.startsWith("$") || s.formula.startsWith("\\(") ? s.formula : `\\[${s.formula}\\]`)}</div>` : ""}
+          ${s.practiceQuestion ? `<div class="practice"><strong>Try:</strong> ${renderAcademicTextToHtml(s.practiceQuestion)}</div>` : ""}
+          ${s.practiceAnswer ? `<details><summary>Show answer</summary><div>${renderAcademicTextToHtml(s.practiceAnswer)}</div></details>` : ""}
           ${s.showSourceReference && s.sourcePages?.length ? `<p class="source">Source: ${escapeHtml(formatPageRange(s.sourcePages))}</p>` : ""}
           ${s.speakerNotes ? `<div class="notes"><strong>Speaker notes:</strong> ${escapeHtml(s.speakerNotes)}</div>` : ""}
         </section>
@@ -4509,6 +4487,7 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${escapeHtml(slideshow.title)}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.1/dist/katex.min.css" />
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; padding: 0; font-family: ${JSON.stringify(tpl.fontFamily)}; background: ${tpl.background}; color: ${tpl.text}; }
@@ -4798,20 +4777,9 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
           y += 1.2;
         }
         if (sourceSlide.formula) {
-          slide.addText(sourceSlide.formula, {
-            x: 0.75,
-            y,
-            w: textWidth,
-            h: 0.72,
-            fontFace: "Cambria Math",
-            fontSize: 22,
-            bold: true,
-            color: colors.accent,
-            fill: { color: colors.card },
-            margin: 0.12,
-            align: "center",
-            valign: "middle",
-          });
+          const renderedFormula = await renderAcademicFormulaToPng(sourceSlide.formula, `#${colors.accent}`);
+          if (renderedFormula) slide.addImage({ data: renderedFormula, x: 0.75, y, w: textWidth, h: 0.72, transparency: 0 });
+          else slide.addText(sourceSlide.formula, { x: 0.75, y, w: textWidth, h: 0.72, fontFace: "Cambria Math", fontSize: 22, bold: true, color: colors.accent, fill: { color: colors.card }, margin: 0.12, align: "center", valign: "middle" });
           y += 0.85;
         }
         if (sourceSlide.bullets?.length) {
@@ -4888,7 +4856,8 @@ function ExportMenu({ slideshow }: { slideshow: Slideshow }) {
           transparency: 45,
           margin: 0,
         });
-        if (sourceSlide.speakerNotes) slide.addNotes(sourceSlide.speakerNotes);
+        const accessibleNotes = [sourceSlide.speakerNotes, sourceSlide.formula ? `Formula source (LaTeX): ${sourceSlide.formula}` : ""].filter(Boolean).join("\n\n");
+        if (accessibleNotes) slide.addNotes(accessibleNotes);
       }
       await pptx.writeFile({
         fileName: `${slideshow.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "scholar-slideshow"}.pptx`,

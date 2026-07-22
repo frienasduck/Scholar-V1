@@ -10,6 +10,7 @@ import { useUserName } from "@/lib/use-user-name";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem, profileRemoveItem, profileKey } from "@/lib/profile-storage";
 import { StatCard, EmptyState, ProgressRing } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -683,7 +684,7 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
                 <motion.div key="summary" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
                   <div className="rh-glass rounded-xl p-4">
                     <h4 className="text-white font-semibold mb-2 flex items-center gap-2"><BookOpen className="h-4 w-4 text-teal-300" /> Revision Summary</h4>
-                    <p className="text-sm text-white/80 leading-relaxed">{aiSummary}</p>
+                    <ScholarAIContent content={aiSummary} className="text-sm text-white/80" />
                   </div>
                   <div className="rh-glass rounded-xl p-4">
                     <h4 className="text-white font-semibold mb-2 flex items-center gap-2"><Target className="h-4 w-4 text-amber-300" /> Key Terms to Recall ({keyTerms.length})</h4>
