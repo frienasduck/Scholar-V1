@@ -9,6 +9,7 @@ import { CURRICULUM } from "@/lib/curriculum";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { StatCard, EmptyState, ProgressRing } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1039,7 +1040,7 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
                           <h4 className="text-white font-semibold">{a.title}</h4>
                           <Badge variant="outline" className="text-[10px] px-1.5 bg-emerald-500/15 border-emerald-500/40 text-emerald-200">{a.aiFeedback.grade}</Badge>
                         </div>
-                        <p className="text-white/70 text-sm leading-relaxed mb-3">{a.aiFeedback.overallFeedback}</p>
+                        <ScholarAIContent content={a.aiFeedback.overallFeedback} className="mb-3 text-sm text-white/70" />
                         <div className="grid sm:grid-cols-2 gap-3">
                           <div>
                             <p className="text-[10px] uppercase tracking-wider text-emerald-300 mb-1.5 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Strengths</p>
@@ -1158,12 +1159,10 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
                                 {a.aiFeedback.perQuestion.find(p => p.questionId === q.id)?.marks ?? 0}/{q.marks}
                               </Badge>
                             </div>
-                            <p className="text-xs text-white/80 leading-relaxed">
-                              {a.aiFeedback.perQuestion.find(p => p.questionId === q.id)?.feedback ?? "No feedback."}
-                            </p>
+                            <ScholarAIContent content={a.aiFeedback.perQuestion.find(p => p.questionId === q.id)?.feedback ?? "No feedback."} mode="compact" className="text-xs text-white/80" />
                             <details className="mt-2">
                               <summary className="text-[10px] text-white/40 cursor-pointer hover:text-white/70">Show model answer</summary>
-                              <p className="text-xs text-white/60 mt-1 leading-relaxed italic">{q.modelAnswer}</p>
+                              <ScholarAIContent content={q.modelAnswer} mode="compact" className="mt-1 text-xs italic text-white/60" />
                             </details>
                           </div>
                         )}
@@ -1181,7 +1180,7 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
                             Grade {a.aiFeedback.grade}
                           </Badge>
                         </div>
-                        <p className="text-sm text-white/80 leading-relaxed mb-3">{a.aiFeedback.overallFeedback}</p>
+                        <ScholarAIContent content={a.aiFeedback.overallFeedback} className="mb-3 text-sm text-white/80" />
                         <div className="grid sm:grid-cols-2 gap-3 text-xs">
                           <div>
                             <p className="text-emerald-300 font-medium mb-1">Strengths</p>

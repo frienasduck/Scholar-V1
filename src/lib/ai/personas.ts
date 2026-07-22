@@ -1,4 +1,5 @@
 import type { AIMode } from "@/lib/ai/schemas";
+import { SCHOLAR_AI_FORMATTING_RULES } from "@/lib/ai/formatting";
 
 const PERSONAS: Record<string, string> = {
   default: "You are an expert CBSE tutor. Explain accurately, clearly, and encouragingly. Use concise markdown and worked examples when useful.",
@@ -71,5 +72,5 @@ export function buildSystemPrompt(options: {
   if (options.scholarClass === 11 && persona === "dr-meera") persona = "physics-11";
   const personaPrompt = PERSONAS[persona] ?? PERSONAS.default;
   const modePrompt = MODE_INSTRUCTIONS[options.mode] ?? "";
-  return `${classContext}\n\n${personaPrompt}\n\n${modePrompt}`.trim();
+  return `${classContext}\n\n${personaPrompt}\n\n${modePrompt}\n\n${SCHOLAR_AI_FORMATTING_RULES}`.trim();
 }

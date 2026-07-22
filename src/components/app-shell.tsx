@@ -571,7 +571,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex bg-background w-full overflow-x-hidden" style={{ minHeight: "100dvh" }}>
+    <div className="flex h-dvh w-full overflow-hidden bg-background">
       {/* Desktop sidebar — collapsible, closed by default */}
       <AnimatePresence>
         {sidebarOpen && (

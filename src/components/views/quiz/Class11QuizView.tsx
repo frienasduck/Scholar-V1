@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -805,7 +806,7 @@ function QuizTakingMode({
         <div className="cinema-glass rounded-2xl p-5 sm:p-7">
           {subjectName && <Badge className="mb-3 bg-indigo-500/20 text-indigo-300 border-indigo-500/30">{subjectName}</Badge>}
           {q.difficulty && <Badge variant="outline" className="ml-1 capitalize border-white/20 text-white/60">{q.difficulty}</Badge>}
-          <h2 className="text-lg sm:text-xl font-semibold text-white leading-snug mb-5">{q.question}</h2>
+          <ScholarAIContent content={q.question} mode="compact" className="mb-5 text-lg font-semibold text-white sm:text-xl" />
 
           <div className="grid gap-2.5">
             {q.options?.map((opt: string, i: number) => {
@@ -822,7 +823,7 @@ function QuizTakingMode({
                   <span className={cn("grid place-items-center h-6 w-6 rounded-full border shrink-0 text-xs font-bold", checked ? "border-indigo-500 bg-indigo-500 text-white" : "border-white/20 text-white/50")}>
                     {String.fromCharCode(65 + i)}
                   </span>
-                  <span className="text-sm font-medium text-white">{opt}</span>
+                  <ScholarAIContent content={opt} mode="compact" className="min-w-0 text-sm font-medium text-white" />
                 </button>
               );
             })}
@@ -963,13 +964,13 @@ function ResultsScreen({
                         {ok ? <Check className="h-4 w-4" /> : isSkipped ? <AlertCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white"><span className="text-white/40 mr-1">Q{i + 1}.</span>{q.question}</p>
+                        <div className="flex gap-1 text-sm font-medium text-white"><span className="shrink-0 text-white/40">Q{i + 1}.</span><ScholarAIContent content={q.question} mode="compact" /></div>
                         <div className="mt-2 grid gap-1.5 text-sm">
                           <p className={cn(!ok ? "text-red-400" : "text-emerald-400")}>
                             <span className="text-white/40">Your answer:</span> {user || "— (skipped)"}
                           </p>
                           {!ok && <p className="text-emerald-400"><span className="text-white/40">Correct answer:</span> {q.answer}</p>}
-                          {q.explanation && <p className="text-xs text-white/50 mt-1 italic">💡 {q.explanation}</p>}
+                          {q.explanation && <ScholarAIContent content={q.explanation} mode="compact" className="mt-1 text-xs italic text-white/50" />}
                         </div>
                         {/* Action buttons for wrong answers */}
                         {!ok && !isSkipped && (

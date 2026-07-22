@@ -30,6 +30,10 @@ test("top liquid capsule morphs, supports history and keyboard invocation", asyn
   const box = await trigger.boundingBox();
   expect(box?.y).toBeLessThan(40);
   expect(box?.width).toBeGreaterThan(200);
+  await page.locator("#main-scroll").evaluate((element) => { element.scrollTop = Math.min(900, element.scrollHeight); });
+  await page.waitForTimeout(100);
+  const scrolledBox = await trigger.boundingBox();
+  expect(Math.abs((scrolledBox?.y ?? 0) - (box?.y ?? 0))).toBeLessThan(1);
   await finishLamOnboarding(page);
   const lam = page.getByLabel("LAM personal assistant");
   await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe("hidden");

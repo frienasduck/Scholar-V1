@@ -1,6 +1,7 @@
 "use client";
 
-import { cn, sanitizeHtml } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Card } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
@@ -162,104 +163,8 @@ export function ProgressRing({
   );
 }
 
-// Lightweight markdown renderer (handles headings, bold, italic, code, lists, blockquote, tables).
+// Compatibility wrapper: every existing AI Markdown consumer now uses the
+// universal safe Markdown + LaTeX renderer.
 export function Markdown({ content }: { content: string }) {
-  const lines = content.split("\n");
-  const out: ReactNode[] = [];
-  let list: { type: "ul" | "ol"; items: string[] } | null = null;
-  let table: string[][] | null = null;
-  const flushList = () => {
-    if (!list) return;
-    if (list.type === "ul") {
-      out.push(
-        <ul key={out.length} className="list-disc pl-5 my-2 space-y-1 text-sm">
-          {list.items.map((it, i) => <li key={i} dangerouslySetInnerHTML={{ __html: inline(it) }} />)}
-        </ul>
-      );
-    } else {
-      out.push(
-        <ol key={out.length} className="list-decimal pl-5 my-2 space-y-1 text-sm">
-          {list.items.map((it, i) => <li key={i} dangerouslySetInnerHTML={{ __html: inline(it) }} />)}
-        </ol>
-      );
-    }
-    list = null;
-  };
-  const flushTable = () => {
-    if (!table) return;
-    out.push(
-      <div key={out.length} className="my-3 overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr>{table[0].map((h, i) => <th key={i} className="border border-border px-3 py-1.5 bg-muted text-left" dangerouslySetInnerHTML={{ __html: inline(h) }} />)}</tr>
-          </thead>
-          <tbody>
-            {table.slice(2).map((row, ri) => (
-              <tr key={ri}>
-                {row.map((c, ci) => <td key={ci} className="border border-border px-3 py-1.5" dangerouslySetInnerHTML={{ __html: inline(c) }} />)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-    table = null;
-  };
-  for (const raw of lines) {
-    const line = raw;
-    if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
-      flushList();
-      const cells = line.split("|").slice(1, -1).map((c) => c.trim());
-      if (!table) table = [];
-      table.push(cells);
-      continue;
-    }
-    if (table) flushTable();
-    const h = /^(#{1,6})\s+(.*)$/.exec(line);
-    if (h) {
-      flushList();
-      const lvl = h[1].length;
-      const cls = lvl <= 1 ? "text-2xl font-semibold mt-5 mb-2" : lvl === 2 ? "text-xl font-semibold mt-4 mb-2" : "text-base font-semibold mt-3 mb-1";
-      out.push(<p key={out.length} className={cls} dangerouslySetInnerHTML={{ __html: inline(h[2]) }} />);
-      continue;
-    }
-    if (/^\s*[-*]\s+/.test(line)) {
-      if (!list || list.type !== "ul") { flushList(); list = { type: "ul", items: [] }; }
-      list.items.push(line.replace(/^\s*[-*]\s+/, ""));
-      continue;
-    }
-    if (/^\s*\d+\.\s+/.test(line)) {
-      if (!list || list.type !== "ol") { flushList(); list = { type: "ol", items: [] }; }
-      list.items.push(line.replace(/^\s*\d+\.\s+/, ""));
-      continue;
-    }
-    flushList();
-    if (line.startsWith(">")) {
-      out.push(<blockquote key={out.length} className="border-l-2 border-primary/40 pl-3 italic text-muted-foreground my-2 text-sm" dangerouslySetInnerHTML={{ __html: inline(line.replace(/^>\s?/, "")) }} />);
-      continue;
-    }
-    if (line.trim() === "") { out.push(<div key={out.length} className="h-2" />); continue; }
-    if (line.trim().startsWith("```")) {
-      const code = line.trim().slice(3);
-      out.push(<pre key={out.length} className="my-2 p-3 rounded-lg bg-muted overflow-x-auto text-xs font-mono"><code>{code}</code></pre>);
-      continue;
-    }
-    out.push(<p key={out.length} className="text-sm my-1.5 leading-relaxed" dangerouslySetInnerHTML={{ __html: inline(line) }} />);
-  }
-  flushList();
-  flushTable();
-  return <div className="prose-neha">{out}</div>;
-}
-
-function inline(s: string): string {
-  // Sanitize the assembled HTML so any `javascript:` URLs produced by the
-  // markdown link rule are stripped before reaching dangerouslySetInnerHTML.
-  return sanitizeHtml(
-    s
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-      .replace(/`([^`]+)`/g, '<code class="font-mono text-[0.85em] px-1 py-0.5 rounded bg-muted">$1</code>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline">$1</a>')
-  );
+  return <ScholarAIContent content={content} />;
 }

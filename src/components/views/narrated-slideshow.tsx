@@ -30,6 +30,7 @@ import { useSpeechSynthesis, type VoiceInfo } from "@/lib/use-speech";
 import { cn } from "@/lib/utils";
 import { SlideStage } from "./slideshow-maker";
 import { repairSlideQuality } from "@/lib/slideshow-pipeline";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 
 // ============================================================================
 // Narrated Slideshow Maker — sub-feature of AI Slideshow Maker
@@ -1108,7 +1109,7 @@ function AutoLecturePlayer({
                     <Pause className="h-7 w-7 text-violet-200" />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">Pause & try it yourself</h3>
-                  <p className="text-sm text-white/60 mb-4">{narration?.pausePrompt || "Take a moment to work through this slide."}</p>
+                  <ScholarAIContent content={narration?.pausePrompt || "Take a moment to work through this slide."} mode="transcript" className="mb-4 text-sm text-white/60" />
                   <div className="flex items-center justify-center gap-2 flex-wrap">
                     {!revealedAnswers[idx] && displaySlide.practiceAnswer && (
                       <button
@@ -1139,9 +1140,9 @@ function AutoLecturePlayer({
               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-1.5 flex items-center gap-1.5">
                 <Mic className="h-3 w-3" /> Narration script
               </p>
-              <p className="text-xs text-white/80 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {narration?.script || "(no narration)"}
-              </p>
+              <div className="max-h-40 overflow-y-auto text-xs text-white/80">
+                <ScholarAIContent content={narration?.script || "(no narration)"} mode="transcript" />
+              </div>
             </div>
             {/* Upcoming slide */}
             {idx + 1 < slideshow.slides.length && (
@@ -1187,7 +1188,7 @@ function AutoLecturePlayer({
             className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20 max-w-2xl w-[90%] text-center"
           >
             <div className="inline-block px-4 py-2 rounded-lg bg-black/70 backdrop-blur-md border border-white/15">
-              <p className="text-sm text-white/90 leading-relaxed">{narration.caption}</p>
+              <ScholarAIContent content={narration.caption} mode="transcript" className="text-sm text-white/90" />
             </div>
           </motion.div>
         )}

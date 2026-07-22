@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { askAI } from "@/lib/ai";
 import { SectionHeader, EmptyState } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -360,7 +361,7 @@ export function FriendsView() {
                             : "bg-muted rounded-bl-sm"
                         }`}
                       >
-                        {m.text}
+                        {m.from === "neha" ? m.text : <ScholarAIContent content={m.text} mode="compact" />}
                       </div>
                     </motion.div>
                   ))}

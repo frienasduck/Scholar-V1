@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { StatCard, EmptyState, ProgressRing } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -511,7 +512,7 @@ ${achievedGoals.length ? achievedGoals.map((g, i) => `${i + 1}. ${g.title} — a
                         {aiCheckin.onTrack ? "On Track" : "Off Track"}
                       </Badge>
                     </div>
-                    <p className="text-white/80 text-sm leading-relaxed">{aiCheckin.summary}</p>
+                    <ScholarAIContent content={aiCheckin.summary} className="text-sm text-white/80" />
                   </div>
                 </div>
 
@@ -530,7 +531,7 @@ ${achievedGoals.length ? achievedGoals.map((g, i) => `${i + 1}. ${g.title} — a
                 {/* Motivation */}
                 <div className="gc-glass rounded-2xl p-5 border-l-2 border-fuchsia-500/50">
                   <h4 className="text-white font-semibold mb-1 flex items-center gap-2"><Crown className="h-4 w-4 text-amber-300" /> Coach's Note</h4>
-                  <p className="text-white/80 text-sm italic">"{aiCheckin.motivation}"</p>
+                  <ScholarAIContent content={aiCheckin.motivation} mode="compact" className="text-sm italic text-white/80" />
                 </div>
               </motion.div>
             )}

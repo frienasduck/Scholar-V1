@@ -7,6 +7,7 @@ import type { Subject } from "@/lib/curriculum-class11";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { askAIJSON } from "@/lib/ai";
 import { StatCard, SectionHeader, Pill } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -115,12 +116,12 @@ export function Class9FlashcardsView() {
                 <motion.div className="absolute inset-0" animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration: 0.5 }} style={{ transformStyle: "preserve-3d" }}>
                   <div className="absolute inset-0 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8" style={{ backfaceVisibility: "hidden", background: "rgba(20,20,30,0.6)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)" }}>
                     <Badge variant="outline" className="mb-4 border-white/20 text-white/60">Question</Badge>
-                    <p className="text-lg sm:text-2xl font-medium text-white text-center leading-snug">{card.front}</p>
+                    <ScholarAIContent content={card.front} mode="compact" className="text-center text-lg font-medium text-white sm:text-2xl" />
                     {!flipped && <p className="mt-6 text-xs text-white/40">Click to flip</p>}
                   </div>
                   <div className="absolute inset-0 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 overflow-y-auto" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)", background: "rgba(30,20,40,0.6)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)" }}>
                     <Badge variant="outline" className="mb-4 border-teal-400/40 text-teal-300">Answer</Badge>
-                    <p className="text-lg sm:text-2xl font-semibold text-white text-center leading-snug">{card.back}</p>
+                    <ScholarAIContent content={card.back} mode="compact" className="text-center text-lg font-semibold text-white sm:text-2xl" />
                   </div>
                 </motion.div>
               </div>

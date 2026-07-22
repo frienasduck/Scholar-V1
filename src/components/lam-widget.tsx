@@ -19,6 +19,7 @@ import { LamResponse } from "@/components/lam/lam-response";
 import { GlassModeMenu } from "@/components/lam/glass-mode-menu";
 import { GlassWaveListening, LamQuickActionChip, LamThinkingState } from "@/components/lam/lam-glass-states";
 import { microphoneEnvironmentError, microphoneErrorMessage, queryMicrophonePermission, requestMicrophoneStream, stopMediaStream, type MicrophonePermissionState } from "@/lib/lam/microphone";
+import { useLamRenderQuality } from "@/lib/lam/render-quality";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
 type Recognition = {
@@ -87,8 +88,12 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
   const [microphonePermission, setMicrophonePermission] = useState<MicrophonePermissionState>("unsupported");
   const [handsFreeNeedsResume, setHandsFreeNeedsResume] = useState(false);
+  const renderQuality = useLamRenderQuality();
+  const renderQualityRef = useRef(renderQuality);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const holdTimerRef = useRef<number | null>(null);
+  const focusTimerRef = useRef<number | null>(null);
+  const voiceTransitionTimerRef = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const internalSaveRef = useRef(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -97,6 +102,8 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const abortRef = useRef<AbortController | null>(null);
   const recognitionRef = useRef<Recognition | null>(null);
   const wakeRecognitionRef = useRef<Recognition | null>(null);
+  const recognitionGenerationRef = useRef(0);
+  const wakeRestartTimerRef = useRef<number | null>(null);
   const startListeningRef = useRef<(wakeMode?: boolean) => void>(() => {});
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -104,6 +111,11 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const conversation = useMemo(() => state.conversations.find((item) => item.id === state.activeConversationId) ?? state.conversations[0], [state]);
   const prefs = state.preferences;
   useEffect(() => { if (!prefs.assistantEnabled) setOpen(false); }, [prefs.assistantEnabled]);
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-lam-docked", prefs.assistantEnabled);
+    return () => document.documentElement.removeAttribute("data-lam-docked");
+  }, [prefs.assistantEnabled]);
+  useEffect(() => { renderQualityRef.current = renderQuality; }, [renderQuality]);
   const weakTopics = useMemo(() => Object.entries(mastery).filter(([, value]) => value < 45).sort((a, b) => a[1] - b[1]).slice(0, 4).map(([topic]) => topic), [mastery]);
   const recentQuiz = quizAttempts[0];
   const context: LamPageContext = useMemo(() => ({
@@ -135,11 +147,35 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
     recognitionRef.current?.abort();
     wakeRecognitionRef.current?.abort();
     if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+    if (focusTimerRef.current) window.clearTimeout(focusTimerRef.current);
+    if (voiceTransitionTimerRef.current) window.clearTimeout(voiceTransitionTimerRef.current);
+    if (wakeRestartTimerRef.current) window.clearTimeout(wakeRestartTimerRef.current);
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
     stopMediaStream(mediaStreamRef.current);
     mediaStreamRef.current = null;
     window.speechSynthesis?.cancel();
   }, []);
+  useEffect(() => {
+    if (renderQuality !== "mobile-optimized" || !window.visualViewport) return;
+    let frame = 0;
+    const viewport = window.visualViewport;
+    const sync = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        document.documentElement.style.setProperty("--lam-mobile-vh", `${viewport.height}px`);
+      });
+    };
+    sync();
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      if (frame) window.cancelAnimationFrame(frame);
+      document.documentElement.style.removeProperty("--lam-mobile-vh");
+    };
+  }, [renderQuality]);
   useEffect(() => {
     void queryMicrophonePermission().then(setMicrophonePermission);
     if (!navigator.permissions?.query) return;
@@ -162,10 +198,12 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   }, [profileId]);
   useEffect(() => { const draft = consumeLamDraft(); if (draft) { setInput(draft.prompt); setOpen(true); } }, []);
   useEffect(() => {
+    if (focusTimerRef.current) { window.clearTimeout(focusTimerRef.current); focusTimerRef.current = null; }
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement;
-      window.setTimeout(() => composerRef.current?.focus(), 220);
+      focusTimerRef.current = window.setTimeout(() => { focusTimerRef.current = null; composerRef.current?.focus(); }, 220);
     } else previousFocusRef.current?.focus?.();
+    return () => { if (focusTimerRef.current) { window.clearTimeout(focusTimerRef.current); focusTimerRef.current = null; } };
   }, [open]);
   useEffect(() => {
     if (!open) return;
@@ -227,7 +265,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
     utterance.onstart = () => setStatus("speaking");
     utterance.onend = () => {
       setStatus(prefs.wakeWordEnabled ? "armed" : "sleeping");
-      if (prefs.followUpListeningEnabled) window.setTimeout(() => startListeningRef.current(false), 250);
+      if (prefs.followUpListeningEnabled) { if (voiceTransitionTimerRef.current) window.clearTimeout(voiceTransitionTimerRef.current); voiceTransitionTimerRef.current = window.setTimeout(() => { voiceTransitionTimerRef.current = null; startListeningRef.current(false); }, 250); }
     };
     utterance.onerror = () => setStatus("error");
     window.speechSynthesis.speak(utterance);
@@ -295,7 +333,13 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
     }
     setStatus("thinking");
     const controller = new AbortController(); abortRef.current = controller;
-    const assistantId = uid(); let full = "";
+    const assistantId = uid(); let full = ""; let streamFlushTimer: number | null = null; let lastFlushed = "";
+    const flushStream = () => {
+      streamFlushTimer = null;
+      if (full === lastFlushed) return;
+      lastFlushed = full;
+      commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, content: full } : message), updatedAt: now() } : item) }));
+    };
     addMessage({ id: assistantId, role: "assistant", content: "", createdAt: now() });
     try {
       const response = await fetch("/api/lam/chat", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal, body: JSON.stringify({
@@ -310,26 +354,35 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
         const frames = buffer.split("\n\n"); buffer = frames.pop() ?? "";
         for (const frame of frames) for (const line of frame.split("\n")) if (line.startsWith("data:")) {
           const event = JSON.parse(line.slice(5).trim()) as { type: string; value?: string; message?: string; source?: { label: string; route?: string } };
-          if (event.type === "text-delta" && event.value) {
-            full += event.value;
-            commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, content: full } : message), updatedAt: now() } : item) }));
+           if (event.type === "text-delta" && event.value) {
+             full += event.value;
+             if (renderQualityRef.current === "mobile-optimized") {
+               if (streamFlushTimer === null) streamFlushTimer = window.setTimeout(flushStream, 64);
+             } else flushStream();
           }
           if (event.type === "source" && event.source) commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, sources: [...(message.sources ?? []), event.source!] } : message) } : item) }));
           if (event.type === "error") throw new Error(event.message ?? "LAM could not answer.");
         }
-      }
+       }
+      if (streamFlushTimer !== null) window.clearTimeout(streamFlushTimer);
+      flushStream();
       if (!full.trim()) throw new Error("LAM returned an empty response.");
       setStatus("sleeping"); speak(full);
-      if (prefs.followUpListeningEnabled && !prefs.voiceRepliesEnabled) window.setTimeout(() => startListeningRef.current(false), 250);
+      if (prefs.followUpListeningEnabled && !prefs.voiceRepliesEnabled) { if (voiceTransitionTimerRef.current) window.clearTimeout(voiceTransitionTimerRef.current); voiceTransitionTimerRef.current = window.setTimeout(() => { voiceTransitionTimerRef.current = null; startListeningRef.current(false); }, 250); }
     } catch (caught) {
+      if (streamFlushTimer !== null) window.clearTimeout(streamFlushTimer);
       if ((caught as Error).name === "AbortError") setStatus("sleeping");
       else { setError(caught instanceof Error ? caught.message : "LAM could not answer."); setStatus("error"); }
     } finally { abortRef.current = null; }
   }, [addMessage, commit, context, conversation, executeAction, files, input, notes, prefs.followUpListeningEnabled, prefs.responseDetail, prefs.voiceRepliesEnabled, profileId, speak, state.conversations, status, stopSpeech]);
 
   const stopCapturedAudio = useCallback(() => {
+    recognitionGenerationRef.current += 1;
+    if (wakeRestartTimerRef.current) { window.clearTimeout(wakeRestartTimerRef.current); wakeRestartTimerRef.current = null; }
     recognitionRef.current?.abort();
     wakeRecognitionRef.current?.abort();
+    recognitionRef.current = null;
+    wakeRecognitionRef.current = null;
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
     stopMediaStream(mediaStreamRef.current);
     mediaStreamRef.current = null;
@@ -368,11 +421,16 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
     if (!prefs.voiceInputEnabled) { setError("Voice input is disabled in LAM settings. You can still type your question."); setStatus("error"); setOpen(true); return; }
     const Ctor = recognitionCtor();
     if (!Ctor) { setError("Voice recognition is unavailable in this browser. Tap the microphone to record audio for server transcription, or type to LAM."); setStatus("error"); setOpen(true); return; }
+    const generation = ++recognitionGenerationRef.current;
+    if (wakeRestartTimerRef.current) { window.clearTimeout(wakeRestartTimerRef.current); wakeRestartTimerRef.current = null; }
+    recognitionRef.current?.abort(); wakeRecognitionRef.current?.abort();
+    recognitionRef.current = null; wakeRecognitionRef.current = null;
     if (status === "speaking") stopSpeech();
     const recognition = new Ctor(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = prefs.voiceLanguage;
     if (wakeMode) wakeRecognitionRef.current = recognition; else recognitionRef.current = recognition;
     recognition.onstart = () => { setStatus(wakeMode ? "armed" : "listening"); if (!wakeMode) setOpen(true); };
     recognition.onresult = (event) => {
+      if (generation !== recognitionGenerationRef.current) return;
       let final = ""; let partial = "";
       for (let index = 0; index < event.results.length; index++) {
         const value = event.results[index][0]?.transcript ?? "";
@@ -384,15 +442,22 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
           recognition.stop(); playLamActivationSound(); setOpen(true);
           const command = spoken.replace(/^(?:hey|okay)\s+lam\b[\s,.:;-]*/i, "").trim();
           if (command) void send(command, "voice");
-          else window.setTimeout(() => startListeningRef.current(false), 180);
+          else { if (voiceTransitionTimerRef.current) window.clearTimeout(voiceTransitionTimerRef.current); voiceTransitionTimerRef.current = window.setTimeout(() => { voiceTransitionTimerRef.current = null; startListeningRef.current(false); }, 180); }
         }
       } else {
         setInterim(partial || final);
         if (final.trim()) { recognition.stop(); void send(final, "voice"); }
       }
     };
-    recognition.onerror = (event) => { if (event.error !== "aborted" && event.error !== "no-speech") { if (event.error === "not-allowed") setMicrophonePermission("denied"); setError(event.error === "not-allowed" ? "Microphone access was blocked. Allow microphone access in your browser’s site settings." : "Voice recognition stopped. You can retry or type instead."); setStatus("error"); } };
-    recognition.onend = () => { if (wakeMode && prefs.wakeWordEnabled && document.visibilityState === "visible" && !handsFreeNeedsResume && status !== "speaking") window.setTimeout(() => startListeningRef.current(true), 600); else if (!wakeMode && status === "listening") setStatus("sleeping"); };
+    recognition.onerror = (event) => { if (generation !== recognitionGenerationRef.current) return; if (event.error !== "aborted" && event.error !== "no-speech") { if (event.error === "not-allowed") setMicrophonePermission("denied"); setError(event.error === "not-allowed" ? "Microphone access was blocked. Allow microphone access in your browser’s site settings." : "Voice recognition stopped. You can retry or type instead."); setStatus("error"); } };
+    recognition.onend = () => {
+      if (generation !== recognitionGenerationRef.current) return;
+      if (wakeMode) wakeRecognitionRef.current = null; else recognitionRef.current = null;
+      if (wakeMode && prefs.wakeWordEnabled && document.visibilityState === "visible" && !handsFreeNeedsResume && status !== "speaking") {
+        const delay = renderQualityRef.current === "mobile-optimized" ? 900 : 600;
+        wakeRestartTimerRef.current = window.setTimeout(() => { wakeRestartTimerRef.current = null; if (generation === recognitionGenerationRef.current) startListeningRef.current(true); }, delay);
+      } else if (!wakeMode && status === "listening") setStatus("sleeping");
+    };
     try { recognition.start(); } catch { setError("The microphone is already in use or recognition could not start."); setStatus("error"); }
   }, [handsFreeNeedsResume, prefs.voiceInputEnabled, prefs.voiceLanguage, prefs.wakeWordEnabled, send, status, stopSpeech]);
   startListeningRef.current = startListening;
@@ -421,7 +486,11 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   useEffect(() => {
     const suspend = () => {
       if (document.visibilityState !== "hidden" && document.hasFocus()) return;
+      recognitionGenerationRef.current += 1;
+      if (wakeRestartTimerRef.current) { window.clearTimeout(wakeRestartTimerRef.current); wakeRestartTimerRef.current = null; }
+      if (voiceTransitionTimerRef.current) { window.clearTimeout(voiceTransitionTimerRef.current); voiceTransitionTimerRef.current = null; }
       wakeRecognitionRef.current?.abort(); recognitionRef.current?.abort();
+      wakeRecognitionRef.current = null; recognitionRef.current = null;
       if (recorderRef.current?.state === "recording") recorderRef.current.stop();
       stopMediaStream(mediaStreamRef.current); mediaStreamRef.current = null;
       if (prefs.wakeWordEnabled) { setHandsFreeNeedsResume(true); setStatus("suspended"); }
@@ -442,6 +511,8 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   }, []);
 
   const closeLam = useCallback(() => {
+    abortRef.current?.abort(); abortRef.current = null;
+    if (voiceTransitionTimerRef.current) { window.clearTimeout(voiceTransitionTimerRef.current); voiceTransitionTimerRef.current = null; }
     stopCapturedAudio(); stopSpeech(); setInterim(""); setOpen(false);
     if (prefs.wakeWordEnabled && !prefs.assistantEnabled && document.visibilityState === "visible") { setHandsFreeNeedsResume(false); window.setTimeout(() => startListeningRef.current(true), 250); }
     else if (prefs.wakeWordEnabled) { setHandsFreeNeedsResume(true); setStatus("suspended"); }
@@ -480,19 +551,21 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const quick = context.currentView === "ebook" ? ["Explain this page", "Quiz me from this page", "What are the key formulas?"] : context.currentView === "dashboard" ? ["Plan my study today", "Show my weakest topic", "What should I continue?"] : ["Explain what I am viewing", "Quiz me", "What should I revise first?"];
   const latestUserRequest = [...conversation.messages].reverse().find((message) => message.role === "user")?.content;
   const glass = prefs.reduceTransparency ? "bg-slate-950 border-white/25" : "bg-slate-950/78 backdrop-blur-2xl border-white/20";
-  const visualState = !open ? "closed" : historyOpen ? "history" : pendingAction ? "action-preview" : status === "performing" ? "performing-action" : status === "completed" ? "completed" : status === "thinking" || status === "transcribing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
+  const visualState = !open ? "closed" : historyOpen ? "history" : status === "suspended" ? "suspended" : pendingAction ? "action-preview" : status === "performing" ? "performing-action" : status === "completed" ? "completed" : status === "thinking" || status === "transcribing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
   const surfaceState = status === "completed" ? "success" : status === "thinking" || status === "transcribing" || status === "performing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
   const isTransientCapsule = status === "listening" || status === "thinking" || status === "transcribing";
   const needsExpanded = fullscreen || historyOpen || (!isTransientCapsule && (conversation.messages.length > 2 || conversation.messages.some((message) => message.content.length > 520)));
   const contextualPlaceholder = selectedText ? "Ask about the selected text" : context.activeFileName ? `Ask about ${context.activeFileName}` : context.ebookTitle ? "Ask about this ebook page" : context.activeSlideshowId ? "Ask about this slideshow" : "Ask about anything in Scholar";
   const visibleConversations = state.conversations.filter((item) => !historyQuery.trim() || `${item.title} ${item.mode} ${item.messages.map((message) => message.content).join(" ")}`.toLowerCase().includes(historyQuery.toLowerCase()));
+  const mobileOptimized = renderQuality === "mobile-optimized";
+  const renderedMessages = mobileOptimized && conversation.messages.length > 8 ? conversation.messages.slice(-8) : conversation.messages;
   const pendingDescription = !pendingAction ? "" : pendingAction.type === "create-note" ? `Save “${pendingAction.title}” in the LAM notes folder?` : pendingAction.type === "start-focus" ? `Start a ${pendingAction.minutes}-minute focus session?` : pendingAction.type === "create-quiz" ? `Create a quiz${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "create-slideshow" ? `Create a slideshow${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "open-ebook-page" ? `Open page ${pendingAction.page}?` : pendingAction.type === "open-file" ? "Open this uploaded file?" : `Open ${pendingAction.view}?`;
 
   if (!prefs.assistantEnabled && !open) return null;
 
   return createPortal(
-    <aside className="lam-system-root fixed inset-x-0 top-0 z-[10000] flex flex-col items-center px-3" data-state={visualState} data-intensity={settings.reduceMotion ? "minimal" : prefs.animationIntensity} aria-label="LAM personal assistant">
-      {open && needsExpanded && !fullscreen && <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeLam} className="fixed inset-0 bg-black/20 backdrop-blur-[2px]" aria-label="Dismiss LAM" />}
+    <aside className="lam-system-root fixed inset-x-0 top-0 z-[10000] flex flex-col items-center px-3" data-state={visualState} data-quality={renderQuality} data-intensity={settings.reduceMotion ? "minimal" : prefs.animationIntensity} aria-label="LAM personal assistant">
+      {open && needsExpanded && !fullscreen && <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeLam} className="lam-mobile-scrim fixed inset-0 bg-black/20 backdrop-blur-[2px]" aria-label="Dismiss LAM" />}
       {open && !prefs.onboardingComplete && (
         <div className={cn("mb-3 flex h-[min(25rem,62dvh)] w-[min(23rem,calc(100vw-2rem))] flex-col justify-between overflow-y-auto rounded-[1.75rem] border p-5 text-white shadow-2xl sm:h-[28rem] sm:w-[25rem] sm:rounded-[2rem] sm:p-6", glass)}>
           <button className="ml-auto rounded-full p-2 hover:bg-white/10" onClick={closeLam} aria-label="Close LAM"><X className="h-4 w-4" /></button>
@@ -512,7 +585,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
       )}
 
       {open && prefs.onboardingComplete && (
-          <motion.div ref={panelRef} layoutId="lam-system-surface" initial={settings.reduceMotion ? { opacity: 0 } : { opacity: 0, y: -24, scale: .82, filter: "blur(18px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: -10, scale: .92, filter: "blur(10px)" }} transition={{ type: "spring", stiffness: 330, damping: 34 }} className={cn("lam-liquid-glass lam-premium-panel relative z-10 mb-3 flex flex-col overflow-hidden text-white", `lam-liquid-glass--${surfaceState}`, prefs.reduceTransparency && "lam-liquid-glass--reduced", fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : needsExpanded ? "h-[min(43rem,calc(100dvh-5.5rem))] w-[min(46rem,calc(100vw-1.5rem))] rounded-[2rem]" : isTransientCapsule ? "max-h-[min(25rem,calc(100dvh-5.5rem))] min-h-[11.5rem] w-[min(43rem,calc(100vw-1.5rem))] rounded-[2rem]" : "max-h-[min(32rem,calc(100dvh-5.5rem))] min-h-[9rem] w-[min(38rem,calc(100vw-1.5rem))] rounded-[1.8rem]")}>
+          <motion.div ref={panelRef} layoutId="lam-system-surface" initial={settings.reduceMotion ? { opacity: 0 } : mobileOptimized ? { opacity: 0, y: -10, scale: .94 } : { opacity: 0, y: -24, scale: .82, filter: "blur(18px)" }} animate={mobileOptimized ? { opacity: 1, y: 0, scale: 1 } : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={mobileOptimized ? { opacity: 0, y: -6, scale: .96 } : { opacity: 0, y: -10, scale: .92, filter: "blur(10px)" }} transition={mobileOptimized ? { duration: .28, ease: [0.16, 1, 0.3, 1] } : { type: "spring", stiffness: 330, damping: 34 }} className={cn("lam-liquid-glass lam-premium-panel relative z-10 mb-3 flex flex-col overflow-hidden text-white", `lam-liquid-glass--${surfaceState}`, prefs.reduceTransparency && "lam-liquid-glass--reduced", fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : needsExpanded ? "h-[min(43rem,calc(100dvh-5.5rem))] w-[min(46rem,calc(100vw-1.5rem))] rounded-[2rem]" : isTransientCapsule ? "max-h-[min(25rem,calc(100dvh-5.5rem))] min-h-[11.5rem] w-[min(43rem,calc(100vw-1.5rem))] rounded-[2rem]" : "max-h-[min(32rem,calc(100dvh-5.5rem))] min-h-[9rem] w-[min(38rem,calc(100vw-1.5rem))] rounded-[1.8rem]")}>
           <span className="lam-glass-reflection" aria-hidden="true" />
           <header className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
             <span className={cn("relative grid h-10 w-10 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && "shadow-lg shadow-cyan-400/20")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
@@ -523,8 +596,8 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
             <button onClick={closeLam} className="rounded-full p-2 hover:bg-white/10" aria-label="Close LAM"><X className="h-4 w-4" /></button>
           </header>
 
-          <div className="flex items-center gap-2 overflow-x-auto border-b border-white/8 px-3 py-2 no-scrollbar">
-            <GlassModeMenu value={conversation.mode} labels={labels} onChange={setMode} reducedMotion={settings.reduceMotion} />
+          <div className="lam-context-strip relative z-30 flex items-center gap-2 overflow-x-auto border-b border-white/8 px-3 py-2 no-scrollbar">
+            <GlassModeMenu value={conversation.mode} labels={labels} onChange={setMode} reducedMotion={settings.reduceMotion || mobileOptimized} />
             <span className="whitespace-nowrap rounded-full bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100">{context.currentView}</span>
             {context.subjectTitle && <span className="whitespace-nowrap rounded-full bg-white/8 px-2.5 py-1 text-[11px]">{context.subjectTitle}</span>}
             {context.chapterTitle && <span className="max-w-44 truncate rounded-full bg-white/8 px-2.5 py-1 text-[11px]">{context.chapterTitle}</span>}
@@ -539,14 +612,14 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
             <div className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 pb-3">{visibleConversations.map((item) => <div key={item.id} className={cn("group flex items-center gap-1 rounded-2xl border border-transparent px-2 py-1 transition hover:border-white/8 hover:bg-white/6", item.id === state.activeConversationId && "border-cyan-200/10 bg-gradient-to-r from-cyan-300/9 to-violet-300/7")}><button onClick={() => { commit((previous) => ({ ...previous, activeConversationId: item.id })); setHistoryOpen(false); }} className="min-w-0 flex-1 px-2 py-2.5 text-left"><span className="flex items-center gap-1.5 truncate text-sm font-semibold text-white/86">{item.pinned && <Pin className="h-3 w-3 shrink-0 text-cyan-200" />}{item.title}</span><span className="mt-1 block truncate text-[10px] text-white/38">{labels[item.mode]} · {item.messages.length} messages · {new Date(item.updatedAt).toLocaleDateString()}</span></button><div className="flex shrink-0 items-center opacity-65 transition sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"><button onClick={() => commit((previous) => ({ ...previous, conversations: previous.conversations.map((entry) => entry.id === item.id ? { ...entry, pinned: !entry.pinned } : entry) }))} className="rounded-lg p-2 text-white/45 hover:bg-white/10 hover:text-white" aria-label={item.pinned ? "Unpin conversation" : "Pin conversation"}><Pin className="h-3.5 w-3.5" /></button><button onClick={() => { const title = window.prompt("Rename conversation", item.title); if (title?.trim()) commit((previous) => ({ ...previous, conversations: previous.conversations.map((entry) => entry.id === item.id ? { ...entry, title: title.trim().slice(0, 80) } : entry) })); }} className="rounded-lg p-2 text-white/45 hover:bg-white/10 hover:text-white" aria-label="Rename conversation"><Pencil className="h-3.5 w-3.5" /></button><button onClick={() => { if (!window.confirm(`Delete “${item.title}”?`)) return; commit((previous) => { const kept = previous.conversations.filter((entry) => entry.id !== item.id); const conversations = kept.length ? kept : [createLamConversation(profileId)]; return { ...previous, conversations, activeConversationId: previous.activeConversationId === item.id ? conversations[0].id : previous.activeConversationId }; }); }} className="rounded-lg p-2 text-white/45 hover:bg-rose-500/15 hover:text-rose-200" aria-label="Delete conversation"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}{visibleConversations.length === 0 && <div className="grid min-h-40 place-items-center rounded-2xl border border-dashed border-white/10"><div className="text-center"><History className="mx-auto h-5 w-5 text-white/25" /><p className="mt-2 text-xs text-white/45">No matching conversations</p></div></div>}</div>
           </section>}
 
-          <div className={cn("min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4", historyOpen && "hidden")} aria-live="polite" aria-busy={status === "thinking" || status === "transcribing"}>
+          <div className={cn("relative z-0 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4", historyOpen && "hidden")} aria-live="polite" aria-busy={status === "thinking" || status === "transcribing"}>
             <AnimatePresence mode="wait" initial={false}>
-              {status === "listening" && <GlassWaveListening key="listening" transcript={interim} onStop={stopCapturedAudio} />}
-              {(status === "thinking" || status === "transcribing") && <LamThinkingState key="thinking" request={latestUserRequest} transcribing={status === "transcribing"} onStop={status === "thinking" ? () => abortRef.current?.abort() : undefined} />}
+              {status === "listening" && <GlassWaveListening key="listening" transcript={interim} onStop={stopCapturedAudio} optimized={mobileOptimized} />}
+              {(status === "thinking" || status === "transcribing") && <LamThinkingState key="thinking" request={latestUserRequest} transcribing={status === "transcribing"} onStop={status === "thinking" ? () => abortRef.current?.abort() : undefined} optimized={mobileOptimized} />}
             </AnimatePresence>
             {!isTransientCapsule && !conversation.messages.length && <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="py-2"><p className="text-lg font-bold tracking-tight text-white">How can I help you study?</p><p className="mt-1 text-sm leading-6 text-white/52">I can use the current Scholar screen and your attached context. Ask naturally or choose a suggestion below.</p></motion.div>}
-            {!isTransientCapsule && conversation.messages.map((message) => <motion.article initial={{ opacity: 0, y: 8, filter: "blur(5px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} key={message.id} className={cn("group rounded-[1.4rem] px-4 py-3 text-sm", message.role === "user" ? "lam-request-card ml-8 text-white/90" : message.role === "tool" ? "border border-emerald-300/20 bg-emerald-400/10 text-emerald-50" : "lam-response-card mr-1")}>
-              {message.role === "assistant" ? <LamResponse content={message.content || "…"} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
+            {!isTransientCapsule && renderedMessages.map((message) => <motion.article initial={mobileOptimized ? { opacity: 0, y: 4 } : { opacity: 0, y: 8, filter: "blur(5px)" }} animate={mobileOptimized ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, filter: "blur(0px)" }} key={message.id} className={cn("lam-message-entry group rounded-[1.4rem] px-4 py-3 text-sm", message.role === "user" ? "lam-request-card ml-8 text-white/90" : message.role === "tool" ? "border border-emerald-300/20 bg-emerald-400/10 text-emerald-50" : "lam-response-card mr-1")}>
+                    {message.role === "assistant" ? <LamResponse content={message.content || "…"} optimized={mobileOptimized} streaming={Boolean(abortRef.current) && message.id === conversation.messages.at(-1)?.id} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
               {message.role === "assistant" && message.sources?.length ? <div className="mt-2 flex flex-wrap gap-1">{message.sources.map((source) => <button key={`${message.id}-${source.label}`} onClick={() => { if (source.route === "lam:history") setHistoryOpen(true); else if (source.route?.startsWith("/")) navigateTo(source.route.split("/").filter(Boolean)[0] || "dashboard"); else navigateTo(context.currentView, context.sourcePageNumber ? { page: context.sourcePageNumber } : undefined); }} className="flex items-center gap-1 rounded-full bg-cyan-300/10 px-2 py-1 text-[10px] text-cyan-100 hover:bg-cyan-300/15"><BookOpen className="h-3 w-3" />{source.label}</button>)}</div> : null}
               {message.role === "assistant" && message.content && <div className="mt-2 flex flex-wrap gap-1 opacity-90 sm:opacity-60 sm:group-hover:opacity-100"><button onClick={() => navigator.clipboard.writeText(message.content)} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Copy response"><Copy className="h-3 w-3" /></button><button onClick={() => speak(message.content)} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Read response aloud"><Volume2 className="h-3 w-3" /></button><button onClick={() => void send("Explain that more simply with one small example.")} className="rounded-full border border-white/8 px-2 py-1 text-[10px] hover:bg-white/10">Explain simply</button><button onClick={() => setPendingAction({ type: "create-note", title: `LAM · ${context.chapterTitle ?? context.activeFileName ?? context.currentView}`, content: message.content })} className="rounded-full border border-white/8 px-2 py-1 text-[10px] hover:bg-white/10">Save to notes</button><button onClick={() => setPendingAction({ type: "create-quiz", subject: context.subjectTitle, chapter: context.chapterTitle })} className="rounded-full border border-white/8 px-2 py-1 text-[10px] hover:bg-white/10">Quiz me</button></div>}
             </motion.article>)}
@@ -570,7 +643,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
 
       {!open && status === "listening" && <div className={cn("mb-2 flex items-center gap-3 rounded-full border px-4 py-2 text-sm text-white", glass)}><Mic className="h-4 w-4 text-cyan-300" />Listening…<button onClick={stopCapturedAudio} aria-label="Stop listening"><Square className="h-3.5 w-3.5" /></button></div>}
       {!open && status === "suspended" && prefs.wakeWordEnabled && <button onClick={() => void requestMicrophoneAndListen(true)} className={cn("mb-2 rounded-full border px-4 py-2 text-sm text-amber-50", glass)}><Mic className="mr-2 inline h-4 w-4" />Tap to resume Hands-Free LAM</button>}
-      {!open && !context.activeFileId && <motion.button layoutId="lam-system-surface" transition={{ type: "spring", stiffness: 350, damping: 32 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle flex min-h-14 items-center gap-3 rounded-[1.4rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-14 justify-center" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
+      {!open && !context.activeFileId && <motion.button layoutId="lam-system-surface" transition={{ type: "spring", stiffness: 350, damping: 32 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
         <span className={cn("relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && !settings.reduceMotion && "animate-pulse")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
         {!prefs.compactOrb && <><span className="flex-1 text-left text-white/78">Ask LAM</span><Mic className="h-4 w-4 text-white/45" /></>}
       </motion.button>}

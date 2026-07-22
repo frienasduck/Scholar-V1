@@ -8,6 +8,7 @@ import { useCurriculum } from "@/lib/use-curriculum";
 import { CURRICULUM } from "@/lib/curriculum";
 import { askAIJSON } from "@/lib/ai";
 import { StatCard, SectionHeader, EmptyState, Pill, ProgressRing } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { exportPDF } from "@/lib/pdf";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -216,7 +217,7 @@ export function Class9QuizView() {
                     {ok ? <Check className="h-4 w-4" /> : isSkipped ? <AlertCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium"><span className="text-muted-foreground mr-1">Q{i + 1}.</span>{q.question}</p>
+                    <div className="flex gap-1 text-sm font-medium"><span className="shrink-0 text-muted-foreground">Q{i + 1}.</span><ScholarAIContent content={q.question} mode="compact" /></div>
                     <p className={`mt-1 text-sm ${!ok ? "text-red-500" : "text-emerald-500"}`}><span className="text-muted-foreground">Your answer:</span> {user || "—"}</p>
                     {!ok && <p className="text-sm text-emerald-500"><span className="text-muted-foreground">Correct:</span> {q.answer}</p>}
                     {q.explanation && <p className="text-xs text-muted-foreground mt-1 italic">💡 {q.explanation}</p>}
@@ -251,14 +252,14 @@ export function Class9QuizView() {
         <Card className="premium-card p-5 sm:p-7">
           {q.subject && <Badge variant="secondary" style={{ color: SUBJECT_COLORS[q.subject] ?? "#6366f1" }}>{CURRICULUM.find((s) => s.id === q.subject)?.name ?? q.subject}</Badge>}
           {q.difficulty && <Badge variant="outline" className="ml-1 capitalize">{q.difficulty}</Badge>}
-          <h2 className="text-lg sm:text-xl font-semibold leading-snug mb-5 mt-2">{q.question}</h2>
+          <ScholarAIContent content={q.question} mode="compact" className="mb-5 mt-2 text-lg font-semibold sm:text-xl" />
           <RadioGroup value={responses[q.id] ?? ""} onValueChange={(v) => setResponses((r) => ({ ...r, [q.id]: v }))} className="grid gap-2.5">
             {q.options?.map((opt, i) => {
               const checked = responses[q.id] === opt;
               return (
                 <label key={i} className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${checked ? "border-primary bg-primary/5 shadow-sm" : "border-border/60 hover:bg-muted/40"}`}>
                   <RadioGroupItem value={opt} id={`opt-${i}`} />
-                  <span className="text-sm font-medium">{opt}</span>
+                  <ScholarAIContent content={opt} mode="compact" className="min-w-0 text-sm font-medium" />
                 </label>
               );
             })}

@@ -9,6 +9,7 @@ import { PHYSICS_PAST_PAPERS } from "@/lib/question-bank";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { StatCard, SectionHeader, EmptyState, Pill, Markdown } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -532,11 +533,11 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
                             <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
                               <div className="text-sm">
                                 <span className="text-white/50">Correct Answer: </span>
-                                <span className="text-emerald-300 font-medium">{q.answer}</span>
+                  <ScholarAIContent content={q.answer} mode="compact" className="font-medium text-emerald-300" />
                               </div>
                               <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
                                 <p className="text-xs uppercase tracking-wider text-white/50 mb-1.5 flex items-center gap-1.5"><Brain className="h-3.5 w-3.5" /> Explanation</p>
-                                <p className="text-sm text-white/80 leading-relaxed">{q.explanation}</p>
+                  <ScholarAIContent content={q.explanation} mode="compact" className="text-sm text-white/80" />
                               </div>
                             </div>
                           </motion.div>
@@ -686,7 +687,7 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
                       </div>
                     )}
                     <div className="text-sm text-white/80"><span className="text-emerald-300">Answer:</span> {q.answer}</div>
-                    <p className="text-xs text-white/60 mt-2">{q.explanation}</p>
+                    <ScholarAIContent content={q.explanation} mode="compact" className="mt-2 text-xs text-white/60" />
                   </motion.div>
                 ))}
                 <Button variant="ghost" className="text-white/70" onClick={() => { setSimilarFor(null); setSimilarQs(null); }}>

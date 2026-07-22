@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { StatCard, EmptyState, Pill, Markdown } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -600,7 +601,7 @@ ${entry.result.modelAnswer}
                         <span className="text-xs text-white/40">•</span>
                         <span className="text-xs text-white/50">{activeQ.marks} marks</span>
                       </div>
-                      <p className="text-white text-lg leading-relaxed">{activeQ.question}</p>
+                      <ScholarAIContent content={activeQ.question} mode="compact" className="text-lg text-white" />
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {activeQ.keywords.map((k) => (
                           <span key={k} className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 border border-white/10">{k}</span>
@@ -752,7 +753,7 @@ ${entry.result.modelAnswer}
                                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Load into editor
                               </Button>
                             </div>
-                            <div className="text-sm text-white/80 leading-relaxed whitespace-pre-line">{evalResult.modelAnswer}</div>
+                            <ScholarAIContent content={evalResult.modelAnswer} className="text-sm text-white/80" />
                           </div>
 
                           <Button variant="outline" className="bg-white/5 border-white/15 text-white hover:bg-white/10"

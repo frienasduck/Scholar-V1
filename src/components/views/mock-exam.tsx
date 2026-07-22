@@ -10,6 +10,7 @@ import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { EBOOK_QUESTION_BOOKS, loadEbookQuestions, splitPrintedAnswer } from "@/lib/ebook-question-bank";
 import { StatCard, EmptyState, ProgressRing } from "@/lib/shared";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -726,19 +727,19 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                           <span className="shrink-0 text-xs font-bold text-white/50 tabular-nums">Q{i + 1}</span>
                           <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 uppercase tracking-wider">{q.type}</span>
                           <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300">{q.marks} marks</span>
-                          <p className="text-sm text-white flex-1">{q.question}</p>
+                          <ScholarAIContent content={q.question} mode="compact" className="min-w-0 flex-1 text-sm text-white" />
                         </div>
                         {q.options && (
                           <ul className="ml-6 space-y-0.5 text-xs text-white/60">
                             {q.options.map((opt, oi) => (
                               <li key={oi} className={cn("flex gap-2", opt === q.answer && "text-emerald-300 font-medium")}>
-                                <span className="font-semibold">{String.fromCharCode(65 + oi)}.</span> {opt}
+                                <span className="font-semibold">{String.fromCharCode(65 + oi)}.</span><ScholarAIContent content={opt} mode="compact" />
                                 {opt === q.answer && <span className="text-[10px] text-emerald-400">✓ correct</span>}
                               </li>
                             ))}
                           </ul>
                         )}
-                        {!q.options && <p className="ml-6 text-xs text-emerald-200/70 mt-1"><span className="font-semibold">Model answer:</span> {q.answer}</p>}
+                        {!q.options && <div className="ml-6 mt-1 text-xs text-emerald-200/70"><span className="font-semibold">Model answer:</span><ScholarAIContent content={q.answer} mode="compact" /></div>}
                       </div>
                     ))}
                   </div>
@@ -860,7 +861,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                       <Badge variant="outline" className="border-white/20 text-white/70 uppercase">{examQs[examIdx].type}</Badge>
                       <span className="text-xs text-white/50">{examQs[examIdx].marks} mark{examQs[examIdx].marks > 1 ? "s" : ""}</span>
                     </div>
-                    <p className="text-white text-lg mb-5 leading-relaxed">{examQs[examIdx].question}</p>
+                    <ScholarAIContent content={examQs[examIdx].question} mode="compact" className="mb-5 text-lg text-white" />
                     {examQs[examIdx].options ? (
                       <div className="grid sm:grid-cols-2 gap-2">
                         {examQs[examIdx].options!.map((o) => {
@@ -870,7 +871,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                               onClick={() => setResponses((r) => ({ ...r, [examQs[examIdx].id]: o }))}
                               className={cn("text-left p-3 rounded-xl border text-sm transition-all",
                                 selected ? "bg-indigo-500/25 border-indigo-500/50 text-white" : "bg-white/[0.03] border-white/10 text-white/80 hover:bg-white/[0.07]")}>
-                              {o}
+                              <ScholarAIContent content={o} mode="compact" />
                             </button>
                           );
                         })}
@@ -994,8 +995,8 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                             <span className="text-white/50">Q{i + 1} ({q.type})</span>
                             <span className="text-white/60 tabular-nums">{q.aiMarkedScore}/{q.marks}</span>
                           </div>
-                          <p className="text-white/80 line-clamp-2">{q.question}</p>
-                          <p className="text-xs text-white/50 mt-1 line-clamp-1">{q.aiFeedback}</p>
+                          <ScholarAIContent content={q.question} mode="compact" className="line-clamp-2 text-white/80" />
+                          {q.aiFeedback && <ScholarAIContent content={q.aiFeedback} mode="compact" className="mt-1 line-clamp-2 text-xs text-white/50" />}
                         </div>
                       </div>
                     );
