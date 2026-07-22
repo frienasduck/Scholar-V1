@@ -29,7 +29,7 @@ test("ELAM settings and exact ebook question modes are available", async ({ page
   await page.goto("/ebook", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /Mathematics Part 1/ }).click();
   await page.getByText("Sets", { exact: true }).last().click();
-  await expect(page.getByRole("button", { name: /Open ELAM/ })).toHaveClass(/h-11/);
+  await expect(page.getByRole("button", { name: /Ask LAM about Mathematics Part 1/ })).toHaveClass(/h-12/);
 
   await page.goto("/quiz", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("E-Book Question Quiz", { exact: true })).toBeVisible();

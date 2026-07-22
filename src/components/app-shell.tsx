@@ -637,7 +637,7 @@ export function AppShell() {
         </main>
       </div>
 
-      {active !== "ebook" && <LamWidget currentView={active} />}
+      <LamWidget currentView={active} />
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 

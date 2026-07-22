@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FileItem } from "@/lib/store";
 import { askAI } from "@/lib/ai";
+import { setLamPageContext } from "@/lib/lam-context";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, ArrowRight, Download, ExternalLink, File, FileAudio, FileCode2,
@@ -89,6 +90,11 @@ export function FilePreviewModal({ file, files, onClose, onPrevious, onNext }: {
   const currentIndex = files.findIndex((item) => item.id === file.id);
 
   useEffect(() => {
+    setLamPageContext({ activeFileId: file.id, activeFileName: file.name, visibleText: (ocrText || text).slice(0, 8_000) });
+    return () => setLamPageContext({});
+  }, [file.id, file.name, ocrText, text]);
+
+  useEffect(() => {
     setLoading(true); setError(""); setZoom(1); setRotation(0); setPdfPage(1); setText("");
     setMessages([]); setAssistantInput(""); setAssistantOpen(false); setOcrText("");
     if (!source) { setLoading(false); return; }
@@ -139,10 +145,9 @@ export function FilePreviewModal({ file, files, onClose, onPrevious, onNext }: {
       const result = await response.json() as { ok?: boolean; text?: string; error?: string };
       if (!response.ok || !result.ok || !result.text) throw new Error(result.error || "OCR could not read this image.");
       setOcrText(result.text);
-      setAssistantOpen(true);
+      window.dispatchEvent(new CustomEvent("scholar:open-lam", { detail: { prompt: "Explain and summarise the OCR text from this file.", context: { activeFileId: file.id, activeFileName: file.name, visibleText: result.text.slice(0, 8_000) } } }));
     } catch (cause) {
       setOcrText(cause instanceof Error ? `OCR error: ${cause.message}` : "OCR failed.");
-      setAssistantOpen(true);
     } finally { setOcrBusy(false); }
   }
 
@@ -175,7 +180,7 @@ export function FilePreviewModal({ file, files, onClose, onPrevious, onNext }: {
         <Button variant="ghost" size="icon" onClick={onNext} disabled={files.length < 2} aria-label="Next file"><ArrowRight /></Button>
         <Button variant="ghost" size="icon" onClick={() => setShowInfo((value) => !value)} aria-label="File information"><Info /></Button>
         {type === "image" && <Button variant="ghost" size="sm" onClick={runOcr} disabled={ocrBusy} aria-label="Read image with OCR"><ScanText className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">{ocrBusy ? "Reading…" : "OCR"}</span></Button>}
-        <Button variant="ghost" size="sm" onClick={() => setAssistantOpen((value) => !value)} aria-label="Open file AI assistant"><Sparkles className="mr-1.5 h-4 w-4 text-violet-400" /> <span className="hidden sm:inline">File AI</span></Button>
+        <Button variant="ghost" size="sm" onClick={() => window.dispatchEvent(new CustomEvent("scholar:open-lam", { detail: { prompt: "", context: { activeFileId: file.id, activeFileName: file.name, visibleText: (ocrText || text).slice(0, 8_000) } } }))} aria-label="Ask LAM about this file"><Sparkles className="mr-1.5 h-4 w-4 text-violet-400" /> <span className="hidden sm:inline">Ask LAM</span></Button>
         {source && <Button variant="ghost" size="icon" onClick={() => window.open(source, "_blank", "noopener,noreferrer")} aria-label="Open in new tab"><ExternalLink /></Button>}
         {source && <Button variant="ghost" size="icon" onClick={() => download(source, file.name)} aria-label="Download"><Download /></Button>}
         <Button variant="ghost" size="icon" onClick={toggleFullscreen} aria-label="Fullscreen">{isFullscreen ? <Minimize2 /> : <Fullscreen />}</Button>

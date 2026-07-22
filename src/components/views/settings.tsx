@@ -58,12 +58,14 @@ import {
   Volume2,
   Brain,
   Sparkles,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { clearLamProfile, loadLamState, updateLamPreferences } from "@/lib/lam/storage";
 import type { LamPreferences } from "@/lib/lam/types";
+import { microphoneErrorMessage, requestMicrophoneStream, stopMediaStream } from "@/lib/lam/microphone";
 
 const AVATAR_EMOJIS = [
   "🦋", "🐱", "🐶", "🦁", "🦊", "🐰", "🐻", "🐼",
@@ -208,6 +210,7 @@ export function SettingsView() {
   const pushActivity = useStore((s) => s.pushActivity);
   const lamProfileId = `class-${user.scholarClass}`;
   const [lamPreferences, setLamPreferences] = useState<LamPreferences>(() => loadLamState(lamProfileId).preferences);
+  const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     setLamPreferences(loadLamState(lamProfileId).preferences);
@@ -218,10 +221,36 @@ export function SettingsView() {
     window.addEventListener("scholar:lam-state", sync);
     return () => window.removeEventListener("scholar:lam-state", sync);
   }, [lamProfileId]);
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const refresh = () => setSpeechVoices(window.speechSynthesis.getVoices());
+    refresh();
+    window.speechSynthesis.addEventListener("voiceschanged", refresh);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", refresh);
+  }, []);
 
   const updateLam = (patch: Partial<LamPreferences>) => {
     updateLamPreferences(lamProfileId, patch);
     setLamPreferences((previous) => ({ ...previous, ...patch }));
+  };
+
+  const setHandsFreeLam = async (enabled: boolean) => {
+    if (!enabled) {
+      updateLam({ wakeWordEnabled: false });
+      toast.info("Hands-Free LAM disabled");
+      return;
+    }
+    try {
+      // Keep the permission request in this switch's direct user-gesture call chain.
+      const stream = await requestMicrophoneStream();
+      stopMediaStream(stream);
+      updateLam({ wakeWordEnabled: true, voiceInputEnabled: true });
+      window.dispatchEvent(new Event("scholar:lam-resume-hands-free"));
+      toast.success("Hands-Free LAM enabled", { description: "Say “Hey LAM” or “Okay LAM” while Scholar is open and active." });
+    } catch (requestError) {
+      updateLam({ wakeWordEnabled: false });
+      toast.error(microphoneErrorMessage(requestError));
+    }
   };
 
   const [form, setForm] = useState(user);
@@ -777,10 +806,10 @@ export function SettingsView() {
               </div>
 
               <div className="asme-glass rounded-3xl p-6">
-                <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Enable LAM" desc="Show the LAM assistant orb throughout Scholar.">
+                <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Show LAM" desc="Show the floating LAM capsule. Hands-Free wake listening can remain available while the capsule is hidden.">
                   <Switch aria-label="Enable LAM" checked={lamPreferences.assistantEnabled} onCheckedChange={(value) => {
-                    updateLam({ assistantEnabled: value, ...(value ? {} : { wakeWordEnabled: false }) });
-                    toast.success(value ? "LAM enabled" : "LAM disabled", { description: value ? "The assistant orb is available again." : "The assistant orb and microphone listener are now hidden." });
+                    updateLam({ assistantEnabled: value });
+                    toast.success(value ? "LAM shown" : "LAM hidden", { description: value ? "The assistant capsule is available again." : lamPreferences.wakeWordEnabled ? "Say “Hey LAM” to reveal it while Scholar is active." : "The assistant capsule is now hidden." });
                   }} />
                 </GlassSettingRow>
               </div>
@@ -788,9 +817,10 @@ export function SettingsView() {
               <div className="asme-glass rounded-3xl p-6">
                 <div className="mb-3"><h3 className="font-semibold text-white flex items-center gap-2"><Mic className="h-4 w-4 text-cyan-300" />Voice activation</h3><p className="mt-1 text-sm text-white/50">Voice settings are isolated to {user.name}’s Class {user.scholarClass} profile. Browser permission is requested only when you enable wake activation or press the microphone.</p></div>
                 <div className="divide-y divide-white/10">
-                  <GlassSettingRow icon={<Mic className="h-4 w-4 text-white/70" />} title="Enable “Hey Lam”" desc="While Scholar is open, listen locally for the wake phrase using browser speech recognition."><Switch checked={lamPreferences.wakeWordEnabled} onCheckedChange={(value) => { updateLam({ wakeWordEnabled: value }); toast.info(value ? "Your browser may now request microphone permission. Audio is not continuously uploaded to Scholar." : "Wake phrase disabled"); }} /></GlassSettingRow>
+                  <GlassSettingRow icon={<Mic className="h-4 w-4 text-white/70" />} title="Hands-Free “Hey LAM”" desc="Manually enable foreground wake-phrase listening for Hey LAM and Okay LAM."><Switch aria-label="Hands-Free Hey LAM" disabled={!lamPreferences.voiceInputEnabled} checked={lamPreferences.wakeWordEnabled} onCheckedChange={(value) => void setHandsFreeLam(value)} /></GlassSettingRow>
                   <GlassSettingRow icon={<Mic className="h-4 w-4 text-white/70" />} title="Input device" desc="Speech recognition uses the browser’s selected default microphone."><span className="text-xs text-white/55">Browser default</span></GlassSettingRow>
-                  <div className="rounded-2xl bg-cyan-400/8 p-4 text-xs leading-5 text-cyan-50/75">Wake detection only works while this page is open and the browser keeps it active. It cannot work after the tab, PWA, or device is closed or suspended. Use the LAM orb or Ctrl/⌘ + Shift + Space when wake recognition is unavailable.</div>
+                  <GlassSettingRow icon={<MessageCircle className="h-4 w-4 text-white/70" />} title="Recognition language" desc="Language and regional accent used for live speech recognition."><Select value={lamPreferences.voiceLanguage} onValueChange={(value) => updateLam({ voiceLanguage: value as LamPreferences["voiceLanguage"] })}><SelectTrigger aria-label="LAM recognition language" className="w-40 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en-IN">English (India)</SelectItem><SelectItem value="en-US">English (US)</SelectItem><SelectItem value="en-GB">English (UK)</SelectItem></SelectContent></Select></GlassSettingRow>
+                  <div className="rounded-2xl bg-cyan-400/8 p-4 text-xs leading-5 text-cyan-50/75">“Hey LAM” works while Scholar is open and active. Mobile browsers may stop listening when Scholar is backgrounded or the screen is locked.</div>
                 </div>
               </div>
 
@@ -801,6 +831,7 @@ export function SettingsView() {
                   <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Speech speed" desc={`${lamPreferences.speechRate.toFixed(1)}×`}><Slider className="w-32" min={0.6} max={1.6} step={0.1} value={[lamPreferences.speechRate]} onValueChange={([value]) => updateLam({ speechRate: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Speech pitch" desc={lamPreferences.speechPitch.toFixed(1)}><Slider className="w-32" min={0.6} max={1.5} step={0.1} value={[lamPreferences.speechPitch]} onValueChange={([value]) => updateLam({ speechPitch: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Volume" desc={`${Math.round(lamPreferences.speechVolume * 100)}%`}><Slider className="w-32" min={0} max={1} step={0.1} value={[lamPreferences.speechVolume]} onValueChange={([value]) => updateLam({ speechVolume: value })} /></GlassSettingRow>
+                  <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Preferred voice" desc="Choose a voice installed by your browser or device."><Select value={lamPreferences.selectedVoice || "system"} onValueChange={(value) => updateLam({ selectedVoice: value === "system" ? "" : value })}><SelectTrigger aria-label="LAM preferred voice" className="w-48 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="system">System default</SelectItem>{speechVoices.map((voice) => <SelectItem key={voice.voiceURI} value={voice.name}>{voice.name} · {voice.lang}</SelectItem>)}</SelectContent></Select></GlassSettingRow>
                   <button onClick={() => { if (!("speechSynthesis" in window)) return toast.error("Speech synthesis is unavailable"); window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance("Hi, I’m LAM. Your voice settings are working."); utterance.rate = lamPreferences.speechRate; utterance.pitch = lamPreferences.speechPitch; utterance.volume = lamPreferences.speechVolume; window.speechSynthesis.speak(utterance); }} className="mt-4 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-white hover:bg-white/10">Test voice</button>
                 </div>
               </div>
@@ -809,10 +840,18 @@ export function SettingsView() {
                 <h3 className="font-semibold text-white flex items-center gap-2 mb-2"><Brain className="h-4 w-4 text-emerald-300" />Conversation, memory & appearance</h3>
                 <div className="divide-y divide-white/10">
                   <GlassSettingRow icon={<MessageCircle className="h-4 w-4 text-white/70" />} title="Follow-up listening" desc="Allow a visible follow-up listening window after a voice reply."><Switch checked={lamPreferences.followUpListeningEnabled} onCheckedChange={(value) => updateLam({ followUpListeningEnabled: value })} /></GlassSettingRow>
+                  <GlassSettingRow icon={<Mic className="h-4 w-4 text-white/70" />} title="Voice input" desc="Allow push-to-talk and browser speech recognition inside LAM."><Switch aria-label="LAM voice input" checked={lamPreferences.voiceInputEnabled} onCheckedChange={(value) => updateLam({ voiceInputEnabled: value, ...(value ? {} : { wakeWordEnabled: false }) })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Brain className="h-4 w-4 text-white/70" />} title="Study memory" desc="Allow explicit learning preferences to be saved for this profile."><Switch checked={lamPreferences.studyMemoryEnabled} onCheckedChange={(value) => updateLam({ studyMemoryEnabled: value })} /></GlassSettingRow>
+                  <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="Use current-screen context" desc="Attach only structured information from the active Scholar view—not the whole DOM."><Switch aria-label="Use current-screen context" checked={lamPreferences.currentScreenContext} onCheckedChange={(value) => updateLam({ currentScreenContext: value })} /></GlassSettingRow>
+                  <GlassSettingRow icon={<GraduationCap className="h-4 w-4 text-white/70" />} title="Use study progress" desc="Let LAM include stored weak-topic signals when they are relevant."><Switch aria-label="Use study progress" checked={lamPreferences.studyHistoryEnabled} onCheckedChange={(value) => updateLam({ studyHistoryEnabled: value })} /></GlassSettingRow>
+                  <GlassSettingRow icon={<Trophy className="h-4 w-4 text-white/70" />} title="Use quiz history" desc="Let LAM include the most recent stored quiz result."><Switch aria-label="Use quiz history" checked={lamPreferences.quizHistoryEnabled} onCheckedChange={(value) => updateLam({ quizHistoryEnabled: value })} /></GlassSettingRow>
+                  <GlassSettingRow icon={<History className="h-4 w-4 text-white/70" />} title="Save conversations" desc="Keep LAM conversations for this academic profile. Turn off for session-only chat."><Switch aria-label="Save LAM conversations" checked={lamPreferences.saveConversations} onCheckedChange={(value) => updateLam({ saveConversations: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Sparkles className="h-4 w-4 text-white/70" />} title="Compact orb" desc="Show only the floating LAM orb without its text label."><Switch aria-label="Compact orb" checked={lamPreferences.compactOrb} onCheckedChange={(value) => updateLam({ compactOrb: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="Reduce transparency" desc="Use a solid high-legibility panel instead of background blur."><Switch checked={lamPreferences.reduceTransparency} onCheckedChange={(value) => updateLam({ reduceTransparency: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Sparkles className="h-4 w-4 text-white/70" />} title="Proactive assistance" desc="Control optional suggestions; LAM never interrupts active exams."><Select value={lamPreferences.proactiveMode} onValueChange={(value) => updateLam({ proactiveMode: value as LamPreferences["proactiveMode"] })}><SelectTrigger className="w-36 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="important">Important only</SelectItem><SelectItem value="normal">Normal</SelectItem></SelectContent></Select></GlassSettingRow>
+                  <GlassSettingRow icon={<Sparkles className="h-4 w-4 text-white/70" />} title="Animation intensity" desc="Choose how strongly the capsule morphs and reflects light."><Select value={lamPreferences.animationIntensity} onValueChange={(value) => updateLam({ animationIntensity: value as LamPreferences["animationIntensity"] })}><SelectTrigger aria-label="LAM animation intensity" className="w-36 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="minimal">Minimal</SelectItem><SelectItem value="balanced">Balanced</SelectItem><SelectItem value="expressive">Expressive</SelectItem></SelectContent></Select></GlassSettingRow>
+                  <GlassSettingRow icon={<MessageCircle className="h-4 w-4 text-white/70" />} title="Preferred response detail" desc="Control the default depth of academic answers."><Select value={lamPreferences.responseDetail} onValueChange={(value) => updateLam({ responseDetail: value as LamPreferences["responseDetail"] })}><SelectTrigger aria-label="LAM response detail" className="w-44 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="quick">Quick</SelectItem><SelectItem value="balanced">Balanced</SelectItem><SelectItem value="detailed">Detailed</SelectItem><SelectItem value="step-by-step">Teach step by step</SelectItem></SelectContent></Select></GlassSettingRow>
+                  <GlassSettingRow icon={<Zap className="h-4 w-4 text-white/70" />} title="Keyboard shortcut" desc="Open LAM without leaving the current screen."><Select value={lamPreferences.keyboardShortcut} onValueChange={(value) => updateLam({ keyboardShortcut: value as LamPreferences["keyboardShortcut"] })}><SelectTrigger aria-label="LAM keyboard shortcut" className="w-44 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ctrl-space">Ctrl/⌘ + Space</SelectItem><SelectItem value="alt-space">Alt + Space</SelectItem><SelectItem value="ctrl-shift-l">Ctrl/⌘ + Shift + L</SelectItem></SelectContent></Select></GlassSettingRow>
                 </div>
               </div>
 

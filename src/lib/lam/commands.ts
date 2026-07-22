@@ -6,6 +6,10 @@ export const lamActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("navigate"), view: z.enum(allowedViews) }).strict(),
   z.object({ type: z.literal("create-note"), title: z.string().trim().min(1).max(120), content: z.string().trim().min(1).max(8_000) }).strict(),
   z.object({ type: z.literal("start-focus"), minutes: z.number().int().min(1).max(180) }).strict(),
+  z.object({ type: z.literal("open-ebook-page"), bookId: z.string().trim().min(1).max(80), page: z.number().int().min(1).max(2_000) }).strict(),
+  z.object({ type: z.literal("open-file"), fileId: z.string().trim().min(1).max(160) }).strict(),
+  z.object({ type: z.literal("create-quiz"), subject: z.string().trim().max(100).optional(), chapter: z.string().trim().max(180).optional() }).strict(),
+  z.object({ type: z.literal("create-slideshow"), subject: z.string().trim().max(100).optional(), chapter: z.string().trim().max(180).optional() }).strict(),
 ]);
 export type LamAction = z.infer<typeof lamActionSchema>;
 

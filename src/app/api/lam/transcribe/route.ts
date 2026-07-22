@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
   if (!key) return NextResponse.json({ ok: false, error: "Groq transcription is not configured." }, { status: 503 });
   const data = await request.formData().catch(() => null);
   const audio = data?.get("audio");
-  if (!(audio instanceof File) || audio.size === 0 || audio.size > MAX_BYTES || !allowed.has(audio.type)) {
+  const normalizedType = audio instanceof File ? audio.type.split(";")[0].toLowerCase() : "";
+  if (!(audio instanceof File) || audio.size === 0 || audio.size > MAX_BYTES || !allowed.has(normalizedType)) {
     return NextResponse.json({ ok: false, error: "Provide a supported audio recording smaller than 10 MB." }, { status: 400 });
   }
   const form = new FormData();

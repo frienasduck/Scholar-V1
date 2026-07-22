@@ -1,5 +1,16 @@
 export type LamDraft = { prompt: string; ocrText?: string };
-export type LamRuntimeContext = { subjectTitle?: string; chapterTitle?: string; ebookTitle?: string; sourcePageNumber?: number; selectedQuestionId?: string };
+export type LamRuntimeContext = {
+  subjectTitle?: string;
+  chapterTitle?: string;
+  ebookTitle?: string;
+  sourcePageNumber?: number;
+  selectedQuestionId?: string;
+  visibleText?: string;
+  activeFileId?: string;
+  activeFileName?: string;
+  activeSlideshowId?: string;
+  activeQuizId?: string;
+};
 
 let pendingDraft: LamDraft | null = null;
 let runtimeContext: LamRuntimeContext = {};
