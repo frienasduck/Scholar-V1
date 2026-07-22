@@ -83,13 +83,14 @@ test("typed Tutor mode streams a real Groq response with Study context", async (
   await enterProfile(page, 11);
   await page.goto("/study", { waitUntil: "domcontentloaded" });
   await openAndOnboardLam(page);
-  await page.getByLabel("LAM mode").selectOption("tutor");
+  await page.getByLabel("LAM mode").click();
+  await page.getByRole("option", { name: "Tutor", exact: true }).click();
   await page.getByRole("textbox", { name: "Message LAM" }).fill("Explain the basic idea of this chapter in two short sentences.");
   const responsePromise = page.waitForResponse((response) => response.url().endsWith("/api/lam/chat") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Send message" }).click();
   const response = await responsePromise;
   expect(response.status()).toBe(200);
-  await expect(page.getByLabel("LAM personal assistant").getByRole("button", { name: "Still don’t understand?" })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByLabel("LAM personal assistant").getByRole("button", { name: "Explain simply" })).toBeVisible({ timeout: 45_000 });
   await expect(page.getByLabel("LAM personal assistant").getByText("Physics", { exact: true })).toBeVisible();
 });
 
@@ -129,7 +130,7 @@ test("Privacy controls persist and remove personal page context from LAM request
   });
   await page.getByRole("textbox", { name: "Message LAM" }).fill("Say hello briefly.");
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByLabel("LAM personal assistant").getByRole("button", { name: "Still don’t understand?" })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByLabel("LAM personal assistant").getByRole("button", { name: "Explain simply" })).toBeVisible({ timeout: 45_000 });
   expect(captured.body?.pageContext?.profileName).toBe("Class 11 student");
   expect(captured.body?.pageContext?.subjectTitle).toBeUndefined();
   expect(captured.body?.pageContext?.chapterTitle).toBeUndefined();

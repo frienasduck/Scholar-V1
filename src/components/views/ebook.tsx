@@ -291,6 +291,12 @@ export function EBookView() {
   const totalPages = activeBook.totalPages;
   const pageDir = activeBook.pageDir;
 
+  useEffect(() => {
+    const current = chapters.find((item) => activePage >= item.startPage && activePage <= item.endPage);
+    const subjectTitle = activeBookId === "maths-pt1" ? "Mathematics" : activeBookId === "chemistry-pt1" ? "Chemistry" : "Physics";
+    setLamPageContext({ ebookTitle: activeBook.title, subjectTitle, chapterTitle: current?.title, sourcePageNumber: activePage, visibleText: ocrReviewed[activePage] });
+  }, [activeBook.title, activeBookId, activePage, chapters, ocrReviewed]);
+
   // Load persisted data
   useEffect(() => {
     const data = loadData();

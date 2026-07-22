@@ -32,10 +32,12 @@ test("uploaded text opens in the full viewer with close and file AI", async ({ p
   const viewer = page.getByRole("dialog", { name: "Preview preview-check.txt" });
   await expect(viewer).toBeVisible();
   await expect(viewer.getByRole("button", { name: "Close file preview" })).toBeVisible();
-  await expect(viewer.getByRole("button", { name: "Open file AI assistant" })).toBeVisible();
+  await expect(viewer.getByRole("button", { name: "Ask LAM about this file" })).toBeVisible();
   await expect(viewer.getByText("Scholar file preview works. Momentum is conserved.")).toBeVisible();
-  await viewer.getByRole("button", { name: "Open file AI assistant" }).click();
-  await expect(page.getByLabel("AI assistant for preview-check.txt")).toBeVisible();
+  await viewer.getByRole("button", { name: "Ask LAM about this file" }).click();
+  const lam = page.getByLabel("LAM personal assistant");
+  await expect(lam).toBeVisible();
+  await lam.getByRole("button", { name: "Close LAM" }).click();
   await viewer.getByRole("button", { name: "Close file preview" }).click();
   await expect(viewer).toHaveCount(0);
   expect(errors).toEqual([]);

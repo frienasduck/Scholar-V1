@@ -39,8 +39,23 @@ export function loadLamState(profileId: string): LamProfileState {
 
 export function saveLamState(state: LamProfileState) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(keyFor(state.profileId), JSON.stringify(state));
+  const persisted = state.preferences.saveConversations === false
+    ? { ...state, activeConversationId: "session-only", conversations: [{ ...createLamConversation(state.profileId), id: "session-only" }] }
+    : state;
+  localStorage.setItem(keyFor(state.profileId), JSON.stringify(persisted));
   queueMicrotask(() => window.dispatchEvent(new CustomEvent("scholar:lam-state", { detail: { profileId: state.profileId } })));
+}
+
+export function renameLamConversation(profileId: string, conversationId: string, title: string) {
+  const state = loadLamState(profileId);
+  saveLamState({ ...state, conversations: state.conversations.map((item) => item.id === conversationId ? { ...item, title: title.trim().slice(0, 80) || item.title, updatedAt: new Date().toISOString() } : item) });
+}
+
+export function deleteLamConversation(profileId: string, conversationId: string) {
+  const state = loadLamState(profileId);
+  const remaining = state.conversations.filter((item) => item.id !== conversationId);
+  const conversations = remaining.length ? remaining : [createLamConversation(profileId)];
+  saveLamState({ ...state, conversations, activeConversationId: state.activeConversationId === conversationId ? conversations[0].id : state.activeConversationId });
 }
 
 export function updateLamPreferences(profileId: string, patch: Partial<LamPreferences>) {

@@ -1,6 +1,11 @@
 export const LAM_MODES = ["general", "tutor", "doubt-solver", "current-page", "question-coach", "study-planner", "revision-coach", "quiz-master", "focus-companion", "code-tutor", "ebook-companion", "experiment-guide"] as const;
 export type LamMode = typeof LAM_MODES[number];
 
+export type LamVisualState =
+  | "closed" | "invoking" | "idle" | "listening" | "transcribing"
+  | "thinking" | "answering" | "action-preview" | "performing-action"
+  | "completed" | "error" | "history";
+
 export interface LamPageContext {
   profileId: string;
   profileName: string;
@@ -13,6 +18,13 @@ export interface LamPageContext {
   sourcePageNumber?: number;
   selectedQuestionId?: string;
   selectedText?: string;
+  visibleText?: string;
+  activeFileId?: string;
+  activeFileName?: string;
+  activeSlideshowId?: string;
+  activeQuizId?: string;
+  weakTopics?: string[];
+  recentQuizScore?: string;
 }
 
 export interface LamMessage {
@@ -21,6 +33,7 @@ export interface LamMessage {
   content: string;
   inputMode?: "text" | "voice";
   createdAt: string;
+  sources?: Array<{ label: string; route?: string }>;
 }
 
 export interface LamConversation {
@@ -50,6 +63,15 @@ export interface LamPreferences {
   reduceTransparency: boolean;
   compactOrb: boolean;
   onboardingComplete: boolean;
+  currentScreenContext: boolean;
+  studyHistoryEnabled: boolean;
+  quizHistoryEnabled: boolean;
+  saveConversations: boolean;
+  voiceInputEnabled: boolean;
+  animationIntensity: "minimal" | "balanced" | "expressive";
+  responseDetail: "quick" | "balanced" | "detailed" | "step-by-step";
+  keyboardShortcut: "ctrl-space" | "alt-space" | "ctrl-shift-l";
+  voiceLanguage: "en-IN" | "en-US" | "en-GB";
 }
 
 export interface LamProfileState {
@@ -78,4 +100,13 @@ export const DEFAULT_LAM_PREFERENCES: LamPreferences = {
   reduceTransparency: false,
   compactOrb: false,
   onboardingComplete: false,
+  currentScreenContext: true,
+  studyHistoryEnabled: true,
+  quizHistoryEnabled: true,
+  saveConversations: true,
+  voiceInputEnabled: true,
+  animationIntensity: "balanced",
+  responseDetail: "balanced",
+  keyboardShortcut: "ctrl-space",
+  voiceLanguage: "en-IN",
 };
