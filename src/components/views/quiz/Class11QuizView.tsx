@@ -33,26 +33,16 @@ import {
 } from "./quiz-utils";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { EBOOK_QUESTION_BOOKS, loadEbookQuestions, toEbookQuizQuestion } from "@/lib/ebook-question-bank";
+import {
+  loadQuizMistakes,
+  saveQuizMistakes,
+  type SavedQuizMistake,
+} from "@/lib/quiz-mistakes";
 
 type Phase = "home" | "taking" | "results" | "aiReview";
 
 // ===== localStorage helpers for saved AI questions and mistakes =====
 // (profile-scoped via profileGetJSON/profileSetJSON to isolate Class 9/11 data)
-
-interface SavedMistake {
-  id: string;
-  questionId: string;
-  question: string;
-  userAnswer: string;
-  correctAnswer: string;
-  explanation: string;
-  subject: string;
-  chapter: string;
-  difficulty: string;
-  mistakeType: string;
-  source: string;
-  savedAt: number;
-}
 
 function loadCustomQuestions(scholarClass: 9 | 11): any[] {
   if (typeof window === "undefined") return [];
@@ -60,13 +50,6 @@ function loadCustomQuestions(scholarClass: 9 | 11): any[] {
 }
 function saveCustomQuestions(scholarClass: 9 | 11, qs: any[]) {
   profileSetJSON(scholarClass, "quiz-custom-questions", qs);
-}
-function loadMistakes(scholarClass: 9 | 11): SavedMistake[] {
-  if (typeof window === "undefined") return [];
-  return profileGetJSON<SavedMistake[]>(scholarClass, "quiz-mistakes", []);
-}
-function saveMistakes(scholarClass: 9 | 11, ms: SavedMistake[]) {
-  profileSetJSON(scholarClass, "quiz-mistakes", ms);
 }
 function inferMistakeType(subject: string, question: string, qType: string): string {
   const q = question.toLowerCase();
@@ -368,13 +351,13 @@ export function Class11QuizView() {
 
   // Save a single wrong answer to mistake notebook
   const saveMistake = (q: any, userAnswer: string) => {
-    const mistakes = loadMistakes(scholarClass);
+    const mistakes = loadQuizMistakes(scholarClass);
     const mistakeId = `${q.id}-${userAnswer}`;
     if (mistakes.some((m) => m.id === mistakeId)) {
       toast.info("This mistake is already saved.");
       return;
     }
-    const mistake: SavedMistake = {
+    const mistake: SavedQuizMistake = {
       id: mistakeId,
       questionId: q.id,
       question: q.question,
@@ -389,14 +372,14 @@ export function Class11QuizView() {
       savedAt: Date.now(),
     };
     mistakes.unshift(mistake);
-    saveMistakes(scholarClass, mistakes);
+    saveQuizMistakes(scholarClass, mistakes);
     setSavedMistakeIds((prev) => new Set([...prev, mistakeId]));
-    toast.success("Mistake saved to notebook.");
+    toast.success("Mistake saved to Revision Hub.");
   };
 
   // Save all wrong answers
   const saveAllMistakes = (attempt: any) => {
-    const mistakes = loadMistakes(scholarClass);
+    const mistakes = loadQuizMistakes(scholarClass);
     let newCount = 0;
     attempt.questions.forEach((q: any) => {
       const user = attempt.responses[q.id];
@@ -415,14 +398,14 @@ export function Class11QuizView() {
         }
       }
     });
-    saveMistakes(scholarClass, mistakes);
+    saveQuizMistakes(scholarClass, mistakes);
     const allIds = new Set([...savedMistakeIds]);
     attempt.questions.forEach((q: any) => {
       const user = attempt.responses[q.id];
       if (user && user !== q.answer) allIds.add(`${q.id}-${user}`);
     });
     setSavedMistakeIds(allIds);
-    if (newCount > 0) toast.success(`Saved ${newCount} mistake${newCount === 1 ? "" : "s"} to notebook.`);
+    if (newCount > 0) toast.success(`Saved ${newCount} mistake${newCount === 1 ? "" : "s"} to Revision Hub.`);
     else toast.info("All wrong answers are already saved.");
   };
 

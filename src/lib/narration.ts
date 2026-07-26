@@ -39,6 +39,7 @@ export interface NarrationSettings {
   practicePauses: boolean;   // pause on practice slides
   recapPauses: boolean;      // pause on recap slides
   targetDurationMin?: number; // 2/5/10/15/custom
+  slideTransition?: "adaptive" | "fade" | "soft-slide" | "scale-fade" | "section-reveal" | "bullet-reveal";
 }
 
 export interface NarratedSlideshow {
@@ -69,6 +70,7 @@ export const DEFAULT_NARRATION_SETTINGS: NarrationSettings = {
   practicePauses: true,
   recapPauses: false,
   targetDurationMin: 5,
+  slideTransition: "adaptive",
 };
 
 // ============================================================================

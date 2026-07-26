@@ -118,10 +118,12 @@ test("Class 11 stays on the Class 11 curriculum", async ({ page }) => {
   await page.getByRole("button", { name: "New LAM chat" }).click();
   await expect(lamInput).toHaveValue("");
   await lamInput.fill("conversation follows me into Chemistry");
+  await page.getByLabel("Close LAM").click();
   await page
     .getByRole("button", { name: /Chemistry/ })
     .first()
     .click();
+  await lamToggle.click();
   await expect(page.getByRole("textbox", { name: "Message LAM" })).toHaveValue(
     "conversation follows me into Chemistry",
   );
@@ -361,7 +363,10 @@ test("AI Slideshow Maker uses clean page ranges, complete coverage, autosave, an
   await expect(page.getByTestId("coverage-panel")).toBeVisible({
     timeout: 30_000,
   });
-  await expect(page.getByText("Source coverage: 100%")).toBeVisible();
+  const coveragePanel = page.getByTestId("coverage-panel");
+  await expect(coveragePanel.getByText(/Source coverage: \d+%/)).toBeVisible();
+  await expect(coveragePanel).toContainText(/Pages covered\s*2 of 2/);
+  await expect(coveragePanel).toContainText(/Topics covered\s*2 of 2/);
   await expect(page.getByText(/3 slides/i).first()).toBeVisible();
   await expect(
     page.getByText(/Add content here|Image goes here|More information/, {

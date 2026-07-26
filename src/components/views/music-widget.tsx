@@ -13,22 +13,46 @@ import { cn } from "@/lib/utils";
 // YouTube IFrame API singleton
 let ytPlayer: any = null;
 let ytReady = false;
-let ytApiLoading = false;
+let ytApiPromise: Promise<void> | null = null;
 
 function loadYouTubeAPI(): Promise<void> {
-  return new Promise((resolve) => {
-    if (ytReady) { resolve(); return; }
-    if (ytApiLoading) {
-      const check = setInterval(() => { if (ytReady) { clearInterval(check); resolve(); } }, 200);
-      return;
+  if (typeof window === "undefined") return Promise.resolve();
+  if ((window as any).YT?.Player) {
+    ytReady = true;
+    return Promise.resolve();
+  }
+  if (ytApiPromise) return ytApiPromise;
+
+  ytApiPromise = new Promise((resolve, reject) => {
+    const previousReady = (window as any).onYouTubeIframeAPIReady;
+    const timeout = window.setTimeout(() => {
+      ytApiPromise = null;
+      reject(new Error("YouTube player took too long to load."));
+    }, 15_000);
+    (window as any).onYouTubeIframeAPIReady = () => {
+      if (typeof previousReady === "function") previousReady();
+      window.clearTimeout(timeout);
+      ytReady = true;
+      resolve();
+    };
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      tag.async = true;
+      tag.onerror = () => {
+        window.clearTimeout(timeout);
+        ytApiPromise = null;
+        reject(new Error("YouTube player could not be loaded."));
+      };
+      document.head.appendChild(tag);
     }
-    ytApiLoading = true;
-    if (typeof window === "undefined") { resolve(); return; }
-    (window as any).onYouTubeIframeAPIReady = () => { ytReady = true; resolve(); };
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
   });
+  return ytApiPromise;
+}
+
+function disposeYouTubePlayer() {
+  try { ytPlayer?.destroy?.(); } catch { /* stale iframe */ }
+  ytPlayer = null;
 }
 
 function fmtTime(s: number): string {
@@ -66,6 +90,7 @@ export function FloatingMusicWidget() {
       return { x: -1, y: -1 };
     }
   });
+  const [retryNonce, setRetryNonce] = useState(0);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Save position
@@ -80,18 +105,25 @@ export function FloatingMusicWidget() {
     if (!currentTrack || !widgetVisible) return;
 
     let cancelled = false;
+    setBuffering(true);
+    setError(null);
     loadYouTubeAPI().then(() => {
       if (cancelled || !playerContainerRef.current) return;
 
+      const iframe = ytPlayer?.getIframe?.();
+      if (ytPlayer && (!iframe || !iframe.isConnected)) disposeYouTubePlayer();
+
       // Create or update player
       if (!ytPlayer) {
-        ytPlayer = new (window as any).YT.Player("scholar-yt-player", {
+        ytPlayer = new (window as any).YT.Player(playerContainerRef.current, {
           videoId: currentTrack.id,
           playerVars: { autoplay: 1, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, playsinline: 1 },
           events: {
             onReady: () => {
               ytPlayer.setVolume(muted ? 0 : volume);
               setDuration(ytPlayer.getDuration() || 0);
+              setBuffering(false);
+              if (isPlaying) ytPlayer.playVideo();
             },
             onStateChange: (e: any) => {
               const YT = (window as any).YT;
@@ -99,25 +131,36 @@ export function FloatingMusicWidget() {
               else if (e.data === YT.PlayerState.PAUSED) { setPlaying(false); }
               else if (e.data === YT.PlayerState.BUFFERING) { setBuffering(true); }
               else if (e.data === YT.PlayerState.ENDED) { setBuffering(false); next(); }
-              else if (e.data === YT.PlayerState.ERROR) { setError("Playback error"); }
+            },
+            onError: () => {
+              setBuffering(false);
+              setError("This track could not play. Retry it or skip to another track.");
             },
           },
         });
       } else {
         // Load new video
         ytPlayer.loadVideoById(currentTrack.id);
-        ytPlayer.playVideo();
+        if (isPlaying) ytPlayer.playVideo();
       }
+    }).catch(() => {
+      if (cancelled) return;
+      setBuffering(false);
+      setError("The music player could not load. Check your connection and retry.");
     });
 
     return () => { cancelled = true; };
-  }, [currentTrack?.id]);
+  }, [currentTrack?.id, retryNonce, widgetVisible]);
 
   // Sync play/pause
   useEffect(() => {
     if (!ytPlayer || !ytReady || !currentTrack) return;
-    if (isPlaying) ytPlayer.playVideo();
-    else ytPlayer.pauseVideo();
+    try {
+      if (isPlaying) ytPlayer.playVideo();
+      else ytPlayer.pauseVideo();
+    } catch {
+      setError("Playback was interrupted. Tap Retry to reconnect.");
+    }
   }, [isPlaying]);
 
   // Sync volume
@@ -234,7 +277,7 @@ export function FloatingMusicWidget() {
     >
       {/* Hidden YouTube player container */}
       <div style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0, pointerEvents: "none" }}>
-        <div ref={playerContainerRef} id="scholar-yt-player" />
+        <div ref={playerContainerRef} />
       </div>
 
       {/* Drag handle — only this area initiates drag */}
@@ -431,6 +474,17 @@ export function FloatingMusicWidget() {
                 <div className="flex items-center gap-2 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-200 text-xs">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   <span className="flex-1">{error}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      disposeYouTubePlayer();
+                      setError(null);
+                      setRetryNonce((value) => value + 1);
+                    }}
+                    className="text-rose-200 hover:text-white"
+                  >
+                    Retry
+                  </button>
                   <button onClick={(e) => { e.stopPropagation(); next(); }} className="text-rose-300 hover:text-white">Skip</button>
                 </div>
               )}

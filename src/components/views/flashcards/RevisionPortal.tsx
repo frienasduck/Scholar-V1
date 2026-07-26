@@ -138,7 +138,7 @@ export function RevisionPortal({
       </div>
 
       {/* Card */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 py-20">
+      <div className="relative z-10 h-full min-h-0 flex flex-col items-center justify-start sm:justify-center overflow-y-auto px-4 pb-4 pt-20">
         <div className="w-full max-w-2xl" style={{ perspective: "1800px" }}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -147,7 +147,7 @@ export function RevisionPortal({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.22 }}
-              className="relative h-[26rem] sm:h-[28rem] cursor-pointer"
+              className="relative h-[clamp(17rem,calc(100dvh-14rem),28rem)] cursor-pointer"
               style={{ transformStyle: "preserve-3d" }}
               onClick={() => setFlipped((f) => !f)}
             >
@@ -172,8 +172,12 @@ export function RevisionPortal({
                     )}
                     {review && <Badge variant="outline" className="text-[10px] border-white/20 text-white/50 ml-auto">Box {review.box}</Badge>}
                   </div>
-                  <div className="flex-1 flex flex-col items-center justify-center text-center">
-                    <p className="text-lg sm:text-2xl font-medium text-white leading-snug">{card.front}</p>
+                  <div className="min-h-0 flex-1 flex flex-col items-center justify-center overflow-y-auto text-center">
+                    <ScholarAIContent
+                      content={card.front}
+                      mode="compact"
+                      className="text-lg font-medium leading-snug text-white sm:text-2xl"
+                    />
                   </div>
                   <div className="mt-4 text-center text-xs text-white/50 flex items-center justify-center gap-2">
                     <Keyboard className="h-3 w-3" /> Click or press Space to flip
@@ -181,19 +185,26 @@ export function RevisionPortal({
                 </div>
 
                 {/* BACK */}
-                <div className="absolute inset-0 rounded-3xl flex flex-col p-6 sm:p-8 overflow-hidden" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", background: `linear-gradient(135deg, ${info.color}25, rgba(20,20,30,0.7))`, backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: `1px solid ${info.color}60`, boxShadow: `0 25px 60px -12px ${info.color}40` }}>
+                <div className="absolute inset-0 rounded-3xl flex flex-col p-5 sm:p-7 overflow-hidden" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", background: `linear-gradient(135deg, ${info.color}25, rgba(20,20,30,0.7))`, backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: `1px solid ${info.color}60`, boxShadow: `0 25px 60px -12px ${info.color}40` }}>
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <Badge variant="outline" className="text-[10px] border-white/20 text-white/70"><Check className="h-3 w-3 mr-1" /> Answer</Badge>
                     <button onClick={(e) => { e.stopPropagation(); onToggleBookmark(card.id); }} className="ml-auto p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white" aria-label="Bookmark card">
                       {isBookmarked ? <BookmarkCheck className="h-4 w-4 text-amber-300" /> : <Bookmark className="h-4 w-4" />}
                     </button>
                   </div>
-                  <div className="flex-1 overflow-y-auto pr-1">
-                    <p className="text-lg sm:text-2xl font-semibold text-white leading-snug mb-3">{card.back}</p>
+                  <div
+                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2 [scrollbar-gutter:stable]"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <ScholarAIContent
+                      content={card.back}
+                      mode="compact"
+                      className="text-base font-medium leading-relaxed text-white sm:text-lg"
+                    />
                     {card.explanation && (
-                      <div className="mt-3 p-3 rounded-xl bg-black/30 border border-white/10">
+                      <div className="mt-4 p-3 rounded-xl bg-black/30 border border-white/10">
                         <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1">Explanation</p>
-          <ScholarAIContent content={card.explanation} mode="compact" className="text-sm text-white/80" />
+                        <ScholarAIContent content={card.explanation} mode="compact" className="text-sm text-white/80" />
                       </div>
                     )}
                   </div>
@@ -205,12 +216,12 @@ export function RevisionPortal({
         </div>
 
         {/* Rating buttons */}
-        <div className="mt-6 w-full max-w-2xl">
+        <div className="mt-3 sm:mt-5 w-full max-w-2xl shrink-0">
           <AnimatePresence mode="wait">
             {flipped && !finished ? (
               <motion.div key="ratings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {RATINGS.map((r) => (
-                  <button key={r.key} onClick={(e) => { e.stopPropagation(); rateAndAdvance(r.key); }} className="group flex flex-col items-center gap-1 py-3 px-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/15 transition-all hover:-translate-y-0.5" style={{ boxShadow: `inset 0 -3px 0 0 ${r.color}` }}>
+                  <button key={r.key} onClick={(e) => { e.stopPropagation(); rateAndAdvance(r.key); }} className="group flex flex-col items-center gap-0.5 py-2 sm:py-3 px-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/15 transition-all hover:-translate-y-0.5" style={{ boxShadow: `inset 0 -3px 0 0 ${r.color}` }}>
                     <span className="text-sm font-semibold" style={{ color: r.color }}>{r.label}</span>
                     <span className="text-[10px] text-white/60">{r.desc}</span>
                     <kbd className="mt-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-white/70">{r.hint}</kbd>

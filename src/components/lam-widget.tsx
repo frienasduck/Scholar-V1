@@ -20,6 +20,8 @@ import { GlassModeMenu } from "@/components/lam/glass-mode-menu";
 import { GlassWaveListening, LamQuickActionChip, LamThinkingState } from "@/components/lam/lam-glass-states";
 import { microphoneEnvironmentError, microphoneErrorMessage, queryMicrophonePermission, requestMicrophoneStream, stopMediaStream, type MicrophonePermissionState } from "@/lib/lam/microphone";
 import { useLamRenderQuality } from "@/lib/lam/render-quality";
+import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
+import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
 type Recognition = {
@@ -95,6 +97,8 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const focusTimerRef = useRef<number | null>(null);
   const voiceTransitionTimerRef = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const wakeHeaderRef = useRef<HTMLElement>(null);
+  const wakeContextRef = useRef<HTMLDivElement>(null);
   const internalSaveRef = useRef(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -558,6 +562,18 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
   const contextualPlaceholder = selectedText ? "Ask about the selected text" : context.activeFileName ? `Ask about ${context.activeFileName}` : context.ebookTitle ? "Ask about this ebook page" : context.activeSlideshowId ? "Ask about this slideshow" : "Ask about anything in Scholar";
   const visibleConversations = state.conversations.filter((item) => !historyQuery.trim() || `${item.title} ${item.mode} ${item.messages.map((message) => message.content).join(" ")}`.toLowerCase().includes(historyQuery.toLowerCase()));
   const mobileOptimized = renderQuality === "mobile-optimized";
+  const animationQuality = useMemo(() => resolveScholarAnimationQuality({
+    reduceMotion: settings.reduceMotion,
+    forceQuality: mobileOptimized ? "mobile-optimized" : "desktop-high",
+  }), [mobileOptimized, settings.reduceMotion]);
+  useEffect(() => {
+    const header = wakeHeaderRef.current;
+    if (!open || !prefs.onboardingComplete || !header) return;
+    const mark = header.querySelector<HTMLElement>("span");
+    if (!mark) return;
+    const details = [header.querySelector<HTMLElement>("div"), wakeContextRef.current].filter((item): item is HTMLElement => Boolean(item));
+    return animateLamWakeReveal(mark, details, animationQuality);
+  }, [animationQuality, open, prefs.onboardingComplete]);
   const renderedMessages = mobileOptimized && conversation.messages.length > 8 ? conversation.messages.slice(-8) : conversation.messages;
   const pendingDescription = !pendingAction ? "" : pendingAction.type === "create-note" ? `Save “${pendingAction.title}” in the LAM notes folder?` : pendingAction.type === "start-focus" ? `Start a ${pendingAction.minutes}-minute focus session?` : pendingAction.type === "create-quiz" ? `Create a quiz${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "create-slideshow" ? `Create a slideshow${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "open-ebook-page" ? `Open page ${pendingAction.page}?` : pendingAction.type === "open-file" ? "Open this uploaded file?" : `Open ${pendingAction.view}?`;
 
@@ -587,7 +603,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
       {open && prefs.onboardingComplete && (
           <motion.div ref={panelRef} layoutId="lam-system-surface" initial={settings.reduceMotion ? { opacity: 0 } : mobileOptimized ? { opacity: 0, y: -10, scale: .94 } : { opacity: 0, y: -24, scale: .82, filter: "blur(18px)" }} animate={mobileOptimized ? { opacity: 1, y: 0, scale: 1 } : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={mobileOptimized ? { opacity: 0, y: -6, scale: .96 } : { opacity: 0, y: -10, scale: .92, filter: "blur(10px)" }} transition={mobileOptimized ? { duration: .28, ease: [0.16, 1, 0.3, 1] } : { type: "spring", stiffness: 330, damping: 34 }} className={cn("lam-liquid-glass lam-premium-panel relative z-10 mb-3 flex flex-col overflow-hidden text-white", `lam-liquid-glass--${surfaceState}`, prefs.reduceTransparency && "lam-liquid-glass--reduced", fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : needsExpanded ? "h-[min(43rem,calc(100dvh-5.5rem))] w-[min(46rem,calc(100vw-1.5rem))] rounded-[2rem]" : isTransientCapsule ? "max-h-[min(25rem,calc(100dvh-5.5rem))] min-h-[11.5rem] w-[min(43rem,calc(100vw-1.5rem))] rounded-[2rem]" : "max-h-[min(32rem,calc(100dvh-5.5rem))] min-h-[9rem] w-[min(38rem,calc(100vw-1.5rem))] rounded-[1.8rem]")}>
           <span className="lam-glass-reflection" aria-hidden="true" />
-          <header className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
+          <header ref={wakeHeaderRef} className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
             <span className={cn("relative grid h-10 w-10 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && "shadow-lg shadow-cyan-400/20")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
             <div className="min-w-0 flex-1"><p className="font-semibold">LAM</p><p className="truncate text-[11px] text-white/50">{status === "thinking" ? "Thinking…" : status === "transcribing" ? "Transcribing your recording…" : status === "suspended" ? "Hands-Free LAM suspended" : status === "performing" ? "Completing Scholar action…" : status === "completed" ? "Done" : status === "listening" ? "Listening…" : status === "speaking" ? "Speaking…" : `${user.name} · ${context.currentView}`}</p></div>
             <button onClick={() => setHistoryOpen((value) => !value)} className="rounded-full p-2 hover:bg-white/10" aria-label={historyOpen ? "Back to chat" : "Conversation history"}><History className="h-4 w-4" /></button>
@@ -596,8 +612,8 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
             <button onClick={closeLam} className="rounded-full p-2 hover:bg-white/10" aria-label="Close LAM"><X className="h-4 w-4" /></button>
           </header>
 
-          <div className="lam-context-strip relative z-30 flex items-center gap-2 overflow-x-auto border-b border-white/8 px-3 py-2 no-scrollbar">
-            <GlassModeMenu value={conversation.mode} labels={labels} onChange={setMode} reducedMotion={settings.reduceMotion || mobileOptimized} />
+          <div ref={wakeContextRef} className="lam-context-strip relative z-30 flex items-center gap-2 overflow-x-auto border-b border-white/8 px-3 py-2 no-scrollbar">
+            <GlassModeMenu value={conversation.mode} labels={labels} onChange={setMode} reducedMotion={settings.reduceMotion} />
             <span className="whitespace-nowrap rounded-full bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100">{context.currentView}</span>
             {context.subjectTitle && <span className="whitespace-nowrap rounded-full bg-white/8 px-2.5 py-1 text-[11px]">{context.subjectTitle}</span>}
             {context.chapterTitle && <span className="max-w-44 truncate rounded-full bg-white/8 px-2.5 py-1 text-[11px]">{context.chapterTitle}</span>}

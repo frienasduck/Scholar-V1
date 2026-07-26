@@ -23,7 +23,7 @@ import {
   loadReviewState, saveReviewState, isC11CardDue,
   loadBookmarks, saveBookmarks,
   loadCustomCards, saveCustomCards,
-  loadDecks, upsertDeck, deleteDeck,
+  loadDecks, saveDecks, upsertDeck, deleteDeck,
 } from "./flashcard-utils";
 import { RevisionPortal } from "./RevisionPortal";
 import { AIGeneratorDialog } from "./AIGeneratorDialog";
@@ -91,6 +91,43 @@ export function Class11FlashcardsView() {
     return () => { cancelled = true; };
   }, [subject]);
 
+  // Older custom cards (including cards created from quiz mistakes) were
+  // stored without a deck. Recover them into profile-scoped sets so they are
+  // never stranded in the individual-card browser.
+  useEffect(() => {
+    const referencedIds = new Set(decks.flatMap((deck) => deck.cardIds));
+    const orphanCards = customCards.filter((card) => !referencedIds.has(card.id));
+    if (orphanCards.length === 0) return;
+
+    const grouped = new Map<string, CustomCard[]>();
+    orphanCards.forEach((card) => {
+      const key = [card.subject || "general", card.chapterId || card.topic || "custom"].join(":");
+      grouped.set(key, [...(grouped.get(key) ?? []), card]);
+    });
+
+    const recoveredDecks: FlashcardDeck[] = [...grouped.entries()].map(([key, group]) => {
+      const first = group[0];
+      const chapterTitle = first.chapter || first.topic || "Custom cards";
+      return {
+        id: `deck-recovered-${scholarClass}-${key.replace(/[^a-z0-9]+/gi, "-")}`,
+        profile: scholarClass,
+        name: chapterTitle === "Quiz mistake" ? "Quiz Mistake Review" : `${chapterTitle} · Custom Set`,
+        subject: first.subject || "general",
+        subjectName: first.subjectName || SUBJECT_INFO[first.subject]?.name || "Custom",
+        chapterId: first.chapterId || "",
+        chapterTitle,
+        difficulty: first.difficulty || "medium",
+        createdBy: first.createdBy === "local-fallback" ? "local-fallback" : "ai",
+        createdAt: Date.now(),
+        cardIds: group.map((card) => card.id),
+      };
+    });
+    const next = [...recoveredDecks, ...decks];
+    saveDecks(scholarClass, next);
+    const updateTimer = window.setTimeout(() => setDecks(next), 0);
+    return () => window.clearTimeout(updateTimer);
+  }, [customCards, decks, scholarClass]);
+
   // Available chapters for selected subject (from metadata — no data import needed)
   const chaptersWithCards = useMemo(() => {
     const subj = curriculum.find((s) => s.id === subject);
@@ -108,11 +145,11 @@ export function Class11FlashcardsView() {
     return [...set].sort();
   }, [cards, chapterId]);
 
-  // All cards in scope: loaded built-in + custom for this subject
+  // Built-in cards stay in the browse grid. Custom/AI cards are presented
+  // only through their named sets below, avoiding an unstructured card dump.
   const baseCards = useMemo(() => {
-    const custom = customCards.filter((c) => c.subject === subject);
-    return [...cards, ...custom];
-  }, [cards, customCards, subject]);
+    return cards;
+  }, [cards]);
 
   // Filtered cards
   const filteredCards = useMemo(() => {
@@ -135,7 +172,7 @@ export function Class11FlashcardsView() {
 
   // Stats
   const stats = useMemo(() => {
-    const total = baseCards.length;
+    const total = baseCards.length + customCards.length;
     const filtered = filteredCards.length;
     const easy = filteredCards.filter((c) => c.difficulty === "easy").length;
     const medium = filteredCards.filter((c) => c.difficulty === "medium").length;
@@ -143,7 +180,7 @@ export function Class11FlashcardsView() {
     const dueCount = filteredCards.filter((c) => isC11CardDue(reviewState, c.id)).length;
     const bookmarked = filteredCards.filter((c) => bookmarks.has(c.id)).length;
     return { total, filtered, easy, medium, hard, dueCount, bookmarked };
-  }, [baseCards, filteredCards, reviewState, bookmarks]);
+  }, [baseCards, customCards.length, filteredCards, reviewState, bookmarks]);
 
   const handleSubjectChange = (newSubject: string) => {
     setLoadingCards(true);
@@ -373,10 +410,30 @@ export function Class11FlashcardsView() {
         </div>
 
         {/* AI Generator button */}
-        <div className="flex justify-end mb-4">
+        <div className="cinema-glass rounded-xl p-3 mb-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="grid place-items-center h-9 w-9 rounded-xl bg-fuchsia-500/15 text-fuchsia-300">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">My Custom & AI Sets</p>
+              <p className="text-[11px] text-white/50">{decks.length} organized set{decks.length === 1 ? "" : "s"} · {customCards.length} custom cards</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {decks.length > 0 && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("my-flashcard-sets")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white"
+              >
+                View sets
+              </button>
+            )}
           <button onClick={() => setAiOpen(true)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-200 hover:bg-fuchsia-500/25 transition-colors">
             <Sparkles className="h-3.5 w-3.5" /> AI Flashcard Generator
           </button>
+          </div>
         </div>
 
         {/* Loading state */}
@@ -438,13 +495,21 @@ export function Class11FlashcardsView() {
         )}
 
         {/* ===== My AI-Generated Decks ===== */}
-        {decks.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-white/10">
+        <div id="my-flashcard-sets" className="mt-6 pt-6 border-t border-white/10 scroll-mt-20">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-4 w-4 text-fuchsia-400" />
-              <h3 className="text-sm font-semibold text-white">My AI-Generated Decks</h3>
-              <span className="text-xs text-white/40">{decks.length} deck{decks.length === 1 ? "" : "s"}</span>
+              <h3 className="text-sm font-semibold text-white">My Custom & AI Sets</h3>
+              <span className="text-xs text-white/40">{decks.length} set{decks.length === 1 ? "" : "s"}</span>
             </div>
+            {decks.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-6 text-center">
+                <Layers className="h-7 w-7 mx-auto text-white/25 mb-2" />
+                <p className="text-sm text-white/60">No custom sets yet.</p>
+                <button type="button" onClick={() => setAiOpen(true)} className="mt-2 text-xs text-fuchsia-300 hover:text-fuchsia-200">
+                  Generate your first set
+                </button>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {decks.map((deck) => {
                 const info = SUBJECT_INFO[deck.subject] ?? SUBJECT_INFO.physics;
@@ -471,8 +536,8 @@ export function Class11FlashcardsView() {
                 );
               })}
             </div>
+            )}
           </div>
-        )}
 
         {/* AI Generator Dialog */}
         <AIGeneratorDialog open={aiOpen} onOpenChange={setAiOpen} curriculum={curriculum} onSave={handleSaveCustomCards} />

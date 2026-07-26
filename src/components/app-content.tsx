@@ -5,11 +5,14 @@ import { AuthScreen } from "@/components/auth-screen";
 import { Onboarding } from "@/components/onboarding";
 import { AppShell } from "@/components/app-shell";
 import { ScholarTransitionProvider } from "@/components/scholar-transition";
+import { LaunchReadinessGate } from "@/components/launch-readiness-gate";
 
 export function AppContent() {
   return (
     <ScholarTransitionProvider>
-      <ScholarContent />
+      <LaunchReadinessGate>
+        <ScholarContent />
+      </LaunchReadinessGate>
     </ScholarTransitionProvider>
   );
 }

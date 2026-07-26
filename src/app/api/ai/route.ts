@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
-import { generateGroqJSON, generateGroqText, streamGroqText } from "@/lib/ai/groq";
+import {
+  generateNvidiaJSON,
+  generateNvidiaText,
+  streamNvidiaText,
+  type NvidiaChatMessage,
+} from "@/lib/ai/nvidia";
 import { publicAIError, AIProviderError } from "@/lib/ai/errors";
 import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
@@ -50,12 +54,12 @@ export async function POST(request: NextRequest) {
     scholarClass: body.scholarClass,
     jeeMode: body.jeeMode,
   });
-  const messages: ChatCompletionMessageParam[] = [
+  const messages: NvidiaChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...body.messages
       .filter((message) => message.role !== "system")
       .slice(-24)
-      .map((message) => ({ role: message.role, content: message.content }) as ChatCompletionMessageParam),
+      .map((message) => ({ role: message.role, content: message.content }) as NvidiaChatMessage),
   ];
 
   if (queryStream || mode === "stream") {
@@ -64,7 +68,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (JSON_MODES.has(mode)) {
-      const value = await generateGroqJSON({
+      const value = await generateNvidiaJSON({
         messages: withJSONInstruction(messages),
         temperature: Math.min(body.temperature, 0.8),
         signal: request.signal,
@@ -84,11 +88,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, data: value });
     }
 
-    const text = await generateGroqText({
+    const text = await generateNvidiaText({
       messages,
       temperature: body.temperature,
       signal: request.signal,
-      maxTokens: mode === "lesson" ? 8_000 : 6_000,
+      maxTokens: 16_384,
     });
     return NextResponse.json({ ok: true, text });
   } catch (error) {
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function withJSONInstruction(messages: ChatCompletionMessageParam[]): ChatCompletionMessageParam[] {
+function withJSONInstruction(messages: NvidiaChatMessage[]): NvidiaChatMessage[] {
   const [system, ...rest] = messages;
   return [
     {
@@ -109,7 +113,7 @@ function withJSONInstruction(messages: ChatCompletionMessageParam[]): ChatComple
 }
 
 function streamResponse(
-  messages: ChatCompletionMessageParam[],
+  messages: NvidiaChatMessage[],
   temperature: number,
   signal: AbortSignal,
 ): Response {
@@ -128,7 +132,7 @@ function streamResponse(
       };
 
       try {
-        await streamGroqText({ messages, temperature, signal, maxTokens: 8_000 }, (delta) => {
+        await streamNvidiaText({ messages, temperature, signal, maxTokens: 16_384 }, (delta) => {
           send({ delta });
         });
         send({ done: true });
@@ -140,7 +144,7 @@ function streamResponse(
       }
     },
     cancel() {
-      // The request signal is forwarded to Groq and is aborted when the client disconnects.
+      // The request signal is forwarded to NVIDIA and is aborted when the client disconnects.
     },
   });
 

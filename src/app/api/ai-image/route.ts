@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateGeminiImage } from "@/lib/ai/gemini-image";
+import { generateNvidiaImage } from "@/lib/ai/nvidia-image";
 import { publicAIError } from "@/lib/ai/errors";
 import { imageRequestSchema } from "@/lib/ai/schemas";
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       parsed.data.style ? `Requested style: ${parsed.data.style}.` : "",
     ].filter(Boolean).join(" ");
     const imagePrompt = context ? `${parsed.data.prompt}\n\n${context}` : parsed.data.prompt;
-    const image = await generateGeminiImage(imagePrompt, parsed.data.aspectRatio, request.signal);
+    const image = await generateNvidiaImage(imagePrompt, parsed.data.aspectRatio, request.signal);
     return NextResponse.json({ ok: true, image });
   } catch (error) {
     const detail = publicAIError(error);

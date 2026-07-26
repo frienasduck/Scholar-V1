@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { SlideStage } from "./slideshow-maker";
 import { repairSlideQuality } from "@/lib/slideshow-pipeline";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
+import { animateSlideshowReveal, type SlideshowTransitionStyle } from "@/lib/animation/transition-animations";
+import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 
 // ============================================================================
 // Narrated Slideshow Maker — sub-feature of AI Slideshow Maker
@@ -673,6 +675,23 @@ function NarrationSettingsPanel({
             <option value={15}>15 minutes (deep dive)</option>
           </select>
         </div>
+
+        {/* Playback transition */}
+        <div>
+          <label className="text-[10px] font-medium uppercase tracking-wider text-white/50">Slide transition</label>
+          <select
+            value={settings.slideTransition ?? "adaptive"}
+            onChange={(e) => update({ slideTransition: e.target.value as NonNullable<NarrationSettings["slideTransition"]> })}
+            className="mt-1 w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+          >
+            <option value="adaptive">Adaptive</option>
+            <option value="fade">Fade</option>
+            <option value="soft-slide">Soft slide</option>
+            <option value="scale-fade">Scale fade</option>
+            <option value="section-reveal">Section reveal</option>
+            <option value="bullet-reveal">Bullet reveal</option>
+          </select>
+        </div>
       </div>
 
       {/* Toggles */}
@@ -882,6 +901,9 @@ function AutoLecturePlayer({
   const speech = useSpeechSynthesis();
   const tpl = getTemplate(slideshow.template);
   const playerRef = useRef<HTMLDivElement>(null);
+  const slideStageRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useStore((s) => s.settings.reduceMotion);
+  const animationQuality = useMemo(() => resolveScholarAnimationQuality({ reduceMotion }), [reduceMotion]);
 
   const [idx, setIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -896,6 +918,21 @@ function AutoLecturePlayer({
   const narration = narrations[idx];
   const totalDuration = narrations.reduce((s, n) => s + n.durationSec, 0);
   const elapsedBefore = narrations.slice(0, idx).reduce((s, n) => s + n.durationSec, 0);
+  const adaptiveTransition: SlideshowTransitionStyle = slide.type === "title" || slide.type === "thanks"
+    ? "scale-fade"
+    : slide.type === "section" || slide.type === "diagram" || slide.type === "timeline"
+      ? "section-reveal"
+      : slide.type === "agenda" || slide.type === "summary" || slide.type === "takeaways" || slide.type === "quiz"
+        ? "bullet-reveal"
+        : "fade";
+  const slideTransition: SlideshowTransitionStyle = settings.slideTransition && settings.slideTransition !== "adaptive"
+    ? settings.slideTransition
+    : adaptiveTransition;
+
+  useEffect(() => {
+    if (!slideStageRef.current || document.visibilityState !== "visible") return;
+    return animateSlideshowReveal(slideStageRef.current, animationQuality, slideTransition, settings.rate);
+  }, [animationQuality, idx, settings.rate, slideTransition]);
 
   // === Speak current narration ===
   const speakCurrent = useCallback((slideIdx: number) => {
@@ -1088,7 +1125,7 @@ function AutoLecturePlayer({
       <div className="flex-1 flex pt-12 pb-28 min-h-0 overflow-hidden">
         {/* Slide area */}
         <div className="flex-1 grid place-items-center p-3 sm:p-5 min-w-0 min-h-0 overflow-hidden">
-          <div className="w-full max-w-[min(1100px,calc((100dvh-12.5rem)*16/9))] aspect-video shadow-2xl rounded-2xl overflow-hidden relative" data-testid="auto-lecture-slide-canvas">
+          <div ref={slideStageRef} className="w-full max-w-[min(1100px,calc((100dvh-12.5rem)*16/9))] aspect-video shadow-2xl rounded-2xl overflow-hidden relative" data-testid="auto-lecture-slide-canvas">
             <SlideStage
               slide={displaySlide}
               tpl={tpl}

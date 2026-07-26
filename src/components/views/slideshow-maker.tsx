@@ -3131,7 +3131,7 @@ export function SlideStage({
       >
         {/* Type badge */}
         {slide.type !== "title" && slide.type !== "thanks" && (
-          <div className="flex items-center gap-2 mb-3 shrink-0">
+          <div data-slide-reveal-item className="flex items-center gap-2 mb-3 shrink-0">
             <span
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
               style={{
@@ -3154,7 +3154,7 @@ export function SlideStage({
         />
 
         {/* Body */}
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div data-slide-reveal-item className="min-h-0 flex-1 overflow-hidden">
           <SlideBody
             slide={slide}
             tpl={tpl}
@@ -3184,6 +3184,7 @@ export function SlideStage({
                   }),
                 );
               }}
+              data-slide-reveal-item
               className="mt-2 self-end text-[9px] opacity-45 hover:opacity-90 underline underline-offset-2 shrink-0"
             >
               Source: {formatPageRange(slide.sourcePages)}
@@ -3192,7 +3193,7 @@ export function SlideStage({
 
         {/* Footer for title slide */}
         {slide.type === "title" && (
-          <div className="mt-auto pt-4 text-xs opacity-60 shrink-0">
+          <div data-slide-reveal-item className="mt-auto pt-4 text-xs opacity-60 shrink-0">
             <p>
               Class {useStore.getState().user.scholarClass} ·{" "}
               {new Date().getFullYear()}
@@ -3260,7 +3261,7 @@ function SlideTitle({
     : "text-xl sm:text-2xl";
   if (slide.type === "title") {
     return (
-      <div className="mt-auto mb-auto text-center">
+      <div data-slide-reveal-item className="mt-auto mb-auto text-center">
         <h1
           className={cn("font-bold leading-tight mb-3 line-clamp-2", titleSize)}
           style={{ color: tpl.text }}
@@ -3282,7 +3283,7 @@ function SlideTitle({
   }
   if (slide.type === "thanks") {
     return (
-      <div className="mt-auto mb-auto text-center">
+      <div data-slide-reveal-item className="mt-auto mb-auto text-center">
         <div className={cn("mb-4", fullscreen ? "text-6xl" : "text-5xl")}>
           🙏
         </div>
@@ -3302,6 +3303,7 @@ function SlideTitle({
   }
   return (
     <h2
+      data-slide-reveal-item
       className={cn("font-bold mb-4 leading-tight shrink-0 line-clamp-2", headingSize)}
       style={{ color: tpl.text }}
     >

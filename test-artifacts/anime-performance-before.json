@@ -1,0 +1,16 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "sampleFrames": 83,
+  "averageFrameDeltaMs": 18.189156626613748,
+  "maxFrameDeltaMs": 116.69999999999891,
+  "framesOver32Ms": 2,
+  "longTaskCount": 0,
+  "totalLongTaskMs": 0,
+  "cumulativeLayoutShift": 0,
+  "activeAnimationsWhileOpen": 0,
+  "activeLamAnimationsAfterClose": 0,
+  "lamElementsRetainingWillChangeAfterClose": 0
+}

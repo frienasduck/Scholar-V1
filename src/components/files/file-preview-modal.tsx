@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { FileItem } from "@/lib/store";
+import { useStore, type FileItem } from "@/lib/store";
 import { askAI } from "@/lib/ai";
 import { setLamPageContext } from "@/lib/lam-context";
 import { Button } from "@/components/ui/button";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
+import { animateFilePreviewOpen } from "@/lib/animation/transition-animations";
+import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
+import type { ScholarAnimationCleanup } from "@/lib/animation/animation-cleanup";
 import {
   ArrowLeft,
   ArrowRight,
@@ -163,6 +166,10 @@ export function FilePreviewModal({
   onNext: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLElement>(null);
+  const openAnimationRef = useRef<ScholarAnimationCleanup | null>(null);
+  const closeAnimationRef = useRef<ScholarAnimationCleanup | null>(null);
+  const closingRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showInfo, setShowInfo] = useState(false);
@@ -183,6 +190,8 @@ export function FilePreviewModal({
   const type = useMemo(() => detectPreviewType(file), [file]);
   const source = useMemo(() => safeSource(file), [file]);
   const currentIndex = files.findIndex((item) => item.id === file.id);
+  const reduceMotion = useStore((state) => state.settings.reduceMotion);
+  const animationQuality = useMemo(() => resolveScholarAnimationQuality({ reduceMotion }), [reduceMotion]);
 
   useEffect(() => {
     setLamPageContext({
@@ -235,7 +244,30 @@ export function FilePreviewModal({
     } else if (type === "office" || type === "unsupported") setLoading(false);
   }, [file, source, type]);
 
-  const close = useCallback(onClose, [onClose]);
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    openAnimationRef.current = animateFilePreviewOpen(containerRef.current, previewContentRef.current, animationQuality);
+    return () => {
+      openAnimationRef.current?.();
+      openAnimationRef.current = null;
+      closeAnimationRef.current?.();
+      closeAnimationRef.current = null;
+    };
+  }, [animationQuality]);
+
+  const close = useCallback(() => {
+    if (closingRef.current || !containerRef.current) return;
+    closingRef.current = true;
+    openAnimationRef.current?.();
+    openAnimationRef.current = null;
+    closeAnimationRef.current = animateFilePreviewOpen(
+      containerRef.current,
+      previewContentRef.current,
+      animationQuality,
+      "close",
+      onClose,
+    );
+  }, [animationQuality, onClose]);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -349,6 +381,7 @@ export function FilePreviewModal({
   return createPortal(
     <div
       ref={containerRef}
+      data-file-preview-shell
       role="dialog"
       aria-modal="true"
       aria-label={`Preview ${file.name}`}
@@ -358,7 +391,7 @@ export function FilePreviewModal({
         <Button
           variant="secondary"
           size="sm"
-          onClick={onClose}
+          onClick={close}
           aria-label="Close file preview"
           className="shrink-0 font-semibold"
         >
@@ -528,7 +561,7 @@ export function FilePreviewModal({
         </div>
       )}
 
-      <main className="relative min-h-0 flex-1 overflow-auto bg-black/20 p-2 sm:p-5">
+      <main ref={previewContentRef} className="relative min-h-0 flex-1 overflow-auto bg-black/20 p-2 sm:p-5">
         {loading && (
           <div className="absolute inset-0 z-10 grid place-items-center">
             <div className="flex items-center gap-2 rounded-full bg-background px-4 py-2 shadow">

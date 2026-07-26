@@ -26,6 +26,13 @@ import {
   History, Lightbulb, ArrowRight, Calendar, Layers, ListChecks, FileQuestion,
 } from "lucide-react";
 import { navigateTo } from "@/lib/nav-event";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
+import {
+  loadQuizMistakes,
+  removeQuizMistake,
+  QUIZ_MISTAKES_UPDATED_EVENT,
+  type SavedQuizMistake,
+} from "@/lib/quiz-mistakes";
 
 // ============================================================================
 // Revision Hub — Scholar (Class 9 / Class 11 aware)
@@ -145,13 +152,32 @@ export function RevisionHubView() {
   const [forgottenLoading, setForgottenLoading] = useState(false);
 
   const [history, setHistory] = useState<SessionRecord[]>(() => loadSessions(scholarClass));
+  const [quizMistakes, setQuizMistakes] = useState<SavedQuizMistake[]>(
+    () => loadQuizMistakes(scholarClass),
+  );
   const [pendingXPCount, setPendingXPCount] = useState<number>(() => loadAllPendingXP(scholarClass).length);
 
   // Reload history + pending XP when the active profile changes.
   useEffect(() => {
     setHistory(loadSessions(scholarClass));
+    setQuizMistakes(loadQuizMistakes(scholarClass));
     setPendingXPCount(loadAllPendingXP(scholarClass).length);
   }, [scholarClass]);
+
+  useEffect(() => {
+    const refreshMistakes = (event: Event) => {
+      const detail = (event as CustomEvent<{ scholarClass?: 9 | 11 }>).detail;
+      if (detail?.scholarClass && detail.scholarClass !== scholarClass) return;
+      setQuizMistakes(loadQuizMistakes(scholarClass));
+    };
+    window.addEventListener(QUIZ_MISTAKES_UPDATED_EVENT, refreshMistakes);
+    return () => window.removeEventListener(QUIZ_MISTAKES_UPDATED_EVENT, refreshMistakes);
+  }, [scholarClass]);
+
+  const dismissMistake = (mistakeId: string) => {
+    setQuizMistakes(removeQuizMistake(scholarClass, mistakeId));
+    toast.success("Mistake removed from Revision Hub.");
+  };
 
   // ===== Verify pending revision XP on mount + whenever activities change =====
   // XP is only awarded when an actual revision activity (flashcards / practice /
@@ -400,9 +426,11 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
         .rh-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
       `}</style>
 
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4" type="video/mp4" />
-      </video>
+      <ReadyBackgroundVideo
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4"
+        className="z-0"
+        readinessId="revision-hub"
+      />
       <div className="absolute inset-0 z-0 bg-black/55" />
 
       <div className="relative z-10 rh-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
@@ -455,6 +483,10 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
               <TabsTrigger value="due" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Due Today {dueTodayList.length > 0 && <span className="ml-1.5 text-xs bg-teal-500/30 text-teal-200 rounded-full px-1.5">{dueTodayList.length}</span>}</TabsTrigger>
               <TabsTrigger value="weak" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Weak</TabsTrigger>
               <TabsTrigger value="forgotten" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Forgotten</TabsTrigger>
+              <TabsTrigger value="mistakes" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                Quiz Mistakes
+                {quizMistakes.length > 0 && <span className="ml-1.5 text-xs bg-rose-500/30 text-rose-200 rounded-full px-1.5">{quizMistakes.length}</span>}
+              </TabsTrigger>
               <TabsTrigger value="history" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">History</TabsTrigger>
             </TabsList>
             <Button variant="outline" size="sm" className="rh-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={exportRevision}>
@@ -619,6 +651,73 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
                     <h4 className="text-white font-medium mb-1.5">{f.concept}</h4>
                     <p className="text-sm text-white/60">{f.reason}</p>
                   </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== QUIZ MISTAKES ===== */}
+          <TabsContent value="mistakes" className="space-y-4">
+            <div className="rh-glass rounded-2xl p-4 flex items-start gap-3">
+              <FileQuestion className="h-5 w-5 text-rose-300 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-white font-semibold">Saved Quiz Mistakes</h3>
+                <p className="text-xs text-white/60 mt-0.5">
+                  Wrong answers saved from Quiz appear here for focused correction. This list is private to Class {scholarClass}.
+                </p>
+              </div>
+            </div>
+            {quizMistakes.length === 0 ? (
+              <EmptyState
+                icon={CheckCircle2}
+                title="No saved mistakes"
+                description="Finish a quiz and choose Save all wrong answers. They will appear here."
+              />
+            ) : (
+              <div className="space-y-3">
+                {quizMistakes.map((mistake, index) => (
+                  <motion.article
+                    key={mistake.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(index * 0.035, 0.3) }}
+                    className="rh-glass rounded-2xl p-5 border-l-2 border-rose-400/70"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <Badge className="bg-rose-500/20 text-rose-200 border-rose-500/30">
+                            {mistake.mistakeType || "Concept mistake"}
+                          </Badge>
+                          <span className="text-[11px] text-white/45">
+                            {mistake.subject || "Quiz"}{mistake.chapter ? ` · ${mistake.chapter}` : ""}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium text-white leading-relaxed">{mistake.question}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => dismissMistake(mistake.id)}
+                        className="shrink-0 rounded-lg p-2 text-white/40 hover:bg-rose-500/15 hover:text-rose-200"
+                        aria-label="Remove saved mistake"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2 mt-4">
+                      <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-rose-200/70 mb-1">Your answer</p>
+                        <p className="text-sm text-rose-100">{mistake.userAnswer || "Skipped"}</p>
+                      </div>
+                      <div className="rounded-xl border border-teal-400/20 bg-teal-500/10 p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-teal-200/70 mb-1">Correct answer</p>
+                        <p className="text-sm text-teal-100">{mistake.correctAnswer}</p>
+                      </div>
+                    </div>
+                    {mistake.explanation && (
+                      <p className="mt-3 text-xs leading-relaxed text-white/60">{mistake.explanation}</p>
+                    )}
+                  </motion.article>
                 ))}
               </div>
             )}
