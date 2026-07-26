@@ -14,6 +14,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { GraduationCap, Volume2, Zap } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { transitionAudio, type TransitionAudioStatus } from "@/lib/transition-audio";
+import { animateAcademicTransition } from "@/lib/animation/transition-animations";
+import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 
 export type ScholarTransitionState =
   | "idle"
@@ -233,6 +235,12 @@ function AcademicTransitionOverlay({
   onRetrySound: () => void;
   reduceMotion: boolean;
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const animationQuality = useMemo(() => resolveScholarAnimationQuality({ reduceMotion }), [reduceMotion]);
+  useEffect(() => {
+    if (!transition || !contentRef.current) return;
+    return animateAcademicTransition(contentRef.current, animationQuality);
+  }, [animationQuality, Boolean(transition), transition?.fromClass, transition?.toClass]);
   const toClass = transition?.toClass;
   const message = transition?.error
     ? "The new workspace could not be prepared. Returning safely…"
@@ -269,18 +277,18 @@ function AcademicTransitionOverlay({
             </div>
           )}
 
-          <div className="relative z-10 flex h-full min-h-0 flex-col items-center justify-center px-5 text-center">
+          <div ref={contentRef} className="relative z-10 flex h-full min-h-0 flex-col items-center justify-center px-5 text-center">
             <motion.div animate={reduceMotion ? undefined : { y: [0, -5, 0] }} transition={{ duration: 3, repeat: Infinity }} className="mb-6 grid h-16 w-16 place-items-center rounded-2xl border border-white/25 bg-white/10 shadow-[0_0_60px_rgba(99,102,241,.4)] backdrop-blur-xl">
-              <GraduationCap className="h-8 w-8" />
+              <span data-transition-identity className="grid h-full w-full place-items-center"><GraduationCap className="h-8 w-8" /></span>
             </motion.div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-white/60">Scholar academic transition</p>
-            <div className="mb-5 flex items-center justify-center gap-4 sm:gap-7" aria-label={`Class ${transition.fromClass} to Class ${toClass}`}>
+            <p data-transition-message className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-white/60">Scholar academic transition</p>
+            <div data-transition-class className="mb-5 flex items-center justify-center gap-4 sm:gap-7" aria-label={`Class ${transition.fromClass} to Class ${toClass}`}>
               <span className="text-2xl font-medium text-white/45 sm:text-3xl">Class {transition.fromClass}</span>
               <motion.span animate={reduceMotion ? undefined : { x: [0, 5, 0], opacity: [0.55, 1, 0.55] }} transition={{ duration: 1.6, repeat: Infinity }} aria-hidden="true">→</motion.span>
               <span className="font-serif text-4xl italic sm:text-6xl">Class {toClass}</span>
             </div>
-            <h2 className="mb-3 text-2xl font-semibold sm:text-3xl">Switching to Class {toClass}</h2>
-            <p className="min-h-6 max-w-lg text-sm text-white/70 sm:text-base" role="status" aria-live="polite">{message}</p>
+            <h2 data-transition-message className="mb-3 text-2xl font-semibold sm:text-3xl">Switching to Class {toClass}</h2>
+            <p data-transition-message className="min-h-6 max-w-lg text-sm text-white/70 sm:text-base" role="status" aria-live="polite">{message}</p>
 
             <div className="mt-8 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label="Academic workspace loading progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(transition.progress)}>
               <motion.div className="h-full rounded-full bg-gradient-to-r from-indigo-400 via-white to-cyan-300" animate={{ width: `${transition.progress}%` }} transition={{ duration: 0.12, ease: "linear" }} />
@@ -302,4 +310,3 @@ function AcademicTransitionOverlay({
     </AnimatePresence>
   );
 }
-

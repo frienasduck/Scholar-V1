@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { navigateTo } from "@/lib/nav-event";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 
 // ===== Daily Challenge — pending state in localStorage =====
 // XP is NOT awarded on click. Instead, the user is redirected to the
@@ -369,15 +370,11 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
       `}</style>
 
       {/* Background video */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover object-center z-0"
-      >
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260619_191346_9d19d66e-86a4-47f7-8dc6-712c1788c3b2.mp4" type="video/mp4" />
-      </video>
+      <ReadyBackgroundVideo
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260619_191346_9d19d66e-86a4-47f7-8dc6-712c1788c3b2.mp4"
+        className="z-0"
+        readinessId="dashboard"
+      />
       <div className="absolute inset-0 z-0 bg-black/40" />
 
       {/* Content */}

@@ -48,9 +48,9 @@ test("mobile uses the optimized compositor path while desktop retains high quali
     await page.screenshot({ path: `test-results/lam-mobile-${width}x${height}.png` });
   }
   await lam.getByLabel("LAM mode").click();
-  await expect(lam.getByRole("listbox", { name: "Choose LAM mode" })).toBeVisible();
+  await expect(page.getByRole("listbox", { name: "Choose LAM mode" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(lam.getByRole("listbox", { name: "Choose LAM mode" })).toHaveCount(0);
+  await expect(page.getByRole("listbox", { name: "Choose LAM mode" })).toHaveCount(0);
   if (!await lam.locator(".lam-premium-panel").isVisible().catch(() => false)) await page.getByRole("button", { name: "LAM", exact: true }).click();
 
   for (const [width, height] of [[1920, 1080], [1440, 900], [1366, 768]] as const) {

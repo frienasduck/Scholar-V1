@@ -1,22 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Sparkles, Target, BookOpen, Trophy, ArrowRight, ArrowLeft, Check, Volume2 } from "lucide-react";
 import { useScholarTransition } from "@/components/scholar-transition";
+import { animateScholarIntro } from "@/lib/animation/transition-animations";
+import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 
 export function Onboarding() {
   const setOnboarded = useStore((s) => s.setOnboarded);
   const addXP = useStore((s) => s.addXP);
   const pushActivity = useStore((s) => s.pushActivity);
+  const reduceMotion = useStore((s) => s.settings.reduceMotion);
   const user = useStore((s) => s.user);
   const studentName = user.scholarClass === 11 ? "Ishan" : "Neha";
   const appName = user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar";
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const { transition, audioStatus, retrySound, stopTransition } = useScholarTransition();
+  const introRootRef = useRef<HTMLDivElement>(null);
+  const animationQuality = useMemo(() => resolveScholarAnimationQuality({ reduceMotion }), [reduceMotion]);
+
+  useEffect(() => {
+    if (transition?.type !== "login-intro" || !introRootRef.current) return;
+    return animateScholarIntro(introRootRef.current, animationQuality);
+  }, [animationQuality, transition?.type]);
 
   const STEPS = [
     { icon: GraduationCap, title: `Welcome, ${studentName}`, desc: `Your complete study operating system for Class ${user.scholarClass} CBSE is ready.`, color: "from-indigo-500 to-violet-500" },
@@ -42,7 +52,7 @@ export function Onboarding() {
   const cur = STEPS[step];
 
   return (
-    <div className="min-h-screen grid place-items-center p-4 relative overflow-hidden bg-background">
+    <div ref={introRootRef} className="min-h-screen grid place-items-center p-4 relative overflow-hidden bg-background">
       <div className="ambient-orb w-[30rem] h-[30rem] bg-indigo-500/20 -top-32 -left-32" />
       <div className="ambient-orb w-[30rem] h-[30rem] bg-teal-500/20 -bottom-32 -right-32" />
 
@@ -71,11 +81,11 @@ export function Onboarding() {
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             className="premium-card premium-shadow-lg p-8 text-center"
           >
-            <div className={`mx-auto grid place-items-center h-16 w-16 rounded-2xl bg-gradient-to-br ${cur.color} text-white shadow-lg mb-5`}>
+            <div data-intro-mark className={`mx-auto grid place-items-center h-16 w-16 rounded-2xl bg-gradient-to-br ${cur.color} text-white shadow-lg mb-5`}>
               <cur.icon className="h-8 w-8" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight">{cur.title}</h2>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">{cur.desc}</p>
+            <h2 data-intro-wordmark className="text-2xl font-semibold tracking-tight">{cur.title}</h2>
+            <p data-intro-message className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">{cur.desc}</p>
 
             <div className="flex items-center justify-between mt-7">
               <Button variant="ghost" size="sm" onClick={skipIntro} className="text-muted-foreground">

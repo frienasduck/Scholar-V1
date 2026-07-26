@@ -413,7 +413,7 @@ export function BookModeReader({
       <motion.header
         animate={{ opacity: controlsVisible || panel ? 1 : 0, y: controlsVisible || panel ? 0 : -14 }}
         transition={{ duration: reducedMotion ? 0 : 0.2 }}
-        className="absolute inset-x-0 top-0 z-40 border-b border-white/10 bg-black/75 px-2 pb-2 pt-[max(.5rem,env(safe-area-inset-top))] backdrop-blur-xl sm:hidden"
+        className="book-mode-safe-top absolute inset-x-0 top-0 z-40 border-b border-white/10 bg-black/75 px-2 pb-2 backdrop-blur-xl sm:hidden"
       >
         <div className="flex h-11 min-w-0 items-center gap-1">
           <Button size="icon" variant="ghost" onClick={onClose} aria-label="Exit Book Mode" className="h-10 w-10 shrink-0"><ArrowLeft className="h-5 w-5" /></Button>

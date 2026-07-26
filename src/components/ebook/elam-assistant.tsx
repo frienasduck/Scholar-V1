@@ -46,7 +46,7 @@ export function ElamAssistant({ bookId, bookTitle, subject, page, chapter, pageT
     setLoading(false);
   }
 
-  return <button onClick={() => void openLam()} disabled={loading} aria-label={`Ask LAM about ${bookTitle} page ${page}`} className={cn("lam-liquid-glass lam-liquid-glass--idle fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-40 flex min-h-12 items-center gap-2 rounded-full px-3 text-xs font-semibold text-white shadow-2xl lg:bottom-5 lg:right-5", compact && "h-12 w-12 justify-center px-0")}>
+  return <button onClick={() => void openLam()} disabled={loading} aria-label={`Ask LAM about ${bookTitle} page ${page}`} className={cn("elam-safe-bottom lam-liquid-glass lam-liquid-glass--idle fixed right-3 z-40 flex min-h-12 items-center gap-2 rounded-full px-3 text-xs font-semibold text-white shadow-2xl lg:right-5", compact && "h-12 w-12 justify-center px-0")}>
     <span className="grid h-8 w-8 place-items-center rounded-full bg-cyan-300/10 text-cyan-100">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LamMark />}</span>
     {!compact && <span className="flex items-center gap-1.5">ELAM <span className="text-white/42">·</span><BookOpen className="h-3.5 w-3.5 text-white/55" /> Page {page}</span>}
   </button>;

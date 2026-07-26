@@ -16,12 +16,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { navigateTo } from "@/lib/nav-event";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import {
   Plus, RefreshCw, Pencil, Check, Timer as TimerIcon, StickyNote, Brain,
   Calculator, PenTool, MessageSquare, Sigma, ListChecks, CalendarDays,
   BarChart3, Music, Trash2, ChevronUp, ChevronDown, X, Play, Pause,
   RotateCcw, Send, Sparkles, Eraser, Square, Circle, Minus, Save, Zap,
-  Flame, Coins, TrendingUp, Layers, ArrowUp, ArrowDown,
+  Flame, Coins, TrendingUp, Layers, ArrowUp, ArrowDown, Target,
 } from "lucide-react";
 
 // ============================================================================
@@ -31,7 +33,7 @@ import {
 type WidgetType =
   | "timer" | "notes" | "aichat" | "stats" | "todo"
   | "flashcards" | "calculator" | "whiteboard" | "formulas" | "calendar"
-  | "music" | "sticky";
+  | "music" | "sticky" | "progress" | "upcoming" | "focusplan" | "quote";
 
 interface WidgetDef {
   type: WidgetType;
@@ -54,6 +56,10 @@ const WIDGETS: WidgetDef[] = [
   { type: "calendar",   name: "Calendar",         icon: CalendarDays, color: "#f59e0b", description: "Month view with task dots." },
   { type: "music",      name: "Lo-fi Music",      icon: Music,        color: "#14b8a6", description: "Mock equalizer for study vibes." },
   { type: "sticky",     name: "Sticky Notes",     icon: StickyNote,   color: "#f59e0b", description: "Colored sticky notes board." },
+  { type: "progress",   name: "Subject Progress", icon: TrendingUp,   color: "#22c55e", description: "Live mastery and completion across your subjects." },
+  { type: "upcoming",   name: "Upcoming Tasks",   icon: CalendarDays, color: "#38bdf8", description: "The next assignments, exams and revision tasks." },
+  { type: "focusplan",  name: "Next Best Action", icon: Target,       color: "#fb7185", description: "A focused recommendation based on current progress." },
+  { type: "quote",      name: "Daily Spark",      icon: Sparkles,     color: "#a78bfa", description: "A fresh study thought for the day." },
 ];
 
 const DEFAULT_LAYOUT: WidgetType[] = ["timer", "notes", "aichat", "stats", "todo"];
@@ -114,9 +120,11 @@ export function WorkspaceView() {
         .ws-glass input::placeholder, .ws-glass textarea::placeholder { color: rgba(255,255,255,0.4) !important; }
       `}</style>
 
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4" type="video/mp4" />
-      </video>
+      <ReadyBackgroundVideo
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4"
+        className="z-0"
+        readinessId="workspace"
+      />
       <div className="absolute inset-0 z-0 bg-black/55" />
 
       <div className="relative z-10 ws-font-body p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
@@ -131,7 +139,7 @@ export function WorkspaceView() {
               <h1 className="ws-font-serif text-3xl md:text-4xl text-white leading-tight">
                 Study <em className="text-indigo-300">Workspace</em>
               </h1>
-              <p className="text-white/60 text-xs mt-0.5">12 widgets • customizable canvas • {layout.length} active</p>
+              <p className="text-white/60 text-xs mt-0.5">{WIDGETS.length} widgets • customizable canvas • {layout.length} active</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -216,7 +224,7 @@ export function WorkspaceView() {
               <DialogTitle className="ws-font-serif text-2xl text-white flex items-center gap-2">
                 <Plus className="h-5 w-5 text-indigo-300" /> Add Widget
               </DialogTitle>
-              <DialogDescription className="text-white/70">Pick from 12 widgets to add to your workspace.</DialogDescription>
+              <DialogDescription className="text-white/70">Pick from {WIDGETS.length} widgets to add to your workspace.</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
               {WIDGETS.map((w) => {
@@ -262,6 +270,10 @@ function WidgetRenderer({ type, color }: { type: WidgetType; color: string }) {
     case "calendar":   return <CalendarWidget color={color} />;
     case "music":      return <MusicWidget color={color} />;
     case "sticky":     return <StickyWidget color={color} />;
+    case "progress":   return <ProgressWidget color={color} />;
+    case "upcoming":   return <UpcomingWidget color={color} />;
+    case "focusplan":  return <FocusPlanWidget color={color} />;
+    case "quote":      return <QuoteWidget color={color} />;
     default:           return null;
   }
 }
@@ -978,6 +990,146 @@ function StickyWidget({ color }: { color: string }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// 13. Subject Progress
+// ============================================================================
+function ProgressWidget({ color }: { color: string }) {
+  const curriculum = useCurriculum();
+  const mastery = useStore((s) => s.mastery);
+  const studyProgress = useStore((s) => s.studyProgress);
+  const rows = curriculum.map((subject) => {
+    const chapters = subject.chapters ?? [];
+    const completion = chapters.length
+      ? Math.round(chapters.reduce((sum, chapter) => sum + (studyProgress[chapter.id] ?? 0), 0) / chapters.length)
+      : 0;
+    return {
+      id: subject.id,
+      label: subject.name,
+      icon: subject.icon,
+      value: Math.max(completion, mastery[subject.id] ?? 0),
+      accent: subject.accent,
+    };
+  }).sort((a, b) => b.value - a.value);
+
+  return (
+    <div className="space-y-2.5">
+      {rows.slice(0, 5).map((row) => (
+        <div key={row.id}>
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="text-white/75 truncate">{row.icon} {row.label}</span>
+            <span className="text-white/50 tabular-nums">{row.value}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-[width] duration-500"
+              style={{ width: `${row.value}%`, background: row.accent || color }}
+            />
+          </div>
+        </div>
+      ))}
+      <button type="button" onClick={() => navigateTo("analytics")} className="w-full text-[11px] text-white/55 hover:text-white pt-1">
+        Open full analytics →
+      </button>
+    </div>
+  );
+}
+
+// ============================================================================
+// 14. Upcoming Tasks
+// ============================================================================
+function UpcomingWidget({ color }: { color: string }) {
+  const tasks = useStore((s) => s.tasks);
+  const upcoming = [...tasks]
+    .filter((task) => !task.done)
+    .sort((a, b) => `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`))
+    .slice(0, 4);
+
+  return (
+    <div className="space-y-2">
+      {upcoming.length === 0 ? (
+        <p className="text-xs text-white/45 text-center py-5">Nothing upcoming. Your schedule is clear.</p>
+      ) : upcoming.map((task) => (
+        <div key={task.id} className="flex items-start gap-2 rounded-lg bg-white/[0.04] border border-white/[0.07] p-2.5">
+          <span className="mt-1 h-2 w-2 rounded-full shrink-0" style={{ background: task.priority === "high" ? "#fb7185" : color }} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-white/80 truncate">{task.title}</p>
+            <p className="text-[10px] text-white/40 mt-0.5">{task.date}{task.time ? ` · ${task.time}` : ""}</p>
+          </div>
+        </div>
+      ))}
+      <button type="button" onClick={() => navigateTo("planner")} className="w-full text-[11px] text-white/55 hover:text-white pt-1">
+        Open planner →
+      </button>
+    </div>
+  );
+}
+
+// ============================================================================
+// 15. Next Best Action
+// ============================================================================
+function FocusPlanWidget({ color }: { color: string }) {
+  const curriculum = useCurriculum();
+  const mastery = useStore((s) => s.mastery);
+  const studyProgress = useStore((s) => s.studyProgress);
+  const recommendation = useMemo(() => {
+    const candidates = curriculum.flatMap((subject) =>
+      (subject.chapters ?? []).map((chapter) => ({
+        subject: subject.name,
+        subjectId: subject.id,
+        chapter: chapter.title,
+        chapterId: chapter.id,
+        progress: studyProgress[chapter.id] ?? 0,
+        mastery: mastery[subject.id] ?? 0,
+      })),
+    ).filter((item) => item.progress < 100);
+    return candidates.sort((a, b) => (a.progress + a.mastery) - (b.progress + b.mastery))[0];
+  }, [curriculum, mastery, studyProgress]);
+
+  if (!recommendation) {
+    return <p className="text-xs text-white/50 text-center py-6">Everything is complete—choose a revision activity next.</p>;
+  }
+
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2">Recommended now</p>
+      <div className="rounded-xl p-3 mb-3" style={{ background: `${color}12`, border: `1px solid ${color}35` }}>
+        <p className="text-xs text-white/55">{recommendation.subject}</p>
+        <p className="text-sm font-semibold text-white mt-1">{recommendation.chapter}</p>
+        <p className="text-[11px] text-white/50 mt-2">{recommendation.progress}% complete · {recommendation.mastery}% subject mastery</p>
+      </div>
+      <Button type="button" size="sm" className="w-full text-white" style={{ background: color }} onClick={() => navigateTo("study")}>
+        <Play className="h-3.5 w-3.5 mr-1.5" /> Continue studying
+      </Button>
+    </div>
+  );
+}
+
+// ============================================================================
+// 16. Daily Spark
+// ============================================================================
+function QuoteWidget({ color }: { color: string }) {
+  const quotes = [
+    ["Small steps compound into mastery.", "Scholar"],
+    ["Clarity comes from solving, not rereading.", "Active recall"],
+    ["A mistake reviewed today becomes confidence tomorrow.", "Revision rule"],
+    ["Protect your attention; it is your study superpower.", "Focus principle"],
+    ["Consistency beats intensity when intensity cannot last.", "Study rhythm"],
+    ["Explain it simply, and you truly own the idea.", "Feynman technique"],
+    ["Start with the weakest link; progress follows.", "Scholar"],
+  ];
+  const day = Math.floor(Date.now() / 86_400_000);
+  const [quote, source] = quotes[day % quotes.length];
+  return (
+    <div className="min-h-36 flex flex-col justify-between">
+      <div>
+        <span className="text-4xl leading-none" style={{ color: `${color}bb` }}>“</span>
+        <p className="text-base leading-relaxed text-white/85 -mt-3">{quote}</p>
+      </div>
+      <p className="text-[11px] text-white/40 mt-4">— {source}</p>
     </div>
   );
 }

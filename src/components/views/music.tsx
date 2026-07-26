@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 
 // ===== Tracks =====
 interface Track {
@@ -239,15 +240,11 @@ export function MusicView() {
       `}</style>
 
       {/* Background video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
-      >
-        <source src={BG_VIDEO} type="video/mp4" />
-      </video>
+      <ReadyBackgroundVideo
+        src={BG_VIDEO}
+        className="z-0"
+        readinessId="music"
+      />
       <div className="absolute inset-0 z-0 bg-black/65" />
 
       {/* YouTube playback is handled by the global FloatingMusicWidget — no local iframe */}

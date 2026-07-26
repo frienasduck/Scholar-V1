@@ -1,0 +1,62 @@
+{
+  "panel": {
+    "x": 456.98150634765625,
+    "y": 19.593795776367188,
+    "width": 526.0369873046875,
+    "height": 353.86370849609375,
+    "top": 19.593795776367188,
+    "right": 983.0184936523438,
+    "bottom": 373.45750427246094,
+    "left": 456.98150634765625
+  },
+  "children": [
+    {
+      "tag": "SPAN",
+      "className": "lam-liquid-glass-js-layer",
+      "top": 20.458988189697266,
+      "height": 352.13330078125,
+      "position": "absolute",
+      "display": "block"
+    },
+    {
+      "tag": "SPAN",
+      "className": "lam-glass-reflection",
+      "top": -180.0066680908203,
+      "height": 383.330078125,
+      "position": "absolute",
+      "display": "block"
+    },
+    {
+      "tag": "HEADER",
+      "className": "flex items-center gap-2 border-b border-white/10 px-3 py-3",
+      "top": 20.458988189697266,
+      "height": 56.670101165771484,
+      "position": "relative",
+      "display": "flex"
+    },
+    {
+      "tag": "DIV",
+      "className": "lam-context-strip relative z-30 flex items-center gap-2 overflow-x-auto border-b border-white/8 px-3 py-2 no-scrollbar",
+      "top": 77.12908935546875,
+      "height": 45.855201721191406,
+      "position": "relative",
+      "display": "flex"
+    },
+    {
+      "tag": "DIV",
+      "className": "relative z-0 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4",
+      "top": 122.98429107666016,
+      "height": 121.1269302368164,
+      "position": "relative",
+      "display": "block"
+    },
+    {
+      "tag": "DIV",
+      "className": "border-t border-white/10 p-3",
+      "top": 244.11122131347656,
+      "height": 128.48106384277344,
+      "position": "relative",
+      "display": "block"
+    }
+  ]
+}

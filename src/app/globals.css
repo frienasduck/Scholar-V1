@@ -97,6 +97,18 @@
   --sidebar-ring: oklch(0.52 0.22 264);
 }
 
+.elam-safe-bottom {
+  bottom: calc(5.5rem + var(--safe-area-bottom));
+}
+
+.book-mode-safe-top {
+  padding-top: max(.5rem, var(--safe-area-top));
+}
+
+@media (min-width: 1024px) {
+  .elam-safe-bottom { bottom: 1.25rem; }
+}
+
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   [aria-label="LAM personal assistant"] > div,
   [aria-label="LAM personal assistant"] > button { background: var(--lam-glass-bg-strong) !important; }
@@ -834,15 +846,15 @@ body.immersive-mode .scholar-bottom-nav {
 /* Mobile-only LAM compositor budget. Desktop-high rules above remain untouched. */
 @media (max-width: 767px) {
   html[data-lam-docked] .scholar-mobile-topbar {
-    height: calc(7.25rem + var(--safe-area-top)) !important;
-    flex: 0 0 calc(7.25rem + var(--safe-area-top));
+    height: calc(7.5rem + var(--safe-area-top)) !important;
+    flex: 0 0 calc(7.5rem + var(--safe-area-top));
   }
   html[data-lam-docked] .scholar-mobile-topbar > div {
     height: 4rem;
-    align-self: flex-start;
+    margin-top: 3.5rem;
   }
   html[data-lam-docked] .lam-system-root[data-state="closed"] {
-    top: calc(4rem + var(--safe-area-top)) !important;
+    top: var(--safe-area-top) !important;
     padding-top: 4px;
   }
   html[data-lam-docked] .lam-system-root[data-state="closed"] .lam-docked-capsule {

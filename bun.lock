@@ -42,6 +42,7 @@
         "@reactuses/core": "^6.0.5",
         "@tanstack/react-query": "^5.82.0",
         "@tanstack/react-table": "^8.21.3",
+        "animejs": "4.5.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -816,6 +817,8 @@
     "agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 
     "ajv": ["ajv@6.12.6", "https://registry.npmjs.com/ajv/-/ajv-6.12.6.tgz", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g=="],
+
+    "animejs": ["animejs@4.5.0", "", { "peerDependencies": { "@types/three": ">=0.150.0", "three": ">=0.150.0" }, "optionalPeers": ["@types/three", "three"] }, "sha512-NQimYX+lz8WaXonGS9zVVoviCIAjONeJayxacUditaivYLqyXgGjFKjuyl0aUUhFKm5MriX9ty1TGovNzoJQWA=="],
 
     "anser": ["anser@2.3.5", "https://registry.npmjs.com/anser/-/anser-2.3.5.tgz", {}, "sha512-vcZjxvvVoxTeR5XBNJB38oTu/7eDCZlwdz32N1eNgpyPF7j/Z7Idf+CUwQOkKKpJ7RJyjxgLHCM7vdIK0iCNMQ=="],
 
