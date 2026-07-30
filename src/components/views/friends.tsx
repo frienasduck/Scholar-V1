@@ -161,7 +161,7 @@ export function FriendsView() {
         .cinema-glass .bg-muted { background: rgba(255,255,255,0.05) !important; }
         .cinema-glass .border-border { border-color: rgba(255,255,255,0.1) !important; }
       `}</style>
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
         <source src="https://stream.mux.com/kimF2ha9zLrX64H00UgLGPflCzNtl1T0215MlAmeOztv8.m3u8" type="application/vnd.apple.mpegurl" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/60" />

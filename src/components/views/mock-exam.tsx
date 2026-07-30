@@ -9,6 +9,11 @@ import { loadSubjectQuizzes, type QuizMCQ } from "@/lib/quizzes-loader";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import { EBOOK_QUESTION_BOOKS, loadEbookQuestions, splitPrintedAnswer } from "@/lib/ebook-question-bank";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+} from "@/lib/background-tasks";
 import { StatCard, EmptyState, ProgressRing } from "@/lib/shared";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { cn } from "@/lib/utils";
@@ -151,7 +156,18 @@ export function MockExamView() {
   const [result, setResult] = useState<MockResult | null>(null);
 
   const [history, setHistory] = useState<MockResult[]>([]);
-  useEffect(() => { setHistory(loadHistory(scholarClass)); }, [scholarClass]);
+  useEffect(() => {
+    setHistory(loadHistory(scholarClass));
+    const pending = profileGetJSON<ExamQuestion[]>(
+      scholarClass,
+      "mock-exam-pending-review",
+      [],
+    );
+    if (pending.length) {
+      setReviewQs(pending);
+      setReviewSource("ai");
+    }
+  }, [scholarClass]);
 
   // Stats
   const avgScore = history.length > 0
@@ -179,6 +195,12 @@ export function MockExamView() {
 
   // ===== Generate paper =====
   const generatePaper = async () => {
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "mock-exam",
+      title: "Generating your mock exam",
+      message: `Building ${config.numQuestions} exam questions…`,
+      viewId: "mock-exam",
+    });
     setGenerating(true);
     setGenerationError(false);
     try {
@@ -240,9 +262,15 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
         };
       });
       setReviewQs(questions);
+      profileSetJSON(scholarClass, "mock-exam-pending-review", questions);
       setReviewSource("ai");
       toast.success(`Generated ${questions.length} questions. Review them before starting.`);
+      completeBackgroundTask(
+        backgroundTaskId,
+        `${questions.length} questions are ready for review.`,
+      );
     } catch {
+      failBackgroundTask(backgroundTaskId, "Mock exam generation failed.");
       setGenerationError(true);
       toast.error("Could not generate paper", { description: "Please retry AI or use Scholar's local question bank." });
     } finally {
@@ -346,11 +374,13 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
     setExamStartedAt(Date.now());
     setResult(null);
     setReviewQs(null);
+    profileSetJSON(scholarClass, "mock-exam-pending-review", []);
     toast.success(`Paper started! ${reviewQs.length} questions • ${config.duration} min`, { description: "Good luck — focus and pace yourself." });
   };
 
   const regenerateFromReview = () => {
     setReviewQs(null);
+    profileSetJSON(scholarClass, "mock-exam-pending-review", []);
     if (reviewSource === "ebook") void generateEbookPaper();
     else void generatePaper();
   };
@@ -492,7 +522,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
         .me-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
       `}</style>
 
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/55" />
@@ -716,7 +746,10 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       <Button variant="outline" onClick={regenerateFromReview} disabled={generating} className="border-white/20 text-white/70 hover:bg-white/5"><RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Regenerate</Button>
-                      <Button onClick={() => setReviewQs(null)} variant="ghost" className="text-white/60 hover:bg-white/5">Discard</Button>
+                      <Button onClick={() => {
+                        setReviewQs(null);
+                        profileSetJSON(scholarClass, "mock-exam-pending-review", []);
+                      }} variant="ghost" className="text-white/60 hover:bg-white/5">Discard</Button>
                       <Button onClick={startExamFromReview} className="bg-emerald-500 hover:bg-emerald-600 text-white"><Play className="h-3.5 w-3.5 mr-1.5 fill-white" /> Start Exam</Button>
                     </div>
                   </div>

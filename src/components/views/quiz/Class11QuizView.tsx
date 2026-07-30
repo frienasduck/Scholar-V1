@@ -38,6 +38,11 @@ import {
   saveQuizMistakes,
   type SavedQuizMistake,
 } from "@/lib/quiz-mistakes";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+} from "@/lib/background-tasks";
 
 type Phase = "home" | "taking" | "results" | "aiReview";
 
@@ -118,6 +123,18 @@ export function Class11QuizView() {
   const [ebookChapterId, setEbookChapterId] = useState("sets");
   const [ebookMode, setEbookMode] = useState<"chapter" | "mixed">("chapter");
   const [ebookLoading, setEbookLoading] = useState(false);
+
+  useEffect(() => {
+    const pending = profileGetJSON<any[]>(
+      scholarClass,
+      "quiz-pending-ai-drafts",
+      [],
+    );
+    if (pending.length) {
+      setAiDrafts(pending);
+      setPhase("aiReview");
+    }
+  }, [scholarClass]);
 
   // Statically-loaded quiz data (no async, no server dependency)
   const quizData = useMemo(() => loadSubjectQuizzes(subject), [subject]);
@@ -266,14 +283,28 @@ export function Class11QuizView() {
   };
 
   const startAIQuiz = async (aiSubject: string, aiChapter: string, count: number, aiDifficulty: string) => {
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "quiz",
+      title: "Generating your quiz",
+      message: `Building ${count} chapter questions…`,
+      viewId: "quiz",
+    });
     setAiLoading(true);
     try {
       const subj = curriculum.find((s) => s.id === aiSubject);
       const ch = subj?.chapters.find((c) => c.id === aiChapter);
-      if (!ch) { toast.error("Chapter not found"); return; }
+      if (!ch) {
+        failBackgroundTask(backgroundTaskId, "The selected chapter was not found.");
+        toast.error("Chapter not found");
+        return;
+      }
       const prompt = `Generate ${count} CBSE Class 11 MCQ questions for the chapter "${ch.title}" (${subj?.name}). Difficulty: ${aiDifficulty}. Each question needs: question, 4 options, correctAnswer (must exactly match one option), explanation. Respond ONLY as JSON: {"questions":[{"question":"...","options":["a","b","c","d"],"correctAnswer":"correct option","explanation":"short","topic":"subtopic","difficulty":"${aiDifficulty}","type":"concept"}]}`;
       const data = await askAIJSON<{ questions: any[] }>(prompt, "default");
-      if (!data?.questions?.length) { toast.error("AI did not return questions."); return; }
+      if (!data?.questions?.length) {
+        failBackgroundTask(backgroundTaskId, "No usable quiz questions were returned.");
+        toast.error("AI did not return questions.");
+        return;
+      }
       // Validate each question
       const drafts = data.questions.map((q: any, i: number) => {
         const opts = Array.isArray(q.options) ? q.options : [];
@@ -305,6 +336,7 @@ export function Class11QuizView() {
       const validCount = drafts.filter((d) => d.valid).length;
       const invalidCount = drafts.length - validCount;
       setAiDrafts(drafts);
+      profileSetJSON(scholarClass, "quiz-pending-ai-drafts", drafts);
       setPhase("aiReview");
       setAiOpen(false);
       if (invalidCount > 0) {
@@ -312,7 +344,14 @@ export function Class11QuizView() {
       } else {
         toast.success(`Generated ${drafts.length} questions. Review and start when ready.`);
       }
-    } catch { toast.error("Could not generate quiz."); }
+      completeBackgroundTask(
+        backgroundTaskId,
+        `${drafts.length} questions are ready for review.`,
+      );
+    } catch {
+      failBackgroundTask(backgroundTaskId, "Quiz generation failed.");
+      toast.error("Could not generate quiz.");
+    }
     finally { setAiLoading(false); }
   };
 
@@ -330,6 +369,7 @@ export function Class11QuizView() {
     setCurrent(0);
     setStartedAt(Date.now());
     setTimeSpent(0);
+    profileSetJSON(scholarClass, "quiz-pending-ai-drafts", []);
     setPhase("taking");
   };
 
@@ -346,6 +386,7 @@ export function Class11QuizView() {
     const next = [...customQuestions, ...toSave];
     setCustomQuestions(next);
     saveCustomQuestions(scholarClass, next);
+    profileSetJSON(scholarClass, "quiz-pending-ai-drafts", []);
     toast.success(`Saved ${toSave.length} AI-generated questions.`);
   };
 
@@ -482,7 +523,11 @@ export function Class11QuizView() {
         onStartAll={() => startQuizFromDrafts(aiDrafts)}
         onStartSelected={() => startQuizFromDrafts(aiDrafts.filter((d) => d.selected))}
         onSaveSelected={() => saveAIDrafts(aiDrafts)}
-        onBack={() => { setPhase("home"); setAiDrafts([]); }}
+        onBack={() => {
+          setPhase("home");
+          setAiDrafts([]);
+          profileSetJSON(scholarClass, "quiz-pending-ai-drafts", []);
+        }}
       />
     );
   }

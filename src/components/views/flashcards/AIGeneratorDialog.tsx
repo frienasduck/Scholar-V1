@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Sparkles, Loader2, ChevronLeft, Trash2, Save, Check, Play } from "lucide-react";
 import { askAIJSON } from "@/lib/ai";
@@ -14,6 +14,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { SUBJECT_INFO, TYPE_INFO, type CustomCard } from "./flashcard-utils";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+} from "@/lib/background-tasks";
 
 export type GeneratedDraft = {
   id: string;
@@ -53,10 +58,26 @@ export function AIGeneratorDialog({
   const [stage, setStage] = useState<"generate" | "review">("generate");
   const [generationError, setGenerationError] = useState<string | null>(null);
 
+  useEffect(() => {
+    try {
+      const pending = JSON.parse(
+        localStorage.getItem("scholar-pending-ai-flashcards") || "null",
+      ) as { drafts?: GeneratedDraft[]; deckName?: string } | null;
+      if (pending?.drafts?.length) {
+        setDrafts(pending.drafts);
+        setDeckName(pending.deckName || "");
+        setStage("review");
+      }
+    } catch {
+      // A fresh generator remains available if storage is blocked.
+    }
+  }, []);
+
   const reset = () => {
     setAiSubject(""); setAiChapter(""); setAiTopic(""); setAiCount(6);
     setAiDifficulty("medium"); setAiType("definition");
     setDeckName(""); setDrafts([]); setStage("generate"); setGenerationError(null);
+    try { localStorage.removeItem("scholar-pending-ai-flashcards"); } catch { /* ignore */ }
   };
 
   const defaultDeckName = () => {
@@ -72,6 +93,12 @@ export function AIGeneratorDialog({
     const subj = curriculum.find((s) => s.id === aiSubject);
     const ch = (subj?.chapters ?? []).find((c) => c.id === aiChapter);
     if (!subj || !ch) { toast.error("Could not find that chapter"); return; }
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "flashcards",
+      title: "Generating flashcards",
+      message: `Creating ${aiCount} cards for ${ch.title}…`,
+      viewId: "flashcards",
+    });
     setLoading(true);
     setGenerationError(null);
     try {
@@ -79,6 +106,7 @@ export function AIGeneratorDialog({
       const data = await askAIJSON<{ cards: { front: string; back: string; explanation?: string; topic?: string; tags?: string[] }[] }>(prompt, "default", { mode: "flashcards" });
       const list = data?.cards ?? [];
       if (list.length === 0) {
+        failBackgroundTask(backgroundTaskId, "No usable flashcards were returned.");
         setStage("generate");
         setGenerationError("AI generation is unavailable. Create a local draft from Scholar's chapter content?");
         return;
@@ -98,9 +126,23 @@ export function AIGeneratorDialog({
         createdBy: "ai",
       }));
       setDrafts(newDrafts);
+      try {
+        localStorage.setItem(
+          "scholar-pending-ai-flashcards",
+          JSON.stringify({
+            drafts: newDrafts,
+            deckName: deckName.trim() || defaultDeckName(),
+          }),
+        );
+      } catch { /* ignore */ }
       setStage("review");
+      completeBackgroundTask(
+        backgroundTaskId,
+        `${newDrafts.length} cards are ready for review.`,
+      );
       toast.success(`Generated ${newDrafts.length} draft cards — review and edit before saving.`);
     } catch {
+      failBackgroundTask(backgroundTaskId, "Flashcard generation failed.");
       setStage("generate");
       setGenerationError("AI generation is unavailable. Create a local draft from Scholar's chapter content?");
     }

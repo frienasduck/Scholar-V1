@@ -103,6 +103,12 @@ import {
 } from "@/lib/slideshow-pipeline";
 import { cn } from "@/lib/utils";
 import { NarratedSlideshowMaker } from "@/components/views/narrated-slideshow";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+  updateBackgroundTask,
+} from "@/lib/background-tasks";
 
 // ============================================================================
 // AI helpers — fetch with timeout so the client doesn't hang forever
@@ -733,6 +739,13 @@ export function SlideshowMaker() {
       );
       return;
     }
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "slideshow",
+      title: "Creating your slideshow",
+      message: "Planning source-grounded slides…",
+      viewId: "ai-tools",
+      toolId: "slideshow-maker",
+    });
     setGenerating(true);
     setGenerationStageIndex(3);
     setGenStage("Planning complete slide coverage…");
@@ -803,6 +816,10 @@ export function SlideshowMaker() {
       setGenerationStageIndex(4);
       for (let index = 0; index < batches.length; index += 1) {
         const batch = batches[index];
+        updateBackgroundTask(
+          backgroundTaskId,
+          `Generating batch ${index + 1} of ${batches.length}…`,
+        );
         setGenStage(
           `Generating source-grounded slides — batch ${index + 1} of ${batches.length}…`,
         );
@@ -842,6 +859,7 @@ export function SlideshowMaker() {
       }
 
       setGenerationStageIndex(5);
+      updateBackgroundTask(backgroundTaskId, "Checking formulas and source coverage…");
       setGenStage("Adding formulas, figures, notes, and source references…");
       setGenerationStageIndex(6);
       setGenStage("Checking every topic and selected page…");
@@ -916,7 +934,15 @@ export function SlideshowMaker() {
             : `Validated ${coverage.report.percentage}% topic and page coverage.`,
         },
       );
+      completeBackgroundTask(
+        backgroundTaskId,
+        `${slideshow.slides.length} slides are ready to open.`,
+      );
     } catch {
+      failBackgroundTask(
+        backgroundTaskId,
+        "Generation stopped. Completed work was autosaved.",
+      );
       if (checkpoint) {
         checkpoint = {
           ...checkpoint,

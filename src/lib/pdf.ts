@@ -254,7 +254,7 @@ function themeCSS(opts: {
 
 /* ----- Paged media: running header + footer + page numbers ----- */
 @page {
-  margin: 22mm 18mm 22mm;
+  margin: 24mm 20mm 24mm;
   @top-left {
     content: "${safeTitle}";
     font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -318,6 +318,7 @@ body {
   font-size: 11pt;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Cover ---------- */
@@ -326,7 +327,7 @@ body {
   min-height: 100vh;
   background: ${gradient};
   color: #fff;
-  padding: 26mm 22mm;
+  padding: 28mm 24mm;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -462,7 +463,12 @@ body {
 }
 
 /* ---------- Sections ---------- */
-.section { page-break-before: always; }
+.section {
+  page-break-before: always;
+  width: 100%;
+  max-width: 170mm;
+  margin-inline: auto;
+}
 .section-eyebrow {
   font-size: 9pt;
   letter-spacing: 0.18em;
@@ -593,6 +599,8 @@ a { color: ${accent}; text-decoration: none; border-bottom: 1px dotted ${accent}
 /* ---------- Tables ---------- */
 table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   margin: 14px 0;
@@ -618,6 +626,7 @@ tbody td {
 }
 tbody tr:nth-child(even) td { background: #fafafa; }
 tbody tr:nth-child(odd) td  { background: #fff; }
+th, td { overflow-wrap: anywhere; word-break: normal; }
 
 /* ---------- Code ---------- */
 code {
@@ -633,7 +642,9 @@ pre {
   color: #f4f4f5;
   padding: 14px 16px;
   border-radius: 10px;
-  overflow-x: auto;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
   font-size: 10pt;
   line-height: 1.5;
@@ -884,11 +895,31 @@ hr.divider, .divider {
   transform: translateY(-50%);
 }
 
+img, svg, canvas, video {
+  max-width: 100% !important;
+  height: auto;
+}
+
+/* Keep complete equations together and inside the printable A4 safe area. */
+.katex-display {
+  max-width: 100%;
+  margin: 0.9em 0 !important;
+  overflow: visible !important;
+  font-size: 0.9em;
+  page-break-inside: avoid;
+}
+.katex-display > .katex {
+  max-width: 100%;
+  white-space: normal;
+}
+.katex, .math-inline { line-height: 1.35; }
+
 /* ---------- Print optimizations ---------- */
 @media print {
   .no-print { display: none !important; }
   a { color: inherit; text-decoration: none; border-bottom: 0; }
   .callout, .faq-item, .qrow, table, pre, blockquote, .bar-row, .stat-tile, .score-tile, .takeaway-list li { break-inside: avoid; }
+  .section { max-width: 170mm; }
 }
 
 /* ---------- Screen preview ---------- */
@@ -900,7 +931,7 @@ hr.divider, .divider {
     box-shadow: 0 4px 24px rgba(0,0,0,0.10);
   }
   .cover { min-height: 297mm; border-radius: 4px; }
-  .section { padding: 22mm 18mm; border-radius: 4px; background: #fff; }
+  .section { padding: 24mm 20mm; border-radius: 4px; background: #fff; }
   .print-hint {
     position: fixed; top: 14px; right: 14px;
     background: #18181b; color: #fff;
@@ -1176,7 +1207,18 @@ ${inheritedStyles}
 <body>
 <div class="no-print print-hint">Press Ctrl/Cmd+P · Choose "Save as PDF"</div>
 ${opts.body}
-<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 350); };</script>
+<script>
+window.onload = async function(){
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  } catch (_) {}
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      setTimeout(function(){ window.print(); }, 250);
+    });
+  });
+};
+</script>
 </body>
 </html>`;
 }

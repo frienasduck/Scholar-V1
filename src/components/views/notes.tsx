@@ -193,6 +193,8 @@ export function NotesView() {
         muted
         loop
         playsInline
+        poster="/backgrounds/scholar-poster.svg"
+        preload="metadata"
         className="absolute inset-0 w-full h-full object-cover z-0 opacity-40"
       >
         <source

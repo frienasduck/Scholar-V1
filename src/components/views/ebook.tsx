@@ -24,6 +24,7 @@ import {
 } from "@/components/views/maths-ebook-system";
 import { BookModeReader } from "@/components/ebook/book-mode-reader";
 import { ElamAssistant } from "@/components/ebook/elam-assistant";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { setLamPageContext } from "@/lib/lam-context";
 import {
   BookOpen,
@@ -536,16 +537,11 @@ export function EBookView() {
     return (
       <div className="relative min-h-[calc(100vh-4rem)] bg-[#0a0a0f] overflow-hidden -m-4 lg:-m-6 text-white eb-font">
         <style>{EB_STYLE}</style>
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover opacity-20"
-            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
-          />
-        </div>
+        <ReadyBackgroundVideo
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
+          className="fixed z-0 pointer-events-none opacity-20"
+          readinessId="ebook-library"
+        />
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Nav */}
@@ -1121,7 +1117,9 @@ export function EBookView() {
                     transform: `rotate(${rotation}deg)`,
                     transition: "transform 0.3s",
                   }}
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               </div>
               {/* Page Actions */}

@@ -6,6 +6,11 @@ import { CURRICULUM } from "@/lib/curriculum";
 import type { Subject } from "@/lib/curriculum-class11";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { askAIJSON } from "@/lib/ai";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+} from "@/lib/background-tasks";
 import { StatCard, SectionHeader, Pill } from "@/lib/shared";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Button } from "@/components/ui/button";
@@ -263,16 +268,33 @@ function DeckPanel({ deck, cards, onAddCard, onStudy, pushActivity, curriculum, 
     const subj = curriculum.find((s) => s.id === aiSubject);
     const ch = (subj?.chapters ?? []).find((c) => c.id === aiChapter);
     if (!ch) return;
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "flashcards",
+      title: "Generating flashcards",
+      message: `Creating ${aiCount} cards for ${ch.title}…`,
+      viewId: "flashcards",
+    });
     setAiLoading(true);
     try {
       const prompt = `Generate ${aiCount} CBSE Class ${scholarClass} flashcards for "${ch.title}" (${subj?.name}). Respond ONLY as JSON: {"cards":[{"front":"...","back":"..."}]}`;
       const data = await askAIJSON<{ cards: { front: string; back: string }[] }>(prompt, "default", { mode: "flashcards" });
-      if (!data?.cards?.length) { toast.error("AI did not return any cards."); return; }
+      if (!data?.cards?.length) {
+        failBackgroundTask(backgroundTaskId, "No usable flashcards were returned.");
+        toast.error("AI did not return any cards.");
+        return;
+      }
       data.cards.forEach((c) => onAddCard(c.front, c.back));
+      completeBackgroundTask(
+        backgroundTaskId,
+        `${data.cards.length} cards were added to ${deck.name}.`,
+      );
       toast.success(`Added ${data.cards.length} AI-generated cards`);
       pushActivity({ type: "flashcard", text: `AI generated ${data.cards.length} cards for ${deck.name}`, icon: "✨" });
       setAiOpen(false);
-    } catch { toast.error("Could not generate cards."); }
+    } catch {
+      failBackgroundTask(backgroundTaskId, "Flashcard generation failed.");
+      toast.error("Could not generate cards.");
+    }
     finally { setAiLoading(false); }
   };
 
