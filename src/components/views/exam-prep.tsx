@@ -175,7 +175,7 @@ export function ExamPrepView() {
         .cinema-glass .bg-muted { background: rgba(255,255,255,0.05) !important; }
         .cinema-glass .border-border { border-color: rgba(255,255,255,0.1) !important; }
       `}</style>
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/50" />

@@ -25,8 +25,11 @@ export function ReadyBackgroundVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const announcedRef = useRef(false);
 
   const announceReady = (status: "video" | "poster") => {
+    if (announcedRef.current) return;
+    announcedRef.current = true;
     window.dispatchEvent(new CustomEvent(BACKGROUND_READY_EVENT, {
       detail: { id: readinessId, status },
     }));
@@ -37,8 +40,7 @@ export function ReadyBackgroundVideo({
     if (!video || ready || failed) return;
     try {
       await video.play();
-      setReady(true);
-      announceReady("video");
+      // The poster remains visible until the browser confirms actual playback.
     } catch {
       setFailed(true);
       announceReady("poster");
@@ -63,6 +65,7 @@ export function ReadyBackgroundVideo({
         onLoad={() => {
           if (failed) announceReady("poster");
         }}
+        onError={() => announceReady("poster")}
       />
       <video
         ref={videoRef}
@@ -79,7 +82,15 @@ export function ReadyBackgroundVideo({
         style={{ objectPosition }}
         onLoadedData={() => void activateVideo()}
         onCanPlay={() => void activateVideo()}
+        onPlaying={() => {
+          setReady(true);
+          announceReady("video");
+        }}
         onError={keepPoster}
+        onStalled={() => {
+          if (!ready) announceReady("poster");
+        }}
+        onEmptied={() => setReady(false)}
       >
         <source src={src} type="video/mp4" />
       </video>

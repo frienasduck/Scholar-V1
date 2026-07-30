@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: false,
+  env: {
+    // Public deployment identity used only to invalidate non-sensitive startup warm-up markers.
+    NEXT_PUBLIC_APP_BUILD_ID:
+      process.env.VERCEL_GIT_COMMIT_SHA ??
+      process.env.npm_package_version ??
+      "scholar-local",
+  },
   turbopack: {
     root: process.cwd(),
   },

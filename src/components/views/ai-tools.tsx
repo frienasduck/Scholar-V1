@@ -33,6 +33,11 @@ import { SlideshowMaker } from "@/components/views/slideshow-maker";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
 import { setLamDraft } from "@/lib/lam-context";
 import { navigateTo } from "@/lib/nav-event";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+} from "@/lib/background-tasks";
 
 // ===== Tool metadata =====
 interface ToolMeta {
@@ -1103,7 +1108,14 @@ function AIPDFStudio() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("pdf-studio-history") || "[]");
-      if (Array.isArray(saved)) setHistory(saved);
+      if (Array.isArray(saved)) {
+        setHistory(saved);
+        const latest = saved[0] as PDFStudioEntry | undefined;
+        if (latest?.doc) {
+          setDoc(latest.doc);
+          setPrompt(latest.prompt || "");
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -1137,12 +1149,21 @@ function AIPDFStudio() {
 Style: ${style}. Length: ${lengthMap[length]}. Tone: ${toneMap[tone]}. Audience: ${audience === "class9" ? "Class 9 CBSE student" : audience === "class11" ? "Class 11 CBSE student" : audience}.
 Sections to include: ${sectionsMap[sections]}. Language: ${language}.
 ${aiVisuals ? "Include [DIAGRAM: ...] placeholders describing suggested diagrams where useful." : "Do not include diagram placeholders."}
-Format as clean markdown. Use ## for section headings, **bold** for key terms, bullet lists where helpful, and > for callouts. Be accurate to NCERT. No preamble.`;
+Format as clean markdown. Use ## for section headings, **bold** for key terms, bullet lists where helpful, and > for callouts.
+Write every mathematical expression as valid LaTeX: use $...$ for inline maths and $$...$$ for display equations. Use \\frac{a}{b}, superscripts, subscripts, Greek symbols, vectors, units, and aligned steps correctly. Never leave raw TeX commands outside math delimiters.
+Keep tables and equations within a printable A4 content width. Be accurate to NCERT. No preamble.`;
   };
 
   const run = async (overridePrompt?: string) => {
     const p = (overridePrompt ?? prompt).trim();
     if (!p) { toast.error("Write a prompt first"); return; }
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "ai-pdf",
+      title: "Creating your study PDF",
+      message: "Generating and formatting the document…",
+      viewId: "ai-tools",
+      toolId: "ai-pdf-studio",
+    });
     setLoading(true); setDoc(null);
     try {
       const r = await askAI(buildPrompt(p), "chapter-builder");
@@ -1159,7 +1180,12 @@ Format as clean markdown. Use ## for section headings, **bold** for key terms, b
       addXP(5); addCoins(3);
       pushActivity({ type: "ai", text: `Generated PDF: ${p.slice(0, 40)}`, icon: "📄" });
       toast.success("PDF generated · +5 XP, +3 coins");
+      completeBackgroundTask(
+        backgroundTaskId,
+        "Your formatted PDF is ready in AI Tools.",
+      );
     } catch (e: any) {
+      failBackgroundTask(backgroundTaskId, "PDF generation failed.");
       toast.error("Generation failed", { description: e?.message });
     } finally { setLoading(false); }
   };
@@ -1459,7 +1485,16 @@ function ToolContent({ id }: { id: string }) {
 export function AIToolsView() {
   const CURRICULUM = useCurriculum();
   const scholarClass = useStore((state) => state.user.scholarClass);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const pending = sessionStorage.getItem("scholar-ai-tools-open");
+      sessionStorage.removeItem("scholar-ai-tools-open");
+      return pending;
+    } catch {
+      return null;
+    }
+  });
   const activeTool = openId ? TOOLS.find((t) => t.id === openId) : null;
 
   const BLOOM_CSS = `
@@ -1543,6 +1578,7 @@ export function AIToolsView() {
           muted
           playsInline
           preload="metadata"
+          poster="/backgrounds/scholar-poster.svg"
           className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
         >
           <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4" />
@@ -1612,6 +1648,7 @@ export function AIToolsView() {
         muted
         playsInline
         preload="metadata"
+        poster="/backgrounds/scholar-poster.svg"
         className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       >
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />

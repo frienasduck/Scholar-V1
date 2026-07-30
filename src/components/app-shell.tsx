@@ -8,6 +8,11 @@ import { cn } from "@/lib/utils";
 import { migrateLegacyStorage } from "@/lib/profile-storage";
 import { FloatingMusicWidget } from "@/components/views/music-widget";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { BackgroundTaskNotifications } from "@/components/background-task-notifications";
+import {
+  markBackgroundTasksViewed,
+  useBackgroundTasks,
+} from "@/lib/background-tasks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -66,6 +71,7 @@ import { PythonView } from "@/components/views/python";
 import { DerivationsView } from "@/components/views/derivations";
 import { LamWidget } from "@/components/lam-widget";
 import { useScholarTransition } from "@/components/scholar-transition";
+import { useScholarStartupReady } from "@/components/launch-readiness-gate";
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
@@ -152,6 +158,7 @@ function useNavBadges() {
 }
 
 function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges> }) {
+  const backgroundTasks = useBackgroundTasks();
   return (
     <nav className="flex flex-col gap-6 px-3 py-2">
       {NAV_GROUPS.map((group) => (
@@ -161,6 +168,12 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
             {NAV_ITEMS.filter((n) => n.group === group).map((item) => {
               const isActive = active === item.id;
               const badge = (badges as Record<string, string | null>)[item.id];
+              const hasFinishedTask = backgroundTasks.some(
+                (task) =>
+                  task.viewId === item.id &&
+                  task.status === "complete" &&
+                  !task.read,
+              );
               if (item.comingSoon) {
                 return (
                   <div
@@ -176,16 +189,28 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
               return (
                 <button
                   key={item.id}
-                  onClick={() => onNavigate(item.id)}
+                  onClick={() => {
+                    markBackgroundTasksViewed(item.id);
+                    onNavigate(item.id);
+                  }}
                   className={cn(
                     "group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all relative",
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-                    item.highlight && !isActive && "bg-gradient-to-r from-red-500/10 to-fuchsia-500/10 text-white border border-red-500/20"
+                    item.highlight && !isActive && "bg-gradient-to-r from-red-500/10 to-fuchsia-500/10 text-white border border-red-500/20",
+                    hasFinishedTask &&
+                      !isActive &&
+                      "border border-cyan-300/25 bg-cyan-300/[0.07] shadow-[inset_0_0_18px_rgba(34,211,238,.08),0_0_14px_rgba(34,211,238,.11)]",
                   )}
                 >
                   {isActive && <motion.div layoutId="nav-active" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-primary" />}
                   <item.icon className={cn("h-4.5 w-4.5 shrink-0", isActive && "text-primary", item.highlight && !isActive && "text-red-400")} />
                   <span className={cn("truncate flex-1 text-left", item.highlight && !isActive && "font-bold tracking-wide")}>{item.label}</span>
+                  {hasFinishedTask && (
+                    <span
+                      className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 shadow-[0_0_9px_rgba(103,232,249,.9)]"
+                      aria-label="Background task finished"
+                    />
+                  )}
                   {item.badge && !badge && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">{item.badge}</span>
                   )}
@@ -373,6 +398,7 @@ class ViewErrorBoundary extends Component<{ children: ReactNode; viewName: strin
 }
 
 export function AppShell() {
+  const startupReady = useScholarStartupReady();
   const user = useStore((s) => s.user);
   const switchClass = useStore((s) => s.switchClass);
   const toggleJeeMode = useStore((s) => s.toggleJeeMode);
@@ -619,6 +645,7 @@ export function AppShell() {
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full">
         <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
+        <BackgroundTaskNotifications onNavigate={navigate} />
         <main id="main-scroll" className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden transition-colors duration-500 p-3 sm:p-4 lg:p-6 pb-[calc(1rem+72px+var(--safe-area-bottom))] lg:pb-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div style={{ position: "relative", width: "100%" }}>
           <motion.div
@@ -637,7 +664,7 @@ export function AppShell() {
         </main>
       </div>
 
-      <LamWidget currentView={active} />
+      {startupReady ? <LamWidget currentView={active} /> : null}
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 

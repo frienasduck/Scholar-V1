@@ -123,6 +123,8 @@ function CinematicVideoBg() {
       autoPlay
       muted
       playsInline
+      poster="/backgrounds/scholar-poster.svg"
+      preload="metadata"
       className="absolute inset-0 w-full h-full object-cover translate-y-[17%] z-0"
       style={{ opacity: 0 }}
     >

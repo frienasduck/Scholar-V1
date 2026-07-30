@@ -87,7 +87,7 @@ export function PracticalsView() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap'); .pr-glass { background:rgba(255,255,255,0.04); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.12); border-radius:1rem; } .pr-glass-strong { background:rgba(255,255,255,0.07); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.16); border-radius:1rem; } .pr-serif { font-family:'Instrument Serif',serif; font-style:italic; }`}</style>
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4" type="video/mp4" /></video>
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4" type="video/mp4" /></video>
       <div className="absolute inset-0 z-0 bg-black/55" />
       <div className="relative z-10 p-4 md:p-8 text-white">
         <div className="max-w-5xl mx-auto">

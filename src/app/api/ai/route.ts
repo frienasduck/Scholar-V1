@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  generateNvidiaJSON,
-  generateNvidiaText,
-  streamNvidiaText,
-  type NvidiaChatMessage,
-} from "@/lib/ai/nvidia";
+  generateScholarGroqJSON,
+  generateScholarGroqText,
+  streamScholarGroqText,
+  type ScholarGroqMessage,
+} from "@/lib/ai/scholar-groq";
 import { publicAIError, AIProviderError } from "@/lib/ai/errors";
 import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
@@ -54,12 +54,12 @@ export async function POST(request: NextRequest) {
     scholarClass: body.scholarClass,
     jeeMode: body.jeeMode,
   });
-  const messages: NvidiaChatMessage[] = [
+  const messages: ScholarGroqMessage[] = [
     { role: "system", content: systemPrompt },
     ...body.messages
       .filter((message) => message.role !== "system")
       .slice(-24)
-      .map((message) => ({ role: message.role, content: message.content }) as NvidiaChatMessage),
+      .map((message) => ({ role: message.role, content: message.content }) as ScholarGroqMessage),
   ];
 
   if (queryStream || mode === "stream") {
@@ -68,31 +68,46 @@ export async function POST(request: NextRequest) {
 
   try {
     if (JSON_MODES.has(mode)) {
-      const value = await generateNvidiaJSON({
+      let value = await generateScholarGroqJSON({
         messages: withJSONInstruction(messages),
         temperature: Math.min(body.temperature, 0.8),
         signal: request.signal,
       });
       const schema = schemaForMode(mode);
       if (schema) {
-        const validated = schema.safeParse(value);
+        let validated = schema.safeParse(value);
         if (!validated.success) {
-          throw new AIProviderError(
-            "The AI response did not match the required structure. Please retry.",
-            502,
-            "AI_SCHEMA_MISMATCH",
-          );
+          value = await generateScholarGroqJSON({
+            messages: [
+              ...withJSONInstruction(messages),
+              {
+                role: "system",
+                content:
+                  "The prior JSON did not match the required feature schema. Regenerate it once with every required field, correct field type, and no additional prose.",
+              },
+            ],
+            temperature: Math.min(body.temperature, 0.5),
+            signal: request.signal,
+          });
+          validated = schema.safeParse(value);
+          if (!validated.success) {
+            throw new AIProviderError(
+              "The AI response did not match the required structure. Please retry.",
+              502,
+              "AI_SCHEMA_MISMATCH",
+            );
+          }
         }
         return NextResponse.json({ ok: true, data: validated.data });
       }
       return NextResponse.json({ ok: true, data: value });
     }
 
-    const text = await generateNvidiaText({
+    const text = await generateScholarGroqText({
       messages,
       temperature: body.temperature,
       signal: request.signal,
-      maxTokens: 16_384,
+      maxTokens: 6_000,
     });
     return NextResponse.json({ ok: true, text });
   } catch (error) {
@@ -101,7 +116,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function withJSONInstruction(messages: NvidiaChatMessage[]): NvidiaChatMessage[] {
+function withJSONInstruction(
+  messages: ScholarGroqMessage[],
+): ScholarGroqMessage[] {
   const [system, ...rest] = messages;
   return [
     {
@@ -113,7 +130,7 @@ function withJSONInstruction(messages: NvidiaChatMessage[]): NvidiaChatMessage[]
 }
 
 function streamResponse(
-  messages: NvidiaChatMessage[],
+  messages: ScholarGroqMessage[],
   temperature: number,
   signal: AbortSignal,
 ): Response {
@@ -132,7 +149,7 @@ function streamResponse(
       };
 
       try {
-        await streamNvidiaText({ messages, temperature, signal, maxTokens: 16_384 }, (delta) => {
+        await streamScholarGroqText({ messages, temperature, signal, maxTokens: 6_000 }, (delta) => {
           send({ delta });
         });
         send({ done: true });
@@ -144,7 +161,7 @@ function streamResponse(
       }
     },
     cancel() {
-      // The request signal is forwarded to NVIDIA and is aborted when the client disconnects.
+      // The request signal is forwarded to Groq and aborts when the client disconnects.
     },
   });
 

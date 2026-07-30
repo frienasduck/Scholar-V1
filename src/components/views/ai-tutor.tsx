@@ -330,7 +330,8 @@ export function AITutorView() {
           muted
           playsInline
           className="absolute inset-0 w-full h-full object-cover z-0"
-          poster=""
+          poster="/backgrounds/scholar-poster.svg"
+          preload="metadata"
         >
           <source src={VIDEO_SRC} type="video/mp4" />
         </video>
@@ -854,6 +855,8 @@ export function AITutorView() {
                 loop
                 muted
                 playsInline
+                poster="/backgrounds/scholar-poster.svg"
+                preload="metadata"
                 className="absolute inset-0 w-full h-full object-cover z-0"
               >
                 <source src={VIDEO_SRC} type="video/mp4" />

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { CURRICULUM } from "./curriculum";
+import type { StartupLoadingMode } from "./startup/startup-modes";
 
 // ===== Types =====
 export interface User {
@@ -196,6 +197,7 @@ export interface Purchase {
 
 export interface Settings {
   theme: "dark" | "light";
+  startupLoadingMode: StartupLoadingMode;
   reduceMotion: boolean;
   elamEnabled: boolean;
   elamCompact: boolean;
@@ -787,6 +789,7 @@ function seed() {
     dailyChallenge: { date: today(), completed: false, streak: 3 },
     settings: {
       theme: "dark" as const,
+      startupLoadingMode: "long" as const,
       reduceMotion: false,
       elamEnabled: true,
       elamCompact: false,

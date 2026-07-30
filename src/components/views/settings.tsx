@@ -59,6 +59,7 @@ import {
   Brain,
   Sparkles,
   History,
+  Gauge,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
@@ -66,6 +67,10 @@ import { cn } from "@/lib/utils";
 import { clearLamProfile, loadLamState, updateLamPreferences } from "@/lib/lam/storage";
 import type { LamPreferences } from "@/lib/lam/types";
 import { microphoneErrorMessage, requestMicrophoneStream, stopMediaStream } from "@/lib/lam/microphone";
+import {
+  STARTUP_MODE_DEFINITIONS,
+  type StartupLoadingMode,
+} from "@/lib/startup/startup-modes";
 
 const AVATAR_EMOJIS = [
   "🦋", "🐱", "🐶", "🦁", "🦊", "🐰", "🐻", "🐼",
@@ -180,6 +185,8 @@ function CinematicVideoBg() {
       autoPlay
       muted
       playsInline
+      poster="/backgrounds/scholar-poster.svg"
+      preload="metadata"
       className="absolute inset-0 w-full h-full object-cover translate-y-[17%] z-0"
       style={{ opacity: 0 }}
     >
@@ -736,6 +743,73 @@ export function SettingsView() {
                   <Switch checked={settings.backgroundPattern !== false} onCheckedChange={(v) => updateSettings({ backgroundPattern: v })} />
                 </GlassSettingRow>
                 </div>
+              </div>
+
+              <div className="asme-glass rounded-3xl p-6" data-testid="startup-loading-settings">
+                <div className="mb-4">
+                  <h3 className="flex items-center gap-2 font-semibold text-white">
+                    <Gauge className="h-4 w-4 text-cyan-300" />
+                    Startup Loading
+                  </h3>
+                  <p className="mt-1 text-sm text-white/50">
+                    Choose how thoroughly Scholar prepares routes, media and study tools before opening.
+                  </p>
+                </div>
+                <div
+                  className="grid gap-3 sm:grid-cols-2"
+                  role="radiogroup"
+                  aria-label="Startup loading mode"
+                >
+                  {(Object.keys(STARTUP_MODE_DEFINITIONS) as StartupLoadingMode[]).map((mode) => {
+                    const option = STARTUP_MODE_DEFINITIONS[mode];
+                    const selected = (settings.startupLoadingMode ?? "long") === mode;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => {
+                          updateSettings({ startupLoadingMode: mode });
+                          toast.success(`${option.label} startup selected`, {
+                            description: "The change applies the next time Scholar opens.",
+                          });
+                        }}
+                        className={cn(
+                          "rounded-2xl border p-4 text-left transition-colors",
+                          selected
+                            ? "border-cyan-300/45 bg-cyan-300/[0.09] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_24px_rgba(34,211,238,.08)]"
+                            : "border-white/10 bg-white/[0.035] hover:border-white/20 hover:bg-white/[0.06]",
+                        )}
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-semibold text-white">{option.label}</span>
+                          {option.badge ? (
+                            <span
+                              className={cn(
+                                "rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                                option.badge === "Recommended"
+                                  ? "border-violet-300/30 bg-violet-400/10 text-violet-200"
+                                  : option.badge === "Default"
+                                    ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-200"
+                                    : "border-white/15 bg-white/5 text-white/55",
+                              )}
+                            >
+                              {option.badge}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="mt-2 block text-xs leading-5 text-white/50">
+                          {option.description}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-4 text-xs leading-5 text-white/40">
+                  Loading time varies depending on your device, connection and cached content. Full Loading
+                  adapts automatically on mobile and data-saving connections.
+                </p>
               </div>
 
               <div className="asme-glass rounded-3xl p-6">

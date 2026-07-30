@@ -778,7 +778,7 @@ export function textSimilarity(a: string, b: string): number {
 
 export function isValidFormula(value?: string): boolean {
   const formula = cleanText(value);
-  if (!formula || containsInstructionLeakage(formula) || wordCount(formula) > 28) return false;
+  if (!formula || containsInstructionLeakage(formula) || wordCount(formula) > 23) return false;
   return /(?:=|≥|≤|≈|→|⇌|Δ|λ|ν|π|²|³|\^|\/)/.test(formula) && /[A-Za-zΑ-ω0-9]/.test(formula);
 }
 
@@ -819,10 +819,28 @@ function collapseRepeatedTitle(value: string): string {
   return shorten(kept.join(" — ") || cleanInstructionText(value), 90);
 }
 
+function shortenByWords(value: string, maxWords: number, maxChars: number): string {
+  const cleaned = cleanText(value);
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const wordSafe =
+    words.length > maxWords ? `${words.slice(0, maxWords).join(" ")}…` : cleaned;
+  return shorten(wordSafe, maxChars);
+}
+
 function fitSlide(slide: Slide): Slide {
-  const title = collapseRepeatedTitle(slide.title);
-  const content = shorten(cleanInstructionText(slide.content || ""), 520);
-  const bullets = unique((slide.bullets ?? []).map((bullet) => shorten(cleanInstructionText(bullet), 165)).filter(Boolean)).slice(0, 6);
+  const title = shortenByWords(collapseRepeatedTitle(slide.title), 12, 88);
+  const content = shortenByWords(
+    cleanInstructionText(slide.content || ""),
+    82,
+    500,
+  );
+  const bullets = unique(
+    (slide.bullets ?? [])
+      .map((bullet) =>
+        shortenByWords(cleanInstructionText(bullet), 23, 155),
+      )
+      .filter(Boolean),
+  ).slice(0, 6);
   const formulaValid = isValidFormula(slide.formula);
   const type = slide.type === "formula" && !formulaValid ? "concept" : slide.type;
   const notes = cleanInstructionText(slide.speakerNotes || "");
@@ -847,7 +865,14 @@ export function finalizeSlides(slides: Slide[], intent?: NormalizedSlideshowInte
     }
     if (usedTitles.some((title) => textSimilarity(title, slide.title) > 0.82)) {
       const page = slide.sourcePages?.[0];
-      slide = { ...slide, title: shorten(`${slide.title.replace(/\s*\(Part \d+\)$/i, "")} — ${page ? `Page ${page}` : `Part ${index + 1}`}`, 90) };
+      slide = {
+        ...slide,
+        title: shortenByWords(
+          `${slide.title.replace(/\s*\(Part \d+\)$/i, "")} — ${page ? `Page ${page}` : `Part ${index + 1}`}`,
+          12,
+          88,
+        ),
+      };
     }
     usedTitles.push(slide.title);
     return slide;
@@ -1006,7 +1031,11 @@ export function validateCoverage(
     covered: topicIds.has(item.id),
     status: topicIds.has(item.id) ? "covered" as const : "missing" as const,
   }));
-  const allFormulas = unique(ledger.flatMap((item) => item.formulas));
+  // OCR can misclassify complete prose lines as equations. Only expressions
+  // that the slide renderer accepts should affect formula coverage.
+  const allFormulas = unique(
+    ledger.flatMap((item) => item.formulas).filter(isValidFormula),
+  );
   const normalizedPresentation = slides
     .map(slideText)
     .join(" ")
@@ -1085,7 +1114,7 @@ export function repairMissingCoverage(
     .filter(({ slide }) => !["title", "thanks", "quiz"].includes(slide.type))
     .map(({ index }) => index);
   if (!editableIndices.length) return slides;
-  const next = slides.map((slide) => ({
+  const next: Slide[] = slides.map((slide) => ({
     ...slide,
     bullets: slide.bullets ? [...slide.bullets] : undefined,
   }));
@@ -1102,13 +1131,28 @@ export function repairMissingCoverage(
     if (!target.formula && item.formulas[0]) target.formula = item.formulas[0];
   });
   for (let index = 0; index < report.missingFormulas.length; index += 5) {
-    const formulas = report.missingFormulas.slice(index, index + 5);
-    const targetIndex = editableIndices[(index / 5) % editableIndices.length];
+    const formulas = report.missingFormulas
+      .slice(index, index + 5)
+      .filter(isValidFormula);
+    if (!formulas.length) continue;
+    const relatedTopicIds = outline
+      .filter((item) =>
+        formulas.some((formula) => item.formulas.includes(formula)),
+      )
+      .map((item) => item.id);
+    const relatedIndex = editableIndices.find((slideIndex) =>
+      next[slideIndex].topicIds?.some((topicId) =>
+        relatedTopicIds.includes(topicId),
+      ),
+    );
+    const targetIndex =
+      relatedIndex ??
+      editableIndices[(index / 5) % editableIndices.length];
     const target = next[targetIndex];
-    target.bullets = unique([
-      ...(target.bullets ?? []),
-      `Formula summary: ${formulas.join("; ")}`,
-    ]);
+    target.bullets = unique([...(target.bullets ?? []), ...formulas]).slice(
+      0,
+      6,
+    );
     if (!target.formula) target.formula = formulas[0];
   }
   return next;

@@ -28,6 +28,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+  beginBackgroundTask,
+  completeBackgroundTask,
+  failBackgroundTask,
+} from "@/lib/background-tasks";
+import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 
 interface MCQ {
   question: string;
@@ -108,6 +114,21 @@ export function Class9QuizView() {
   const [aiLoading, setAiLoading] = useState(false);
   const [submitConfirm, setSubmitConfirm] = useState(false);
 
+  useEffect(() => {
+    const pending = profileGetJSON<QuizQuestion[]>(
+      scholarClass,
+      "quiz-pending-ai-questions",
+      [],
+    );
+    if (!pending.length) return;
+    setQuestions(pending);
+    setResponses({});
+    setCurrent(0);
+    setStartedAt(Date.now());
+    setTimeSpent(0);
+    setPhase("taking");
+  }, [scholarClass]);
+
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (phase === "taking") {
@@ -131,27 +152,50 @@ export function Class9QuizView() {
   }, [filter]);
 
   const startAIQuiz = async (subject: string, chapter: string, count: number, difficulty: string) => {
+    const backgroundTaskId = beginBackgroundTask({
+      kind: "quiz",
+      title: "Generating your quiz",
+      message: `Building ${count} chapter questions…`,
+      viewId: "quiz",
+    });
     setAiLoading(true);
     try {
       const subj = CURRICULUM.find((s) => s.id === subject);
       const ch = subj?.chapters.find((c) => c.id === chapter);
-      if (!ch) { toast.error("Chapter not found"); return; }
+      if (!ch) {
+        failBackgroundTask(backgroundTaskId, "The selected chapter was not found.");
+        toast.error("Chapter not found");
+        return;
+      }
       const prompt = `Generate ${count} CBSE Class 9 MCQ questions for "${ch.title}" (${subj?.name}). Difficulty: ${difficulty}. Respond ONLY as JSON: {"questions":[{"question":"...","options":["a","b","c","d"],"answer":"correct option","explanation":"short"}]}`;
       const data = await askAIJSON<{ questions: { question: string; options: string[]; answer: string; explanation?: string }[] }>(prompt, "default");
-      if (!data?.questions?.length) { toast.error("AI did not return questions."); return; }
+      if (!data?.questions?.length) {
+        failBackgroundTask(backgroundTaskId, "No usable quiz questions were returned.");
+        toast.error("AI did not return questions.");
+        return;
+      }
       const qs: QuizQuestion[] = data.questions.map((q) => ({
         id: uid(), type: "mcq" as const, question: q.question,
         options: q.options?.length === 4 ? q.options : shuffle([...(q.options ?? []), q.answer]).slice(0, 4),
         answer: q.answer, explanation: q.explanation, subject, chapter, difficulty: difficulty as any,
       }));
       setQuestions(qs); setResponses({}); setCurrent(0);
+      profileSetJSON(scholarClass, "quiz-pending-ai-questions", qs);
       setStartedAt(Date.now()); setTimeSpent(0); setPhase("taking"); setAiOpen(false);
       toast.success(`AI generated ${qs.length} questions.`);
-    } catch { toast.error("Could not generate quiz."); }
+      completeBackgroundTask(
+        backgroundTaskId,
+        `${qs.length} questions are ready.`,
+      );
+    } catch {
+      failBackgroundTask(backgroundTaskId, "Quiz generation failed.");
+      toast.error("Could not generate quiz.");
+    }
     finally { setAiLoading(false); }
   };
 
   const handleSubmit = () => {
+    profileSetJSON(scholarClass, "quiz-pending-ai-questions", []);
     let correct = 0, wrong = 0, attempted = 0;
     questions.forEach((q) => {
       const r = responses[q.id];

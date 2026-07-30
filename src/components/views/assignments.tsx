@@ -834,7 +834,7 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
         .as-glass input::placeholder, .as-glass textarea::placeholder { color: rgba(255,255,255,0.4) !important; }
       `}</style>
 
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/55" />
