@@ -15,7 +15,7 @@ import {
   Search, Loader2, Video, VideoOff, BookOpen, Save, Trash2, Play, NotebookPen,
   Layers,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";

@@ -12,7 +12,7 @@ import {
   Home, Star, Bookmark, Download, Eye, Activity, Flame, Droplet,
   ShieldAlert, ListChecks, Sigma,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { Markdown } from "@/lib/shared";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import {

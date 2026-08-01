@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Check, Coins, Download, Eye, Lock, Palette, RefreshCw, Search, ShoppingBag } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { STORE_CATEGORIES, STORE_PRODUCTS, type StoreProduct } from "@/data/store-catalog";
 import { useStore } from "@/lib/store";
 import { equipTheme, getEquippedTheme } from "@/lib/themes";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 
 function productFile(product: StoreProduct) {
   const body = [
@@ -87,7 +88,14 @@ export function StoreView() {
   const isOwned = (item: StoreProduct) => ownedIds.has(item.id);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 pb-12">
+    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
+      <ReadyBackgroundVideo
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4"
+        readinessId="store"
+        className="z-0"
+      />
+      <div className="absolute inset-0 z-0 bg-black/65" />
+      <div className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-12 sm:p-6">
       <header className="overflow-hidden rounded-3xl border border-border bg-card p-6 sm:p-8">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
@@ -137,6 +145,7 @@ export function StoreView() {
       <Dialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}><DialogContent><DialogHeader><DialogTitle>Confirm purchase</DialogTitle><DialogDescription>{confirm?.name} will be added permanently to the current Class {scholarClass} profile.</DialogDescription></DialogHeader>{confirm && <div className="flex justify-between rounded-xl bg-muted p-3 text-sm"><span>Balance after purchase</span><strong>{coins - confirm.price} coins</strong></div>}<DialogFooter><Button variant="outline" onClick={() => setConfirm(null)}>Cancel</Button><Button onClick={buy} disabled={!confirm || coins < confirm.price}>Confirm purchase</Button></DialogFooter></DialogContent></Dialog>
 
       <div className="flex justify-center"><Button variant="ghost" onClick={() => { equipTheme(scholarClass, "theme-default"); setEquipped("theme-default"); toast.success("Default theme restored"); }}>Restore default theme</Button></div>
+      </div>
     </div>
   );
 }

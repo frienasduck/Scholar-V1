@@ -15,7 +15,7 @@ import {
   Globe, BookOpen, GraduationCap, Brain, ArrowRight, Sparkles, Calendar,
   Layers, FileQuestion, NotebookPen, Timer, Star, ChevronRight,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useEffect, useRef, useState } from "react";
 
 // ===== helpers =====

@@ -60,8 +60,11 @@ import {
   Sparkles,
   History,
   Gauge,
+  Bell,
+  SlidersHorizontal,
+  ListChecks,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { clearLamProfile, loadLamState, updateLamPreferences } from "@/lib/lam/storage";
@@ -71,6 +74,31 @@ import {
   STARTUP_MODE_DEFINITIONS,
   type StartupLoadingMode,
 } from "@/lib/startup/startup-modes";
+
+const SCHOLAR_UPDATE_LOG = [
+  {
+    version: "v5.1.0",
+    date: "1 Aug 2026",
+    title: "Original appearance restoration and usability pass",
+    items: [
+      "Restored Scholar's original typography and page-specific video backgrounds.",
+      "Added developer-gated beta font controls.",
+      "Added notification size, position and timeout controls with live preview.",
+      "Added expandable Chapter Command AI and optional AI doubt resolution.",
+      "Improved the Study Workspace widget picker and repaired inactive controls.",
+    ],
+  },
+  {
+    version: "v5.0.0",
+    date: "31 Jul 2026",
+    title: "Scholar-wide notifications and background work",
+    items: [
+      "Introduced Scholar liquid-glass notifications.",
+      "Added completion indicators for background AI tasks.",
+      "Improved file previews, slideshow generation and startup readiness.",
+    ],
+  },
+] as const;
 
 const AVATAR_EMOJIS = [
   "🦋", "🐱", "🐶", "🦁", "🦊", "🐰", "🐻", "🐼",
@@ -319,12 +347,6 @@ export function SettingsView() {
     e.target.value = "";
   }
 
-  function toggleTheme(isDark: boolean) {
-    if (isDark) document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-    updateSettings({ theme: isDark ? "dark" : "light" });
-  }
-
   function exportData() {
     const state = useStore.getState();
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -498,6 +520,12 @@ export function SettingsView() {
               </TabsTrigger>
               <TabsTrigger value="privacy" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Shield className="h-3.5 w-3.5" />Privacy
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
+                <Bell className="h-3.5 w-3.5" />Notifications
+              </TabsTrigger>
+              <TabsTrigger value="updates" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
+                <ListChecks className="h-3.5 w-3.5" />Update Logs
               </TabsTrigger>
               <TabsTrigger value="data" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Database className="h-3.5 w-3.5" />Data
@@ -703,46 +731,51 @@ export function SettingsView() {
 
             {/* ===== Appearance ===== */}
             <TabsContent value="appearance" className="mt-2 space-y-4">
-              <div className="asme-glass rounded-3xl p-6">
-                <div className="mb-2">
-                  <h3 className="font-semibold text-white">Display & readability</h3>
-                  <p className="text-sm text-white/50 mt-1">Changes apply instantly across Scholar and are saved on this device.</p>
+              <div className="asme-glass rounded-3xl p-6" data-testid="developer-appearance-gate">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Palette className="h-4 w-4 text-violet-300" />
+                      <h3 className="font-semibold text-white">Appearance Lab</h3>
+                      <UiBadge className="border-violet-300/30 bg-violet-400/10 text-violet-200">Beta · Developer only</UiBadge>
+                    </div>
+                    <p className="max-w-2xl text-sm leading-6 text-white/55">
+                      Experimental surfaces, wallpapers and reading themes are temporarily disabled. Scholar now uses its original backgrounds, colours and typography by default.
+                    </p>
+                  </div>
+                  {!devMode ? (
+                    <Button type="button" variant="outline" className="border-white/15 bg-white/5 text-white" onClick={() => setShowDevPassword(true)}>
+                      <Lock className="mr-2 h-4 w-4" />Developer unlock
+                    </Button>
+                  ) : <UiBadge className="bg-emerald-500/15 text-emerald-200">Unlocked for this developer</UiBadge>}
                 </div>
-                <div className="divide-y divide-white/10">
-                <GlassSettingRow icon={<Palette className="h-4 w-4 text-white/70" />} title="Dark Mode" desc="Use the dark theme across the app.">
-                  <Switch checked={settings.theme === "dark"} onCheckedChange={(v) => toggleTheme(v)} />
-                </GlassSettingRow>
-                <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Text size" desc="Scale text throughout the app.">
-                  <Select value={settings.fontScale ?? "100"} onValueChange={(v) => updateSettings({ fontScale: v as "90" | "100" | "110" | "120" })}>
-                    <SelectTrigger aria-label="Text size" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="90">Small · 90%</SelectItem>
-                      <SelectItem value="100">Default · 100%</SelectItem>
-                      <SelectItem value="110">Large · 110%</SelectItem>
-                      <SelectItem value="120">Extra large · 120%</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </GlassSettingRow>
-                <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="Interface spacing" desc="Choose how much content fits on screen.">
-                  <Select value={settings.density ?? "comfortable"} onValueChange={(v) => updateSettings({ density: v as "compact" | "comfortable" | "spacious" })}>
-                    <SelectTrigger aria-label="Interface spacing" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="compact">Compact</SelectItem>
-                      <SelectItem value="comfortable">Comfortable</SelectItem>
-                      <SelectItem value="spacious">Spacious</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </GlassSettingRow>
-                <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="High Contrast" desc="Strengthen borders and secondary text.">
-                  <Switch checked={settings.highContrast ?? false} onCheckedChange={(v) => updateSettings({ highContrast: v })} />
-                </GlassSettingRow>
-                <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Readable Font" desc="Use wider letter and word spacing for longer reading.">
-                  <Switch checked={settings.readableFont ?? false} onCheckedChange={(v) => updateSettings({ readableFont: v })} />
-                </GlassSettingRow>
-                <GlassSettingRow icon={<Palette className="h-4 w-4 text-white/70" />} title="Background Grid" desc="Show the subtle grid texture behind pages.">
-                  <Switch checked={settings.backgroundPattern !== false} onCheckedChange={(v) => updateSettings({ backgroundPattern: v })} />
-                </GlassSettingRow>
-                </div>
+                {devMode ? (
+                  <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/45">Font size</label>
+                      <Select value={settings.fontScale} onValueChange={(value) => {
+                        const fontScale = value as "90" | "100" | "110" | "120";
+                        updateSettings({ fontScale });
+                        document.documentElement.dataset.fontScale = fontScale;
+                      }}>
+                        <SelectTrigger className="asme-glass-input"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="90">Small</SelectItem><SelectItem value="100">Original</SelectItem><SelectItem value="110">Large</SelectItem><SelectItem value="120">Extra large</SelectItem></SelectContent>
+                      </Select>
+                    </div>
+                    <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Readable font" desc="Developer preview of the accessible sans-serif font.">
+                      <Switch checked={settings.readableFont} onCheckedChange={(readableFont) => {
+                        updateSettings({ readableFont });
+                        document.documentElement.dataset.readableFont = String(readableFont);
+                      }} />
+                    </GlassSettingRow>
+                    <Button type="button" variant="outline" className="sm:col-span-2 border-white/15 bg-white/5 text-white" onClick={() => {
+                      updateSettings({ fontScale: "100", readableFont: false });
+                      document.documentElement.dataset.fontScale = "100";
+                      document.documentElement.dataset.readableFont = "false";
+                      toast.success("Original Scholar typography restored");
+                    }}>Restore original font</Button>
+                  </div>
+                ) : null}
               </div>
 
               <div className="asme-glass rounded-3xl p-6" data-testid="startup-loading-settings">
@@ -813,14 +846,8 @@ export function SettingsView() {
               </div>
 
               <div className="asme-glass rounded-3xl p-6">
-                <h3 className="font-semibold text-white mb-2">Motion & navigation</h3>
+                <h3 className="font-semibold text-white mb-2">General interface behaviour</h3>
                 <div className="divide-y divide-white/10">
-                <GlassSettingRow icon={<Zap className="h-4 w-4 text-white/70" />} title="Reduce Motion" desc="Minimise animations and transitions.">
-                  <Switch checked={settings.reduceMotion} onCheckedChange={(v) => updateSettings({ reduceMotion: v })} />
-                </GlassSettingRow>
-                <GlassSettingRow icon={<ArrowRight className="h-4 w-4 text-white/70" />} title="Page Transitions" desc="Animate the change between Scholar sections.">
-                  <Switch disabled={settings.reduceMotion} checked={!settings.reduceMotion && settings.pageTransitions !== false} onCheckedChange={(v) => updateSettings({ pageTransitions: v })} />
-                </GlassSettingRow>
                 <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Sidebar on startup" desc="Remember its last state, or always open or close it.">
                   <Select value={settings.sidebarBehavior ?? "remember"} onValueChange={(v) => updateSettings({ sidebarBehavior: v as "remember" | "open" | "closed" })}>
                     <SelectTrigger aria-label="Sidebar on startup" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger>
@@ -862,6 +889,30 @@ export function SettingsView() {
                     <Switch aria-label="Academic switch music" disabled={settings.transitionMusic === false} checked={settings.academicSwitchMusic !== false} onCheckedChange={(value) => updateSettings({ academicSwitchMusic: value })} />
                   </GlassSettingRow>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* ===== Notifications ===== */}
+            <TabsContent value="notifications" className="mt-2 space-y-4">
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-5">
+                  <h3 className="flex items-center gap-2 font-semibold text-white"><SlidersHorizontal className="h-4 w-4 text-cyan-300" />Notification customizer</h3>
+                  <p className="mt-1 text-sm text-white/50">Adjust Scholar's liquid-glass notification size, desktop position and display time. Mobile notifications always stay at the top.</p>
+                </div>
+                <div className="space-y-6">
+                  <div><div className="mb-2 flex justify-between text-sm text-white/75"><span>Size</span><span>{settings.notificationSize ?? 100}%</span></div><Slider aria-label="Notification size" min={75} max={125} step={5} value={[settings.notificationSize ?? 100]} onValueChange={([notificationSize]) => updateSettings({ notificationSize })} /></div>
+                  <div><label className="mb-2 block text-sm text-white/75">Desktop position</label><Select value={settings.notificationPosition ?? "top-left"} onValueChange={(notificationPosition) => updateSettings({ notificationPosition: notificationPosition as typeof settings.notificationPosition })}><SelectTrigger className="asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="top-left">Top left</SelectItem><SelectItem value="top-right">Top right</SelectItem><SelectItem value="top-center">Top center</SelectItem><SelectItem value="bottom-left">Bottom left</SelectItem><SelectItem value="bottom-right">Bottom right</SelectItem><SelectItem value="bottom-center">Bottom center</SelectItem></SelectContent></Select></div>
+                  <div><div className="mb-2 flex justify-between text-sm text-white/75"><span>Timeout</span><span>{((settings.notificationTimeout ?? 2000) / 1000).toFixed(1)} seconds</span></div><Slider aria-label="Notification timeout" min={1500} max={10000} step={500} value={[settings.notificationTimeout ?? 2000]} onValueChange={([notificationTimeout]) => updateSettings({ notificationTimeout })} /></div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4"><p className="text-xs text-white/50">Preview uses the current values immediately.</p><Button type="button" className="mt-3 bg-cyan-500 text-slate-950 hover:bg-cyan-400" onClick={() => toast.success("Notification preview", { description: "This is how completion messages will appear across Scholar." })}><Bell className="mr-2 h-4 w-4" />Show preview</Button></div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ===== Update Logs ===== */}
+            <TabsContent value="updates" className="mt-2 space-y-4">
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="mb-5"><h3 className="flex items-center gap-2 font-semibold text-white"><History className="h-4 w-4 text-violet-300" />Scholar update logs</h3><p className="mt-1 text-sm text-white/50">Every Scholar release, including minor fixes, is recorded here from this update onward.</p></div>
+                <div className="space-y-4">{SCHOLAR_UPDATE_LOG.map((release) => <article key={release.version} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold text-white">{release.title}</p><p className="text-xs text-white/40">{release.date}</p></div><UiBadge variant="outline" className="border-violet-300/25 text-violet-200">{release.version}</UiBadge></div><ul className="mt-3 space-y-1.5 text-sm text-white/65">{release.items.map((item) => <li key={item} className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />{item}</li>)}</ul></article>)}</div>
               </div>
             </TabsContent>
 
@@ -1123,7 +1174,7 @@ export function SettingsView() {
             { Icon: Twitter, label: "Twitter" },
             { Icon: Globe, label: "Website" },
           ].map(({ Icon, label }) => (
-            <button key={label} aria-label={label} className="asme-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all">
+            <button key={label} type="button" aria-label={label} onClick={() => toast.info(`${label} link is not configured yet`, { description: "No page was opened. Scholar will publish verified official links here when available." })} className="asme-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all">
               <Icon size={20} className="h-5 w-5" />
             </button>
           ))}

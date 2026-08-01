@@ -18,7 +18,7 @@ import {
   Lightbulb, ListTodo, GraduationCap, Clock, Target, TrendingUp, AlertTriangle,
   Zap, FileText, Layers, HelpCircle, Award, Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { openMathsEbook } from "@/lib/ebook-navigation";
 import { setLamPageContext } from "@/lib/lam-context";

@@ -23,7 +23,7 @@ import {
   Plus, Trash2, Clock, Sparkles, CalendarDays, ListTodo, Check, ChevronLeft, ChevronRight,
   Zap, Target, AlertCircle, Calendar as CalIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useCallback } from "react";
 
 // ===== Helpers =====

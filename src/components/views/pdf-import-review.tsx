@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   X, ChevronLeft, ChevronRight, FileText, Check, Trash2, Edit3,
   Loader2, Scan, AlertCircle, CheckCircle2, Download, Upload,

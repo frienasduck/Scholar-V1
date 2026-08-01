@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   Mic, Play, Pause, Square, SkipBack, SkipForward, Volume2, VolumeX,
   Gauge, X, ChevronLeft, ChevronRight, RefreshCw, Loader2, Edit3,

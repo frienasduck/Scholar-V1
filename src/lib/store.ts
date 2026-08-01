@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { CURRICULUM } from "./curriculum";
 import type { StartupLoadingMode } from "./startup/startup-modes";
+import type { ScholarAppearanceSettings } from "./appearance/appearance-schema";
+import { DEFAULT_APPEARANCE, migrateAppearance } from "./appearance/appearance-defaults";
 
 // ===== Types =====
 export interface User {
@@ -223,6 +225,10 @@ export interface Settings {
   lamPageContext: boolean;
   lamSelectedText: boolean;
   includeProfileInAI: boolean;
+  notificationSize: number;
+  notificationPosition: "top-left" | "top-right" | "top-center" | "bottom-left" | "bottom-right" | "bottom-center";
+  notificationTimeout: number;
+  appearance: ScholarAppearanceSettings;
 }
 
 export interface Friend {
@@ -815,6 +821,10 @@ function seed() {
       lamPageContext: true,
       lamSelectedText: true,
       includeProfileInAI: true,
+      notificationSize: 100,
+      notificationPosition: "top-left" as const,
+      notificationTimeout: 2000,
+      appearance: structuredClone(DEFAULT_APPEARANCE),
     },
     devMode: false,
     class9Data: null,
@@ -900,7 +910,11 @@ function loadPersistedState(): Partial<AppState> | null {
       safe[f] = (state[f] !== undefined && state[f] !== null) ? state[f] : undefined;
     }
     // Merge settings so older saved profiles receive newly introduced preferences.
-    safe.settings = { ...seed().settings, ...(state.settings ?? {}) };
+    safe.settings = {
+      ...seed().settings,
+      ...(state.settings ?? {}),
+      appearance: migrateAppearance(state.settings?.appearance),
+    };
     safe.authed = !!state.authed;
     safe.onboarded = !!state.onboarded;
     safe.xp = typeof state.xp === "number" ? state.xp : 0;

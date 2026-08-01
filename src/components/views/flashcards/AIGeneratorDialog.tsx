@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { Sparkles, Loader2, ChevronLeft, Trash2, Save, Check, Play } from "lucide-react";
 import { askAIJSON } from "@/lib/ai";
 import type { Subject } from "@/lib/curriculum-class11";

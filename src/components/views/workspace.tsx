@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import {
@@ -219,20 +219,20 @@ export function WorkspaceView() {
 
         {/* ADD WIDGET DIALOG */}
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogContent className="ws-glass-strong !bg-black/60 !border-white/20 max-w-2xl">
+          <DialogContent className="ws-glass-strong !bg-black/75 !border-white/20 w-[calc(100vw-2rem)] max-w-6xl overflow-hidden">
             <DialogHeader>
               <DialogTitle className="ws-font-serif text-2xl text-white flex items-center gap-2">
                 <Plus className="h-5 w-5 text-indigo-300" /> Add Widget
               </DialogTitle>
               <DialogDescription className="text-white/70">Pick from {WIDGETS.length} widgets to add to your workspace.</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+            <div className="flex gap-2 overflow-x-auto pb-3 pt-2 [scrollbar-width:thin]" aria-label="Available study widgets">
               {WIDGETS.map((w) => {
                 const inLayout = layout.includes(w.type);
                 return (
                   <button key={w.type} disabled={inLayout}
                     onClick={() => addWidget(w.type)}
-                    className={cn("p-3 rounded-xl border text-left transition-all",
+                    className={cn("w-44 min-w-44 shrink-0 p-3 rounded-xl border text-left transition-all",
                       inLayout ? "border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/25")}>
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="grid place-items-center h-8 w-8 rounded-lg" style={{ background: `${w.color}22`, color: w.color }}>

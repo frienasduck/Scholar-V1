@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import {
   Sigma, Search, Copy, Star, Download, FileText, BookOpen, Sigma as SigmaIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo } from "react";
 
 interface FormulaItem {

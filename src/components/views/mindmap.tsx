@@ -14,7 +14,7 @@ import {
   Network, ZoomIn, ZoomOut, RotateCcw, Sparkles, Brain, Star,
   GraduationCap, FileText,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useRef } from "react";
 
 interface NodePos { id: string; x: number; y: number; }

@@ -7,7 +7,7 @@ import { askAI } from "@/lib/ai";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { ALL_PRACTICE_QUESTIONS, ALL_PHYSICS_QUESTIONS, PHYSICS_CHAPTER_QUESTIONS, isReviewNeeded, type PracticeQuestion } from "@/lib/question-bank";
 import { PdfImportReview } from "@/components/views/pdf-import-review";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   Check, X, Eye, EyeOff, Sparkles, Loader2, Clock, Award, TrendingUp,
   ListChecks, ArrowLeft, ArrowRight, Filter, Atom, FlaskConical, Calculator, Code2, ChevronRight, PenLine, Scan,

@@ -15,7 +15,7 @@ import {
   Play, Pause, RotateCcw, SkipForward, Volume2, VolumeX, Target, Flame, Zap, Brain,
   Maximize2, Minimize2, Coffee, Timer as TimerIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 type Mode = "pomodoro" | "short" | "long" | "stopwatch";

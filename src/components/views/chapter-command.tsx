@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   LayoutGrid, ChevronRight, ChevronLeft, Search, Play, Pause, Square,
   BookOpen, Calculator, FlaskConical, ListChecks, FileText, Video,
   Brain, AlertTriangle, RefreshCw, Bell, MessageSquare, Sparkles,
   Clock, Target, TrendingUp, Award, CheckCircle2, Circle, ArrowRight,
   Layers, Zap, Mic, X, Plus, Timer, Lightbulb, Atom, Download,
-  ExternalLink, BookMarked, GraduationCap, Gauge,
+  ExternalLink, BookMarked, GraduationCap, Gauge, Maximize2, Minimize2,
 } from "lucide-react";
 
 import { useStore } from "@/lib/store";
@@ -1136,6 +1136,14 @@ function AIAssistantPanel({ data }: { data: ChapterCommandData }) {
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [expanded]);
 
   const prompts = [
     "Explain this chapter",
@@ -1177,7 +1185,10 @@ Answer concisely and helpfully. Use markdown. Never reveal you are an AI.`;
   };
 
   return (
-    <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-500/[0.08] to-fuchsia-500/[0.04] backdrop-blur-xl p-4 space-y-3 lg:sticky lg:top-4">
+    <div className={cn(
+      "rounded-2xl border border-violet-500/30 bg-[#090a13]/92 bg-gradient-to-br from-violet-500/[0.08] to-fuchsia-500/[0.04] p-4 backdrop-blur-xl",
+      expanded ? "fixed inset-3 z-[80] flex flex-col space-y-4 overflow-hidden sm:inset-8 lg:inset-14" : "space-y-3 lg:sticky lg:top-4",
+    )}>
       <div className="flex items-center gap-2">
         <div className="grid place-items-center h-7 w-7 rounded-lg bg-violet-500/20">
           <Sparkles className="h-3.5 w-3.5 text-violet-300" />
@@ -1186,11 +1197,14 @@ Answer concisely and helpfully. Use markdown. Never reveal you are an AI.`;
           <h3 className="text-sm font-semibold text-white">AI Chapter Assistant</h3>
           <p className="text-[10px] text-white/40">Knows your chapter & progress</p>
         </div>
+        <button type="button" onClick={() => setExpanded((value) => !value)} className="ml-auto grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5 text-white/65 transition hover:bg-white/10 hover:text-white" aria-label={expanded ? "Collapse AI Chapter Assistant" : "Expand AI Chapter Assistant"} title={expanded ? "Collapse" : "Expand"}>
+          {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </button>
       </div>
 
       {/* Messages */}
       {messages.length > 0 && (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className={cn("space-y-2 overflow-y-auto", expanded ? "min-h-0 flex-1" : "max-h-48")}>
           {messages.map((m, i) => (
             <div
               key={i}

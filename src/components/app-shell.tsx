@@ -163,7 +163,7 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
     <nav className="flex flex-col gap-6 px-3 py-2">
       {NAV_GROUPS.map((group) => (
         <div key={group}>
-          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p>
+          <p className="scholar-nav-section px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p>
           <div className="flex flex-col gap-0.5">
             {NAV_ITEMS.filter((n) => n.group === group).map((item) => {
               const isActive = active === item.id;
@@ -180,8 +180,8 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
                     key={item.id}
                     className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground/40 cursor-not-allowed relative"
                   >
-                    <item.icon className="h-4.5 w-4.5 shrink-0 opacity-50" />
-                    <span className="truncate flex-1 text-left">{item.label}</span>
+                    <item.icon className="scholar-nav-icon h-4.5 w-4.5 shrink-0 opacity-50" />
+                    <span className="scholar-nav-label truncate flex-1 text-left">{item.label}</span>
                     <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground/60 uppercase tracking-wider">Soon</span>
                   </div>
                 );
@@ -203,19 +203,20 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
                   )}
                 >
                   {isActive && <motion.div layoutId="nav-active" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-primary" />}
-                  <item.icon className={cn("h-4.5 w-4.5 shrink-0", isActive && "text-primary", item.highlight && !isActive && "text-red-400")} />
-                  <span className={cn("truncate flex-1 text-left", item.highlight && !isActive && "font-bold tracking-wide")}>{item.label}</span>
+                  <item.icon className={cn("scholar-nav-icon h-4.5 w-4.5 shrink-0", isActive && "text-primary", item.highlight && !isActive && "text-red-400")} />
+                  <span className={cn("scholar-nav-label truncate flex-1 text-left", item.highlight && !isActive && "font-bold tracking-wide")}>{item.label}</span>
                   {hasFinishedTask && (
                     <span
-                      className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 shadow-[0_0_9px_rgba(103,232,249,.9)]"
+                      className="scholar-nav-badge h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 shadow-[0_0_9px_rgba(103,232,249,.9)]"
                       aria-label="Background task finished"
                     />
                   )}
                   {item.badge && !badge && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">{item.badge}</span>
+                    <span className="scholar-nav-badge text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">{item.badge}</span>
                   )}
                   {badge && (
                     <span className={cn(
+                      "scholar-nav-badge",
                       "text-[10px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center",
                       badge === "•" ? "bg-orange-500/20 text-orange-400 pulse-ring" : "bg-orange-500 text-white"
                     )}>{badge}</span>
@@ -261,7 +262,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             {user.jeeMode && <span className="px-1 py-0.5 rounded-full bg-orange-500 text-white text-[8px]">JEE</span>}
           </div>
 
-          <Button variant="outline" size="sm" onClick={onOpenCmd} className="max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
+          <Button variant="outline" size="sm" onClick={onOpenCmd} className="scholar-top-search max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
             <Search className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Search or jump to…</span>
           <span className="sm:hidden">Search</span>
@@ -271,7 +272,8 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
         </Button>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          {devMode && <Badge variant="outline" className="text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
+          {devMode && <Badge variant="outline" className="scholar-top-status text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
+          <div className="scholar-top-status contents">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-500">
             <Flame className="h-4 w-4" />
             <span className="text-sm font-semibold tabular-nums">{streak}</span>
@@ -284,7 +286,8 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             <Zap className="h-4 w-4" />
             <span className="text-sm font-semibold tabular-nums">Lv {li.level}</span>
           </div>
-          <div className="grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
+          </div>
+          <div className="scholar-top-profile grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
             {user.avatar.startsWith("data:") ? (
               <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
             ) : (
@@ -357,7 +360,7 @@ function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpen
 function Footer() {
   const user = useStore((s) => s.user);
   return (
-    <footer className="mt-auto border-t border-border/60 bg-background/60 backdrop-blur px-4 lg:px-6 py-3">
+    <footer className="mt-auto -mx-3 -mb-3 border-t border-border/60 bg-background/80 px-4 py-3 pb-[calc(.75rem+72px+var(--safe-area-bottom))] backdrop-blur sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6 lg:px-6 lg:pb-3">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <GraduationCap className="h-3.5 w-3.5 text-primary" />
@@ -441,14 +444,17 @@ export function AppShell() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.dataset.fontScale = settings.fontScale ?? "100";
-    root.dataset.density = settings.density ?? "comfortable";
-    root.dataset.highContrast = String(Boolean(settings.highContrast));
-    root.dataset.readableFont = String(Boolean(settings.readableFont));
-    root.dataset.backgroundPattern = String(settings.backgroundPattern !== false);
+    // The experimental appearance engine is intentionally locked. Always
+    // restore Scholar's original presentation on launch; the developer-only
+    // font preview can opt in for the current session from Settings.
+    root.dataset.fontScale = "100";
+    root.dataset.density = "comfortable";
+    root.dataset.highContrast = "false";
+    root.dataset.readableFont = "false";
+    root.dataset.backgroundPattern = "true";
     root.dataset.reduceMotion = String(Boolean(settings.reduceMotion));
     root.dataset.pageTransitions = String(settings.pageTransitions !== false);
-  }, [settings]);
+  }, [settings.pageTransitions, settings.reduceMotion]);
 
   useEffect(() => {
     if (settings.sidebarBehavior === "remember") return;
@@ -597,7 +603,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background">
+    <div className="scholar-shell flex h-dvh w-full overflow-hidden bg-background">
       {/* Desktop sidebar — collapsible, closed by default */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -606,13 +612,13 @@ export function AppShell() {
             animate={{ width: 256, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex shrink-0 flex-col border-r border-border/60 bg-sidebar backdrop-blur-xl sticky top-0 h-screen overflow-hidden z-30 relative"
+            className="scholar-desktop-sidebar hidden lg:flex shrink-0 flex-col border-r border-border/60 bg-sidebar backdrop-blur-xl sticky top-0 h-screen overflow-hidden z-30 relative"
           >
             <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border/60 shrink-0">
               <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
                 <GraduationCap className="h-5 w-5" />
               </div>
-              <div>
+              <div className="scholar-sidebar-title">
                 <p className="text-sm font-semibold leading-tight">{user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</p>
                 <p className="text-[10px] text-muted-foreground">Class {user.scholarClass} · CBSE{user.jeeMode ? " · JEE" : ""}</p>
               </div>
@@ -646,8 +652,8 @@ export function AppShell() {
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full">
         <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden transition-colors duration-500 p-3 sm:p-4 lg:p-6 pb-[calc(1rem+72px+var(--safe-area-bottom))] lg:pb-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
-          <div style={{ position: "relative", width: "100%" }}>
+        <main id="main-scroll" className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 transition-colors duration-500 sm:p-4 lg:p-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+          <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}
             initial={settings.pageTransitions === false || settings.reduceMotion ? false : { opacity: 0, y: 8 }}
