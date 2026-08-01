@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, Volume2, Plus, Loader2, Sparkles, SquarePen, Eraser, Maximize2, Minimize2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 
 import { chatAI, TEACHER_PERSONAS_CLASS9, TEACHER_PERSONAS_CLASS11, getPersona, type ChatMessage, type Persona } from "@/lib/ai";
 import { useStore } from "@/lib/store";
@@ -322,7 +322,7 @@ export function AITutorView() {
     <>
       <style dangerouslySetInnerHTML={{ __html: GLASS_STYLES }} />
 
-      <div className="view-enter relative w-full min-h-[calc(100vh-9rem)] rounded-3xl overflow-hidden">
+      <div className="view-enter relative -m-3 min-h-[calc(100vh-4rem)] w-auto overflow-hidden sm:-m-4 lg:-m-6">
         {/* Cinematic video background */}
         <video
           autoPlay
@@ -347,7 +347,7 @@ export function AITutorView() {
         />
 
         {/* Content layer */}
-        <div className="relative z-10 flex flex-col min-h-[calc(100vh-9rem)] p-4 md:p-6 text-white">
+        <div className="relative z-10 flex min-h-[calc(100vh-4rem)] flex-col p-4 text-white md:p-6">
           {/* Top bar */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

@@ -24,7 +24,7 @@ import {
   Trash2, FolderOpen, Layers, GraduationCap, FlaskConical, Presentation,
   Video, Globe, FileQuestion, ScrollText, BookMarked, Check, Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useEffect, useCallback } from "react";
 
 // ============================================================================

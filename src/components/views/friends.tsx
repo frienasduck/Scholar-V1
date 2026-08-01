@@ -15,7 +15,7 @@ import {
   UserPlus, Send, MessageCircle, Check, X, Star, User as UserIcon,
   Heart, Clock, Sparkles,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;

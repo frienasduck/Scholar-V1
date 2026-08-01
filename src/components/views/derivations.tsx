@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { askAI } from "@/lib/ai";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { BookMarked, Search, ChevronRight, ChevronDown, Sparkles, Loader2, Download, CheckCircle2, Circle } from "lucide-react";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
 

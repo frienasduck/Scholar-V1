@@ -25,7 +25,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   ClipboardCheck, Sparkles, Clock, Trophy, Brain, Play, ChevronRight, ChevronLeft,
   Download, CheckCircle2, XCircle, AlertCircle, FileText, Award, Settings, History,

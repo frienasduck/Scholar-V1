@@ -10,7 +10,7 @@ import {
   ChevronDown, RefreshCw, Save, Eye, Settings2, Palette, Plus,
   Wand, Presentation,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 
 import { askAI, askAIJSON, type ChatMessage } from "@/lib/ai";
 import { useStore } from "@/lib/store";
@@ -1007,6 +1007,10 @@ function AISIG() {
           </div>
         </details>
       )}
+      <div className="rounded-xl border border-amber-300/20 bg-amber-400/[0.07] p-3 text-[11px] leading-5 text-amber-100/70">
+        <p className="font-semibold text-amber-100/90">AISIG quality notice</p>
+        <p className="mt-1">AISIG is not yet operating at its full potential. Scholar currently uses low- or no-cost image models, so results may be inconsistent or disappointing. Our team is aware and will introduce newer, stronger models as sustainable provider access and funding become available.</p>
+      </div>
     </div>
   );
 }
@@ -1568,7 +1572,7 @@ export function AIToolsView() {
   // ===== Tool Page (when a tool is selected) =====
   if (activeTool) {
     return (
-      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-black">
+      <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
         <style>{BLOOM_CSS}</style>
 
         {/* Video background — optimized: preload metadata only, lazy load */}
@@ -1640,7 +1644,7 @@ export function AIToolsView() {
 
   // ===== Tools Grid (landing page) =====
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
       {/* Video background — optimized: preload metadata only */}
       <video
         autoPlay
@@ -1671,9 +1675,9 @@ export function AIToolsView() {
                 </div>
                 <span className="bloom-display text-2xl tracking-tighter text-white font-semibold">bloom</span>
               </div>
-              <div className="bloom-glass rounded-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform">
+              <button type="button" onClick={() => document.getElementById("bloom-tools-menu")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="bloom-glass rounded-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform" aria-label="Jump to AI tools menu">
                 <span className="text-sm text-white/80">Menu</span>
-              </div>
+              </button>
             </div>
 
             {/* Hero center */}
@@ -1735,7 +1739,7 @@ export function AIToolsView() {
           </div>
 
           {/* Tools grid — scrollable, click opens in-page tool page */}
-          <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-1">
+          <div id="bloom-tools-menu" className="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-1">
             {TOOLS.map((t, i) => (
               <motion.div
                 key={t.id}
@@ -1751,6 +1755,7 @@ export function AIToolsView() {
                   )}
                   role="button"
                   tabIndex={0}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpenId(t.id); } }}
                 >
                   {t.badge && (
                     <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg">
@@ -1813,6 +1818,7 @@ export function AIToolsView() {
               )}
               role="button"
               tabIndex={0}
+              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpenId(t.id); } }}
             >
               {t.badge && (
                 <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg">

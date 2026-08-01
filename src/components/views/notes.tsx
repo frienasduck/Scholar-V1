@@ -26,7 +26,7 @@ import {
   ChevronLeft, ChevronRight, Clock, History, Bold, Italic, Code, Heading, List,
   Folder as FolderIcon, Loader2, MoreHorizontal, Mic,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 // ===== Helpers =====

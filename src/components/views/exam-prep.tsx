@@ -14,7 +14,7 @@ import {
   Trophy, TrendingUp, FileText, Clock, Sparkles, Award,
   GraduationCap, Medal, Download, Play,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid, Cell,

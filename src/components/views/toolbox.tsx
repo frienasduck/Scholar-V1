@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import {

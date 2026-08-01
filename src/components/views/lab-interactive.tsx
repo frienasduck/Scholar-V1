@@ -6,7 +6,7 @@
 // at least one observation + checked at least one answer.
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import {
   Play, Pause, RotateCcw, Check, Plus, Trash2, Calculator, Ruler,

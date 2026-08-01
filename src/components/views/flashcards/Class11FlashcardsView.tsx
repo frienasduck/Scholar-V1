@@ -12,7 +12,7 @@ import {
   Bookmark, BookmarkCheck, Video, BookOpen, Filter, Rocket, Loader2,
   Trash2, Play,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { cn } from "@/lib/utils";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { Badge } from "@/components/ui/badge";

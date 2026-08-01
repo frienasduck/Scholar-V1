@@ -34,7 +34,7 @@ import {
   Plus,
   ChevronLeft,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState } from "react";
 
 // AI persona classmates — each with subject speciality and personality.

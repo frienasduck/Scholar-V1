@@ -1,848 +1,1555 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-import { useStore } from "@/lib/store";
 import {
-  MousePointer2, Hand, Lasso, Pen, Highlighter, Pencil, Brush, Eraser,
-  Square, Circle as CircleIcon, Triangle as TriangleIcon, ArrowRight, Minus,
-  Spline, Type as TypeIcon, StickyNote, Brain, Image as ImageIcon, Sigma,
-  Undo2, Redo2, Trash2, ChevronDown, Save, Download, Layers as LayersIcon,
-  Eye, EyeOff, Lock, Unlock, Plus, ZoomIn, ZoomOut, Check, Palette,
-  Map as MapIcon, Sparkles, FileText, Workflow, KanbanSquare, CalendarDays,
-  CircleDot, LayoutGrid, FlaskConical,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+} from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "@/lib/notifications/notification-api";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  BookOpen,
+  BringToFront,
+  Check,
+  ChevronDown,
+  Circle,
+  Clipboard,
+  Copy,
+  Download,
+  Eraser,
+  Eye,
+  EyeOff,
+  FileImage,
+  FileText,
+  Focus,
+  Frame,
+  Grid3X3,
+  Group,
+  Hand,
+  Highlighter,
+  Image as ImageIcon,
+  Layers,
+  Link2,
+  ListChecks,
+  Lock,
+  Maximize2,
+  MessageCircle,
+  Minus,
+  MoreHorizontal,
+  MousePointer2,
+  PanelRightOpen,
+  Pencil,
+  Plus,
+  Redo2,
+  RotateCw,
+  Save,
+  Search,
+  SendToBack,
+  Share2,
+  Sigma,
+  SlidersHorizontal,
+  Sparkles,
+  Square,
+  StickyNote,
+  Table2,
+  Trash2,
+  Type,
+  Undo2,
+  Ungroup,
+  Unlock,
+  Upload,
+  X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
+import { CanvasObjectRenderer } from "@/components/canvas/canvas-object-renderer";
+import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuLabel, DropdownMenuSeparator,
+  CANVAS_STORAGE_KEY,
+  canvasId,
+  chemistryReactionTemplate,
+  cloneCanvasProject,
+  createBlankCanvasProject,
+  createBlankPage,
+  createCanvasObject,
+  normalizeCanvasProject,
+  objectBounds,
+  type CanvasObject,
+  type CanvasObjectType,
+  type CanvasPage,
+  type CanvasPoint,
+  type CanvasProject,
+} from "@/lib/canvas-workspace";
+import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
+import { setLamDraft, setLamPageContext } from "@/lib/lam-context";
+import { navigateTo } from "@/lib/nav-event";
+import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Slider } from "@/components/ui/slider";
 
-// ===== Liquid-glass styles (cv- prefix) =====
+type CanvasTool =
+  | "select"
+  | "hand"
+  | "pen"
+  | "highlighter"
+  | "eraser"
+  | "text"
+  | "sticky"
+  | "shape"
+  | "line"
+  | "arrow"
+  | "connector"
+  | "image"
+  | "formula"
+  | "table"
+  | "frame"
+  | "checklist"
+  | "source";
+
+type InspectorPanel = "pages" | "layers" | "properties" | "comments";
+
+type ComposerState = {
+  type: CanvasObjectType;
+  at: CanvasPoint;
+  editId?: string;
+  text: string;
+  name: string;
+  sourceLabel?: string;
+  sourceView?: string;
+};
+
+type Interaction =
+  | {
+      kind: "pan";
+      startClient: CanvasPoint;
+      viewport: CanvasPage["viewport"];
+    }
+  | {
+      kind: "drag";
+      startClient: CanvasPoint;
+      originals: CanvasObject[];
+      snapshot: CanvasProject;
+      moved: boolean;
+    }
+  | {
+      kind: "resize";
+      startClient: CanvasPoint;
+      object: CanvasObject;
+      snapshot: CanvasProject;
+      moved: boolean;
+    }
+  | {
+      kind: "draw";
+      snapshot: CanvasProject;
+      startWorld: CanvasPoint;
+    }
+  | {
+      kind: "marquee";
+      startWorld: CanvasPoint;
+    }
+  | {
+      kind: "pinch";
+      distance: number;
+      center: CanvasPoint;
+      viewport: CanvasPage["viewport"];
+    };
+
+const MAX_HISTORY = 60;
+const GRID_SIZE = 10;
+
+const CORE_TOOLS: Array<{
+  id: CanvasTool;
+  label: string;
+  icon: typeof MousePointer2;
+  shortcut?: string;
+  divider?: boolean;
+}> = [
+  { id: "select", label: "Select", icon: MousePointer2, shortcut: "V" },
+  { id: "hand", label: "Hand / Pan", icon: Hand, shortcut: "H" },
+  { id: "text", label: "Text", icon: Type, shortcut: "T", divider: true },
+  { id: "pen", label: "Pen", icon: Pencil, shortcut: "P" },
+  { id: "highlighter", label: "Highlighter", icon: Highlighter },
+  { id: "eraser", label: "Eraser", icon: Eraser },
+  { id: "shape", label: "Shape", icon: Square, shortcut: "S", divider: true },
+  { id: "line", label: "Line", icon: Minus, shortcut: "L" },
+  { id: "arrow", label: "Arrow", icon: ArrowRight, shortcut: "A" },
+  { id: "connector", label: "Connector", icon: Link2 },
+  { id: "image", label: "Image", icon: ImageIcon, divider: true },
+  { id: "formula", label: "Formula", icon: Sigma },
+  { id: "sticky", label: "Sticky note", icon: StickyNote, shortcut: "N" },
+  { id: "table", label: "Table", icon: Table2 },
+  { id: "frame", label: "Frame", icon: Frame, shortcut: "F" },
+];
+
+const COLORS = [
+  "#f8fafc",
+  "#fbbf24",
+  "#fb7185",
+  "#38bdf8",
+  "#2dd4bf",
+  "#4ade80",
+  "#a78bfa",
+  "#c084fc",
+];
+
 const CV_STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Barlow:wght@300;400;500;600&display=swap');
-.cv-font { font-family: 'Barlow', system-ui, sans-serif; }
-.cv-serif { font-family: 'Instrument Serif', Georgia, serif; }
-.cv-glass { background:rgba(255,255,255,0.01); backdrop-filter:blur(4px); border:none; box-shadow:inset 0 1px 1px rgba(255,255,255,0.1); position:relative; overflow:hidden; }
-.cv-glass::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.4px; background:linear-gradient(180deg,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.15) 20%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(255,255,255,0.15) 80%,rgba(255,255,255,0.45) 100%); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
-.cv-glass-strong { background:rgba(255,255,255,0.01); backdrop-filter:blur(50px); border:none; box-shadow:4px 4px 4px rgba(0,0,0,0.05),inset 0 1px 1px rgba(255,255,255,0.15); position:relative; overflow:hidden; }
-.cv-glass-strong::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.4px; background:linear-gradient(180deg,rgba(255,255,255,0.5) 0%,rgba(255,255,255,0.2) 20%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(255,255,255,0.2) 80%,rgba(255,255,255,0.5) 100%); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
-.cv-scroll::-webkit-scrollbar { width:6px; height:6px; }
-.cv-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:3px; }
-.cv-scroll::-webkit-scrollbar-track { background:transparent; }
-@media (max-width: 767px) {
-  .cv-topbar { left:.5rem !important; right:.5rem; transform:none !important; overflow-x:auto; justify-content:flex-start; }
-  .cv-toolrail { top:auto !important; bottom:3.25rem; left:50% !important; transform:translateX(-50%) !important; flex-direction:row !important; max-width:calc(100vw - 1rem); overflow-x:auto; }
-  .cv-properties { display:none !important; }
-  .cv-toolrail .cv-divider { width:1px; height:1.5rem; margin:.25rem; }
+.cv-root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#f4f4f5;background:#050606;height:calc(100dvh - 4rem);min-height:600px;overflow:hidden;isolation:isolate}
+.cv-shell{display:grid;grid-template-rows:64px minmax(0,1fr);height:100%;padding:12px;gap:10px}
+.cv-header,.cv-panel,.cv-toolrail,.cv-bottom,.cv-context,.cv-composer{background:rgba(13,15,15,.94);border:1px solid rgba(255,255,255,.09);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.cv-header{display:flex;align-items:center;gap:12px;border-radius:15px;padding:0 14px;min-width:0}
+.cv-header-title{min-width:180px;display:flex;align-items:center;gap:9px}
+.cv-title-button{font-size:13px;font-weight:650;color:#fafafa;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-badge{font-size:10px;color:#5eead4;background:rgba(20,184,166,.12);border:1px solid rgba(45,212,191,.18);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.cv-save{font-size:10px;color:#71717a;white-space:nowrap}
+.cv-search{margin-left:auto;position:relative;width:min(260px,25vw)}
+.cv-search input{width:100%;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#090b0b;color:#e4e4e7;padding:0 32px 0 34px;font-size:12px;outline:none}
+.cv-search svg{position:absolute;left:10px;top:9px;width:15px;height:15px;color:#71717a}
+.cv-search kbd{position:absolute;right:8px;top:8px;color:#52525b;font-size:9px}
+.cv-head-actions{display:flex;align-items:center;gap:6px}
+.cv-icon,.cv-action{display:inline-flex;align-items:center;justify-content:center;height:34px;border:1px solid rgba(255,255,255,.08);background:#0b0d0d;color:#b7b9bd;border-radius:9px;transition:.16s ease}
+.cv-icon{width:34px}.cv-action{padding:0 12px;gap:7px;font-size:11px}
+.cv-icon:hover,.cv-action:hover{color:white;background:#151818;border-color:rgba(255,255,255,.14)}
+.cv-action-primary{color:#99f6e4;background:rgba(13,148,136,.2);border-color:rgba(45,212,191,.34)}
+.cv-main{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 258px;gap:10px;min-height:0}
+.cv-stage{position:relative;min-width:0;min-height:0;border:1px solid rgba(255,255,255,.09);border-radius:15px;overflow:hidden;background:#080a0a}
+.cv-stage svg{display:block;width:100%;height:100%;touch-action:none;user-select:none}
+.cv-stage[data-cursor="hand"] svg{cursor:grab}.cv-stage[data-cursor="draw"] svg{cursor:crosshair}.cv-stage[data-cursor="select"] svg{cursor:default}
+.cv-grid-dark{fill:#080a0a}.cv-grid-blackboard{fill:#07100e}.cv-grid-whiteboard{fill:#f4f4f0}.cv-grid-paper{fill:#faf7ef}.cv-grid-graph{fill:#f3f7f4}
+.cv-toolrail{position:absolute;z-index:30;left:12px;top:50%;transform:translateY(-50%);padding:6px;border-radius:13px;display:flex;flex-direction:column;gap:2px;max-height:calc(100% - 96px);overflow:auto;scrollbar-width:none}
+.cv-toolrail::-webkit-scrollbar{display:none}.cv-toolrail>div{flex:0 0 auto}.cv-tool-divider{height:1px;background:rgba(255,255,255,.08);margin:3px 2px}
+.cv-tool{position:relative;width:38px;height:38px;display:grid;place-items:center;border-radius:9px;color:#8b9094;transition:.14s}
+.cv-tool:hover{background:#171a1a;color:white}.cv-tool[data-active="true"]{background:rgba(20,184,166,.18);color:#5eead4;box-shadow:inset 0 0 0 1px rgba(45,212,191,.2)}
+.cv-tool span{position:absolute;left:46px;top:8px;opacity:0;pointer-events:none;background:#111414;border:1px solid rgba(255,255,255,.1);color:#e4e4e7;padding:5px 8px;border-radius:7px;font-size:10px;white-space:nowrap;transition:.12s}
+.cv-tool:hover span{opacity:1}.cv-tool span b{color:#5eead4;margin-left:5px}
+.cv-bottom{position:absolute;z-index:30;left:14px;bottom:14px;border-radius:12px;padding:6px;display:flex;align-items:center;gap:3px}
+.cv-bottom-label{min-width:50px;text-align:center;font:11px ui-monospace,monospace;color:#d4d4d8}
+.cv-panel{border-radius:15px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.cv-inspector-close{display:none}
+.cv-panel-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid rgba(255,255,255,.08);padding:6px}
+.cv-panel-tab{height:34px;display:grid;place-items:center;color:#71717a;border-radius:8px}
+.cv-panel-tab:hover{color:#d4d4d8}.cv-panel-tab[data-active="true"]{color:#5eead4;background:rgba(20,184,166,.12)}
+.cv-panel-body{padding:12px;overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#303535 transparent}
+.cv-panel-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cv-panel-heading h3{font-size:12px;font-weight:650}.cv-panel-heading p{font-size:9px;color:#62666a}
+.cv-page,.cv-layer{display:flex;align-items:center;gap:7px;padding:8px;border-radius:9px;color:#a1a1aa;font-size:11px;margin-bottom:4px;border:1px solid transparent}
+.cv-page:hover,.cv-layer:hover{background:rgba(255,255,255,.04);color:#e4e4e7}
+.cv-page[data-active="true"],.cv-layer[data-active="true"]{background:rgba(20,184,166,.15);color:#99f6e4;border-color:rgba(45,212,191,.14)}
+.cv-page-index{font:10px ui-monospace,monospace;color:#71717a;width:18px}.cv-item-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-mini-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;color:#71717a}.cv-mini-icon:hover{background:#202323;color:white}
+.cv-minimap{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#080a0a;overflow:hidden}
+.cv-minimap svg{display:block;width:100%;height:118px}
+.cv-properties-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cv-field{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+.cv-field label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#6b7073}
+.cv-field input,.cv-field textarea,.cv-field select{width:100%;border:1px solid rgba(255,255,255,.09);background:#090b0b;color:#e4e4e7;border-radius:8px;padding:8px;font-size:11px;outline:none}
+.cv-field textarea{min-height:90px;resize:vertical}.cv-range{accent-color:#14b8a6}
+.cv-color-row{display:flex;gap:5px;flex-wrap:wrap}.cv-swatch{width:23px;height:23px;border-radius:7px;border:1px solid rgba(255,255,255,.16)}.cv-swatch[data-active="true"]{outline:2px solid #5eead4;outline-offset:2px}
+.cv-context{position:absolute;z-index:35;border-radius:11px;padding:5px;display:flex;gap:3px;transform:translateY(-100%)}
+.cv-context button{width:31px;height:31px;display:grid;place-items:center;border-radius:7px;color:#a1a1aa}.cv-context button:hover{background:#202323;color:white}.cv-context .danger:hover{color:#fda4af}
+.cv-selection-outline{fill:none;stroke:#2dd4bf;stroke-width:2;vector-effect:non-scaling-stroke;stroke-dasharray:6 4;pointer-events:none}
+.cv-resize-handle{fill:#0f766e;stroke:#ccfbf1;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize}
+.cv-marquee{fill:rgba(45,212,191,.08);stroke:#2dd4bf;stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-dasharray:5 4}
+.cv-object{cursor:move}.cv-object-selected{filter:drop-shadow(0 0 6px rgba(45,212,191,.2))}
+.cv-foreign{width:100%;height:100%;overflow:hidden;box-sizing:border-box;color:#f4f4f5}
+.cv-foreign-text{padding:8px}.cv-text-content{white-space:pre-wrap;line-height:1.35;width:100%;height:100%;overflow:hidden}
+.cv-foreign-sticky{padding:20px}.cv-sticky-content{position:relative;height:100%;white-space:pre-wrap;line-height:1.5;font-size:18px;color:#faf5ff;overflow:hidden}
+.cv-sticky-pin{position:absolute;right:0;top:0;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);box-shadow:0 0 0 4px rgba(255,255,255,.05)}
+.cv-object-formula{height:100%;display:grid;place-items:center;padding:12px;overflow:hidden}.cv-object-formula .katex-display{margin:0}.cv-object-formula .katex{font-size:1.45em}
+.cv-object-table{width:100%;height:100%;border-collapse:collapse;font-size:12px}.cv-object-table th,.cv-object-table td{border:1px solid rgba(255,255,255,.13);padding:8px;text-align:left}.cv-object-table th{color:#5eead4;background:rgba(20,184,166,.08)}
+.cv-checklist{padding:18px;height:100%;font-size:16px;line-height:1.45}.cv-checklist>div{display:flex;gap:10px;margin-bottom:9px}.cv-checklist span{color:#2dd4bf}.cv-checklist p{margin:0}
+.cv-frame-title{font-size:12px;color:#99f6e4;text-transform:uppercase;letter-spacing:.1em;font-weight:650}
+.cv-source-card,.cv-flashcard,.cv-question{height:100%;padding:18px;display:flex;flex-direction:column;gap:10px}.cv-source-card>span,.cv-flashcard>span,.cv-question>span{font-size:9px;color:#5eead4;letter-spacing:.12em}.cv-source-card strong,.cv-flashcard strong,.cv-question strong{font-size:17px}.cv-source-card p,.cv-flashcard p,.cv-question p{font-size:12px;line-height:1.5;color:#b8b9bd;white-space:pre-wrap;overflow:hidden}.cv-source-card small{margin-top:auto;color:#5eead4;font-size:10px}
+.cv-composer-backdrop{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.48);display:grid;place-items:center;padding:20px}
+.cv-composer{width:min(510px,100%);max-height:min(690px,92%);overflow:auto;border-radius:17px;padding:18px}
+.cv-composer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.cv-composer-head h2{font-size:15px}.cv-composer-preview{min-height:92px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#090b0b;margin:10px 0;padding:12px}
+.cv-composer-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.cv-empty{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;text-align:center}.cv-empty h2{font-family:Georgia,serif;font-style:italic;font-size:38px;color:#d4d4d8}.cv-empty p{font-size:12px;color:#62666a;margin-top:6px}
+.cv-panel-toggle{display:none;position:absolute;z-index:34;right:12px;top:12px}
+.cv-object-count{position:absolute;right:16px;bottom:14px;color:#52575a;font:10px ui-monospace,monospace}
+@media(max-width:1100px){.cv-header-title{min-width:140px}.cv-title-button{max-width:170px}.cv-search{display:none}.cv-action span{display:none}.cv-action{width:34px;padding:0}.cv-main{grid-template-columns:minmax(0,1fr) 230px}}
+@media(max-width:767px){
+ .cv-root{height:calc(100dvh - 11.25rem - env(safe-area-inset-bottom));min-height:520px}.cv-shell{padding:5px;gap:5px;grid-template-rows:54px minmax(0,1fr)}
+ .cv-header{border-radius:12px;padding:0 8px;gap:5px}.cv-header-title{min-width:0;flex:1}.cv-title-button{max-width:145px}.cv-badge,.cv-save,.cv-head-actions .cv-hide-mobile{display:none}
+ .cv-main{display:block}.cv-stage{height:100%;border-radius:12px}.cv-panel{position:absolute;z-index:50;right:6px;top:6px;bottom:6px;width:min(88vw,320px);box-shadow:-18px 0 50px rgba(0,0,0,.45)}
+ .cv-inspector-close{display:grid;place-items:center;position:absolute;z-index:3;right:7px;top:7px;width:32px;height:32px;border-radius:8px;color:#a1a1aa;background:#161919;border:1px solid rgba(255,255,255,.08)}.cv-panel-tabs{padding-right:43px}
+ .cv-panel-toggle{display:grid}.cv-toolrail{left:50%;top:auto;bottom:8px;transform:translateX(-50%);flex-direction:row;max-height:none;max-width:calc(100% - 70px);overflow-x:auto;padding:5px}
+ .cv-toolrail>div{display:flex;align-items:center}.cv-tool-divider{width:1px;height:28px;margin:5px 3px}.cv-tool span{display:none}.cv-tool{width:40px;height:40px;flex:0 0 auto}
+ .cv-bottom{left:8px;bottom:66px}.cv-context{max-width:calc(100% - 20px);overflow:auto}.cv-object-count{display:none}
 }
+@media(prefers-reduced-motion:reduce){.cv-root *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
 `;
 
-// ===== Types =====
-type Point = { x: number; y: number };
-type CanvasType =
-  | "blackboard" | "whiteboard" | "paper" | "graph" | "ruled" | "dot" | "dark";
-type ToolId =
-  | "select" | "hand" | "lasso" | "pen" | "marker" | "pencil" | "brush" | "chalk"
-  | "eraser" | "rect" | "circle" | "triangle" | "arrow" | "line" | "connector"
-  | "text" | "sticky" | "mindmap" | "image" | "formula";
-
-interface Stroke {
-  id: string;
-  tool: string;
-  color: string;
-  opacity: number;
-  width: number;
-  points: Point[];
-  shape?: string;
-  text?: string;
-  layerId: string;
+function loadProject(scholarClass: 9 | 11) {
+  const raw = profileGetJSON<unknown>(scholarClass, CANVAS_STORAGE_KEY, null);
+  return normalizeCanvasProject(raw);
 }
 
-interface Layer {
-  id: string;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-  opacity: number;
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
-interface BoardState {
-  strokes: Stroke[];
-  layers: Layer[];
-  activeLayer: string;
-  type: CanvasType;
-  name: string;
-  pan: Point;
-  zoom: number;
-  savedAt: number;
+function pointDistance(a: CanvasPoint, b: CanvasPoint) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
 }
 
-// ===== Canvas types =====
-const CANVAS_TYPES: { id: CanvasType; label: string; preview: string; bg: string; fg: string }[] = [
-  { id: "blackboard", label: "Blackboard", preview: "#0a0a0a", bg: "#0a0a0a", fg: "#ffffff" },
-  { id: "whiteboard", label: "Whiteboard", preview: "#f8f8f8", bg: "#f8f8f8", fg: "#1a1a1a" },
-  { id: "paper", label: "Plain Paper", preview: "#fdfaf3", bg: "#fdfaf3", fg: "#1a1a1a" },
-  { id: "graph", label: "Graph Paper", preview: "#eef5ee", bg: "#eef5ee", fg: "#1a1a1a" },
-  { id: "ruled", label: "Ruled Notebook", preview: "#f6f3ee", bg: "#f6f3ee", fg: "#1a1a1a" },
-  { id: "dot", label: "Dot Grid", preview: "#1a1a1a", bg: "#1a1a1a", fg: "#ffffff" },
-  { id: "dark", label: "Dark", preview: "#0f0f12", bg: "#0f0f12", fg: "#ffffff" },
-];
-
-// ===== Tools metadata =====
-const TOOLS: { id: ToolId; label: string; icon: typeof Pen; key?: string; divider?: boolean }[] = [
-  { id: "select", label: "Select", icon: MousePointer2, key: "V" },
-  { id: "hand", label: "Hand (Pan)", icon: Hand, key: "H" },
-  { id: "lasso", label: "Lasso", icon: Lasso },
-  { id: "pen", label: "Pen", icon: Pen, key: "P" },
-  { id: "marker", label: "Marker", icon: Highlighter, key: "M" },
-  { id: "pencil", label: "Pencil", icon: Pencil },
-  { id: "brush", label: "Brush", icon: Brush },
-  { id: "chalk", label: "Chalk", icon: Pen },
-  { id: "eraser", label: "Eraser", icon: Eraser, key: "E", divider: true },
-  { id: "rect", label: "Rectangle", icon: Square, key: "R" },
-  { id: "circle", label: "Circle", icon: CircleIcon, key: "C" },
-  { id: "triangle", label: "Triangle", icon: TriangleIcon },
-  { id: "arrow", label: "Arrow", icon: ArrowRight },
-  { id: "line", label: "Line", icon: Minus },
-  { id: "connector", label: "Connector", icon: Spline },
-  { id: "text", label: "Text", icon: TypeIcon, key: "T", divider: true },
-  { id: "sticky", label: "Sticky Note", icon: StickyNote, key: "N" },
-  { id: "mindmap", label: "Mind Map Node", icon: Brain },
-  { id: "image", label: "Image", icon: ImageIcon },
-  { id: "formula", label: "Formula", icon: Sigma },
-];
-
-const BOTTOM_TOOLS: { id: "undo" | "redo" | "clear"; label: string; icon: typeof Pen }[] = [
-  { id: "undo", label: "Undo", icon: Undo2 },
-  { id: "redo", label: "Redo", icon: Redo2 },
-  { id: "clear", label: "Clear", icon: Trash2 },
-];
-
-const PRESET_COLORS = [
-  "#ffffff", "#fbbf24", "#f97316", "#ef4444", "#ec4899",
-  "#a855f7", "#6366f1", "#3b82f6", "#14b8a6", "#22c55e",
-  "#84cc16", "#eab308", "#94a3b8", "#475569", "#1e293b", "#000000",
-];
-
-// ===== Templates =====
-const TEMPLATES: { id: string; label: string; icon: typeof Pen; desc: string }[] = [
-  { id: "cornell", label: "Cornell Notes", icon: FileText, desc: "Cue / Notes / Summary layout" },
-  { id: "mindmap", label: "Mind Map", icon: Brain, desc: "Central topic with branches" },
-  { id: "flowchart", label: "Flowchart", icon: Workflow, desc: "Decision tree with shapes" },
-  { id: "kanban", label: "Kanban Board", icon: KanbanSquare, desc: "To Do / Doing / Done columns" },
-  { id: "weekly", label: "Weekly Planner", icon: CalendarDays, desc: "Mon–Sun grid" },
-  { id: "venn", label: "Venn Diagram", icon: CircleDot, desc: "Three overlapping sets" },
-  { id: "swot", label: "SWOT Analysis", icon: LayoutGrid, desc: "Strengths / Weak / Opp / Threats" },
-  { id: "labreport", label: "Lab Report", icon: FlaskConical, desc: "Aim / Method / Observation" },
-];
-
-const STORAGE_KEY = "cv-board";
-const MAX_UNDO = 50;
-
-// ===== Helpers =====
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-function defaultLayer(): Layer {
-  return { id: "layer-1", name: "Layer 1", visible: true, locked: false, opacity: 1 };
+function objectIntersects(
+  object: CanvasObject,
+  rect: { x: number; y: number; width: number; height: number },
+) {
+  return !(
+    object.x + object.width < rect.x ||
+    object.y + object.height < rect.y ||
+    object.x > rect.x + rect.width ||
+    object.y > rect.y + rect.height
+  );
 }
 
-function defaultBoard(): BoardState {
-  return {
-    strokes: [],
-    layers: [defaultLayer()],
-    activeLayer: "layer-1",
-    type: "blackboard",
-    name: "Untitled Board",
-    pan: { x: 0, y: 0 },
-    zoom: 100,
-    savedAt: 0,
-  };
+function nextZ(objects: CanvasObject[]) {
+  return objects.length ? Math.max(...objects.map((object) => object.zIndex)) + 1 : 1;
 }
 
-function loadBoard(scholarClass: 9 | 11): BoardState {
-  const parsed = profileGetJSON<Partial<BoardState>>(scholarClass, STORAGE_KEY, {});
-  return { ...defaultBoard(), ...parsed };
+function objectLabel(object: CanvasObject) {
+  return object.name || `${object.type[0].toUpperCase()}${object.type.slice(1)}`;
 }
 
-// ===== Template builders (return strokes in board coordinates) =====
-function buildTemplate(id: string): Stroke[] {
-  const base: Omit<Stroke, "id" | "layerId"> = {
-    tool: "rect", color: "#ffffff", opacity: 0.9, width: 2, points: [], shape: "rect",
-  };
-  const make = (overrides: Partial<Stroke> & { points: Point[] }): Stroke => ({
-    id: uid(), layerId: "layer-1", tool: "rect", color: "#ffffff", opacity: 0.9, width: 2, ...overrides,
-  });
-
-  if (id === "cornell") {
-    return [
-      make({ shape: "rect", color: "#fbbf24", points: [{ x: 80, y: 60 }, { x: 1040, y: 700 }] }),
-      make({ shape: "line", color: "#94a3b8", points: [{ x: 340, y: 60 }, { x: 340, y: 700 }] }),
-      make({ shape: "line", color: "#94a3b8", points: [{ x: 80, y: 600 }, { x: 1040, y: 600 }] }),
-      make({ tool: "text", color: "#ffffff", text: "CORNELL NOTES", points: [{ x: 90, y: 40 }], width: 18 }),
-      make({ tool: "text", color: "#94a3b8", text: "Cues", points: [{ x: 100, y: 90 }], width: 14 }),
-      make({ tool: "text", color: "#94a3b8", text: "Notes", points: [{ x: 360, y: 90 }], width: 14 }),
-      make({ tool: "text", color: "#94a3b8", text: "Summary", points: [{ x: 90, y: 620 }], width: 14 }),
-    ];
-  }
-  if (id === "mindmap") {
-    const cx = 560, cy = 380;
-    const nodes = [
-      { x: cx, y: cy, t: "Topic" },
-      { x: cx - 280, y: cy - 160, t: "Branch 1" },
-      { x: cx + 280, y: cy - 160, t: "Branch 2" },
-      { x: cx - 280, y: cy + 160, t: "Branch 3" },
-      { x: cx + 280, y: cy + 160, t: "Branch 4" },
-    ];
-    const strokes: Stroke[] = [];
-    nodes.forEach((n, i) => {
-      if (i > 0) strokes.push(make({ shape: "line", color: "#6366f1", points: [{ x: cx, y: cy }, { x: n.x, y: n.y }], width: 2 }));
-      strokes.push(make({ shape: "circle", color: i === 0 ? "#fbbf24" : "#14b8a6", points: [{ x: n.x - 60, y: n.y - 24 }, { x: n.x + 60, y: n.y + 24 }], width: 2 }));
-      strokes.push(make({ tool: "text", color: "#ffffff", text: n.t, points: [{ x: n.x - 30, y: n.y + 4 }], width: 13 }));
-    });
-    return strokes;
-  }
-  if (id === "flowchart") {
-    return [
-      make({ shape: "rect", color: "#14b8a6", points: [{ x: 460, y: 60 }, { x: 660, y: 120 }] }),
-      make({ tool: "text", color: "#ffffff", text: "Start", points: [{ x: 530, y: 96 }], width: 13 }),
-      make({ shape: "line", color: "#94a3b8", points: [{ x: 560, y: 120 }, { x: 560, y: 170 }] }),
-      make({ shape: "circle", color: "#a855f7", points: [{ x: 460, y: 170 }, { x: 660, y: 240 }] }),
-      make({ tool: "text", color: "#ffffff", text: "Decision?", points: [{ x: 500, y: 210 }], width: 12 }),
-      make({ shape: "line", color: "#94a3b8", points: [{ x: 560, y: 240 }, { x: 560, y: 290 }] }),
-      make({ shape: "rect", color: "#f97316", points: [{ x: 460, y: 290 }, { x: 660, y: 350 }] }),
-      make({ tool: "text", color: "#ffffff", text: "End", points: [{ x: 540, y: 326 }], width: 13 }),
-    ];
-  }
-  if (id === "kanban") {
-    const cols = [
-      { x: 80, t: "TO DO" }, { x: 420, t: "DOING" }, { x: 760, t: "DONE" },
-    ];
-    const strokes: Stroke[] = [];
-    cols.forEach((c) => {
-      strokes.push(make({ shape: "rect", color: "#475569", points: [{ x: c.x, y: 80 }, { x: c.x + 280, y: 600 }], width: 2 }));
-      strokes.push(make({ tool: "text", color: "#fbbf24", text: c.t, points: [{ x: c.x + 20, y: 110 }], width: 16 }));
-    });
-    strokes.push(make({ shape: "rect", color: "#14b8a6", points: [{ x: 100, y: 140 }, { x: 340, y: 200 }] }));
-    strokes.push(make({ tool: "text", color: "#ffffff", text: "Task A", points: [{ x: 120, y: 175 }], width: 13 }));
-    strokes.push(make({ shape: "rect", color: "#f97316", points: [{ x: 440, y: 140 }, { x: 680, y: 200 }] }));
-    strokes.push(make({ tool: "text", color: "#ffffff", text: "Task B", points: [{ x: 460, y: 175 }], width: 13 }));
-    strokes.push(make({ shape: "rect", color: "#22c55e", points: [{ x: 780, y: 140 }, { x: 1020, y: 200 }] }));
-    strokes.push(make({ tool: "text", color: "#ffffff", text: "Task C", points: [{ x: 800, y: 175 }], width: 13 }));
-    return strokes;
-  }
-  if (id === "weekly") {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const strokes: Stroke[] = [];
-    strokes.push(make({ shape: "rect", color: "#475569", points: [{ x: 60, y: 80 }, { x: 1060, y: 640 }], width: 2 }));
-    for (let i = 0; i < 7; i++) {
-      const x = 60 + i * 143;
-      strokes.push(make({ shape: "line", color: "#94a3b8", points: [{ x: x + 143, y: 80 }, { x: x + 143, y: 640 }], width: 1 }));
-      strokes.push(make({ tool: "text", color: "#fbbf24", text: days[i], points: [{ x: x + 12, y: 110 }], width: 13 }));
-    }
-    strokes.push(make({ shape: "line", color: "#94a3b8", points: [{ x: 60, y: 130 }, { x: 1060, y: 130 }], width: 1 }));
-    return strokes;
-  }
-  if (id === "venn") {
-    return [
-      make({ shape: "circle", color: "#6366f1", opacity: 0.5, points: [{ x: 360, y: 200 }, { x: 660, y: 500 }] }),
-      make({ shape: "circle", color: "#14b8a6", opacity: 0.5, points: [{ x: 540, y: 200 }, { x: 840, y: 500 }] }),
-      make({ shape: "circle", color: "#a855f7", opacity: 0.5, points: [{ x: 450, y: 320 }, { x: 750, y: 620 }] }),
-      make({ tool: "text", color: "#ffffff", text: "Set A", points: [{ x: 400, y: 340 }], width: 14 }),
-      make({ tool: "text", color: "#ffffff", text: "Set B", points: [{ x: 760, y: 340 }], width: 14 }),
-      make({ tool: "text", color: "#ffffff", text: "Set C", points: [{ x: 580, y: 580 }], width: 14 }),
-    ];
-  }
-  if (id === "swot") {
-    const labels = [
-      { x: 80, y: 80, t: "Strengths", c: "#22c55e" },
-      { x: 560, y: 80, t: "Weaknesses", c: "#ef4444" },
-      { x: 80, y: 380, t: "Opportunities", c: "#14b8a6" },
-      { x: 560, y: 380, t: "Threats", c: "#f97316" },
-    ];
-    const strokes: Stroke[] = [];
-    labels.forEach((l) => {
-      strokes.push(make({ shape: "rect", color: l.c, points: [{ x: l.x, y: l.y }, { x: l.x + 440, y: l.y + 260 }], width: 2 }));
-      strokes.push(make({ tool: "text", color: l.c, text: l.t, points: [{ x: l.x + 20, y: l.y + 30 }], width: 18 }));
-    });
-    return strokes;
-  }
-  if (id === "labreport") {
-    const rows = ["Aim", "Materials", "Method", "Observation", "Conclusion"];
-    const strokes: Stroke[] = [];
-    strokes.push(make({ shape: "rect", color: "#475569", points: [{ x: 60, y: 60 }, { x: 1060, y: 660 }], width: 2 }));
-    rows.forEach((r, i) => {
-      const y = 100 + i * 110;
-      strokes.push(make({ shape: "line", color: "#94a3b8", points: [{ x: 60, y }, { x: 1060, y }], width: 1 }));
-      strokes.push(make({ tool: "text", color: "#fbbf24", text: r, points: [{ x: 80, y: y + 30 }], width: 16 }));
-    });
-    return strokes;
-  }
-  return [];
-}
-
-// ===== Component =====
 export function CanvasView() {
-  const scholarClass = useStore((s) => s.user.scholarClass);
-  const addXP = useStore((s) => s.addXP);
-  const pushActivity = useStore((s) => s.pushActivity);
+  const scholarClass = useStore((state) => state.user.scholarClass);
+  const addXP = useStore((state) => state.addXP);
+  const pushActivity = useStore((state) => state.pushActivity);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const minimapRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectRef = useRef<CanvasProject>(createBlankCanvasProject());
+  const interactionRef = useRef<Interaction | null>(null);
+  const touchPoints = useRef(new Map<number, CanvasPoint>());
+  const clipboardRef = useRef<CanvasObject[]>([]);
+  const spaceHeldRef = useRef(false);
 
-  const [board, setBoard] = useState<BoardState>(() => loadBoard(scholarClass));
-  const [tool, setTool] = useState<ToolId>("pen");
-  const [color, setColor] = useState("#ffffff");
-  const [opacity, setOpacity] = useState(1);
-  const [width, setWidth] = useState(3);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showLayers, setShowLayers] = useState(false);
-  const [showMinimap, setShowMinimap] = useState(true);
-  const [cursor, setCursor] = useState<Point>({ x: 0, y: 0 });
-  const [spaceHeld, setSpaceHeld] = useState(false);
-  const [history, setHistory] = useState<Stroke[][]>([]);
-  const [redoStack, setRedoStack] = useState<Stroke[][]>([]);
-  const [savedAt, setSavedAt] = useState<number>(board.savedAt || 0);
-  const [editingName, setEditingName] = useState(false);
+  const [project, setProject] = useState<CanvasProject>(() => loadProject(scholarClass));
+  const [tool, setTool] = useState<CanvasTool>("select");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [draftObject, setDraftObject] = useState<CanvasObject | null>(null);
+  const [marquee, setMarquee] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [undoStack, setUndoStack] = useState<CanvasProject[]>([]);
+  const [redoStack, setRedoStack] = useState<CanvasProject[]>([]);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+  const [savedAt, setSavedAt] = useState<number>(() => Date.now());
+  const [inspectorPanel, setInspectorPanel] = useState<InspectorPanel>("pages");
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [search, setSearch] = useState("");
+  const [pageSearch, setPageSearch] = useState("");
+  const [color, setColor] = useState("#f8fafc");
+  const [strokeWidth, setStrokeWidth] = useState(3);
+  const [viewportLocked, setViewportLocked] = useState(false);
+  const [composer, setComposer] = useState<ComposerState | null>(null);
+  const [comments, setComments] = useState<string[]>([]);
+  const [commentDraft, setCommentDraft] = useState("");
 
-  const isDrawing = useRef(false);
-  const isPanning = useRef(false);
-  const lastPointer = useRef<Point>({ x: 0, y: 0 });
-  const currentStroke = useRef<Stroke | null>(null);
-  const spaceDown = useRef(false);
-  const shapeStart = useRef<Point | null>(null);
-  const boardRef = useRef(board);
-  const toolRef = useRef(tool);
-  const colorRef = useRef(color);
-  const opacityRef = useRef(opacity);
-  const widthRef = useRef(width);
-  const drawScheduled = useRef(false);
-
-  useEffect(() => { boardRef.current = board; }, [board]);
-  useEffect(() => { toolRef.current = tool; }, [tool]);
-  useEffect(() => { colorRef.current = color; }, [color]);
-  useEffect(() => { opacityRef.current = opacity; }, [opacity]);
-  useEffect(() => { widthRef.current = width; }, [width]);
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const next = loadBoard(scholarClass);
-      setBoard(next);
-      setSavedAt(next.savedAt || 0);
-      setHistory([]);
-      setRedoStack([]);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    projectRef.current = project;
+  }, [project]);
+
+  useEffect(() => {
+    const next = loadProject(scholarClass);
+    setProject(next);
+    setUndoStack([]);
+    setRedoStack([]);
+    setSelectedIds([]);
   }, [scholarClass]);
 
-  const activeTool = useMemo(() => TOOLS.find((t) => t.id === tool), [tool]);
-  const activeLayer = useMemo(
-    () => board.layers.find((l) => l.id === board.activeLayer) || board.layers[0],
-    [board.layers, board.activeLayer],
+  const activePage = useMemo(
+    () => project.pages.find((page) => page.id === project.activePageId) ?? project.pages[0],
+    [project],
   );
 
-  // ===== Persistence =====
-  const persist = useCallback((b: BoardState) => {
-    const at = Date.now();
-    profileSetJSON(scholarClass, STORAGE_KEY, { ...b, savedAt: at });
-    setSavedAt(at);
-  }, [scholarClass]);
+  const visibleObjects = useMemo(
+    () => [...activePage.objects].filter((object) => object.visible).sort((a, b) => a.zIndex - b.zIndex),
+    [activePage.objects],
+  );
 
-  // Autosave every 5s if changed
+  const selectedObjects = useMemo(
+    () => activePage.objects.filter((object) => selectedIds.includes(object.id)),
+    [activePage.objects, selectedIds],
+  );
+
   useEffect(() => {
-    const id = setInterval(() => {
-      if (board.strokes.length > 0) persist(boardRef.current);
-    }, 5000);
-    return () => clearInterval(id);
-  }, [persist]);
-
-  // ===== Drawing =====
-  const drawBackground = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, type: CanvasType) => {
-    const cfg = CANVAS_TYPES.find((c) => c.id === type)!;
-    ctx.fillStyle = cfg.bg;
-    ctx.fillRect(0, 0, w, h);
-
-    if (type === "graph") {
-      ctx.strokeStyle = "rgba(0,0,0,0.08)";
-      ctx.lineWidth = 1;
-      for (let x = 0; x < w; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y < h; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-    } else if (type === "ruled") {
-      ctx.strokeStyle = "rgba(99,102,241,0.18)";
-      ctx.lineWidth = 1;
-      for (let y = 32; y < h; y += 28) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-      ctx.strokeStyle = "rgba(239,68,68,0.35)";
-      ctx.beginPath(); ctx.moveTo(60, 0); ctx.lineTo(60, h); ctx.stroke();
-    } else if (type === "dot") {
-      ctx.fillStyle = "rgba(255,255,255,0.22)";
-      for (let x = 0; x < w; x += 24) {
-        for (let y = 0; y < h; y += 24) { ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI * 2); ctx.fill(); }
-      }
-    } else if (type === "whiteboard" || type === "paper") {
-      // subtle warmth already from bg
-    }
+    const compactViewport = window.matchMedia("(max-width: 767px)");
+    const closeInspectorForCompactViewport = (event?: MediaQueryListEvent) => {
+      if (event?.matches ?? compactViewport.matches) setInspectorOpen(false);
+    };
+    closeInspectorForCompactViewport();
+    compactViewport.addEventListener("change", closeInspectorForCompactViewport);
+    return () => compactViewport.removeEventListener("change", closeInspectorForCompactViewport);
   }, []);
 
-  const drawStroke = useCallback((ctx: CanvasRenderingContext2D, s: Stroke, layer: Layer | undefined) => {
-    if (layer && !layer.visible) return;
-    const layerOpacity = layer ? layer.opacity : 1;
-    ctx.save();
-    ctx.globalAlpha = s.opacity * layerOpacity;
-
-    const pts = s.points;
-    if (pts.length === 0) { ctx.restore(); return; }
-
-    if (s.tool === "text" || s.tool === "sticky" || s.tool === "mindmap" || s.tool === "formula") {
-      const pos = pts[0];
-      if (s.tool === "sticky") {
-        ctx.fillStyle = "rgba(251,191,36,0.9)";
-        ctx.shadowColor = "rgba(0,0,0,0.3)";
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetY = 4;
-        ctx.fillRect(pos.x, pos.y, 180, 120);
-        ctx.shadowColor = "transparent";
-        ctx.fillStyle = "#1a1a1a";
-        ctx.font = "14px Barlow, sans-serif";
-        const text = s.text || "Note";
-        text.split("\n").forEach((line, i) => ctx.fillText(line, pos.x + 14, pos.y + 30 + i * 20));
-      } else if (s.tool === "mindmap") {
-        ctx.fillStyle = "rgba(99,102,241,0.85)";
-        ctx.beginPath();
-        ctx.ellipse(pos.x, pos.y, 90, 32, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "14px Barlow, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(s.text || "Node", pos.x, pos.y + 5);
-        ctx.textAlign = "left";
-      } else {
-        ctx.fillStyle = s.color;
-        ctx.font = `${Math.max(12, s.width * 4)}px Barlow, sans-serif`;
-        const text = s.text || "Text";
-        text.split("\n").forEach((line, i) => ctx.fillText(line, pos.x, pos.y + i * (s.width * 4 + 4)));
-      }
-      ctx.restore();
-      return;
-    }
-
-    if (s.shape === "rect" && pts.length >= 2) {
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = s.width;
-      ctx.strokeRect(pts[0].x, pts[0].y, pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-    } else if (s.shape === "circle" && pts.length >= 2) {
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = s.width;
-      const cx = (pts[0].x + pts[1].x) / 2;
-      const cy = (pts[0].y + pts[1].y) / 2;
-      const rx = Math.abs(pts[1].x - pts[0].x) / 2;
-      const ry = Math.abs(pts[1].y - pts[0].y) / 2;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (s.shape === "triangle" && pts.length >= 2) {
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = s.width;
-      const x0 = pts[0].x, y0 = pts[1].y, x1 = pts[1].x;
-      ctx.beginPath();
-      ctx.moveTo((x0 + x1) / 2, pts[0].y);
-      ctx.lineTo(x0, y0);
-      ctx.lineTo(x1, y0);
-      ctx.closePath();
-      ctx.stroke();
-    } else if ((s.shape === "line" || s.shape === "connector") && pts.length >= 2) {
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = s.width;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      ctx.lineTo(pts[1].x, pts[1].y);
-      ctx.stroke();
-      if (s.shape === "connector") {
-        // small circle endpoints
-        ctx.fillStyle = s.color;
-        ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, 4, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(pts[1].x, pts[1].y, 4, 0, Math.PI * 2); ctx.fill();
-      }
-    } else if (s.shape === "arrow" && pts.length >= 2) {
-      ctx.strokeStyle = s.color;
-      ctx.fillStyle = s.color;
-      ctx.lineWidth = s.width;
-      const dx = pts[1].x - pts[0].x;
-      const dy = pts[1].y - pts[0].y;
-      const ang = Math.atan2(dy, dx);
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      ctx.lineTo(pts[1].x, pts[1].y);
-      ctx.stroke();
-      const ah = 12 + s.width * 2;
-      ctx.beginPath();
-      ctx.moveTo(pts[1].x, pts[1].y);
-      ctx.lineTo(pts[1].x - ah * Math.cos(ang - 0.4), pts[1].y - ah * Math.sin(ang - 0.4));
-      ctx.lineTo(pts[1].x - ah * Math.cos(ang + 0.4), pts[1].y - ah * Math.sin(ang + 0.4));
-      ctx.closePath();
-      ctx.fill();
-    } else if (s.tool === "eraser" && pts.length > 0) {
-      // eraser leaves no stroke on its own — handled via destination-out at draw time only
-      // for persistence we skip rendering eraser strokes
-    } else {
-      // freehand drawing engine
-      if (pts.length < 2) { ctx.restore(); return; }
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      if (s.tool === "pen") {
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = s.width;
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length - 1; i++) {
-          const mx = (pts[i].x + pts[i + 1].x) / 2;
-          const my = (pts[i].y + pts[i + 1].y) / 2;
-          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
-        }
-        ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-        ctx.stroke();
-      } else if (s.tool === "marker") {
-        ctx.globalAlpha = s.opacity * 0.5 * layerOpacity;
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = s.width * 2.4;
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-        ctx.stroke();
-      } else if (s.tool === "pencil") {
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = s.width * 0.6;
-        ctx.globalAlpha = s.opacity * 0.7 * layerOpacity;
-        for (let i = 1; i < pts.length; i++) {
-          ctx.beginPath();
-          ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
-          ctx.lineTo(pts[i].x, pts[i].y);
-          ctx.stroke();
-        }
-        // graphite texture
-        for (let i = 0; i < pts.length; i += 2) {
-          ctx.fillStyle = s.color;
-          ctx.globalAlpha = Math.random() * 0.15 * layerOpacity;
-          ctx.beginPath();
-          ctx.arc(pts[i].x + (Math.random() - 0.5) * 2, pts[i].y + (Math.random() - 0.5) * 2, 0.6, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else if (s.tool === "brush") {
-        ctx.strokeStyle = s.color;
-        for (let i = 1; i < pts.length; i++) {
-          const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-          ctx.lineWidth = Math.max(1, s.width * (1.8 - Math.min(1, d / 12)));
-          ctx.beginPath();
-          ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
-          ctx.lineTo(pts[i].x, pts[i].y);
-          ctx.stroke();
-        }
-      } else if (s.tool === "chalk") {
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = s.width;
-        ctx.globalAlpha = s.opacity * 0.85 * layerOpacity;
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-        ctx.stroke();
-        // chalk dust
-        for (let i = 0; i < pts.length; i++) {
-          ctx.fillStyle = s.color;
-          ctx.globalAlpha = Math.random() * 0.25 * layerOpacity;
-          for (let k = 0; k < 3; k++) {
-            ctx.beginPath();
-            ctx.arc(pts[i].x + (Math.random() - 0.5) * s.width * 2, pts[i].y + (Math.random() - 0.5) * s.width * 2, 0.5, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-      }
-    }
-    ctx.restore();
-  }, []);
-
-  const drawAll = useCallback(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w; canvas.height = h;
-    }
-    drawBackground(ctx, w, h, board.type);
-
-    const z = board.zoom / 100;
-    ctx.save();
-    ctx.translate(board.pan.x, board.pan.y);
-    ctx.scale(z, z);
-
-    for (const stroke of board.strokes) {
-      const layer = board.layers.find((l) => l.id === stroke.layerId);
-      drawStroke(ctx, stroke, layer);
-    }
-    if (currentStroke.current) {
-      drawStroke(ctx, currentStroke.current, board.layers.find((l) => l.id === currentStroke.current!.layerId));
-    }
-    ctx.restore();
-  }, [board, drawBackground, drawStroke]);
-
-  const scheduleDraw = useCallback(() => {
-    if (drawScheduled.current) return;
-    drawScheduled.current = true;
-    requestAnimationFrame(() => {
-      drawScheduled.current = false;
-      drawAll();
-      // minimap
-      const mm = minimapRef.current;
-      const canvas = canvasRef.current;
-      if (mm && canvas) {
-        const mctx = mm.getContext("2d");
-        if (mctx) {
-          mctx.fillStyle = "#000";
-          mctx.fillRect(0, 0, mm.width, mm.height);
-          mctx.drawImage(canvas, 0, 0, mm.width, mm.height);
-          // viewport box
-          const z = board.zoom / 100;
-          mctx.strokeStyle = "rgba(251,191,36,0.9)";
-          mctx.lineWidth = 1;
-          const vx = (-board.pan.x / z) / canvas.width * mm.width;
-          const vy = (-board.pan.y / z) / canvas.height * mm.height;
-          const vw = (canvas.width / z) / canvas.width * mm.width;
-          const vh = (canvas.height / z) / canvas.height * mm.height;
-          mctx.strokeRect(vx, vy, vw, vh);
-        }
-      }
-    });
-  }, [drawAll, board.zoom, board.pan]);
-
-  // Redraw on board/zoom/pan changes
-  useEffect(() => { scheduleDraw(); }, [scheduleDraw, board]);
-
-  // Resize observer
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const ro = new ResizeObserver(() => scheduleDraw());
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, [scheduleDraw]);
-
-  // ===== Pointer math =====
-  const toBoard = useCallback((clientX: number, clientY: number): Point => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const z = boardRef.current.zoom / 100;
-    return {
-      x: (clientX - rect.left - boardRef.current.pan.x) / z,
-      y: (clientY - rect.top - boardRef.current.pan.y) / z,
+    const appScroller = document.getElementById("main-scroll");
+    if (!appScroller) return;
+    const previousOverflowY = appScroller.style.overflowY;
+    const previousOverscrollBehavior = appScroller.style.overscrollBehavior;
+    const previousBodyOverflow = document.body.style.overflow;
+    window.scrollTo({ top: 0, left: 0 });
+    appScroller.scrollTo({ top: 0, left: 0 });
+    appScroller.style.overflowY = "hidden";
+    appScroller.style.overscrollBehavior = "none";
+    document.body.style.overflow = "hidden";
+    return () => {
+      appScroller.style.overflowY = previousOverflowY;
+      appScroller.style.overscrollBehavior = previousOverscrollBehavior;
+      document.body.style.overflow = previousBodyOverflow;
     };
   }, []);
 
-  // ===== History =====
-  const pushHistory = useCallback((prev: Stroke[]) => {
-    setHistory((h) => {
-      const next = [...h, prev];
-      if (next.length > MAX_UNDO) next.shift();
-      return next;
+  const primarySelection = selectedObjects[0] ?? null;
+  const selectionBounds = useMemo(() => objectBounds(selectedObjects), [selectedObjects]);
+
+  useEffect(() => {
+    const visibleText = selectedObjects.length
+      ? selectedObjects.map((object) => `${objectLabel(object)}: ${object.text ?? ""}`).join("\n").slice(0, 4_000)
+      : activePage.objects
+          .filter((object) => object.text)
+          .slice(0, 12)
+          .map((object) => `${objectLabel(object)}: ${object.text}`)
+          .join("\n")
+          .slice(0, 4_000);
+    setLamPageContext({
+      subjectTitle: project.subject,
+      chapterTitle: activePage.title,
+      visibleText,
     });
+    return () => setLamPageContext({});
+  }, [activePage.id, activePage.objects, activePage.title, project.subject, selectedObjects]);
+
+  useEffect(() => {
+    setSaveStatus("saving");
+    const timer = window.setTimeout(() => {
+      try {
+        const next = { ...projectRef.current, updatedAt: new Date().toISOString() };
+        profileSetJSON(scholarClass, CANVAS_STORAGE_KEY, next);
+        setSavedAt(Date.now());
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [project, scholarClass]);
+
+  const pushHistory = useCallback((snapshot = projectRef.current) => {
+    setUndoStack((history) => [...history.slice(-(MAX_HISTORY - 1)), cloneCanvasProject(snapshot)]);
     setRedoStack([]);
   }, []);
 
+  const updateActivePage = useCallback(
+    (updater: (page: CanvasPage) => CanvasPage, record = false) => {
+      if (record) pushHistory();
+      setProject((current) => ({
+        ...current,
+        pages: current.pages.map((page) =>
+          page.id === current.activePageId ? updater(page) : page,
+        ),
+        updatedAt: new Date().toISOString(),
+      }));
+    },
+    [pushHistory],
+  );
+
   const undo = useCallback(() => {
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      const last = h[h.length - 1];
-      setRedoStack((r) => [...r, boardRef.current.strokes]);
-      setBoard((b) => ({ ...b, strokes: last }));
-      return h.slice(0, -1);
+    setUndoStack((history) => {
+      if (!history.length) return history;
+      const previous = history[history.length - 1];
+      setRedoStack((redo) => [...redo, cloneCanvasProject(projectRef.current)]);
+      setProject(cloneCanvasProject(previous));
+      setSelectedIds([]);
+      return history.slice(0, -1);
     });
   }, []);
 
   const redo = useCallback(() => {
-    setRedoStack((r) => {
-      if (r.length === 0) return r;
-      const next = r[r.length - 1];
-      setHistory((h) => [...h, boardRef.current.strokes]);
-      setBoard((b) => ({ ...b, strokes: next }));
-      return r.slice(0, -1);
+    setRedoStack((redo) => {
+      if (!redo.length) return redo;
+      const next = redo[redo.length - 1];
+      setUndoStack((history) => [...history, cloneCanvasProject(projectRef.current)]);
+      setProject(cloneCanvasProject(next));
+      setSelectedIds([]);
+      return redo.slice(0, -1);
     });
   }, []);
 
-  const clearBoard = useCallback(() => {
-    if (boardRef.current.strokes.length === 0) return;
-    pushHistory(boardRef.current.strokes);
-    setBoard((b) => ({ ...b, strokes: [] }));
-    toast.success("Canvas cleared");
-  }, [pushHistory]);
-
-  // ===== Pointer events =====
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.button === 1 || spaceDown.current || toolRef.current === "hand") {
-      isPanning.current = true;
-      lastPointer.current = { x: e.clientX, y: e.clientY };
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      return;
-    }
-    const t = toolRef.current;
-    if (activeLayer?.locked) {
-      toast.error("Active layer is locked");
-      return;
-    }
-    const bp = toBoard(e.clientX, e.clientY);
-    isDrawing.current = true;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-
-    if (t === "text" || t === "formula") {
-      const txt = window.prompt(t === "formula" ? "Enter formula (LaTeX-like):" : "Enter text:", "");
-      if (txt && txt.trim()) {
-        pushHistory(boardRef.current.strokes);
-        const s: Stroke = {
-          id: uid(), tool: t, color: colorRef.current, opacity: opacityRef.current,
-          width: widthRef.current, points: [bp], text: txt, layerId: boardRef.current.activeLayer,
-        };
-        setBoard((b) => ({ ...b, strokes: [...b.strokes, s] }));
-        addXP(1);
-      }
-      isDrawing.current = false;
-      return;
-    }
-    if (t === "sticky" || t === "mindmap") {
-      pushHistory(boardRef.current.strokes);
-      const txt = window.prompt(t === "sticky" ? "Sticky note text:" : "Node label:", t === "sticky" ? "Note" : "Node");
-      const s: Stroke = {
-        id: uid(), tool: t, color: colorRef.current, opacity: opacityRef.current,
-        width: widthRef.current, points: [bp], text: txt || (t === "sticky" ? "Note" : "Node"), layerId: boardRef.current.activeLayer,
+  const screenToWorld = useCallback(
+    (clientX: number, clientY: number): CanvasPoint => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return { x: 0, y: 0 };
+      const viewport = projectRef.current.pages.find(
+        (page) => page.id === projectRef.current.activePageId,
+      )?.viewport ?? { x: 0, y: 0, zoom: 1 };
+      return {
+        x: (clientX - rect.left - viewport.x) / viewport.zoom,
+        y: (clientY - rect.top - viewport.y) / viewport.zoom,
       };
-      setBoard((b) => ({ ...b, strokes: [...b.strokes, s] }));
+    },
+    [],
+  );
+
+  const worldCenter = useCallback((): CanvasPoint => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 300, y: 200 };
+    return screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }, [screenToWorld]);
+
+  const addObject = useCallback(
+    (object: CanvasObject) => {
+      updateActivePage(
+        (page) => ({
+          ...page,
+          objects: [...page.objects, { ...object, zIndex: nextZ(page.objects) }],
+        }),
+        true,
+      );
+      setSelectedIds([object.id]);
+      setTool("select");
       addXP(1);
-      isDrawing.current = false;
-      return;
-    }
-    if (t === "image") {
-      const url = window.prompt("Image URL (https://...):", "");
-      if (url) {
-        pushHistory(boardRef.current.strokes);
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          const s: Stroke = {
-            id: uid(), tool: "image", color: "", opacity: 1, width: 200, points: [bp], shape: "image", text: url, layerId: boardRef.current.activeLayer,
+    },
+    [addXP, updateActivePage],
+  );
+
+  const updateSelected = useCallback(
+    (changes: Partial<CanvasObject>, record = true) => {
+      if (!selectedIds.length) return;
+      updateActivePage(
+        (page) => ({
+          ...page,
+          objects: page.objects.map((object) =>
+            selectedIds.includes(object.id) ? { ...object, ...changes } : object,
+          ),
+        }),
+        record,
+      );
+    },
+    [selectedIds, updateActivePage],
+  );
+
+  const deleteSelected = useCallback(() => {
+    if (!selectedIds.length) return;
+    updateActivePage(
+      (page) => ({
+        ...page,
+        objects: page.objects.filter((object) => !selectedIds.includes(object.id)),
+      }),
+      true,
+    );
+    setSelectedIds([]);
+    toast.success("Selection deleted");
+  }, [selectedIds, updateActivePage]);
+
+  const duplicateSelected = useCallback(() => {
+    if (!selectedObjects.length) return;
+    const copies = selectedObjects.map((object, index) => ({
+      ...object,
+      id: canvasId(object.type),
+      name: `${object.name} copy`,
+      x: object.x + 28,
+      y: object.y + 28,
+      zIndex: nextZ(activePage.objects) + index,
+      groupId: undefined,
+    }));
+    updateActivePage(
+      (page) => ({ ...page, objects: [...page.objects, ...copies] }),
+      true,
+    );
+    setSelectedIds(copies.map((object) => object.id));
+  }, [activePage.objects, selectedObjects, updateActivePage]);
+
+  const groupSelected = useCallback(() => {
+    if (selectedIds.length < 2) return;
+    const groupId = canvasId("group");
+    updateSelected({ groupId }, true);
+    toast.success("Objects grouped");
+  }, [selectedIds.length, updateSelected]);
+
+  const ungroupSelected = useCallback(() => {
+    updateSelected({ groupId: undefined }, true);
+    toast.success("Objects ungrouped");
+  }, [updateSelected]);
+
+  const setLayerOrder = useCallback(
+    (direction: "front" | "back" | "up" | "down", ids = selectedIds) => {
+      if (!ids.length) return;
+      updateActivePage(
+        (page) => {
+          const ordered = [...page.objects].sort((a, b) => a.zIndex - b.zIndex);
+          if (direction === "front" || direction === "back") {
+            const anchor = direction === "front" ? nextZ(ordered) : Math.min(...ordered.map((object) => object.zIndex), 0) - ids.length;
+            return {
+              ...page,
+              objects: page.objects.map((object, index) =>
+                ids.includes(object.id)
+                  ? { ...object, zIndex: anchor + index }
+                  : object,
+              ),
+            };
+          }
+          const selected = ordered.findIndex((object) => ids.includes(object.id));
+          const target = direction === "up" ? selected + 1 : selected - 1;
+          if (selected < 0 || target < 0 || target >= ordered.length) return page;
+          [ordered[selected], ordered[target]] = [ordered[target], ordered[selected]];
+          return {
+            ...page,
+            objects: ordered.map((object, index) => ({ ...object, zIndex: index + 1 })),
           };
-          setBoard((b) => ({ ...b, strokes: [...b.strokes, s] }));
-        };
-        img.src = url;
-      }
-      isDrawing.current = false;
-      return;
-    }
-    if (t === "select" || t === "lasso") {
-      // simple: do nothing major
-      isDrawing.current = false;
-      return;
-    }
+        },
+        true,
+      );
+    },
+    [selectedIds, updateActivePage],
+  );
 
-    const isShape = ["rect", "circle", "triangle", "arrow", "line", "connector"].includes(t);
-    if (isShape) {
-      shapeStart.current = bp;
-      currentStroke.current = {
-        id: uid(), tool: t, color: colorRef.current, opacity: opacityRef.current,
-        width: widthRef.current, points: [bp, bp], shape: t, layerId: boardRef.current.activeLayer,
+  const fitObjects = useCallback(
+    (objects = activePage.objects.filter((object) => object.visible)) => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect || !objects.length || viewportLocked) return;
+      const bounds = objectBounds(objects);
+      const padding = 110;
+      const zoom = clamp(
+        Math.min((rect.width - padding * 2) / bounds.width, (rect.height - padding * 2) / bounds.height),
+        0.1,
+        4,
+      );
+      updateActivePage((page) => ({
+        ...page,
+        viewport: {
+          zoom,
+          x: rect.width / 2 - (bounds.x + bounds.width / 2) * zoom,
+          y: rect.height / 2 - (bounds.y + bounds.height / 2) * zoom,
+        },
+      }));
+    },
+    [activePage.objects, updateActivePage, viewportLocked],
+  );
+
+  const setZoom = useCallback(
+    (zoom: number) => {
+      if (viewportLocked) return;
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const current = activePage.viewport;
+      const nextZoom = clamp(zoom, 0.1, 4);
+      const center = { x: rect.width / 2, y: rect.height / 2 };
+      const world = {
+        x: (center.x - current.x) / current.zoom,
+        y: (center.y - current.y) / current.zoom,
       };
-    } else {
-      currentStroke.current = {
-        id: uid(), tool: t, color: colorRef.current, opacity: opacityRef.current,
-        width: widthRef.current, points: [bp], layerId: boardRef.current.activeLayer,
-      };
-    }
-  }, [activeLayer, toBoard, pushHistory, addXP]);
+      updateActivePage((page) => ({
+        ...page,
+        viewport: {
+          zoom: nextZoom,
+          x: center.x - world.x * nextZoom,
+          y: center.y - world.y * nextZoom,
+        },
+      }));
+    },
+    [activePage.viewport, updateActivePage, viewportLocked],
+  );
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const bp = toBoard(e.clientX, e.clientY);
-      setCursor(bp);
-    }
-    if (isPanning.current) {
-      const dx = e.clientX - lastPointer.current.x;
-      const dy = e.clientY - lastPointer.current.y;
-      lastPointer.current = { x: e.clientX, y: e.clientY };
-      setBoard((b) => ({ ...b, pan: { x: b.pan.x + dx, y: b.pan.y + dy } }));
-      return;
-    }
-    if (!isDrawing.current || !currentStroke.current) return;
-    const bp = toBoard(e.clientX, e.clientY);
-    const s = currentStroke.current;
-    if (s.shape) {
-      s.points = [s.points[0], bp];
-    } else {
-      s.points.push(bp);
-    }
-    scheduleDraw();
-  }, [toBoard, scheduleDraw]);
-
-  const onPointerUp = useCallback(() => {
-    if (isPanning.current) {
-      isPanning.current = false;
-      return;
-    }
-    if (!isDrawing.current || !currentStroke.current) return;
-    const s = currentStroke.current;
-    if (s.points.length > 0 && (s.shape || s.points.length > 1)) {
-      pushHistory(boardRef.current.strokes);
-      setBoard((b) => ({ ...b, strokes: [...b.strokes, s] }));
-    }
-    currentStroke.current = null;
-    isDrawing.current = false;
-  }, [pushHistory]);
-
-  // ===== Wheel zoom =====
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    setBoard((b) => {
-      const oldZ = b.zoom / 100;
-      const newZoom = Math.max(10, Math.min(500, b.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
-      const newZ = newZoom / 100;
-      const wx = (mx - b.pan.x) / oldZ;
-      const wy = (my - b.pan.y) / oldZ;
-      return { ...b, zoom: newZoom, pan: { x: mx - wx * newZ, y: my - wy * newZ } };
-    });
+  const normalizeDraftDrawing = useCallback((object: CanvasObject) => {
+    const points = object.points ?? [];
+    if (!points.length) return object;
+    const minX = Math.min(...points.map((point) => point.x));
+    const minY = Math.min(...points.map((point) => point.y));
+    const maxX = Math.max(...points.map((point) => point.x));
+    const maxY = Math.max(...points.map((point) => point.y));
+    return {
+      ...object,
+      x: object.x + minX,
+      y: object.y + minY,
+      width: Math.max(10, maxX - minX),
+      height: Math.max(10, maxY - minY),
+      points: points.map((point) => ({ x: point.x - minX, y: point.y - minY })),
+    };
   }, []);
 
-  // ===== Keyboard shortcuts =====
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-      if (e.code === "Space") { spaceDown.current = true; setSpaceHeld(true); return; }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); return; }
-      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
-        e.preventDefault(); redo(); return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault(); persist(boardRef.current); toast.success("Board saved"); return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
-        e.preventDefault(); clearBoard(); return;
-      }
-      const keyMap: Record<string, ToolId> = {
-        v: "select", h: "hand", p: "pen", m: "marker", e: "eraser",
-        r: "rect", c: "circle", t: "text", n: "sticky",
+  const openComposer = useCallback(
+    (type: CanvasObjectType, at: CanvasPoint, object?: CanvasObject) => {
+      const defaults: Partial<Record<CanvasObjectType, string>> = {
+        text: "Add a heading or explanation",
+        sticky: "Write a quick study note…",
+        formula: String.raw`E_n=-\frac{13.6Z^2}{n^2}\,\mathrm{eV}`,
+        table: "Concept | Meaning | Example\nTerm 1 | Definition | Application\nTerm 2 | Definition | Application",
+        checklist: "Review definitions\nPractise examples\nCheck mistakes",
+        source: "Paste or describe the Scholar content you want to place on this Canvas.",
+        flashcard: "Front: Key concept\nBack: Explanation",
+        question: "Question\n\nMethod and final answer",
       };
-      const k = e.key.toLowerCase();
-      if (keyMap[k] && !e.ctrlKey && !e.metaKey) setTool(keyMap[k]);
+      setComposer({
+        type,
+        at,
+        editId: object?.id,
+        name: object?.name || type[0].toUpperCase() + type.slice(1),
+        text: object?.text || defaults[type] || "",
+        sourceLabel: object?.sourceLabel || (type === "source" ? "Scholar source" : undefined),
+        sourceView: object?.sourceView || (type === "source" ? "ebook" : undefined),
+      });
+    },
+    [],
+  );
+
+  const applyComposer = useCallback(() => {
+    if (!composer || !composer.text.trim()) return;
+    if (composer.editId) {
+      updateActivePage(
+        (page) => ({
+          ...page,
+          objects: page.objects.map((object) =>
+            object.id === composer.editId
+              ? {
+                  ...object,
+                  name: composer.name.trim() || object.name,
+                  text: composer.text.trim(),
+                  sourceLabel: composer.sourceLabel,
+                  sourceView: composer.sourceView,
+                }
+              : object,
+          ),
+        }),
+        true,
+      );
+    } else {
+      addObject(
+        createCanvasObject(composer.type, composer.at, {
+          name: composer.name.trim() || `New ${composer.type}`,
+          text: composer.text.trim(),
+          color,
+          sourceLabel: composer.sourceLabel,
+          sourceView: composer.sourceView,
+          handwritten: composer.type === "sticky",
+        }),
+      );
+    }
+    setComposer(null);
+  }, [addObject, color, composer, updateActivePage]);
+
+  const onObjectPointerDown = useCallback(
+    (event: ReactPointerEvent<SVGGElement>, object: CanvasObject) => {
+      event.stopPropagation();
+      if (tool === "eraser") {
+        updateActivePage(
+          (page) => ({ ...page, objects: page.objects.filter((item) => item.id !== object.id) }),
+          true,
+        );
+        return;
+      }
+      if (["line", "arrow", "connector"].includes(tool)) {
+        const start = { x: object.x + object.width / 2, y: object.y + object.height / 2 };
+        const draft = createCanvasObject("line", start, {
+          name: tool === "connector" ? "Connector" : tool === "arrow" ? "Arrow" : "Line",
+          width: 1,
+          height: 1,
+          color,
+          strokeWidth,
+          arrowEnd: tool !== "line",
+          lineStyle: tool === "connector" ? "curved" : "solid",
+          fromId: object.id,
+        });
+        setDraftObject(draft);
+        interactionRef.current = {
+          kind: "draw",
+          snapshot: cloneCanvasProject(projectRef.current),
+          startWorld: start,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        return;
+      }
+      if (tool !== "select") return;
+      const groupIds = object.groupId
+        ? activePage.objects.filter((item) => item.groupId === object.groupId).map((item) => item.id)
+        : [object.id];
+      const nextSelection = event.shiftKey
+        ? Array.from(new Set([...selectedIds, ...groupIds]))
+        : selectedIds.includes(object.id)
+          ? selectedIds
+          : groupIds;
+      setSelectedIds(nextSelection);
+      const originals = activePage.objects
+        .filter((item) => nextSelection.includes(item.id))
+        .map((item) => ({ ...item, points: item.points?.map((point) => ({ ...point })) }));
+      if (!object.locked) {
+        interactionRef.current = {
+          kind: "drag",
+          startClient: { x: event.clientX, y: event.clientY },
+          originals,
+          snapshot: cloneCanvasProject(projectRef.current),
+          moved: false,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+    },
+    [activePage.objects, color, selectedIds, strokeWidth, tool, updateActivePage],
+  );
+
+  const beginResize = useCallback(
+    (event: ReactPointerEvent<SVGCircleElement>, object: CanvasObject) => {
+      event.stopPropagation();
+      if (object.locked) return;
+      interactionRef.current = {
+        kind: "resize",
+        startClient: { x: event.clientX, y: event.clientY },
+        object: { ...object, points: object.points?.map((point) => ({ ...point })) },
+        snapshot: cloneCanvasProject(projectRef.current),
+        moved: false,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [],
+  );
+
+  const onSurfacePointerDown = useCallback(
+    (event: ReactPointerEvent<SVGSVGElement>) => {
+      touchPoints.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (touchPoints.current.size === 2 && !viewportLocked) {
+        const [first, second] = Array.from(touchPoints.current.values());
+        interactionRef.current = {
+          kind: "pinch",
+          distance: pointDistance(first, second),
+          center: { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 },
+          viewport: { ...activePage.viewport },
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        return;
+      }
+      if (
+        event.button === 1 ||
+        tool === "hand" ||
+        spaceHeldRef.current
+      ) {
+        if (viewportLocked) return;
+        interactionRef.current = {
+          kind: "pan",
+          startClient: { x: event.clientX, y: event.clientY },
+          viewport: { ...activePage.viewport },
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        return;
+      }
+      const point = screenToWorld(event.clientX, event.clientY);
+      if (tool === "select" || tool === "eraser") {
+        if (!event.shiftKey) setSelectedIds([]);
+        interactionRef.current = { kind: "marquee", startWorld: point };
+        setMarquee({ x: point.x, y: point.y, width: 0, height: 0 });
+        event.currentTarget.setPointerCapture(event.pointerId);
+        return;
+      }
+      if (["text", "sticky", "formula", "table", "checklist", "source"].includes(tool)) {
+        const type = tool === "source" ? "source" : (tool as CanvasObjectType);
+        openComposer(type, point);
+        return;
+      }
+      if (tool === "image") {
+        fileInputRef.current?.click();
+        return;
+      }
+      if (["pen", "highlighter", "shape", "line", "arrow", "connector", "frame"].includes(tool)) {
+        const type: CanvasObjectType =
+          tool === "pen" || tool === "highlighter" ? "drawing"
+            : tool === "shape" ? "shape"
+              : tool === "frame" ? "frame"
+                : "line";
+        const object = createCanvasObject(type, point, {
+          name: tool === "highlighter" ? "Highlight" : tool[0].toUpperCase() + tool.slice(1),
+          width: 1,
+          height: 1,
+          color: tool === "highlighter" ? "#fbbf24" : color,
+          opacity: tool === "highlighter" ? 0.42 : 1,
+          strokeWidth: tool === "highlighter" ? Math.max(10, strokeWidth * 4) : strokeWidth,
+          shape: type === "shape" ? "rounded" : undefined,
+          fill: type === "shape" ? "rgba(45,212,191,.06)" : undefined,
+          arrowEnd: tool === "arrow" || tool === "connector",
+          lineStyle: tool === "connector" ? "curved" : "solid",
+          points: type === "drawing" ? [{ x: 0, y: 0 }] : undefined,
+        });
+        setDraftObject(object);
+        interactionRef.current = {
+          kind: "draw",
+          snapshot: cloneCanvasProject(projectRef.current),
+          startWorld: point,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+    },
+    [
+      activePage.viewport,
+      color,
+      openComposer,
+      screenToWorld,
+      strokeWidth,
+      tool,
+      viewportLocked,
+    ],
+  );
+
+  const onSurfacePointerMove = useCallback(
+    (event: ReactPointerEvent<SVGSVGElement>) => {
+      if (touchPoints.current.has(event.pointerId)) {
+        touchPoints.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      }
+      const interaction = interactionRef.current;
+      if (!interaction) return;
+      if (interaction.kind === "pinch") {
+        const points = Array.from(touchPoints.current.values());
+        if (points.length < 2) return;
+        const distance = pointDistance(points[0], points[1]);
+        const center = {
+          x: (points[0].x + points[1].x) / 2,
+          y: (points[0].y + points[1].y) / 2,
+        };
+        const rect = svgRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const zoom = clamp(interaction.viewport.zoom * (distance / interaction.distance), 0.1, 4);
+        const localStart = {
+          x: interaction.center.x - rect.left,
+          y: interaction.center.y - rect.top,
+        };
+        const world = {
+          x: (localStart.x - interaction.viewport.x) / interaction.viewport.zoom,
+          y: (localStart.y - interaction.viewport.y) / interaction.viewport.zoom,
+        };
+        const localCenter = { x: center.x - rect.left, y: center.y - rect.top };
+        updateActivePage((page) => ({
+          ...page,
+          viewport: {
+            zoom,
+            x: localCenter.x - world.x * zoom,
+            y: localCenter.y - world.y * zoom,
+          },
+        }));
+        return;
+      }
+      if (interaction.kind === "pan") {
+        updateActivePage((page) => ({
+          ...page,
+          viewport: {
+            ...page.viewport,
+            x: interaction.viewport.x + event.clientX - interaction.startClient.x,
+            y: interaction.viewport.y + event.clientY - interaction.startClient.y,
+          },
+        }));
+        return;
+      }
+      if (interaction.kind === "drag") {
+        const zoom = activePage.viewport.zoom;
+        let dx = (event.clientX - interaction.startClient.x) / zoom;
+        let dy = (event.clientY - interaction.startClient.y) / zoom;
+        if (!event.altKey) {
+          dx = Math.round(dx / GRID_SIZE) * GRID_SIZE;
+          dy = Math.round(dy / GRID_SIZE) * GRID_SIZE;
+        }
+        interaction.moved = Math.abs(dx) > 0 || Math.abs(dy) > 0;
+        const originals = new Map(interaction.originals.map((object) => [object.id, object]));
+        updateActivePage((page) => ({
+          ...page,
+          objects: page.objects.map((object) => {
+            const original = originals.get(object.id);
+            return original ? { ...object, x: original.x + dx, y: original.y + dy } : object;
+          }),
+        }));
+        return;
+      }
+      if (interaction.kind === "resize") {
+        const zoom = activePage.viewport.zoom;
+        const dx = (event.clientX - interaction.startClient.x) / zoom;
+        const dy = (event.clientY - interaction.startClient.y) / zoom;
+        interaction.moved = Math.abs(dx) > 1 || Math.abs(dy) > 1;
+        updateActivePage((page) => ({
+          ...page,
+          objects: page.objects.map((object) =>
+            object.id === interaction.object.id
+              ? {
+                  ...object,
+                  width: Math.max(28, interaction.object.width + dx),
+                  height: Math.max(28, interaction.object.height + dy),
+                }
+              : object,
+          ),
+        }));
+        return;
+      }
+      const point = screenToWorld(event.clientX, event.clientY);
+      if (interaction.kind === "marquee") {
+        setMarquee({
+          x: Math.min(interaction.startWorld.x, point.x),
+          y: Math.min(interaction.startWorld.y, point.y),
+          width: Math.abs(point.x - interaction.startWorld.x),
+          height: Math.abs(point.y - interaction.startWorld.y),
+        });
+        return;
+      }
+      if (interaction.kind === "draw" && draftObject) {
+        if (draftObject.type === "drawing") {
+          setDraftObject((current) =>
+            current
+              ? {
+                  ...current,
+                  points: [
+                    ...(current.points ?? []),
+                    {
+                      x: point.x - interaction.startWorld.x,
+                      y: point.y - interaction.startWorld.y,
+                    },
+                  ],
+                }
+              : null,
+          );
+        } else {
+          setDraftObject((current) =>
+            current
+              ? {
+                  ...current,
+                  x: Math.min(interaction.startWorld.x, point.x),
+                  y: Math.min(interaction.startWorld.y, point.y),
+                  width: Math.max(2, Math.abs(point.x - interaction.startWorld.x)),
+                  height: Math.max(2, Math.abs(point.y - interaction.startWorld.y)),
+                }
+              : null,
+          );
+        }
+      }
+    },
+    [activePage.viewport.zoom, draftObject, screenToWorld, updateActivePage],
+  );
+
+  const endInteraction = useCallback(
+    (event: ReactPointerEvent<SVGSVGElement>) => {
+      touchPoints.current.delete(event.pointerId);
+      const interaction = interactionRef.current;
+      if (!interaction) return;
+      if (interaction.kind === "pinch" && touchPoints.current.size >= 2) return;
+      if ((interaction.kind === "drag" || interaction.kind === "resize") && interaction.moved) {
+        pushHistory(interaction.snapshot);
+      }
+      if (interaction.kind === "marquee" && marquee) {
+        const matches = activePage.objects
+          .filter((object) => object.visible && objectIntersects(object, marquee))
+          .map((object) => object.id);
+        setSelectedIds((current) => event.shiftKey ? Array.from(new Set([...current, ...matches])) : matches);
+      }
+      if (interaction.kind === "draw" && draftObject) {
+        const object = draftObject.type === "drawing"
+          ? normalizeDraftDrawing(draftObject)
+          : draftObject;
+        if (object.width > 4 && object.height > 4) {
+          pushHistory(interaction.snapshot);
+          setProject((current) => ({
+            ...current,
+            pages: current.pages.map((page) =>
+              page.id === current.activePageId
+                ? {
+                    ...page,
+                    objects: [...page.objects, { ...object, zIndex: nextZ(page.objects) }],
+                  }
+                : page,
+            ),
+          }));
+          setSelectedIds([object.id]);
+          if (!["pen", "highlighter"].includes(tool)) setTool("select");
+        }
+      }
+      setDraftObject(null);
+      setMarquee(null);
+      interactionRef.current = null;
+    },
+    [
+      activePage.objects,
+      draftObject,
+      marquee,
+      normalizeDraftDrawing,
+      pushHistory,
+      tool,
+    ],
+  );
+
+  const onWheel = useCallback(
+    (event: ReactWheelEvent<SVGSVGElement>) => {
+      event.preventDefault();
+      if (viewportLocked) return;
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const horizontalGesture = Math.abs(event.deltaX) > 0.5 || event.shiftKey;
+      if (horizontalGesture && !event.ctrlKey && !event.metaKey) {
+        updateActivePage((page) => ({
+          ...page,
+          viewport: {
+            ...page.viewport,
+            x: page.viewport.x - event.deltaX - (event.shiftKey ? event.deltaY : 0),
+            y: page.viewport.y - (event.shiftKey ? 0 : event.deltaY),
+          },
+        }));
+        return;
+      }
+      const current = activePage.viewport;
+      const zoom = clamp(current.zoom * Math.exp(-event.deltaY * 0.0014), 0.1, 4);
+      const local = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const world = {
+        x: (local.x - current.x) / current.zoom,
+        y: (local.y - current.y) / current.zoom,
+      };
+      updateActivePage((page) => ({
+        ...page,
+        viewport: {
+          zoom,
+          x: local.x - world.x * zoom,
+          y: local.y - world.y * zoom,
+        },
+      }));
+    },
+    [activePage.viewport, updateActivePage, viewportLocked],
+  );
+
+  const onImageUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        toast.error("Choose a JPG, PNG, WEBP, GIF, or another image file.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const image = new Image();
+        image.onload = () => {
+          const maxWidth = 520;
+          const ratio = Math.min(1, maxWidth / image.naturalWidth);
+          addObject(
+            createCanvasObject("image", worldCenter(), {
+              name: file.name,
+              imageUrl: String(reader.result),
+              width: Math.max(120, image.naturalWidth * ratio),
+              height: Math.max(80, image.naturalHeight * ratio),
+            }),
+          );
+        };
+        image.src = String(reader.result);
+      };
+      reader.readAsDataURL(file);
+    },
+    [addObject, worldCenter],
+  );
+
+  const addPage = useCallback(() => {
+    pushHistory();
+    const page = createBlankPage(`Page ${projectRef.current.pages.length + 1}`);
+    setProject((current) => ({
+      ...current,
+      pages: [...current.pages, page],
+      activePageId: page.id,
+    }));
+    setSelectedIds([]);
+  }, [pushHistory]);
+
+  const duplicatePage = useCallback((pageId: string) => {
+    const source = projectRef.current.pages.find((page) => page.id === pageId);
+    if (!source) return;
+    pushHistory();
+    const copy: CanvasPage = {
+      ...JSON.parse(JSON.stringify(source)),
+      id: canvasId("page"),
+      title: `${source.title} copy`,
+      objects: source.objects.map((object) => ({ ...object, id: canvasId(object.type) })),
     };
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") { spaceDown.current = false; setSpaceHeld(false); }
+    setProject((current) => ({
+      ...current,
+      pages: [...current.pages, copy],
+      activePageId: copy.id,
+    }));
+  }, [pushHistory]);
+
+  const deletePage = useCallback((pageId: string) => {
+    if (projectRef.current.pages.length === 1) {
+      toast.error("A Canvas project needs at least one page.");
+      return;
+    }
+    pushHistory();
+    setProject((current) => {
+      const pages = current.pages.filter((page) => page.id !== pageId);
+      return {
+        ...current,
+        pages,
+        activePageId: current.activePageId === pageId ? pages[0].id : current.activePageId,
+      };
+    });
+    setSelectedIds([]);
+  }, [pushHistory]);
+
+  const movePage = useCallback((pageId: string, direction: -1 | 1) => {
+    const index = projectRef.current.pages.findIndex((page) => page.id === pageId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= projectRef.current.pages.length) return;
+    pushHistory();
+    setProject((current) => {
+      const pages = [...current.pages];
+      [pages[index], pages[target]] = [pages[target], pages[index]];
+      return { ...current, pages };
+    });
+  }, [pushHistory]);
+
+  const applyTemplate = useCallback(
+    (template: "chemistry" | "mindmap" | "formula" | "revision") => {
+      const center = worldCenter();
+      let objects: CanvasObject[];
+      if (template === "chemistry") {
+        objects = chemistryReactionTemplate();
+      } else if (template === "mindmap") {
+        const root = createCanvasObject("shape", { x: center.x - 110, y: center.y - 60 }, {
+          name: "Central concept", shape: "ellipse", text: "Central concept", width: 220, height: 120,
+        });
+        const branches = [-1, 1].flatMap((xDirection) => [-1, 1].map((yDirection, index) =>
+          createCanvasObject("sticky", {
+            x: center.x + xDirection * 320 - 110,
+            y: center.y + yDirection * 190 - 70,
+          }, {
+            name: `Branch ${xDirection === -1 ? index + 1 : index + 3}`,
+            text: "Add a connected idea",
+            width: 220,
+            height: 140,
+            fill: xDirection === -1 ? "#164e63" : "#3b2560",
+          }),
+        ));
+        objects = [root, ...branches];
+      } else if (template === "formula") {
+        objects = [
+          createCanvasObject("frame", { x: center.x - 480, y: center.y - 300 }, {
+            name: "Formula sheet", text: "Formula Sheet", width: 960, height: 600,
+          }),
+          createCanvasObject("formula", { x: center.x - 390, y: center.y - 170 }, {
+            name: "Core formula", text: String.raw`v^2=u^2+2as`, width: 360, height: 120,
+          }),
+          createCanvasObject("formula", { x: center.x + 40, y: center.y - 170 }, {
+            name: "Energy formula", text: String.raw`E=\frac{1}{2}mv^2`, width: 360, height: 120,
+          }),
+          createCanvasObject("sticky", { x: center.x - 170, y: center.y + 40 }, {
+            name: "Usage notes", text: "Write units, assumptions, and common mistakes here.", width: 340, height: 180,
+          }),
+        ];
+      } else {
+        objects = [
+          createCanvasObject("frame", { x: center.x - 450, y: center.y - 280 }, {
+            name: "Exam revision", text: "Exam Revision Board", width: 900, height: 560,
+          }),
+          createCanvasObject("checklist", { x: center.x - 390, y: center.y - 180 }, {
+            name: "Revision checklist", width: 350, height: 300,
+          }),
+          createCanvasObject("question", { x: center.x + 30, y: center.y - 180 }, {
+            name: "Practice question", width: 350, height: 230,
+          }),
+        ];
+      }
+      const stageRect = svgRef.current?.getBoundingClientRect();
+      const bounds = objectBounds(objects);
+      const fittedViewport = stageRect
+        ? (() => {
+            const padding = stageRect.width < 700 ? 54 : 86;
+            const zoom = clamp(
+              Math.min(
+                (stageRect.width - padding * 2) / Math.max(bounds.width, 1),
+                (stageRect.height - padding * 2) / Math.max(bounds.height, 1),
+              ),
+              0.1,
+              4,
+            );
+            return {
+              zoom,
+              x: stageRect.width / 2 - (bounds.x + bounds.width / 2) * zoom,
+              y: stageRect.height / 2 - (bounds.y + bounds.height / 2) * zoom,
+            };
+          })()
+        : { x: 70, y: 45, zoom: 0.78 };
+      pushHistory();
+      updateActivePage((page) => ({
+        ...page,
+        title: template === "chemistry" ? "Nucleophilic Substitution" : page.title,
+        objects: objects.map((object, index) => ({ ...object, zIndex: index + 1 })),
+        viewport: fittedViewport,
+      }));
+      setSelectedIds([]);
+      toast.success("Editable Canvas template added");
+    },
+    [pushHistory, updateActivePage, worldCenter],
+  );
+
+  const askLam = useCallback(() => {
+    const context = selectedObjects.length
+      ? selectedObjects.map((object) => `${objectLabel(object)}: ${object.text ?? ""}`).join("\n")
+      : activePage.objects.filter((object) => object.text).map((object) => object.text).join("\n").slice(0, 4_000);
+    const prompt = selectedObjects.length
+      ? `Help me study the selected Canvas content:\n\n${context}`
+      : `Review my Canvas page "${activePage.title}". What is missing or could be organised better?\n\n${context}`;
+    setLamDraft({ prompt });
+    window.dispatchEvent(new CustomEvent("scholar:open-lam", {
+      detail: {
+        prompt,
+        context: {
+          subjectTitle: project.subject,
+          chapterTitle: activePage.title,
+          visibleText: context,
+        },
+      },
+    }));
+  }, [activePage.objects, activePage.title, project.subject, selectedObjects]);
+
+  const copyShareLink = useCallback(async () => {
+    const url = `${window.location.origin}/canvas?project=${encodeURIComponent(project.id)}&page=${encodeURIComponent(activePage.id)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Canvas link copied", {
+        description: "This local Canvas remains private unless you also export and share the project file.",
+      });
+    } catch {
+      toast.error("Copy failed. Use Export project instead.");
+    }
+  }, [activePage.id, project.id]);
+
+  const saveNow = useCallback(() => {
+    try {
+      profileSetJSON(scholarClass, CANVAS_STORAGE_KEY, {
+        ...projectRef.current,
+        updatedAt: new Date().toISOString(),
+      });
+      setSavedAt(Date.now());
+      setSaveStatus("saved");
+      toast.success("Canvas saved");
+      pushActivity({ type: "canvas", icon: "🧩", text: `Saved Canvas "${projectRef.current.title}"` });
+    } catch {
+      setSaveStatus("error");
+      toast.error("Canvas could not be saved");
+    }
+  }, [pushActivity, scholarClass]);
+
+  const exportProject = useCallback(() => {
+    const blob = new Blob([JSON.stringify(projectRef.current, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${project.title.replace(/\W+/g, "-").toLowerCase() || "scholar-canvas"}.scholar-canvas.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    toast.success("Editable Canvas project exported");
+  }, [project.title]);
+
+  const makePng = useCallback(async (): Promise<Blob | null> => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    clone.querySelectorAll(".cv-selection-outline,.cv-resize-handle,.cv-marquee").forEach((node) => node.remove());
+    clone.querySelector<SVGGElement>('[data-canvas-world="true"]')?.removeAttribute("transform");
+    const bounds = objectBounds(activePage.objects.filter((object) => object.visible));
+    const padding = 60;
+    clone.setAttribute("viewBox", `${bounds.x - padding} ${bounds.y - padding} ${bounds.width + padding * 2} ${bounds.height + padding * 2}`);
+    clone.setAttribute("width", String(Math.min(4096, Math.max(1200, bounds.width + padding * 2))));
+    clone.setAttribute("height", String(Math.min(4096, Math.max(800, bounds.height + padding * 2))));
+    const serialized = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    try {
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("Canvas rendering failed"));
+        image.src = url;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.min(4096, Math.max(1200, Math.round(bounds.width + padding * 2)));
+      canvas.height = Math.min(4096, Math.max(800, Math.round(bounds.height + padding * 2)));
+      const context = canvas.getContext("2d");
+      if (!context) return null;
+      context.fillStyle = "#080a0a";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png", 1));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }, [activePage.objects]);
+
+  const exportPng = useCallback(async () => {
+    try {
+      const blob = await makePng();
+      if (!blob) throw new Error("No image");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${activePage.title.replace(/\W+/g, "-").toLowerCase() || "canvas-page"}.png`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast.success("Canvas page exported as PNG");
+      addXP(1);
+    } catch {
+      toast.error("This page could not be exported. Check external image sources.");
+    }
+  }, [activePage.title, addXP, makePng]);
+
+  const printPdf = useCallback(async () => {
+    const blob = await makePng();
+    if (!blob) {
+      toast.error("PDF export could not render this page.");
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    if (!popup) {
+      URL.revokeObjectURL(url);
+      toast.error("Allow popups to use Save as PDF.");
+      return;
+    }
+    popup.document.write(`<title>${activePage.title}</title><style>@page{size:landscape;margin:0}body{margin:0;background:#080a0a;display:grid;place-items:center;min-height:100vh}img{max-width:100vw;max-height:100vh}</style><img src="${url}" alt="">`);
+    popup.document.close();
+    popup.addEventListener("load", () => {
+      popup.focus();
+      popup.print();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2_000);
+    });
+  }, [activePage.title, makePng]);
+
+  const openSource = useCallback((object: CanvasObject) => {
+    if (!object.sourceView) return;
+    navigateTo(object.sourceView, object.sourceId ? { sourceId: object.sourceId } : undefined);
+  }, []);
+
+  const focusObject = useCallback(
+    (object: CanvasObject) => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const zoom = clamp(activePage.viewport.zoom, 0.4, 2);
+      updateActivePage((page) => ({
+        ...page,
+        viewport: {
+          zoom,
+          x: rect.width / 2 - (object.x + object.width / 2) * zoom,
+          y: rect.height / 2 - (object.y + object.height / 2) * zoom,
+        },
+      }));
+      setSelectedIds([object.id]);
+      setSearch("");
+    },
+    [activePage.viewport.zoom, updateActivePage],
+  );
+
+  const filteredSearchResults = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return [];
+    return project.pages.flatMap((page) =>
+      page.objects
+        .filter((object) =>
+          [object.name, object.text, object.sourceLabel].filter(Boolean).join(" ").toLowerCase().includes(query),
+        )
+        .map((object) => ({ page, object })),
+    ).slice(0, 12);
+  }, [project.pages, search]);
+
+  const changeProjectTitle = useCallback(() => {
+    const title = window.prompt("Canvas project name:", projectRef.current.title)?.trim();
+    if (!title || title === projectRef.current.title) return;
+    pushHistory();
+    setProject((current) => ({ ...current, title }));
+  }, [pushHistory]);
+
+  const changeSubject = useCallback(() => {
+    const subject = window.prompt("Subject or category:", projectRef.current.subject)?.trim();
+    if (!subject || subject === projectRef.current.subject) return;
+    pushHistory();
+    setProject((current) => ({ ...current, subject }));
+  }, [pushHistory]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      const editing = target.matches("input,textarea,select,[contenteditable=true]");
+      if (event.code === "Space" && !editing) {
+        spaceHeldRef.current = true;
+        event.preventDefault();
+        return;
+      }
+      if (editing) return;
+      const modifier = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+      if (modifier && key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      } else if (modifier && key === "y") {
+        event.preventDefault();
+        redo();
+      } else if (modifier && key === "s") {
+        event.preventDefault();
+        saveNow();
+      } else if (modifier && key === "d") {
+        event.preventDefault();
+        duplicateSelected();
+      } else if (modifier && key === "c") {
+        clipboardRef.current = selectedObjects.map((object) => ({ ...object }));
+      } else if (modifier && key === "v" && clipboardRef.current.length) {
+        event.preventDefault();
+        const copies = clipboardRef.current.map((object, index) => ({
+          ...object,
+          id: canvasId(object.type),
+          x: object.x + 24,
+          y: object.y + 24,
+          zIndex: nextZ(activePage.objects) + index,
+        }));
+        updateActivePage((page) => ({ ...page, objects: [...page.objects, ...copies] }), true);
+        setSelectedIds(copies.map((object) => object.id));
+      } else if (modifier && key === "g") {
+        event.preventDefault();
+        if (event.shiftKey) ungroupSelected();
+        else groupSelected();
+      } else if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        deleteSelected();
+      } else if (event.key === "Escape") {
+        setComposer(null);
+        setSelectedIds([]);
+        setTool("select");
+      } else if (event.key === "0") {
+        fitObjects();
+      } else if (event.key === "1") {
+        setZoom(1);
+      } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) && selectedIds.length) {
+        event.preventDefault();
+        const step = event.shiftKey ? 10 : 1;
+        const delta = {
+          x: event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0,
+          y: event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0,
+        };
+        updateActivePage((page) => ({
+          ...page,
+          objects: page.objects.map((object) =>
+            selectedIds.includes(object.id)
+              ? { ...object, x: object.x + delta.x, y: object.y + delta.y }
+              : object,
+          ),
+        }), true);
+      } else if (!modifier) {
+        const shortcuts: Record<string, CanvasTool> = {
+          v: "select", h: "hand", t: "text", p: "pen", s: "shape",
+          l: "line", a: "arrow", n: "sticky", f: "frame",
+        };
+        if (shortcuts[key]) setTool(shortcuts[key]);
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code === "Space") spaceHeldRef.current = false;
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -850,448 +1557,423 @@ export function CanvasView() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [undo, redo, persist, clearBoard]);
+  }, [
+    activePage.objects,
+    deleteSelected,
+    duplicateSelected,
+    fitObjects,
+    groupSelected,
+    redo,
+    saveNow,
+    selectedIds,
+    selectedObjects,
+    setZoom,
+    undo,
+    ungroupSelected,
+    updateActivePage,
+  ]);
 
-  // ===== Actions =====
-  const applyTemplate = useCallback((id: string) => {
-    pushHistory(boardRef.current.strokes);
-    const newStrokes = buildTemplate(id);
-    setBoard((b) => ({ ...b, strokes: newStrokes }));
-    const label = TEMPLATES.find((t) => t.id === id)?.label || id;
-    toast.success(`Loaded "${label}" template`);
-    addXP(2);
-    pushActivity({ type: "canvas", icon: "✨", text: `Applied ${label} template on canvas` });
-  }, [pushHistory, addXP, pushActivity]);
+  const stageCursor = tool === "hand" ? "hand" : ["pen", "highlighter", "shape", "line", "arrow", "connector", "frame"].includes(tool) ? "draw" : "select";
+  const worldTransform = `translate(${activePage.viewport.x} ${activePage.viewport.y}) scale(${activePage.viewport.zoom})`;
+  const contextLeft = clamp(activePage.viewport.x + selectionBounds.x * activePage.viewport.zoom, 58, Math.max(58, (stageRef.current?.clientWidth ?? 800) - 280));
+  const contextTop = clamp(activePage.viewport.y + selectionBounds.y * activePage.viewport.zoom - 8, 54, (stageRef.current?.clientHeight ?? 600) - 40);
 
-  const exportPNG = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = `${(board.name || "board").replace(/\s+/g, "-").toLowerCase()}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-    toast.success("PNG exported");
-    addXP(1);
-  }, [board.name, addXP]);
-
-  const exportJSON = useCallback(() => {
-    const blob = new Blob([JSON.stringify(board, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = `${(board.name || "board").replace(/\s+/g, "-").toLowerCase()}.json`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("JSON exported");
-  }, [board]);
-
-  const saveBoard = useCallback(() => {
-    persist(boardRef.current);
-    toast.success("Board saved to browser");
-    pushActivity({ type: "canvas", icon: "💾", text: `Saved canvas "${boardRef.current.name}"` });
-    addXP(1);
-  }, [persist, addXP, pushActivity]);
-
-  const setZoom = useCallback((z: number) => {
-    setBoard((b) => ({ ...b, zoom: Math.max(10, Math.min(500, z)) }));
-  }, []);
-
-  const setBoardType = useCallback((t: CanvasType) => {
-    setBoard((b) => ({ ...b, type: t }));
-  }, []);
-
-  // ===== Layers =====
-  const addLayer = useCallback(() => {
-    setBoard((b) => {
-      const id = `layer-${b.layers.length + 1}-${uid()}`;
-      return {
-        ...b,
-        layers: [...b.layers, { id, name: `Layer ${b.layers.length + 1}`, visible: true, locked: false, opacity: 1 }],
-        activeLayer: id,
-      };
-    });
-  }, []);
-
-  const toggleLayerVis = useCallback((id: string) => {
-    setBoard((b) => ({ ...b, layers: b.layers.map((l) => l.id === id ? { ...l, visible: !l.visible } : l) }));
-  }, []);
-  const toggleLayerLock = useCallback((id: string) => {
-    setBoard((b) => ({ ...b, layers: b.layers.map((l) => l.id === id ? { ...l, locked: !l.locked } : l) }));
-  }, []);
-  const setLayerOpacity = useCallback((id: string, op: number) => {
-    setBoard((b) => ({ ...b, layers: b.layers.map((l) => l.id === id ? { ...l, opacity: op } : l) }));
-  }, []);
-
-  const savedLabel = savedAt > 0 ? `Saved ${new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Not saved";
+  const renderInspector = () => {
+    if (inspectorPanel === "pages") {
+      const pages = project.pages.filter((page) => page.title.toLowerCase().includes(pageSearch.toLowerCase()));
+      return (
+        <>
+          <div className="cv-panel-heading">
+            <div><h3>Pages</h3><p>{project.pages.length} boards in this project</p></div>
+            <button className="cv-mini-icon" onClick={addPage} aria-label="Add page"><Plus size={15} /></button>
+          </div>
+          <div className="cv-field">
+            <input value={pageSearch} onChange={(event) => setPageSearch(event.target.value)} placeholder="Search pages…" aria-label="Search pages" />
+          </div>
+          {pages.map((page, index) => (
+            <div
+              key={page.id}
+              className="cv-page"
+              data-active={page.id === activePage.id}
+              onClick={() => {
+                setProject((current) => ({ ...current, activePageId: page.id }));
+                setSelectedIds([]);
+              }}
+            >
+              <span className="cv-page-index">{index + 1}</span>
+              <span className="cv-item-name">{page.title}</span>
+              <button className="cv-mini-icon" onClick={(event) => { event.stopPropagation(); movePage(page.id, -1); }} aria-label={`Move ${page.title} up`}><ArrowUp size={12} /></button>
+              <button className="cv-mini-icon" onClick={(event) => { event.stopPropagation(); duplicatePage(page.id); }} aria-label={`Duplicate ${page.title}`}><Copy size={12} /></button>
+              <button className="cv-mini-icon" onClick={(event) => { event.stopPropagation(); deletePage(page.id); }} aria-label={`Delete ${page.title}`}><Trash2 size={12} /></button>
+            </div>
+          ))}
+          <button className="cv-action w-full mt-2" onClick={addPage}><Plus size={14} /> Add page</button>
+          <Minimap page={activePage} onNavigate={(point) => {
+            const rect = svgRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            updateActivePage((page) => ({
+              ...page,
+              viewport: {
+                ...page.viewport,
+                x: rect.width / 2 - point.x * page.viewport.zoom,
+                y: rect.height / 2 - point.y * page.viewport.zoom,
+              },
+            }));
+          }} />
+        </>
+      );
+    }
+    if (inspectorPanel === "layers") {
+      const objects = [...activePage.objects].sort((a, b) => b.zIndex - a.zIndex);
+      return (
+        <>
+          <div className="cv-panel-heading">
+            <div><h3>Layers</h3><p>{objects.length} objects on this page</p></div>
+            <Layers size={15} className="text-zinc-500" />
+          </div>
+          {objects.map((object) => (
+            <div
+              key={object.id}
+              className="cv-layer"
+              data-active={selectedIds.includes(object.id)}
+              onClick={() => setSelectedIds([object.id])}
+              onDoubleClick={() => {
+                const name = window.prompt("Layer name:", object.name)?.trim();
+                if (name) {
+                  setSelectedIds([object.id]);
+                  updateActivePage((page) => ({
+                    ...page,
+                    objects: page.objects.map((item) => item.id === object.id ? { ...item, name } : item),
+                  }), true);
+                }
+              }}
+            >
+              <button className="cv-mini-icon" onClick={(event) => {
+                event.stopPropagation();
+                updateActivePage((page) => ({
+                  ...page,
+                  objects: page.objects.map((item) => item.id === object.id ? { ...item, visible: !item.visible } : item),
+                }), true);
+              }} aria-label={object.visible ? `Hide ${object.name}` : `Show ${object.name}`}>
+                {object.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+              </button>
+              <span className="cv-item-name">{objectLabel(object)}</span>
+              <button className="cv-mini-icon" onClick={(event) => {
+                event.stopPropagation();
+                setSelectedIds([object.id]);
+                updateActivePage((page) => ({
+                  ...page,
+                  objects: page.objects.map((item) => item.id === object.id ? { ...item, locked: !item.locked } : item),
+                }), true);
+              }} aria-label={object.locked ? `Unlock ${object.name}` : `Lock ${object.name}`}>
+                {object.locked ? <Lock size={12} /> : <Unlock size={12} />}
+              </button>
+              <button className="cv-mini-icon" onClick={(event) => { event.stopPropagation(); setLayerOrder("up", [object.id]); }} aria-label={`Bring ${object.name} forward`}><ArrowUp size={12} /></button>
+            </div>
+          ))}
+        </>
+      );
+    }
+    if (inspectorPanel === "properties") {
+      if (!primarySelection) {
+        return (
+          <>
+            <div className="cv-panel-heading"><div><h3>Properties</h3><p>Canvas and page settings</p></div></div>
+            <div className="cv-field"><label>Project</label><input value={project.title} readOnly onClick={changeProjectTitle} /></div>
+            <div className="cv-field"><label>Subject</label><input value={project.subject} readOnly onClick={changeSubject} /></div>
+            <div className="cv-field"><label>Page title</label><input value={activePage.title} onChange={(event) => updateActivePage((page) => ({ ...page, title: event.target.value }))} /></div>
+            <div className="cv-field"><label>Background</label>
+              <select value={activePage.background} onChange={(event) => updateActivePage((page) => ({ ...page, background: event.target.value as CanvasPage["background"] }), true)}>
+                <option value="dark">Dark dotted</option><option value="blackboard">Blackboard</option><option value="whiteboard">Whiteboard</option><option value="paper">Warm paper</option><option value="graph">Graph paper</option>
+              </select>
+            </div>
+            <div className="cv-field"><label>Template</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><button className="cv-action w-full"><Sparkles size={14} /> Add editable template <ChevronDown size={13} /></button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10 text-zinc-200">
+                  <DropdownMenuItem onClick={() => applyTemplate("chemistry")}>Chemistry Reaction Board</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => applyTemplate("mindmap")}>Chapter Mind Map</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => applyTemplate("formula")}>Formula Sheet</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => applyTemplate("revision")}>Exam Revision Board</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </>
+        );
+      }
+      return (
+        <>
+          <div className="cv-panel-heading">
+            <div><h3>{objectLabel(primarySelection)}</h3><p>{selectedObjects.length > 1 ? `${selectedObjects.length} objects selected` : primarySelection.type}</p></div>
+            <button className="cv-mini-icon" onClick={() => updateSelected({ locked: !primarySelection.locked })}>{primarySelection.locked ? <Unlock size={14} /> : <Lock size={14} />}</button>
+          </div>
+          <div className="cv-field"><label>Layer name</label><input value={primarySelection.name} onChange={(event) => updateSelected({ name: event.target.value }, false)} /></div>
+          {primarySelection.text !== undefined && (
+            <div className="cv-field"><label>{primarySelection.type === "formula" ? "LaTeX source" : "Content"}</label><textarea value={primarySelection.text} onChange={(event) => updateSelected({ text: event.target.value }, false)} /></div>
+          )}
+          {primarySelection.type === "formula" && (
+            <div className="cv-composer-preview"><ScholarAIContent content={`\\[${primarySelection.text}\\]`} mode="compact" normalizeLegacy={false} /></div>
+          )}
+          <div className="cv-properties-grid">
+            <div className="cv-field"><label>Width</label><input type="number" min={28} value={Math.round(primarySelection.width)} onChange={(event) => updateSelected({ width: Math.max(28, Number(event.target.value)) }, false)} /></div>
+            <div className="cv-field"><label>Height</label><input type="number" min={28} value={Math.round(primarySelection.height)} onChange={(event) => updateSelected({ height: Math.max(28, Number(event.target.value)) }, false)} /></div>
+          </div>
+          <div className="cv-field"><label>Rotation · {Math.round(primarySelection.rotation)}°</label><input className="cv-range" type="range" min={-180} max={180} value={primarySelection.rotation} onChange={(event) => updateSelected({ rotation: Number(event.target.value) }, false)} /></div>
+          <div className="cv-field"><label>Opacity · {Math.round(primarySelection.opacity * 100)}%</label><input className="cv-range" type="range" min={5} max={100} value={primarySelection.opacity * 100} onChange={(event) => updateSelected({ opacity: Number(event.target.value) / 100 }, false)} /></div>
+          <div className="cv-field"><label>Colour</label><div className="cv-color-row">{COLORS.map((swatch) => <button key={swatch} className="cv-swatch" data-active={primarySelection.color === swatch} style={{ background: swatch }} onClick={() => updateSelected({ color: swatch })} aria-label={`Set colour ${swatch}`} />)}</div></div>
+          {primarySelection.type === "shape" && (
+            <div className="cv-field"><label>Shape</label><select value={primarySelection.shape} onChange={(event) => updateSelected({ shape: event.target.value as CanvasObject["shape"] })}><option value="rounded">Rounded rectangle</option><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option><option value="triangle">Triangle</option><option value="diamond">Diamond</option><option value="hexagon">Hexagon</option></select></div>
+          )}
+          {primarySelection.type === "line" && (
+            <div className="cv-field"><label>Connector style</label><select value={primarySelection.lineStyle} onChange={(event) => updateSelected({ lineStyle: event.target.value as CanvasObject["lineStyle"] })}><option value="solid">Straight</option><option value="dashed">Dashed</option><option value="curved">Curved</option><option value="elbow">Elbow</option></select></div>
+          )}
+          <button className="cv-action w-full mb-2" onClick={askLam}><Sparkles size={14} /> Ask LAM about selection</button>
+          {primarySelection.type === "source" && primarySelection.sourceView && <button className="cv-action w-full" onClick={() => openSource(primarySelection)}><BookOpen size={14} /> Open source</button>}
+        </>
+      );
+    }
+    return (
+      <>
+        <div className="cv-panel-heading"><div><h3>Comments</h3><p>Local project notes</p></div><MessageCircle size={15} className="text-zinc-500" /></div>
+        {comments.length === 0 && <p className="text-[11px] leading-5 text-zinc-500 mb-3">Add review notes here. Live multi-user comments are not enabled, so Scholar does not pretend other people are present.</p>}
+        {comments.map((comment, index) => <div key={index} className="rounded-lg border border-white/8 bg-white/[.025] p-3 text-[11px] text-zinc-300 mb-2">{comment}</div>)}
+        <div className="cv-field"><textarea value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} placeholder="Add a project note…" /></div>
+        <button className="cv-action w-full" onClick={() => { if (commentDraft.trim()) { setComments((current) => [...current, commentDraft.trim()]); setCommentDraft(""); } }}><Plus size={14} /> Add note</button>
+      </>
+    );
+  };
 
   return (
-    <div className="-m-4 lg:-m-6 bg-black cv-font" style={{ minHeight: "calc(100vh - 4rem)" }}>
-      <style dangerouslySetInnerHTML={{ __html: CV_STYLE }} />
-      <div ref={containerRef} className="relative w-full overflow-hidden" style={{ minHeight: "calc(100vh - 4rem)" }}>
-        {/* ===== Top bar ===== */}
-        <div className="cv-topbar absolute top-3 left-1/2 -translate-x-1/2 z-30 cv-glass rounded-2xl px-2 py-1.5 flex items-center gap-1.5 cv-font max-w-[94vw]">
-          {/* Type dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-white/80 text-xs cv-font">
-                <span className="w-3 h-3 rounded-sm border border-white/20" style={{ background: CANVAS_TYPES.find((c) => c.id === board.type)?.preview }} />
-                {CANVAS_TYPES.find((c) => c.id === board.type)?.label}
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-zinc-900 border-white/10 cv-font">
-              <DropdownMenuLabel className="text-white/50 text-[10px] uppercase tracking-wider">Canvas Type</DropdownMenuLabel>
-              {CANVAS_TYPES.map((c) => (
-                <DropdownMenuItem key={c.id} onClick={() => setBoardType(c.id)} className="text-white/80 hover:bg-white/10 cursor-pointer text-xs">
-                  <span className="w-4 h-4 rounded-sm border border-white/20" style={{ background: c.preview }} />
-                  {c.label}
-                </DropdownMenuItem>
+    <div className="-m-4 lg:-m-6 cv-root">
+      <style>{CV_STYLE}</style>
+      <div className="cv-shell">
+        <header className="cv-header" aria-label="Canvas project controls">
+          <div className="cv-header-title">
+            <Grid3X3 size={16} className="text-teal-400 shrink-0" />
+            <button className="cv-title-button" onClick={changeProjectTitle} title="Rename Canvas project">{project.title}</button>
+            <button className="cv-badge" onClick={changeSubject}>{project.subject}</button>
+          </div>
+          <span className="cv-save" role="status">
+            {saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed — retry" : `Saved ${new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+          </span>
+          <div className="cv-search">
+            <Search />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search this Canvas…" aria-label="Search Canvas" />
+            <kbd>⌘ K</kbd>
+            {filteredSearchResults.length > 0 && (
+              <div className="absolute top-10 left-0 right-0 z-50 rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl">
+                {filteredSearchResults.map(({ page, object }) => (
+                  <button key={`${page.id}-${object.id}`} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[11px] text-zinc-300 hover:bg-white/5" onClick={() => {
+                    setProject((current) => ({ ...current, activePageId: page.id }));
+                    window.setTimeout(() => focusObject(object), 0);
+                  }}>
+                    <Search size={12} className="text-teal-400" /><span className="truncate">{objectLabel(object)}</span><small className="ml-auto text-zinc-600">{page.title}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="cv-head-actions">
+            <button className="cv-icon" onClick={undo} disabled={!undoStack.length} aria-label="Undo"><Undo2 size={15} /></button>
+            <button className="cv-icon" onClick={redo} disabled={!redoStack.length} aria-label="Redo"><Redo2 size={15} /></button>
+            <button className="cv-action cv-action-primary cv-hide-mobile" onClick={copyShareLink}><Share2 size={14} /><span>Share</span></button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><button className="cv-action"><Download size={14} /><span>Export</span><ChevronDown size={12} /></button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10 text-zinc-200">
+                <DropdownMenuLabel>Canvas export</DropdownMenuLabel>
+                <DropdownMenuItem onClick={exportPng}><FileImage size={14} /> Current page as PNG</DropdownMenuItem>
+                <DropdownMenuItem onClick={printPdf}><FileText size={14} /> Print / Save as PDF</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={exportProject}><Download size={14} /> Editable project file</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button className="cv-icon cv-hide-mobile" onClick={saveNow} aria-label="Save Canvas"><Save size={15} /></button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><button className="cv-icon" aria-label="More Canvas actions"><MoreHorizontal size={16} /></button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10 text-zinc-200">
+                <DropdownMenuLabel>Templates</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => applyTemplate("chemistry")}>Chemistry Reaction Board</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => applyTemplate("mindmap")}>Chapter Mind Map</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => applyTemplate("formula")}>Formula Sheet</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => applyTemplate("revision")}>Exam Revision Board</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={askLam}><Sparkles size={14} /> Ask LAM about Canvas</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => stageRef.current?.requestFullscreen()}><Maximize2 size={14} /> Fullscreen workspace</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        <main className="cv-main">
+          <div ref={stageRef} className="cv-stage" data-cursor={stageCursor}>
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onImageUpload} />
+            <button className="cv-icon cv-panel-toggle" onClick={() => setInspectorOpen((open) => !open)} aria-label="Toggle Canvas inspector"><PanelRightOpen size={16} /></button>
+            <div className="cv-toolrail" role="toolbar" aria-label="Canvas creation tools">
+              {CORE_TOOLS.map((item) => (
+                <div key={item.id}>
+                  {item.divider && <div className="cv-tool-divider" />}
+                  <button className="cv-tool" data-active={tool === item.id} onClick={() => item.id === "image" ? fileInputRef.current?.click() : setTool(item.id)} aria-label={`${item.label}${item.shortcut ? `, shortcut ${item.shortcut}` : ""}`} aria-pressed={tool === item.id}>
+                    <item.icon size={17} /><span>{item.label}{item.shortcut && <b>{item.shortcut}</b>}</span>
+                  </button>
+                </div>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <div className="cv-tool-divider" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><button className="cv-tool" aria-label="More Canvas tools"><MoreHorizontal size={17} /><span>More tools</span></button></DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" className="bg-zinc-950 border-white/10 text-zinc-200">
+                  <DropdownMenuItem onClick={() => setTool("checklist")}><ListChecks size={14} /> Checklist</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openComposer("flashcard", worldCenter())}><Clipboard size={14} /> Flashcard</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openComposer("question", worldCenter())}><Circle size={14} /> Question card</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTool("source")}><BookOpen size={14} /> Scholar source card</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-          <span className="w-px h-5 bg-white/10" />
-
-          {/* Board name */}
-          {editingName ? (
-            <input
-              autoFocus
-              value={board.name}
-              onChange={(e) => setBoard((b) => ({ ...b, name: e.target.value }))}
-              onBlur={() => setEditingName(false)}
-              onKeyDown={(e) => { if (e.key === "Enter") setEditingName(false); }}
-              className="bg-transparent text-white text-xs px-2 py-1 outline-none border-b border-amber-400/50 w-32 cv-font"
-            />
-          ) : (
-            <button
-              onClick={() => setEditingName(true)}
-              className="px-2 py-1.5 rounded-lg hover:bg-white/10 text-white text-xs cv-font max-w-[120px] truncate"
-              title="Click to rename"
+            <svg
+              ref={svgRef}
+              role="application"
+              aria-label={`${project.title}, infinite visual workspace, ${activePage.objects.length} objects`}
+              tabIndex={0}
+              onPointerDown={onSurfacePointerDown}
+              onPointerMove={onSurfacePointerMove}
+              onPointerUp={endInteraction}
+              onPointerCancel={endInteraction}
+              onWheel={onWheel}
             >
-              {board.name}
-            </button>
-          )}
+              <defs>
+                <pattern id="cv-dot-pattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                  <circle cx="1.2" cy="1.2" r="1" fill="rgba(255,255,255,.16)" />
+                </pattern>
+                <pattern id="cv-graph-pattern" width="32" height="32" patternUnits="userSpaceOnUse">
+                  <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(16,185,129,.14)" strokeWidth="1" />
+                </pattern>
+                <marker id="cv-arrow-end" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke" /></marker>
+                <marker id="cv-arrow-start" markerWidth="10" markerHeight="10" refX="2" refY="5" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M10,0 L0,5 L10,10 z" fill="context-stroke" /></marker>
+              </defs>
+              <rect className={`cv-grid-${activePage.background}`} width="100%" height="100%" />
+              <g transform={worldTransform} data-canvas-world="true">
+                <rect x={-20_000} y={-20_000} width={40_000} height={40_000} fill={activePage.background === "graph" ? "url(#cv-graph-pattern)" : activePage.background === "whiteboard" || activePage.background === "paper" ? "rgba(0,0,0,.025)" : "url(#cv-dot-pattern)"} />
+                {visibleObjects.map((object) => (
+                  <CanvasObjectRenderer key={object.id} object={object} selected={selectedIds.includes(object.id)} onPointerDown={onObjectPointerDown} onDoubleClick={(item) => openComposer(item.type, { x: item.x, y: item.y }, item)} />
+                ))}
+                {draftObject && <CanvasObjectRenderer object={draftObject} selected={false} onPointerDown={() => undefined} onDoubleClick={() => undefined} />}
+                {marquee && <rect className="cv-marquee" {...marquee} />}
+                {primarySelection && !primarySelection.locked && (
+                  <circle className="cv-resize-handle" cx={primarySelection.x + primarySelection.width + 6} cy={primarySelection.y + primarySelection.height + 6} r={7 / activePage.viewport.zoom} onPointerDown={(event) => beginResize(event, primarySelection)} aria-label="Resize selected object" />
+                )}
+              </g>
+            </svg>
 
-          <span className="w-px h-5 bg-white/10" />
+            {activePage.objects.length === 0 && (
+              <div className="cv-empty"><div><h2>Infinite Canvas</h2><p>Choose a tool, add an editable template, or drop in Scholar study material.</p></div></div>
+            )}
 
-          <span className="text-[10px] text-white/40 px-1 hidden md:inline cv-font">{savedLabel}</span>
+            {selectedObjects.length > 0 && (
+              <div className="cv-context" style={{ left: contextLeft, top: contextTop }}>
+                <button onClick={() => primarySelection && openComposer(primarySelection.type, { x: primarySelection.x, y: primarySelection.y }, primarySelection)} aria-label="Edit selection"><Pencil size={14} /></button>
+                <button onClick={duplicateSelected} aria-label="Duplicate selection"><Copy size={14} /></button>
+                <button onClick={() => updateSelected({ locked: !primarySelection?.locked })} aria-label={primarySelection?.locked ? "Unlock selection" : "Lock selection"}>{primarySelection?.locked ? <Unlock size={14} /> : <Lock size={14} />}</button>
+                {selectedIds.length > 1 && <button onClick={groupSelected} aria-label="Group selection"><Group size={14} /></button>}
+                {selectedObjects.some((object) => object.groupId) && <button onClick={ungroupSelected} aria-label="Ungroup selection"><Ungroup size={14} /></button>}
+                <button onClick={() => setLayerOrder("front")} aria-label="Bring to front"><BringToFront size={14} /></button>
+                <button onClick={() => setLayerOrder("back")} aria-label="Send to back"><SendToBack size={14} /></button>
+                <button onClick={askLam} aria-label="Ask LAM about selection"><Sparkles size={14} /></button>
+                <button className="danger" onClick={deleteSelected} aria-label="Delete selection"><Trash2 size={14} /></button>
+              </div>
+            )}
 
-          <span className="w-px h-5 bg-white/10 hidden md:block" />
-
-          {/* Zoom controls */}
-          <div className="flex items-center gap-0.5">
-            <button onClick={() => setZoom(board.zoom - 25)} className="p-1.5 rounded-lg hover:bg-white/10 text-white/70">
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => setZoom(100)} className="text-white/70 text-[11px] w-10 text-center hover:bg-white/10 rounded-lg py-1 cv-font font-mono">
-              {board.zoom}%
-            </button>
-            <button onClick={() => setZoom(board.zoom + 25)} className="p-1.5 rounded-lg hover:bg-white/10 text-white/70">
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
+            <div className="cv-bottom" aria-label="Canvas viewport controls">
+              <button className="cv-icon" onClick={() => setZoom(activePage.viewport.zoom - 0.15)} aria-label="Zoom out"><ZoomOut size={15} /></button>
+              <button className="cv-bottom-label" onClick={() => setZoom(1)}>{Math.round(activePage.viewport.zoom * 100)}%</button>
+              <button className="cv-icon" onClick={() => setZoom(activePage.viewport.zoom + 0.15)} aria-label="Zoom in"><ZoomIn size={15} /></button>
+              <button className="cv-icon" data-active={viewportLocked} onClick={() => setViewportLocked((locked) => !locked)} aria-label={viewportLocked ? "Unlock viewport" : "Lock viewport"}>{viewportLocked ? <Lock size={15} /> : <Unlock size={15} />}</button>
+              <button className="cv-icon" onClick={() => fitObjects()} aria-label="Fit content"><Focus size={15} /></button>
+              <button className="cv-icon" onClick={() => stageRef.current?.requestFullscreen()} aria-label="Fullscreen Canvas"><Maximize2 size={15} /></button>
+            </div>
+            <div className="cv-object-count">{activePage.objects.length} objects · {selectedIds.length} selected · Space+drag to pan</div>
           </div>
 
-          <span className="w-px h-5 bg-white/10" />
-
-          {/* Templates */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-white/80 text-xs cv-font">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline">Templates</span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="bg-zinc-900 border-white/10 cv-font w-56">
-              <DropdownMenuLabel className="text-white/50 text-[10px] uppercase tracking-wider">Templates</DropdownMenuLabel>
-              {TEMPLATES.map((t) => (
-                <DropdownMenuItem key={t.id} onClick={() => applyTemplate(t.id)} className="text-white/80 hover:bg-white/10 cursor-pointer">
-                  <t.icon className="w-3.5 h-3.5 mr-2 text-teal-400" />
-                  <div>
-                    <div className="text-xs">{t.label}</div>
-                    <div className="text-[10px] text-white/40">{t.desc}</div>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <span className="w-px h-5 bg-white/10" />
-
-          <button onClick={saveBoard} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-white/80 text-xs cv-font">
-            <Save className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Save</span>
-          </button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-white/80 text-xs cv-font">
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Export</span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 cv-font">
-              <DropdownMenuItem onClick={exportPNG} className="text-white/80 hover:bg-white/10 cursor-pointer text-xs">Export as PNG</DropdownMenuItem>
-              <DropdownMenuItem onClick={exportJSON} className="text-white/80 hover:bg-white/10 cursor-pointer text-xs">Export as JSON</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* ===== Left toolbar ===== */}
-        <div className="cv-toolrail absolute left-3 top-1/2 -translate-y-1/2 z-30 cv-glass-strong rounded-2xl p-1.5 flex flex-col gap-0.5 cv-font" role="toolbar" aria-label="Canvas tools">
-          {TOOLS.map((t) => (
-            <div key={t.id} className="relative group">
-              {t.divider && <div className="cv-divider h-px bg-white/10 my-0.5" />}
-              <button
-                onClick={() => setTool(t.id)}
-                className={cn(
-                  "w-9 h-9 rounded-lg flex items-center justify-center transition-all cv-font",
-                  tool === t.id
-                    ? "bg-amber-400/20 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.3)]"
-                    : "text-white/60 hover:text-white hover:bg-white/10",
-                )}
-                title={`${t.label}${t.key ? ` (${t.key})` : ""}`}
-                aria-label={`${t.label}${t.key ? `, shortcut ${t.key}` : ""}`}
-                aria-pressed={tool === t.id}
-              >
-                <t.icon className="w-4 h-4" />
-              </button>
-              <div className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 bg-zinc-900 border border-white/10 rounded text-[10px] text-white/80 opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50">
-                {t.label}{t.key && <span className="text-amber-400 ml-1">[{t.key}]</span>}
-              </div>
-            </div>
-          ))}
-
-          <div className="h-px bg-white/10 my-1" />
-
-          {BOTTOM_TOOLS.map((t) => (
-            <div key={t.id} className="relative group">
-              <button
-                onClick={() => {
-                  if (t.id === "undo") undo();
-                  else if (t.id === "redo") redo();
-                  else clearBoard();
-                }}
-                disabled={t.id === "undo" && history.length === 0}
-                className={cn(
-                  "w-9 h-9 rounded-lg flex items-center justify-center transition-all cv-font",
-                  "text-white/60 hover:text-white hover:bg-white/10",
-                  (t.id === "undo" && history.length === 0) && "opacity-30 cursor-not-allowed",
-                )}
-                title={t.label}
-              >
-                <t.icon className="w-4 h-4" />
-              </button>
-              <div className="absolute left-12 top-1/2 -translate-y-1/2 px-2 py-1 bg-zinc-900 border border-white/10 rounded text-[10px] text-white/80 opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50">
-                {t.label}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ===== Color & properties panel (above toolbar) ===== */}
-        <div className="cv-properties absolute left-16 top-3 z-30 cv-glass rounded-2xl p-2 cv-font flex flex-col gap-2 max-w-[180px]">
-          <button
-            onClick={() => setShowColorPicker((v) => !v)}
-            className="flex items-center gap-2 px-1.5 py-1 rounded-lg hover:bg-white/10"
-          >
-            <span className="w-6 h-6 rounded-md border border-white/20" style={{ background: color }} />
-            <span className="text-[10px] text-white/60">{color.toUpperCase()}</span>
-            <Palette className="w-3 h-3 text-white/40 ml-auto" />
-          </button>
-
           <AnimatePresence>
-            {showColorPicker && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="grid grid-cols-8 gap-1 p-1">
-                  {PRESET_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => { setColor(c); }}
-                      className={cn(
-                        "w-4 h-4 rounded-sm border transition-transform hover:scale-110",
-                        color === c ? "border-amber-400 ring-1 ring-amber-400" : "border-white/20",
-                      )}
-                      style={{ background: c }}
-                    />
-                  ))}
+            {inspectorOpen && (
+              <motion.aside className="cv-panel" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} aria-label="Canvas inspector">
+                <button className="cv-inspector-close" onClick={() => setInspectorOpen(false)} aria-label="Close Canvas inspector"><X size={15} /></button>
+                <div className="cv-panel-tabs">
+                  <button className="cv-panel-tab" data-active={inspectorPanel === "pages"} onClick={() => setInspectorPanel("pages")} aria-label="Pages"><BookOpen size={15} /></button>
+                  <button className="cv-panel-tab" data-active={inspectorPanel === "layers"} onClick={() => setInspectorPanel("layers")} aria-label="Layers"><Layers size={15} /></button>
+                  <button className="cv-panel-tab" data-active={inspectorPanel === "properties"} onClick={() => setInspectorPanel("properties")} aria-label="Properties"><SlidersHorizontal size={15} /></button>
+                  <button className="cv-panel-tab" data-active={inspectorPanel === "comments"} onClick={() => setInspectorPanel("comments")} aria-label="Comments"><MessageCircle size={15} /></button>
                 </div>
-                <div className="flex items-center gap-1 px-1 pb-1">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-7 h-7 rounded bg-transparent cursor-pointer border border-white/20"
-                  />
-                  <input
-                    type="text"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="bg-white/5 text-white text-[10px] px-2 py-1 rounded outline-none w-full font-mono"
-                  />
-                </div>
-              </motion.div>
+                <div className="cv-panel-body">{renderInspector()}</div>
+              </motion.aside>
             )}
           </AnimatePresence>
 
-          <div className="px-1">
-            <div className="flex items-center justify-between text-[9px] text-white/40 mb-0.5">
-              <span>Opacity</span><span className="font-mono">{Math.round(opacity * 100)}%</span>
-            </div>
-            <Slider value={[opacity * 100]} onValueChange={(v) => setOpacity(v[0] / 100)} min={5} max={100} step={1} />
-          </div>
-          <div className="px-1">
-            <div className="flex items-center justify-between text-[9px] text-white/40 mb-0.5">
-              <span>Width</span><span className="font-mono">{width}px</span>
-            </div>
-            <Slider value={[width]} onValueChange={(v) => setWidth(v[0])} min={1} max={40} step={1} />
-          </div>
-        </div>
-
-        {/* ===== Layers panel toggle ===== */}
-        <button
-          onClick={() => setShowLayers((v) => !v)}
-          className="absolute right-3 top-3 z-30 cv-glass rounded-xl px-3 py-2 flex items-center gap-1.5 text-white/80 text-xs hover:bg-white/10 cv-font"
-        >
-          <LayersIcon className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Layers</span>
-          <span className="text-[10px] text-white/40 font-mono">{board.layers.length}</span>
-        </button>
-
-        <AnimatePresence>
-          {showLayers && (
-            <motion.div
-              initial={{ x: 240, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 240, opacity: 0 }}
-              className="absolute right-3 top-14 z-30 cv-glass-strong rounded-2xl p-3 w-56 cv-font"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs text-white/80 font-medium uppercase tracking-wider">Layers</h3>
-                <button onClick={addLayer} className="p-1 rounded hover:bg-white/10 text-white/60">
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="space-y-1.5 max-h-72 overflow-y-auto cv-scroll">
-                {board.layers.map((l) => (
-                  <div
-                    key={l.id}
-                    className={cn(
-                      "rounded-lg p-2 border cursor-pointer transition-all",
-                      board.activeLayer === l.id ? "bg-amber-400/10 border-amber-400/40" : "bg-white/5 border-white/10 hover:bg-white/10",
-                    )}
-                    onClick={() => setBoard((b) => ({ ...b, activeLayer: l.id }))}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={(e) => { e.stopPropagation(); toggleLayerVis(l.id); }} className="p-0.5 text-white/60 hover:text-white">
-                        {l.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); toggleLayerLock(l.id); }} className="p-0.5 text-white/60 hover:text-white">
-                        {l.locked ? <Lock className="w-3 h-3 text-amber-400" /> : <Unlock className="w-3 h-3" />}
-                      </button>
-                      <span className="text-[11px] text-white/80 flex-1 truncate">{l.name}</span>
-                      <span className="text-[9px] text-white/30 font-mono">
-                        {board.strokes.filter((s) => s.layerId === l.id).length}
-                      </span>
+          <AnimatePresence>
+            {composer && (
+              <motion.div className="cv-composer-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onPointerDown={(event) => { if (event.target === event.currentTarget) setComposer(null); }}>
+                <motion.div className="cv-composer" role="dialog" aria-modal="true" aria-label={`Edit ${composer.type}`} initial={{ scale: .96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .98, y: 8 }}>
+                  <div className="cv-composer-head"><div><h2>{composer.editId ? "Edit" : "Add"} {composer.type}</h2><p className="text-[10px] text-zinc-500 mt-1">Structured Canvas object · double-click later to edit</p></div><button className="cv-icon" onClick={() => setComposer(null)} aria-label="Close editor"><X size={15} /></button></div>
+                  <div className="cv-field"><label>Layer name</label><input autoFocus value={composer.name} onChange={(event) => setComposer((current) => current ? { ...current, name: event.target.value } : null)} /></div>
+                  {composer.type === "source" && (
+                    <div className="cv-properties-grid">
+                      <div className="cv-field"><label>Source label</label><input value={composer.sourceLabel} onChange={(event) => setComposer((current) => current ? { ...current, sourceLabel: event.target.value } : null)} /></div>
+                      <div className="cv-field"><label>Open in</label><select value={composer.sourceView} onChange={(event) => setComposer((current) => current ? { ...current, sourceView: event.target.value } : null)}><option value="ebook">E-Book</option><option value="files">Files</option><option value="notes">Notes</option><option value="quiz">Quiz</option><option value="answer-lab">Answer Lab</option><option value="ai-tools">AI Tools</option></select></div>
                     </div>
-                    {board.activeLayer === l.id && (
-                      <div className="mt-1.5 px-1">
-                        <div className="flex items-center justify-between text-[9px] text-white/40 mb-0.5">
-                          <span>Opacity</span><span className="font-mono">{Math.round(l.opacity * 100)}%</span>
-                        </div>
-                        <Slider value={[l.opacity * 100]} onValueChange={(v) => setLayerOpacity(l.id, v[0] / 100)} min={0} max={100} step={1} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ===== Canvas ===== */}
-        <canvas
-          ref={canvasRef}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
-          onWheel={onWheel}
-          className="absolute inset-0 touch-none"
-          style={{ cursor: tool === "hand" || spaceHeld ? "grab" : "crosshair" }}
-          role="img"
-          aria-label={`${board.name}, an editable study canvas with ${board.strokes.length} items`}
-          aria-describedby="canvas-accessible-summary"
-          tabIndex={0}
-        />
-
-        <section id="canvas-accessible-summary" className="sr-only" aria-live="polite">
-          <h2>Canvas contents</h2>
-          <p>{board.layers.length} layers and {board.strokes.length} items. Use the labelled toolbar buttons or keyboard shortcuts to select tools.</p>
-          <ul>{board.strokes.filter((stroke) => stroke.text).map((stroke) => <li key={stroke.id}>{stroke.tool}: {stroke.text}</li>)}</ul>
-        </section>
-
-        {/* ===== Minimap ===== */}
-        <AnimatePresence>
-          {showMinimap && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute right-3 bottom-3 z-20 cv-glass-strong rounded-xl p-2 cv-font"
-            >
-              <canvas ref={minimapRef} width={160} height={100} className="rounded-md" />
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[9px] text-white/40 font-mono">MINIMAP</span>
-                <button onClick={() => setShowMinimap(false)} className="text-[9px] text-white/40 hover:text-white">hide</button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {!showMinimap && (
-          <button
-            onClick={() => setShowMinimap(true)}
-            className="absolute right-3 bottom-3 z-20 cv-glass rounded-lg p-2 text-white/60 hover:text-white"
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* ===== Bottom status bar ===== */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 cv-glass rounded-full px-3 py-1.5 cv-font hidden md:flex items-center gap-3 text-[10px] text-white/60">
-          <span className="font-mono">x: {Math.round(cursor.x)} y: {Math.round(cursor.y)}</span>
-          <span className="w-px h-3 bg-white/20" />
-          <span>{activeTool?.label}</span>
-          <span className="w-px h-3 bg-white/20" />
-          <span>{board.strokes.length} strokes</span>
-          <span className="w-px h-3 bg-white/20" />
-          <span className="text-amber-400/80">Space+drag to pan · Wheel to zoom</span>
-        </div>
-
-        {/* Empty state hint */}
-        {board.strokes.length === 0 && (
-          <div className="absolute inset-0 z-10 grid place-items-center pointer-events-none cv-font">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center max-w-md px-6"
-            >
-              <div className="text-6xl mb-4 cv-serif italic text-white/80">Infinite canvas</div>
-              <p className="text-white/50 text-sm">
-                Pick a tool from the left, then draw anywhere.<br />
-                Try a template from the top bar, or just start sketching.
-              </p>
-            </motion.div>
-          </div>
-        )}
+                  )}
+                  <div className="cv-field"><label>{composer.type === "formula" ? "LaTeX" : composer.type === "table" ? "Rows separated by lines · columns by |" : "Content"}</label><textarea value={composer.text} onChange={(event) => setComposer((current) => current ? { ...current, text: event.target.value } : null)} /></div>
+                  {composer.type === "formula" && <div className="cv-composer-preview"><ScholarAIContent content={`\\[${composer.text}\\]`} mode="compact" normalizeLegacy={false} /></div>}
+                  <div className="cv-field"><label>Accent colour</label><div className="cv-color-row">{COLORS.map((swatch) => <button key={swatch} className="cv-swatch" data-active={color === swatch} style={{ background: swatch }} onClick={() => setColor(swatch)} aria-label={`Use ${swatch}`} />)}</div></div>
+                  <div className="cv-composer-actions"><button className="cv-action" onClick={() => setComposer(null)}>Cancel</button><button className="cv-action cv-action-primary" onClick={applyComposer}><Check size={14} /> {composer.editId ? "Save changes" : "Add to Canvas"}</button></div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
       </div>
+    </div>
+  );
+}
+
+function Minimap({
+  page,
+  onNavigate,
+}: {
+  page: CanvasPage;
+  onNavigate: (point: CanvasPoint) => void;
+}) {
+  const objects = page.objects.filter((object) => object.visible);
+  const bounds = objectBounds(objects);
+  const pad = 80;
+  return (
+    <div className="cv-minimap">
+      <svg
+        viewBox={`${bounds.x - pad} ${bounds.y - pad} ${bounds.width + pad * 2} ${bounds.height + pad * 2}`}
+        role="img"
+        aria-label="Canvas minimap"
+        onPointerDown={(event) => {
+          const svg = event.currentTarget;
+          const point = svg.createSVGPoint();
+          point.x = event.clientX;
+          point.y = event.clientY;
+          const local = point.matrixTransform(svg.getScreenCTM()?.inverse());
+          onNavigate({ x: local.x, y: local.y });
+        }}
+      >
+        <rect x={bounds.x - pad} y={bounds.y - pad} width={bounds.width + pad * 2} height={bounds.height + pad * 2} fill="#080a0a" />
+        {objects.map((object) => (
+          <rect
+            key={object.id}
+            x={object.x}
+            y={object.y}
+            width={Math.max(8, object.width)}
+            height={Math.max(8, object.height)}
+            rx={4}
+            fill={object.fill && object.fill !== "transparent" ? object.fill : "rgba(45,212,191,.2)"}
+            stroke={object.color}
+            strokeWidth={2}
+          />
+        ))}
+      </svg>
     </div>
   );
 }

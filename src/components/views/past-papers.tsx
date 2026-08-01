@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   FileStack, Clock, Trophy, Zap, Target, Filter, Sparkles, CheckCircle2,
   XCircle, AlertCircle, Timer, Brain, Trash2, Download, Play, RefreshCw,

@@ -11,8 +11,9 @@ import {
   Compass, Heart, History, ListVideo, MessageCircle, Send, Loader2,
   Flame, Award, Bell, Settings, Volume2, Maximize, Eye,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { Markdown } from "@/lib/shared";
+import { cn } from "@/lib/utils";
 
 // ===== Real CBSE Class 9 YouTube videos (verified IDs) =====
 interface Video {
@@ -270,6 +271,7 @@ export function NigtubeView() {
   const [aiNotes, setAiNotes] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState("");
   const [postedComments, setPostedComments] = useState<Comment[]>([]);
+  const [likedComments, setLikedComments] = useState<Set<string>>(() => new Set());
   const addXP = useStore((s) => s.addXP);
   const pushActivity = useStore((s) => s.pushActivity);
   const addCoins = useStore((s) => s.addCoins);
@@ -370,6 +372,7 @@ export function NigtubeView() {
   useEffect(() => {
     setPostedComments([]);
     setCommentInput("");
+    setLikedComments(new Set());
   }, [selectedVideo?.id]);
 
   function handlePostComment() {
@@ -394,7 +397,7 @@ export function NigtubeView() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
+    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .nt-glass {
@@ -698,8 +701,10 @@ export function NigtubeView() {
 
                 {/* Comments list */}
                 <div className="space-y-4 max-h-[28rem] overflow-y-auto nt-scroll pr-1">
-                  {[...postedComments, ...COMMENTS].map((c, idx) => (
-                    <div key={c.id ?? `static-${idx}`} className="flex gap-3">
+                  {[...postedComments, ...COMMENTS].map((c, idx) => {
+                    const commentKey = c.id ?? `static-${idx}`;
+                    const liked = likedComments.has(commentKey);
+                    return <div key={commentKey} className="flex gap-3">
                       <div className="grid place-items-center h-9 w-9 rounded-full bg-white/10 text-base shrink-0">{c.avatar}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
@@ -708,14 +713,14 @@ export function NigtubeView() {
                         </div>
                         <p className="text-sm text-white/70 nt-font leading-relaxed">{c.text}</p>
                         <div className="flex items-center gap-4 mt-1.5">
-                          <button className="flex items-center gap-1 text-[11px] text-white/50 hover:text-white nt-font">
-                            <ThumbsUp className="h-3 w-3" /> {c.likes}
+                          <button type="button" onClick={() => setLikedComments((current) => { const next = new Set(current); if (next.has(commentKey)) next.delete(commentKey); else next.add(commentKey); return next; })} aria-pressed={liked} className={cn("flex items-center gap-1 text-[11px] hover:text-white nt-font", liked ? "text-rose-300" : "text-white/50")}>
+                            <ThumbsUp className="h-3 w-3" /> {c.likes + (liked ? 1 : 0)}
                           </button>
-                          <button className="text-[11px] text-white/50 hover:text-white nt-font">Reply</button>
+                          <button type="button" onClick={() => setCommentInput(`@${c.name} `)} className="text-[11px] text-white/50 hover:text-white nt-font">Reply</button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    </div>;
+                  })}
                 </div>
               </div>
 

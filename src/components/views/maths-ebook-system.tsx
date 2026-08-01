@@ -56,7 +56,7 @@ import { askAI } from "@/lib/ai";
 import { profileGetItem, profileSetItem } from "@/lib/profile-storage";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   InlineAIAnswer,
   type InlineAIStatus,

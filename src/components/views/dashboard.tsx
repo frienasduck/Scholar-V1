@@ -29,7 +29,7 @@ import {
   ListChecks,
   FileQuestion,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 

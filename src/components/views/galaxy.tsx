@@ -14,7 +14,7 @@ import {
   Orbit, ZoomIn, ZoomOut, RotateCcw, GraduationCap, Brain, FileText, Target,
   Play, Pause,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 

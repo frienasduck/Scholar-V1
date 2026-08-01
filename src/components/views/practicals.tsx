@@ -6,7 +6,7 @@ import { useUserName } from "@/lib/use-user-name";
 import { askAIJSON } from "@/lib/ai";
 import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { FlaskRound, CheckCircle2, Circle, Loader2, Download, Sparkles, BookOpen, ChevronRight } from "lucide-react";
 
 interface Experiment { id: string; subject: "Physics" | "Chemistry" | "Computer Science"; title: string; apparatus: string[]; procedure: string[]; formula: string; viva: string[]; }

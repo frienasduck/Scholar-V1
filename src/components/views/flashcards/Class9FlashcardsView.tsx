@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Sparkles, Layers, Zap, Loader2, X, ChevronRight, RotateCcw, Award, Check } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { DECK_COLORS } from "./flashcard-utils";
 
 const isDue = (c: Flashcard) => Date.now() - c.lastReviewed > 86_400_000 * c.box;

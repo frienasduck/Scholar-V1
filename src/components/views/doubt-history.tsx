@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { askAIJSON } from "@/lib/ai";
+import { askAI, askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
 import { useCurriculum } from "@/lib/use-curriculum";
 import type { Subject } from "@/lib/curriculum";
@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import {
   MessageCircleQuestion, Star, CheckCircle2, Search, Sparkles, Plus, Download,
   Brain, MessageSquare, Clock, Filter, Layers, BookOpen, ChevronRight, X,
@@ -230,6 +230,7 @@ export function DoubtHistoryView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [clusters, setClusters] = useState<DoubtCluster[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [resolvingDoubtId, setResolvingDoubtId] = useState<string | null>(null);
   const [tab, setTab] = useState("all");
 
   // Form state
@@ -394,6 +395,29 @@ Return strict JSON:
     } catch {
       toast.error("Cluster analysis failed. Try again.");
     } finally { setAiLoading(false); }
+  };
+
+  const resolveWithAI = async (doubt: Doubt) => {
+    if (resolvingDoubtId) return;
+    setResolvingDoubtId(doubt.id);
+    try {
+      const answer = await askAI(`You are Scholar's CBSE doubt resolver. Resolve this Class ${scholarClass} ${subjectName(CURRICULUM, doubt.subject)} doubt accurately and clearly. Use concise Markdown and proper LaTeX where needed.\n\nDoubt: ${doubt.question}\n\nExisting note (may be incomplete): ${doubt.answer}`,
+        doubt.subject === "physics" ? "physics-11" : "default");
+      const normalized = answer.trim();
+      if (!normalized) throw new Error("Empty answer");
+      setDoubts((previous) => {
+        const next = previous.map((item) => item.id === doubt.id ? { ...item, answer: normalized, status: "resolved" as const } : item);
+        saveDoubts(next, scholarClass);
+        return next;
+      });
+      setOpenDoubt((current) => current?.id === doubt.id ? { ...current, answer: normalized, status: "resolved" } : current);
+      addXP(2);
+      toast.success("Doubt resolved with Scholar AI", { description: "+2 XP · You can still edit or revisit it later." });
+    } catch {
+      toast.error("Scholar AI could not resolve this doubt", { description: "Your existing answer was kept. Please try again." });
+    } finally {
+      setResolvingDoubtId(null);
+    }
   };
 
   // ===== Related doubts (in dialog) =====
@@ -748,6 +772,12 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
                       <div className="text-sm text-white/85 leading-relaxed prose-invert">
                         <Markdown content={openDoubt.answer} />
                       </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-400/20 bg-violet-500/[0.07] p-3">
+                      <div><p className="text-sm font-medium text-white">Need a clearer resolution?</p><p className="text-xs text-white/50">Optional: ask Scholar AI to replace this answer with a fresh, syllabus-aware explanation.</p></div>
+                      <Button type="button" className="bg-violet-500 text-white hover:bg-violet-400" disabled={resolvingDoubtId === openDoubt.id} onClick={() => void resolveWithAI(openDoubt)}>
+                        <Sparkles className={cn("mr-2 h-4 w-4", resolvingDoubtId === openDoubt.id && "animate-spin")} />{resolvingDoubtId === openDoubt.id ? "Resolving…" : "Resolve with AI"}
+                      </Button>
                     </div>
                     {(openDoubt.tags && openDoubt.tags.length > 0) && (
                       <div className="flex items-center gap-1.5 flex-wrap">

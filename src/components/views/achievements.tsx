@@ -19,7 +19,7 @@ import {
   Sparkles,
   Check,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useEffect, useMemo } from "react";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
 

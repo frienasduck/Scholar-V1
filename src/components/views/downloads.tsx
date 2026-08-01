@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { profileGetJSON, profileGetItem, profileSetItem, profileSetJSON } from "@/lib/profile-storage";
 import {
   Download, FileText, Sigma, Layers, Video, FileStack, ClipboardList, Brain,

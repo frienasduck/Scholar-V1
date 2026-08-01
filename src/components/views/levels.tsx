@@ -15,7 +15,7 @@ import {
   ChevronRight, X, Loader2, BookOpen, Target, Gift, Wrench, HelpCircle,
   Video, Bot, Search, NotebookPen, Timer, Crown, AlertTriangle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Markdown } from "@/lib/shared";

@@ -26,7 +26,7 @@ import {
   Sparkles, Send, Clock, Check, X, RotateCcw, Award, Brain,
   ChevronLeft, ChevronRight, Loader2, Target, ListChecks, Trophy, AlertCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   beginBackgroundTask,

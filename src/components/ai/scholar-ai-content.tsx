@@ -47,6 +47,9 @@ export const ScholarAIContent = memo(function ScholarAIContent({
         components={{
           a: ({ children, ...props }) => <a {...props} rel="noopener noreferrer" target="_blank">{children}</a>,
           pre: ({ children, ...props }) => <pre {...props} tabIndex={0}>{children}</pre>,
+          code: ({ children, className, ...props }) => className
+            ? <code {...props} className={className}>{String(children).replace(/\n$/, "").split("\n").map((line, index) => <span className="scholar-code-line" key={`${index}-${line.slice(0, 16)}`}>{line || " "}</span>)}</code>
+            : <code {...props}>{children}</code>,
         }}
       >
         {prepared}

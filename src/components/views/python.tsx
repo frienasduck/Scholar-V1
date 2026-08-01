@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { askAI } from "@/lib/ai";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 import { Play, Loader2, Sparkles, BookOpen, ChevronRight, Terminal, Square, AlertCircle } from "lucide-react";
 
 interface Lesson { id: string; title: string; desc: string; code: string; expected: string; }

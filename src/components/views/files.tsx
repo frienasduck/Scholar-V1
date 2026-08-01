@@ -9,13 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FilePreviewModal, detectPreviewType } from "@/components/files/file-preview-modal";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Trash2, Download, Sparkles, FileText, Image as ImageIcon,
   FileVideo, FileAudio, File as FileIcon, Search, Loader2, X, HardDrive, MoreVertical,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications/notification-api";
 
 const TYPE_META: Record<string, { icon: typeof FileIcon; color: string }> = {
   pdf: { icon: FileText, color: "#ef4444" },
@@ -123,7 +125,14 @@ export function FilesView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
+      <ReadyBackgroundVideo
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4"
+        readinessId="files"
+        className="z-0"
+      />
+      <div className="absolute inset-0 z-0 bg-black/65" />
+      <div className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-12 sm:p-6">
       <SectionHeader
         title="Files"
         subtitle="Upload, organize, and let AI auto-tag your study materials"
@@ -267,9 +276,16 @@ export function FilesView() {
                             <Download className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" aria-label="More file actions" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label={`More actions for ${f.name}`} className="h-7 w-7" onClick={(e) => e.stopPropagation()}><MoreVertical className="h-3.5 w-3.5" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => setPreview(f)}>Preview</DropdownMenuItem>
+                            {f.dataUrl ? <DropdownMenuItem onClick={() => { const anchor = document.createElement("a"); anchor.href = f.dataUrl!; anchor.download = f.name; anchor.click(); }}>Download</DropdownMenuItem> : null}
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(f.id, f.name)}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -418,6 +434,7 @@ export function FilesView() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }
