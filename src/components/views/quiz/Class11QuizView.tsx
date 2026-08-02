@@ -299,7 +299,7 @@ export function Class11QuizView() {
         return;
       }
       const prompt = `Generate ${count} CBSE Class 11 MCQ questions for the chapter "${ch.title}" (${subj?.name}). Difficulty: ${aiDifficulty}. Each question needs: question, 4 options, correctAnswer (must exactly match one option), explanation. Respond ONLY as JSON: {"questions":[{"question":"...","options":["a","b","c","d"],"correctAnswer":"correct option","explanation":"short","topic":"subtopic","difficulty":"${aiDifficulty}","type":"concept"}]}`;
-      const data = await askAIJSON<{ questions: any[] }>(prompt, "default");
+      const data = await askAIJSON<{ questions: any[] }>(prompt, "default", { usage: "quiz_generation" });
       if (!data?.questions?.length) {
         failBackgroundTask(backgroundTaskId, "No usable quiz questions were returned.");
         toast.error("AI did not return questions.");

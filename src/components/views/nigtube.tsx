@@ -14,6 +14,7 @@ import {
 import { toast } from "@/lib/notifications/notification-api";
 import { Markdown } from "@/lib/shared";
 import { cn } from "@/lib/utils";
+import { FreeAdSlot } from "@/components/subscriptions/free-ad-slot";
 
 // ===== Real CBSE Class 9 YouTube videos (verified IDs) =====
 interface Video {
@@ -499,6 +500,8 @@ export function NigtubeView() {
             </button>
           ))}
         </div>
+
+        <div className="px-4 md:px-8"><FreeAdSlot entitlement="nigtube_ad_free" label="Nigtube" /></div>
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto nt-scroll px-4 md:px-8 pb-8">

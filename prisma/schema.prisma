@@ -14,11 +14,28 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  name                 String?
+  passwordHash         String?
+  role                 String   @default("student")
+  sessionVersion       Int      @default(1)
+  timezone             String   @default("Asia/Kolkata")
+  coins                Int      @default(0)
+  plusBonusGrantedAt   DateTime?
+  currentScholarClass  Int      @default(11)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  subscriptions        ScholarSubscription[]
+  paymentRequests      ScholarPaymentRequest[]
+  reviewedPayments     ScholarPaymentRequest[] @relation("PaymentReviewer")
+  approvedSubscriptions ScholarSubscription[]   @relation("SubscriptionApprover")
+  usageCounters        UsageCounter[]
+  storedFiles          StoredFile[]
+  coinLedger           CoinLedger[]
+  auditEvents          AuditEvent[] @relation("AuditActor")
+  targetedAuditEvents  AuditEvent[] @relation("AuditTarget")
 }
 
 model Post {
@@ -29,4 +46,130 @@ model Post {
   authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ScholarSubscription {
+  id               String   @id @default(cuid())
+  userId           String
+  planId           String   @default("scholar_plus")
+  status           String   @default("active")
+  source           String
+  paymentRequestId String?  @unique
+  startedAt        DateTime @default(now())
+  endsAt           DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  approvedByUserId String?
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvedBy       User?    @relation("SubscriptionApprover", fields: [approvedByUserId], references: [id])
+  paymentRequest   ScholarPaymentRequest? @relation(fields: [paymentRequestId], references: [id])
+  ledgerEntries    CoinLedger[]
+
+  @@index([userId, status])
+}
+
+model ScholarPaymentRequest {
+  id                       String   @id
+  publicReference          String   @unique
+  userId                   String
+  planId                   String   @default("scholar_plus")
+  currency                 String   @default("INR")
+  expectedAmountPaise      Int
+  regularAmountPaise       Int
+  offerApplied             Boolean  @default(false)
+  status                   String   @default("created")
+  payerName                String?
+  transactionReference     String?  @unique
+  proofData                Bytes?
+  proofMimeType            String?
+  proofFileName            String?
+  createdAt                DateTime @default(now())
+  checkoutOpenedAt         DateTime?
+  proofSubmittedAt         DateTime?
+  reviewedAt               DateTime?
+  reviewedByUserId         String?
+  reviewNote               String?
+  internalAdminNote        String?
+  approvedSubscriptionId   String?
+  expiresAt                DateTime?
+  emailNotificationStatus  String?
+  checkoutEmailSentAt      DateTime?
+  proofEmailSentAt         DateTime?
+  idempotencyKey           String   @unique
+  updatedAt                DateTime @updatedAt
+
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy               User?    @relation("PaymentReviewer", fields: [reviewedByUserId], references: [id])
+  subscription             ScholarSubscription?
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+model UsageCounter {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String
+  day       String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key, day])
+}
+
+model StoredFile {
+  id         String   @id @default(cuid())
+  clientId   String
+  userId     String
+  name       String
+  mimeType   String
+  sizeBytes  Int
+  deletedAt  DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@index([userId, deletedAt])
+}
+
+model CoinLedger {
+  id             String   @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  type           String
+  amount         Int
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   ScholarSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([userId, type])
+}
+
+model AuditEvent {
+  id               String   @id @default(cuid())
+  eventType        String
+  actorUserId      String?
+  targetUserId     String?
+  paymentRequestId String?
+  subscriptionId   String?
+  metadataJson     String?
+  ipHash           String?
+  userAgentSummary String?
+  createdAt        DateTime @default(now())
+  actor             User?    @relation("AuditActor", fields: [actorUserId], references: [id])
+  target            User?    @relation("AuditTarget", fields: [targetUserId], references: [id])
+
+  @@index([eventType, createdAt])
+  @@index([targetUserId, createdAt])
+}
+
+model SecurityAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  action    String
+  createdAt DateTime @default(now())
+
+  @@index([key, action, createdAt])
 }

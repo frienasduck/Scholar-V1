@@ -203,6 +203,7 @@ export interface Settings {
   reduceMotion: boolean;
   elamEnabled: boolean;
   elamCompact: boolean;
+  mobileLamMode: "off" | "compact" | "full";
   sound: boolean;
   transitionMusic: boolean;
   transitionVolume: number;
@@ -799,6 +800,7 @@ function seed() {
       reduceMotion: false,
       elamEnabled: true,
       elamCompact: false,
+      mobileLamMode: "off" as const,
       sound: true,
       transitionMusic: true,
       transitionVolume: 65,
@@ -922,7 +924,8 @@ function loadPersistedState(): Partial<AppState> | null {
     safe.streak = typeof state.streak === "number" ? state.streak : 0;
     safe.level = typeof state.level === "number" ? state.level : 1;
     safe.lastStudyDay = state.lastStudyDay ?? null;
-    safe.devMode = !!state.devMode;
+    // Developer access is restored only from the signed, HTTP-only server session.
+    safe.devMode = false;
     safe.class9Data = state.class9Data ?? null;
     safe.class11Data = hasClass9Leakage(state.class11Data) ? null : (state.class11Data ?? null);
     // Ensure user has scholarClass and jeeMode
@@ -966,7 +969,7 @@ function loadPersistedState(): Partial<AppState> | null {
 function savePersistedState(state: AppState) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, schema: SCHEMA_VERSION }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { ...state, devMode: false }, schema: SCHEMA_VERSION }));
   } catch {
     /* ignore quota errors */
   }
@@ -1216,7 +1219,7 @@ export const useStore = create<AppState>()(
       addFile: (f) =>
         set((s) => ({
           files: [
-            { id: uid(), name: f.name ?? "file", type: f.type ?? "file", mimeType: f.mimeType, url: f.url, size: f.size ?? 0, dataUrl: f.dataUrl, tags: f.tags ?? [], uploadedAt: Date.now() },
+            { id: f.id ?? uid(), name: f.name ?? "file", type: f.type ?? "file", mimeType: f.mimeType, url: f.url, size: f.size ?? 0, dataUrl: f.dataUrl, tags: f.tags ?? [], uploadedAt: Date.now() },
             ...s.files,
           ],
         })),

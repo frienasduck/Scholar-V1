@@ -4,6 +4,7 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { createWorker } from "tesseract.js";
+import { requireEntitlement } from "@/lib/subscriptions/entitlements";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -43,20 +44,21 @@ async function pageImage(body: unknown): Promise<Buffer> {
   }
 }
 
-async function requestImage(request: NextRequest): Promise<Buffer> {
+async function requestImage(request: NextRequest): Promise<{ source: Buffer; homeworkScanner: boolean }> {
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
+    if (form.get("feature") !== "homework_scanner") throw new Error("FEATURE_REQUIRED");
     const file = form.get("file");
     if (!(file instanceof File)) throw new Error("FILE_REQUIRED");
     if (file.size === 0) throw new Error("EMPTY_FILE");
     if (file.size > MAX_UPLOAD_BYTES) throw new Error("FILE_TOO_LARGE");
     if (file.type === "application/pdf") throw new Error("PDF_REQUIRES_IMPORT");
     if (!ACCEPTED_TYPES.has(file.type)) throw new Error("UNSUPPORTED_TYPE");
-    return Buffer.from(await file.arrayBuffer());
+    return { source: Buffer.from(await file.arrayBuffer()), homeworkScanner: true };
   }
   if (!contentType.includes("application/json")) throw new Error("UNSUPPORTED_REQUEST");
-  return pageImage(await request.json());
+  return { source: await pageImage(await request.json()), homeworkScanner: false };
 }
 
 async function runOcr(source: Buffer): Promise<OcrResult> {
@@ -108,7 +110,12 @@ async function runOcr(source: Buffer): Promise<OcrResult> {
 
 export async function POST(request: NextRequest) {
   try {
-    const source = await requestImage(request);
+    const input = await requestImage(request);
+    if (input.homeworkScanner) {
+      const access = await requireEntitlement("homework_scanner");
+      if (!access.ok) return access.response;
+    }
+    const source = input.source;
     const jobId = createHash("sha256").update(source).digest("hex");
     let job = activeJobs.get(jobId);
     if (!job) {
@@ -129,6 +136,7 @@ export async function POST(request: NextRequest) {
       PDF_REQUIRES_IMPORT: [415, "Direct PDF OCR is not available here. Import the PDF into the eBook reader, then run OCR on its scanned pages."],
       UNSUPPORTED_TYPE: [415, "Use a PNG, JPEG, or WebP image."],
       UNSUPPORTED_REQUEST: [415, "Upload an image or submit a supported eBook page."],
+      FEATURE_REQUIRED: [400, "Uploaded-image OCR must identify the protected Homework Scanner feature."],
       INVALID_REQUEST: [400, "The OCR request is incomplete."],
       INVALID_PAGE: [400, "The requested eBook page is invalid."],
       INVALID_BOOK: [400, "The requested eBook is not supported."],

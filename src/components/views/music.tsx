@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
+import { FreeAdSlot } from "@/components/subscriptions/free-ad-slot";
 
 // ===== Tracks =====
 interface Track {
@@ -285,6 +286,8 @@ export function MusicView() {
           </div>
         </nav>
 
+        <div className="px-4 md:px-8"><FreeAdSlot entitlement="study_music_ad_free" label="Study Music" /></div>
+
         {/* Main content */}
         <div className="flex-1 overflow-y-auto mu-scroll px-4 md:px-8 pb-32">
           {/* Hero */}
@@ -307,7 +310,7 @@ export function MusicView() {
                   8 hand-picked audio streams — lo-fi, classical, binaural, rain, and more. Pick a vibe, hit play, and dive in.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-4">
-                  <span className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/60 mu-font">No ads</span>
+                  <span className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/60 mu-font">Plus: ad-free</span>
                   <span className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/60 mu-font">Looping streams</span>
                   <span className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/60 mu-font">+XP for focus</span>
                 </div>

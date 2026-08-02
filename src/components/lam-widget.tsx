@@ -65,7 +65,22 @@ function playLamActivationSound() {
   } catch { /* activation sound is optional */ }
 }
 
-export function LamWidget({ currentView, subject, chapter, summary, concepts }: { currentView?: string; scholarClass?: 9 | 11; subject?: string; chapter?: string; summary?: string; concepts?: string[] }) {
+type LamWidgetProps = { currentView?: string; scholarClass?: 9 | 11; subject?: string; chapter?: string; summary?: string; concepts?: string[] };
+
+export function LamWidget(props: LamWidgetProps) {
+  const mobileMode = useStore((state) => state.settings.mobileLamMode ?? "off");
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(query.matches);
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  if (isMobile && mobileMode === "off") return null;
+  return <LamWidgetRuntime {...props} compactMobile={isMobile && mobileMode === "compact"} />;
+}
+
+function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, compactMobile }: LamWidgetProps & { compactMobile: boolean }) {
   const user = useStore((state) => state.user);
   const addNote = useStore((state) => state.addNote);
   const settings = useStore((state) => state.settings);
@@ -659,7 +674,7 @@ export function LamWidget({ currentView, subject, chapter, summary, concepts }: 
 
       {!open && status === "listening" && <div className={cn("mb-2 flex items-center gap-3 rounded-full border px-4 py-2 text-sm text-white", glass)}><Mic className="h-4 w-4 text-cyan-300" />Listening…<button onClick={stopCapturedAudio} aria-label="Stop listening"><Square className="h-3.5 w-3.5" /></button></div>}
       {!open && status === "suspended" && prefs.wakeWordEnabled && <button onClick={() => void requestMicrophoneAndListen(true)} className={cn("mb-2 rounded-full border px-4 py-2 text-sm text-amber-50", glass)}><Mic className="mr-2 inline h-4 w-4" />Tap to resume Hands-Free LAM</button>}
-      {!open && !context.activeFileId && <motion.button layoutId="lam-system-surface" transition={{ type: "spring", stiffness: 350, damping: 32 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
+      {!open && !context.activeFileId && <motion.button layoutId="lam-system-surface" transition={{ type: "spring", stiffness: 350, damping: 32 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : compactMobile ? "h-12 w-[min(10.5rem,calc(100vw-2rem))]" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
         <span className={cn("relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && !settings.reduceMotion && "animate-pulse")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
         {!prefs.compactOrb && <><span className="flex-1 text-left text-white/78">Ask LAM</span><Mic className="h-4 w-4 text-white/45" /></>}
       </motion.button>}

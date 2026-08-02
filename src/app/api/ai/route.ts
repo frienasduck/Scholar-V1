@@ -8,6 +8,11 @@ import {
 import { publicAIError, AIProviderError } from "@/lib/ai/errors";
 import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
+import { getSessionUser } from "@/lib/auth/session";
+import { requireEntitlement, resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
+import { consumeGeneration } from "@/lib/subscriptions/usage";
+import { subscriptionConfig } from "@/lib/subscriptions/config";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -41,6 +46,22 @@ export async function POST(request: NextRequest) {
   }
 
   const body = parsed.data;
+  const sessionUser = await getSessionUser();
+  if (subscriptionConfig.enabled && !sessionUser) return errorResponse("Sign in to use Scholar AI.", 401, "AUTH_REQUIRED");
+  if (sessionUser) {
+    try {
+      await enforceRateLimit(sessionUser.id, "ai-generation", 90, 60 * 60 * 1000);
+      if (body.feature) {
+        const required = await requireEntitlement(body.feature);
+        if (!required.ok) return required.response;
+      }
+      if (body.usage) await consumeGeneration(sessionUser.id, body.usage, await resolveUserEntitlements(sessionUser.id));
+    } catch (error) {
+      if (error instanceof RateLimitError) return errorResponse("Too many AI requests. Please wait and try again.", 429, "RATE_LIMITED");
+      if (error instanceof Error && (error as Error & { code?: string }).code === "QUOTA_REACHED") return errorResponse("Your daily generation limit has been reached. Upgrade to Scholar Plus for a higher limit.", 429, "QUOTA_REACHED");
+      return errorResponse("Scholar could not verify this AI request.", 500, "ACCESS_CHECK_FAILED");
+    }
+  }
   const queryStream = request.nextUrl.searchParams.get("stream") === "1";
   const mode: AIMode = body.mode ?? (queryStream ? "stream" : (body.json ? "json" : "chat"));
   const totalCharacters = body.messages.reduce((sum, message) => sum + message.content.length, 0);

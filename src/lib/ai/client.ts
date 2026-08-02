@@ -12,6 +12,8 @@ export interface AIClientRequest {
   temperature?: number;
   scholarClass: 9 | 11;
   jeeMode: boolean;
+  feature?: "aisig" | "homework_scanner";
+  usage?: "quiz_generation" | "slideshow_generation";
 }
 
 type ErrorEnvelope = { ok?: false; error?: { message?: string } | string };

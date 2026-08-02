@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { askAIJSON } from "@/lib/ai";
 import { SectionHeader, EmptyState, Pill } from "@/lib/shared";
@@ -56,7 +56,15 @@ export function FilesView() {
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState<typeof files[number] | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [serverQuota, setServerQuota] = useState({ usedBytes: 0, limitBytes: 30 * 1024 * 1024 });
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const refreshQuota = () => fetch("/api/files/quota", { cache: "no-store" })
+    .then((response) => response.ok ? response.json() : null)
+    .then((value) => { if (value) setServerQuota(value); })
+    .catch(() => undefined);
+
+  useEffect(() => { void refreshQuota(); }, []);
 
   const filtered = useMemo(() => {
     let list = [...files];
@@ -74,14 +82,26 @@ export function FilesView() {
     return list.sort((a, b) => b.uploadedAt - a.uploadedAt);
   }, [files, filter, search]);
 
-  const totalSize = files.reduce((a, f) => a + f.size, 0);
-  const storagePct = Math.min(100, (totalSize / (50 * 1024 * 1024)) * 100);
+  const totalSize = Math.max(serverQuota.usedBytes, files.reduce((a, f) => a + f.size, 0));
+  const storagePct = Math.min(100, (totalSize / serverQuota.limitBytes) * 100);
 
   async function handleUpload(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     setUploading(true);
+    let uploaded = 0;
     for (const file of Array.from(fileList)) {
       const type = getType(file.name, file.type);
+      const clientId = crypto.randomUUID();
+      const quotaResponse = await fetch("/api/files/quota", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, name: file.name, mimeType: file.type || "application/octet-stream", sizeBytes: file.size }),
+      });
+      const quotaValue = await quotaResponse.json().catch(() => ({}));
+      if (!quotaResponse.ok) {
+        toast.error(quotaValue.message || quotaValue.error || `Could not upload ${file.name}`);
+        continue;
+      }
       let dataUrl: string | undefined;
       // Retain the original bytes in this local-first build. Hosted storage may
       // populate FileItem.url with an authenticated, short-lived signed URL.
@@ -93,6 +113,7 @@ export function FilesView() {
         });
       }
       addFile({
+        id: clientId,
         name: file.name,
         type,
         mimeType: file.type || "application/octet-stream",
@@ -100,6 +121,7 @@ export function FilesView() {
         dataUrl,
         tags: [],
       });
+      uploaded += 1;
       // AI auto-tagging (best-effort, non-blocking)
       try {
         const result = await askAIJSON<{ tags: string[] }>(
@@ -115,12 +137,15 @@ export function FilesView() {
       }
     }
     setUploading(false);
+    await refreshQuota();
     pushActivity({ type: "file", text: `Uploaded ${fileList.length} file(s)`, icon: "📎" });
-    toast.success(`${fileList.length} file(s) uploaded`);
+    if (uploaded > 0) toast.success(`${uploaded} file(s) uploaded`);
   }
 
-  function handleDelete(id: string, name: string) {
+  async function handleDelete(id: string, name: string) {
+    await fetch("/api/files/quota", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientId: id }) }).catch(() => undefined);
     deleteFile(id);
+    await refreshQuota();
     toast.success(`Deleted ${name}`);
   }
 
@@ -163,7 +188,7 @@ export function FilesView() {
             <span className="font-medium">Storage used</span>
           </div>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {formatSize(totalSize)} / 50 MB
+            {formatSize(totalSize)} / {formatSize(serverQuota.limitBytes)}
           </span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">

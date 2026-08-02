@@ -74,6 +74,7 @@ import {
   STARTUP_MODE_DEFINITIONS,
   type StartupLoadingMode,
 } from "@/lib/startup/startup-modes";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
 const SCHOLAR_UPDATE_LOG = [
   {
@@ -246,6 +247,8 @@ export function SettingsView() {
   const lamProfileId = `class-${user.scholarClass}`;
   const [lamPreferences, setLamPreferences] = useState<LamPreferences>(() => loadLamState(lamProfileId).preferences);
   const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const access = useScholarAccess();
+  const appearanceUnlocked = devMode || access.has("appearance_lab");
 
   useEffect(() => {
     setLamPreferences(loadLamState(lamProfileId).preferences);
@@ -293,19 +296,22 @@ export function SettingsView() {
     setForm(user);
   }, [user]);
 
-  // Dev mode password gate
-  const DEV_PASSWORD = "inmfs123";
+  // Developer access is verified only by the server; the password never ships in the client bundle.
   const [showDevPassword, setShowDevPassword] = useState(false);
   const [devPasswordInput, setDevPasswordInput] = useState("");
 
-  function confirmDevPassword() {
-    if (devPasswordInput === DEV_PASSWORD) {
+  async function confirmDevPassword() {
+    try {
+      const response = await fetch("/api/developer/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: devPasswordInput }) });
+      const value = await response.json();
+      if (!response.ok) throw new Error(value.error || "Developer Mode access denied.");
       setDevMode(true);
       setShowDevPassword(false);
       setDevPasswordInput("");
-      toast.success("Dev mode enabled");
-    } else {
-      toast.error("Wrong password", { description: "Dev mode access denied." });
+      window.dispatchEvent(new Event("scholar:session-changed"));
+      toast.success("Developer Mode enabled", { description: "All Scholar features are unlocked for this secure session." });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Developer Mode access denied.");
     }
   }
 
@@ -480,7 +486,7 @@ export function SettingsView() {
             <div className="flex items-center gap-4">
               <span className="text-white text-sm font-medium cursor-pointer hidden sm:inline">{user.name}</span>
               <button
-                onClick={() => { setAuthed(false); toast.success("Signed out"); }}
+                onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); setAuthed(false); setDevMode(false); window.dispatchEvent(new Event("scholar:session-changed")); toast.success("Signed out"); }}
                 className="asme-glass rounded-full px-6 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
               >
                 Sign out
@@ -511,6 +517,9 @@ export function SettingsView() {
               </TabsTrigger>
               <TabsTrigger value="academic" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <GraduationCap className="h-3.5 w-3.5" />Academic
+              </TabsTrigger>
+              <TabsTrigger value="subscription" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
+                <Sparkles className="h-3.5 w-3.5" />Subscription
               </TabsTrigger>
               <TabsTrigger value="appearance" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Palette className="h-3.5 w-3.5" />Appearance
@@ -614,6 +623,23 @@ export function SettingsView() {
               </div>
             </TabsContent>
 
+            {/* ===== Subscription ===== */}
+            <TabsContent value="subscription" className="mt-2 space-y-4">
+              <div className="asme-glass rounded-3xl p-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[.22em] text-cyan-200">Scholar access</p>
+                    <h3 className="mt-2 text-2xl font-semibold text-white">{access.access?.source === "plus" ? "Scholar Plus" : access.access?.source === "developer" ? "Developer Mode" : access.access?.source === "subscriptions_disabled" ? "All Scholar features unlocked" : "Scholar Free"}</h3>
+                    <p className="mt-2 text-sm text-white/55">{access.access?.source === "plus" ? "Active" : access.access?.source === "developer" ? "All features unlocked for this secure session." : access.access?.source === "subscriptions_disabled" ? "Subscriptions are currently disabled." : "3 quiz generations · 3 slideshow generations · 30 MB file storage"}</p>
+                    {access.pendingPayment && <p className="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/5 px-3 py-2 text-xs text-amber-100">Scholar Plus verification {access.pendingPayment.status.replaceAll("_", " ")} · {access.pendingPayment.publicReference}</p>}
+                  </div>
+                  {access.config?.subscriptionsEnabled && <button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }))} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">{access.access?.source === "plus" ? "View Scholar Plus plan" : "View Scholar Plus"}</button>}
+                </div>
+                <div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-white/5 p-4"><p className="text-xs text-white/40">Quiz generations</p><p className="mt-1 font-semibold text-white">{access.usage?.quiz.used ?? 0} / {access.usage?.quiz.limit === -1 ? "Unlimited" : access.usage?.quiz.limit ?? 3}</p></div><div className="rounded-2xl bg-white/5 p-4"><p className="text-xs text-white/40">Slideshows</p><p className="mt-1 font-semibold text-white">{access.usage?.slideshow.used ?? 0} / {access.usage?.slideshow.limit === -1 ? "Unlimited" : access.usage?.slideshow.limit ?? 3}</p></div><div className="rounded-2xl bg-white/5 p-4"><p className="text-xs text-white/40">Files storage</p><p className="mt-1 font-semibold text-white">{((access.storage?.usedBytes ?? 0) / 1024 / 1024).toFixed(1)} MB / {((access.storage?.limitBytes ?? 30 * 1024 * 1024) / 1024 / 1024).toFixed(0)} MB</p></div></div>
+                <div className="mt-5 flex flex-wrap gap-3"><button onClick={() => { window.dispatchEvent(new Event("scholar:install-app")); }} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white">Install Scholar App</button><button onClick={() => void access.refresh()} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white">Restore / recheck access</button>{access.pendingPayment && <button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "subscription-payment" } }))} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">Manage payment request</button>}</div>
+              </div>
+            </TabsContent>
+
             {/* ===== Academic Profile ===== */}
             <TabsContent value="academic" className="mt-2 space-y-4">
               <div className="asme-glass rounded-3xl p-6">
@@ -629,6 +655,11 @@ export function SettingsView() {
                   {/* Class 9 */}
                   <button
                     onClick={() => {
+                      if (!access.has("class_9_access")) {
+                        window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }));
+                        toast.info("Class 9 requires Scholar Plus");
+                        return;
+                      }
                       if (user.scholarClass !== 9) {
                         window.dispatchEvent(new CustomEvent("scholar:class-switch", { detail: { newClass: 9 } }));
                         toast.success("Switching to Class 9…", { description: "Loading Neha's Scholar profile" });
@@ -645,6 +676,7 @@ export function SettingsView() {
                       <div>
                         <p className="font-bold text-white text-base">Class 9</p>
                         <p className="text-xs text-white/50">Neha's Scholar</p>
+                        {!access.has("class_9_access") && <p className="text-[10px] font-semibold text-cyan-200">Scholar Plus</p>}
                       </div>
                       {user.scholarClass === 9 && <Check className="h-5 w-5 text-indigo-400 ml-auto" />}
                     </div>
@@ -736,21 +768,20 @@ export function SettingsView() {
                   <div>
                     <div className="mb-2 flex items-center gap-2">
                       <Palette className="h-4 w-4 text-violet-300" />
-                      <h3 className="font-semibold text-white">Appearance Lab</h3>
-                      <UiBadge className="border-violet-300/30 bg-violet-400/10 text-violet-200">Beta · Developer only</UiBadge>
+                      <h3 className="font-semibold text-white">Appearance &amp; Accessibility</h3>
+                      <UiBadge className="border-violet-300/30 bg-violet-400/10 text-violet-200">Beta</UiBadge>
                     </div>
                     <p className="max-w-2xl text-sm leading-6 text-white/55">
-                      Experimental surfaces, wallpapers and reading themes are temporarily disabled. Scholar now uses its original backgrounds, colours and typography by default.
+                      Font controls remain available to everyone. Scholar Plus adds advanced density and contrast controls without replacing Scholar's original backgrounds.
                     </p>
                   </div>
-                  {!devMode ? (
-                    <Button type="button" variant="outline" className="border-white/15 bg-white/5 text-white" onClick={() => setShowDevPassword(true)}>
-                      <Lock className="mr-2 h-4 w-4" />Developer unlock
+                  {!appearanceUnlocked ? (
+                    <Button type="button" variant="outline" className="border-white/15 bg-white/5 text-white" onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }))}>
+                      <Lock className="mr-2 h-4 w-4" />View Scholar Plus
                     </Button>
-                  ) : <UiBadge className="bg-emerald-500/15 text-emerald-200">Unlocked for this developer</UiBadge>}
+                  ) : <UiBadge className="bg-emerald-500/15 text-emerald-200">Advanced controls unlocked</UiBadge>}
                 </div>
-                {devMode ? (
-                  <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 sm:grid-cols-2">
+                <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 sm:grid-cols-2">
                     <div>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/45">Font size</label>
                       <Select value={settings.fontScale} onValueChange={(value) => {
@@ -762,20 +793,40 @@ export function SettingsView() {
                         <SelectContent><SelectItem value="90">Small</SelectItem><SelectItem value="100">Original</SelectItem><SelectItem value="110">Large</SelectItem><SelectItem value="120">Extra large</SelectItem></SelectContent>
                       </Select>
                     </div>
-                    <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Readable font" desc="Developer preview of the accessible sans-serif font.">
+                    <GlassSettingRow icon={<BookOpen className="h-4 w-4 text-white/70" />} title="Readable font" desc="Use Scholar's accessible sans-serif font.">
                       <Switch checked={settings.readableFont} onCheckedChange={(readableFont) => {
                         updateSettings({ readableFont });
                         document.documentElement.dataset.readableFont = String(readableFont);
                       }} />
                     </GlassSettingRow>
+                    {appearanceUnlocked ? <>
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/45">Interface density · Plus</label>
+                        <Select value={settings.density} onValueChange={(value) => {
+                          const density = value as "compact" | "comfortable" | "spacious";
+                          updateSettings({ density });
+                          document.documentElement.dataset.density = density;
+                        }}>
+                          <SelectTrigger className="asme-glass-input"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="compact">Compact</SelectItem><SelectItem value="comfortable">Comfortable</SelectItem><SelectItem value="spacious">Spacious</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      <GlassSettingRow icon={<Eye className="h-4 w-4 text-white/70" />} title="High contrast · Plus" desc="Strengthen surface and text contrast while preserving page backgrounds.">
+                        <Switch checked={settings.highContrast} onCheckedChange={(highContrast) => {
+                          updateSettings({ highContrast });
+                          document.documentElement.dataset.highContrast = String(highContrast);
+                        }} />
+                      </GlassSettingRow>
+                    </> : null}
                     <Button type="button" variant="outline" className="sm:col-span-2 border-white/15 bg-white/5 text-white" onClick={() => {
-                      updateSettings({ fontScale: "100", readableFont: false });
+                      updateSettings({ fontScale: "100", readableFont: false, density: "comfortable", highContrast: false });
                       document.documentElement.dataset.fontScale = "100";
                       document.documentElement.dataset.readableFont = "false";
+                      document.documentElement.dataset.density = "comfortable";
+                      document.documentElement.dataset.highContrast = "false";
                       toast.success("Original Scholar typography restored");
                     }}>Restore original font</Button>
                   </div>
-                ) : null}
               </div>
 
               <div className="asme-glass rounded-3xl p-6" data-testid="startup-loading-settings">
@@ -918,6 +969,11 @@ export function SettingsView() {
 
             {/* ===== LAM ===== */}
             <TabsContent value="lam" className="mt-2 space-y-4">
+              <div className="asme-glass rounded-3xl p-6">
+                <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Mobile LAM" desc="Choose whether LAM is absent, compact, or fully available on mobile. Off stops wake listening and idle effects.">
+                  <Select value={settings.mobileLamMode ?? "off"} onValueChange={(value) => updateSettings({ mobileLamMode: value as "off" | "compact" | "full" })}><SelectTrigger aria-label="Mobile LAM mode" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent></Select>
+                </GlassSettingRow>
+              </div>
               <div className="asme-glass rounded-3xl p-6">
                 <div className="mb-2"><h3 className="flex items-center gap-2 font-semibold text-white"><BookOpen className="h-4 w-4 text-violet-300" />E-Book ELAM</h3><p className="mt-1 text-sm text-white/50">Control the page-specific assistant shown only inside the immersive e-book reader.</p></div>
                 <div className="divide-y divide-white/10">
@@ -1103,6 +1159,7 @@ export function SettingsView() {
                         if (v) {
                           setShowDevPassword(true);
                         } else {
+                          void fetch("/api/developer/session", { method: "DELETE" }).finally(() => window.dispatchEvent(new Event("scholar:session-changed")));
                           setDevMode(false);
                           toast.success("Dev mode disabled");
                         }
