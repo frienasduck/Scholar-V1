@@ -9,8 +9,8 @@ Scholar now uses PostgreSQL for permanent accounts and database-backed sessions.
 3. Keep the direct PostgreSQL connection supplied by the connected Neon integration as `DB_DATABASE_URL_UNPOOLED` for Production and Preview.
 4. Add a cryptographically random value of at least 32 characters as `AUTH_SESSION_SECRET` for Production and Preview.
 5. Pull variables locally without committing them: `vercel env pull .env.local --yes`.
-6. Apply the checked-in baseline once: `bun run db:migrate:deploy`.
-7. Build and deploy Scholar.
+6. Vercel runs `bun run db:migrate:deploy` before `bun run build` through the checked-in `vercel.json` build command.
+7. Build and deploy Scholar. A failed migration stops the build instead of exposing code that expects missing tables.
 8. Create the administrator account normally, then run `bun run admin:grant` once in a trusted environment connected to production.
 
 Do not put connection strings or session secrets in client code, Git, or variables prefixed with `NEXT_PUBLIC_`.
