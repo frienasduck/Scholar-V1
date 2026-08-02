@@ -1,14 +1,16 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { ScholarEntitlement, ScholarAccessSource } from "@/lib/subscriptions/entitlements";
+import type { ScholarEntitlement, ScholarAccessSource, ScholarPlan } from "@/lib/subscriptions/entitlements";
 
 type SessionState = {
   loading: boolean;
   authenticated: boolean;
   developerMode: boolean;
+  plan?: ScholarPlan;
+  entitlementsLoaded?: boolean;
   user?: { id: string; email: string; name: string | null; role: string; coins: number; currentScholarClass: number };
-  access?: { source: ScholarAccessSource; entitlements: ScholarEntitlement[]; subscriptionId: string | null; subscriptionStatus: string | null; subscriptionEndsAt: string | null; storageLimitBytes: number; dailyQuizLimit: number; dailySlideshowLimit: number };
+  access?: { plan: ScholarPlan; source: ScholarAccessSource; entitlementsLoaded: boolean; entitlements: ScholarEntitlement[]; subscriptionId: string | null; subscriptionStatus: string | null; subscriptionEndsAt: string | null; storageLimitBytes: number; dailyQuizLimit: number; dailySlideshowLimit: number };
   usage?: { day: string; quiz: { used: number; limit: number }; slideshow: { used: number; limit: number } };
   storage?: { usedBytes: number; limitBytes: number };
   pendingPayment?: { publicReference: string; status: string; createdAt: string } | null;
@@ -21,14 +23,20 @@ const AccessContext = createContext<AccessContextValue | null>(null);
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<SessionState>({ loading: true, authenticated: false, developerMode: false });
   const previousAccessSource = useRef<ScholarAccessSource | null>(null);
+  const refreshSequence = useRef(0);
   const refresh = useCallback(async () => {
-    setState((previous) => ({ ...previous, loading: true }));
+    const sequence = ++refreshSequence.current;
+    // Clear privileges before fetching so a prior account can never leak into
+    // the next account while its server session is being resolved.
+    setState({ loading: true, authenticated: false, developerMode: false });
     try {
       const response = await fetch("/api/auth/session", { cache: "no-store" });
       const value = await response.json();
+      if (sequence !== refreshSequence.current) return;
       setState({ ...value, loading: false });
     } catch {
-      setState((previous) => ({ ...previous, loading: false, authenticated: false, developerMode: false }));
+      if (sequence !== refreshSequence.current) return;
+      setState({ loading: false, authenticated: false, developerMode: false });
     }
   }, []);
   useEffect(() => {
@@ -62,7 +70,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       action: { label: "Explore Scholar Plus", onClick: () => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } })) },
     } }));
   }, [state.access, state.authenticated, state.loading]);
-  const value = useMemo<AccessContextValue>(() => ({ ...state, refresh, has: (entitlement) => Boolean(state.access?.entitlements.includes(entitlement)) }), [state, refresh]);
+  const value = useMemo<AccessContextValue>(() => ({ ...state, refresh, has: (entitlement) => state.entitlementsLoaded === true && Boolean(state.access?.entitlements.includes(entitlement)) }), [state, refresh]);
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
 }
 

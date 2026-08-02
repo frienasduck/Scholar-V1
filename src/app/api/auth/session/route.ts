@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, hasDeveloperSession } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/auth/session";
 import { resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
 import { getUsage } from "@/lib/subscriptions/usage";
 import { db } from "@/lib/db";
@@ -27,7 +27,11 @@ export async function GET() {
     return NextResponse.json({
       authenticated: true,
       user: { id: user.id, email: user.email, name: user.name, role: user.role, coins: user.coins, currentScholarClass },
-      developerMode: await hasDeveloperSession(user.id),
+      plan: access.plan,
+      entitlements: access.entitlements,
+      limits: { storageBytes: access.storageLimitBytes, dailyQuiz: access.dailyQuizLimit, dailySlideshow: access.dailySlideshowLimit },
+      entitlementsLoaded: access.entitlementsLoaded,
+      developerMode: access.plan === "DEVELOPER",
       access,
       usage,
       storage: { usedBytes: storage._sum.sizeBytes ?? 0, limitBytes: access.storageLimitBytes },

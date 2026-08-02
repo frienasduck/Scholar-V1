@@ -33,7 +33,11 @@ function ScholarContent() {
   const session = useScholarAccess();
 
   useEffect(() => {
-    if (!session.loading && authed && !guestMode && !session.authenticated) setAuthed(false);
+    if (!session.loading && authed && !guestMode && !session.authenticated) {
+      setDevMode(false);
+      setAuthed(false);
+    }
+    if (!session.loading && !session.authenticated && devMode) setDevMode(false);
     if (!session.loading && session.authenticated && devMode !== session.developerMode) setDevMode(session.developerMode);
     if (!session.loading && session.authenticated && session.user?.currentScholarClass && scholarClass !== session.user.currentScholarClass) {
       switchClass(session.user.currentScholarClass as 9 | 11);

@@ -3,7 +3,10 @@ import "server-only";
 function bool(name: string, fallback: boolean) {
   const value = process.env[name];
   if (value == null || value === "") return fallback;
-  return value.toLowerCase() === "true";
+  const normalized = value.trim().toLowerCase();
+  if (["false", "0", "off", "no"].includes(normalized)) return false;
+  if (["true", "1", "on", "yes"].includes(normalized)) return true;
+  return fallback;
 }
 
 function integer(name: string, fallback: number) {
@@ -11,10 +14,14 @@ function integer(name: string, fallback: number) {
   return Number.isFinite(value) ? value : fallback;
 }
 
+export function areSubscriptionsEnabled() {
+  return bool("SUBSCRIPTIONS_ENABLED", true);
+}
+
 export const subscriptionConfig = {
-  // Missing configuration intentionally keeps paywalls off. Production can only
-  // enable checkout after its durable database and secrets are provisioned.
-  enabled: bool("SUBSCRIPTIONS_ENABLED", false),
+  // Fail closed: a missing or malformed flag keeps subscriptions enforced.
+  // Only an explicit false/0/off/no value globally unlocks Scholar.
+  enabled: areSubscriptionsEnabled(),
   regularPriceInr: integer("SCHOLAR_PLUS_REGULAR_PRICE_INR", 300),
   offerPriceInr: integer("SCHOLAR_PLUS_OFFER_PRICE_INR", 100),
   offerEnabled: bool("SCHOLAR_PLUS_OFFER_ENABLED", true),
