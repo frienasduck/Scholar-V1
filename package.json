@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
@@ -12,6 +13,8 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "admin:grant": "bun run scripts/grant-scholar-admin.ts",
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {

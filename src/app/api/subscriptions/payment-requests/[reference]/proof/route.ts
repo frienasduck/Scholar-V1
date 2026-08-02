@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { UserRole } from "@prisma/client";
 
 export async function GET(_: NextRequest, context: { params: Promise<{ reference: string }> }) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
   const { reference } = await context.params;
   const payment = await db.scholarPaymentRequest.findFirst({
-    where: user.role === "admin" ? { publicReference: reference } : { publicReference: reference, userId: user.id },
+    where: user.role === UserRole.ADMIN ? { publicReference: reference } : { publicReference: reference, userId: user.id },
     select: { proofData: true, proofMimeType: true, proofFileName: true },
   });
   if (!payment?.proofData || !payment.proofMimeType) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

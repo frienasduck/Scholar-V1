@@ -66,7 +66,22 @@ export async function getSessionUser() {
   const store = await cookies();
   const payload = verify(store.get(AUTH_COOKIE)?.value, "auth");
   if (!payload) return null;
-  const user = await db.user.findUnique({ where: { id: payload.userId } });
+  const user = await db.user.findUnique({
+    where: { id: payload.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      sessionVersion: true,
+      timezone: true,
+      coins: true,
+      plusBonusGrantedAt: true,
+      currentScholarClass: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
   if (!user || user.sessionVersion !== payload.version) return null;
   return user;
 }

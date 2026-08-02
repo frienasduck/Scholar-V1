@@ -22,8 +22,38 @@ describe("Scholar Plus security invariants", () => {
 
   test("admin mutations require an authenticated admin", () => {
     const route = source("src/app/api/admin/subscriptions/payment-requests/[id]/route.ts");
-    expect(route).toContain("requireAdmin");
-    expect(route).toContain("getSessionUser");
+    const guard = source("src/lib/auth/admin.ts");
+    expect(route).toContain("requireAdminUser");
+    expect(guard).toContain("getSessionUser");
+    expect(guard).toContain("UserRole.ADMIN");
+  });
+
+  test("registration and login cannot promote an email address", () => {
+    const login = source("src/app/api/auth/login/route.ts");
+    const register = source("src/app/api/auth/register/route.ts");
+    expect(`${login}\n${register}`).not.toContain("isConfiguredAdminEmail");
+    expect(`${login}\n${register}`).not.toMatch(/role:\s*["']admin["']/i);
+  });
+
+  test("the server session returns the database-backed role", () => {
+    const session = source("src/lib/auth/session.ts");
+    expect(session).toContain("role: true");
+    expect(session).toContain("sessionVersion: true");
+  });
+
+  test("admin pages and APIs share the server-side role guard", () => {
+    const page = source("src/app/admin/subscriptions/payment-requests/[id]/page.tsx");
+    const route = source("src/app/api/admin/subscriptions/payment-requests/[id]/route.ts");
+    expect(page).toContain("getAdminUser");
+    expect(route).toContain("requireAdminUser");
+    expect(`${page}\n${route}`).not.toContain("localStorage");
+  });
+
+  test("administrator assignment is an explicit one-time script", () => {
+    const grant = source("scripts/grant-scholar-admin.ts");
+    expect(grant).toContain("ishansalah123@gmail.com");
+    expect(grant).toContain("UserRole.ADMIN");
+    expect(source("package.json")).toContain('"admin:grant"');
   });
 
   test("developer mode uses a server hash and signed HTTP-only cookie", () => {
