@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireAdminUser, UnauthorizedAdminAccessError } from "@/lib/auth/admin";
 import { subscriptionConfig } from "@/lib/subscriptions/config";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { sendScholarEmail } from "@/lib/subscriptions/email";
@@ -16,13 +16,17 @@ const actionSchema = z.object({
   if (value.action !== "approve" && !value.reason) context.addIssue({ code: "custom", message: "A reason is required.", path: ["reason"] });
 });
 
-async function requireAdmin() {
-  const user = await getSessionUser();
-  return user?.role === "admin" ? user : null;
+async function authenticatedAdmin() {
+  try {
+    return await requireAdminUser();
+  } catch (error) {
+    if (error instanceof UnauthorizedAdminAccessError) return null;
+    throw error;
+  }
 }
 
 export async function GET(_: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const actor = await requireAdmin();
+  const actor = await authenticatedAdmin();
   if (!actor) return NextResponse.json({ error: "ADMIN_REQUIRED" }, { status: 403 });
   const { id } = await context.params;
   const payment = await db.scholarPaymentRequest.findUnique({ where: { id }, include: {
@@ -58,7 +62,7 @@ export async function GET(_: NextRequest, context: { params: Promise<{ id: strin
 }
 
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const actor = await requireAdmin();
+  const actor = await authenticatedAdmin();
   if (!actor) return NextResponse.json({ error: "ADMIN_REQUIRED" }, { status: 403 });
   try {
     await enforceRateLimit(actor.id, "admin-payment-action", 20, 15 * 60 * 1000);

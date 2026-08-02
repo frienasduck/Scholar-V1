@@ -7,6 +7,7 @@ import { subscriptionConfig } from "@/lib/subscriptions/config";
 import { paymentAdminEmail, sendScholarEmail } from "@/lib/subscriptions/email";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { UserRole } from "@prisma/client";
 
 const proofSchema = z.object({ payerName: z.string().trim().min(2).max(100), transactionReference: z.string().trim().min(4).max(100) });
 const proofTypes = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
@@ -15,7 +16,7 @@ export async function GET(_: NextRequest, context: { params: Promise<{ reference
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
   const { reference } = await context.params;
-  const payment = await db.scholarPaymentRequest.findFirst({ where: user.role === "admin" ? { publicReference: reference } : { publicReference: reference, userId: user.id } });
+  const payment = await db.scholarPaymentRequest.findFirst({ where: user.role === UserRole.ADMIN ? { publicReference: reference } : { publicReference: reference, userId: user.id } });
   if (!payment) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   return NextResponse.json({ request: safePaymentRequest(payment) });
 }

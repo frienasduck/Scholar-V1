@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { getSessionUser, hasDeveloperSession } from "@/lib/auth/session";
 import { subscriptionConfig } from "@/lib/subscriptions/config";
+import { UserRole } from "@prisma/client";
 
 export const SCHOLAR_ENTITLEMENTS = [
   "levels", "aisig", "homework_scanner", "exam_prep", "assignments",
@@ -65,7 +66,7 @@ export async function resolveUserEntitlements(userId: string | null): Promise<Re
   return {
     authenticated: true,
     userId,
-    role: user?.role ?? "student",
+    role: user?.role ?? UserRole.USER,
     source,
     entitlements: elevated ? all() : [],
     subscriptionId: subscription?.id ?? null,

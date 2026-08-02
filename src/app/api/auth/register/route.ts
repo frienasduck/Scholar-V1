@@ -3,7 +3,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { createAuthSession } from "@/lib/auth/session";
-import { isConfiguredAdminEmail } from "@/lib/auth/admin";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
 const schema = z.object({
@@ -25,7 +24,6 @@ export async function POST(request: NextRequest) {
       email,
       name: input.data.name,
       passwordHash: hashPassword(input.data.password),
-      role: isConfiguredAdminEmail(email) ? "admin" : "student",
     } });
     await createAuthSession(user);
     return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } });

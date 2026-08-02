@@ -1,10 +1,21 @@
 import "server-only";
-import { subscriptionConfig } from "@/lib/subscriptions/config";
+import { UserRole } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth/session";
 
-export function isConfiguredAdminEmail(email: string) {
-  const configured = new Set([
-    subscriptionConfig.adminPaymentEmail,
-    ...(process.env.SCHOLAR_ADMIN_EMAILS ?? "").split(",").map((value) => value.trim().toLowerCase()),
-  ].filter(Boolean));
-  return configured.has(email.trim().toLowerCase());
+export class UnauthorizedAdminAccessError extends Error {
+  constructor() {
+    super("Administrator access is required.");
+    this.name = "UnauthorizedAdminAccessError";
+  }
+}
+
+export async function getAdminUser() {
+  const user = await getSessionUser();
+  return user?.role === UserRole.ADMIN ? user : null;
+}
+
+export async function requireAdminUser() {
+  const user = await getAdminUser();
+  if (!user) throw new UnauthorizedAdminAccessError();
+  return user;
 }
