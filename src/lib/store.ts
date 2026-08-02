@@ -290,6 +290,7 @@ export interface ClassProfileData {
 interface AppState {
   // Auth / onboarding
   authed: boolean;
+  guestMode: boolean;
   onboarded: boolean;
   user: User;
 
@@ -337,6 +338,9 @@ interface AppState {
 
   // ===== Actions =====
   setAuthed: (v: boolean) => void;
+  startGuestSession: () => void;
+  endGuestSession: () => void;
+  completeGuestAuthentication: (profile: Partial<User>, keepPreferences: boolean) => void;
   setOnboarded: (v: boolean) => void;
   updateUser: (u: Partial<User>) => void;
   setScholarClass: (cls: 9 | 11) => void;
@@ -856,6 +860,7 @@ function seed() {
 
 // ===== Manual persistence (safer than persist middleware — guarantees arrays exist) =====
 const STORAGE_KEY = "neha-scholar-v5";
+const GUEST_STORAGE_KEY = "scholar-guest-session-v1";
 const SCHEMA_VERSION = 5;
 
 function hasClass9Leakage(value: unknown): boolean {
@@ -881,6 +886,33 @@ function loadPersistedState(): Partial<AppState> | null {
     ["neha-scholar-v1", "neha-scholar-v2", "neha-scholar-v3", "neha-scholar-v4"].forEach((key) => {
       if (localStorage.getItem(key)) localStorage.removeItem(key);
     });
+
+    const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
+    if (guestRaw) {
+      const guest = JSON.parse(guestRaw) as { state?: Partial<AppState> };
+      if (guest.state?.guestMode) {
+        return {
+          authed: true,
+          guestMode: true,
+          onboarded: true,
+          devMode: false,
+          user: {
+            ...seed().user,
+            name: "Guest",
+            username: "guest",
+            email: "",
+            avatar: "G",
+            scholarClass: 11,
+            jeeMode: false,
+          },
+          settings: {
+            ...seed().settings,
+            ...(guest.state.settings ?? {}),
+            appearance: migrateAppearance(guest.state.settings?.appearance),
+          },
+        };
+      }
+    }
 
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -918,6 +950,7 @@ function loadPersistedState(): Partial<AppState> | null {
       appearance: migrateAppearance(state.settings?.appearance),
     };
     safe.authed = !!state.authed;
+    safe.guestMode = !!state.guestMode;
     safe.onboarded = !!state.onboarded;
     safe.xp = typeof state.xp === "number" ? state.xp : 0;
     safe.coins = typeof state.coins === "number" ? state.coins : 0;
@@ -969,6 +1002,28 @@ function loadPersistedState(): Partial<AppState> | null {
 function savePersistedState(state: AppState) {
   if (typeof window === "undefined") return;
   try {
+    if (state.guestMode) {
+      localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({
+        state: {
+          authed: state.authed,
+          guestMode: true,
+          onboarded: true,
+          user: {
+            ...seed().user,
+            name: "Guest",
+            username: "guest",
+            email: "",
+            avatar: "G",
+            scholarClass: 11,
+            jeeMode: false,
+          },
+          settings: state.settings,
+          devMode: false,
+        },
+        schema: 1,
+      }));
+      return;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { ...state, devMode: false }, schema: SCHEMA_VERSION }));
   } catch {
     /* ignore quota errors */
@@ -980,11 +1035,67 @@ const persistedState = loadPersistedState();
 export const useStore = create<AppState>()(
   (set, get) => ({
     authed: false,
+    guestMode: false,
     onboarded: false,
     ...seed(),
     ...(persistedState as Partial<AppState>),
 
       setAuthed: (v) => set({ authed: v }),
+      startGuestSession: () => {
+        set(() => ({ ...seed(), authed: true, guestMode: true, onboarded: true, devMode: false }));
+        get().switchClass(11);
+        set((state) => ({
+          user: { ...state.user, name: "Guest", username: "guest", email: "", avatar: "G", scholarClass: 11, jeeMode: false },
+          xp: 0,
+          level: 1,
+          coins: 0,
+          streak: 0,
+          purchases: [],
+        }));
+      },
+      endGuestSession: () => {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(GUEST_STORAGE_KEY);
+          window.location.reload();
+          return;
+        }
+        set(() => ({ ...seed(), authed: false, guestMode: false, onboarded: false, devMode: false }));
+      },
+      completeGuestAuthentication: (profile, keepPreferences) => set((state) => {
+        if (typeof window !== "undefined") localStorage.removeItem(GUEST_STORAGE_KEY);
+        const fresh = seed();
+        return {
+          ...state,
+          settings: keepPreferences ? state.settings : fresh.settings,
+          authed: true,
+          guestMode: false,
+          onboarded: true,
+          devMode: false,
+          user: { ...state.user, ...profile, scholarClass: 11, jeeMode: false },
+          xp: 0,
+          level: 1,
+          coins: 0,
+          streak: 0,
+          lastStudyDay: null,
+          mastery: {},
+          studyProgress: {},
+          notes: [],
+          folders: [],
+          decks: [],
+          flashcards: [],
+          tasks: [],
+          quizAttempts: [],
+          sessions: [],
+          activity: [],
+          chatThreads: [],
+          files: [],
+          bookmarks: [],
+          badges: [],
+          purchases: [],
+          class9Data: null,
+          class11Data: null,
+        };
+      }),
       setOnboarded: (v) => set({ onboarded: v }),
       updateUser: (u) => set((s) => ({ user: { ...s.user, ...u } })),
 

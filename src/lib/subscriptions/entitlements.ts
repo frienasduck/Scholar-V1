@@ -89,7 +89,7 @@ export function hasEntitlement(access: ResolvedEntitlements, entitlement: Schola
 export async function requireEntitlement(entitlement: ScholarEntitlement) {
   const user = await getSessionUser();
   const access = await resolveUserEntitlements(user?.id ?? null);
-  if (!user && subscriptionConfig.enabled) {
+  if (!user) {
     return { ok: false as const, response: Response.json({ error: "AUTH_REQUIRED" }, { status: 401 }) };
   }
   if (!hasEntitlement(access, entitlement)) {

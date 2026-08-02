@@ -126,6 +126,9 @@ function BlurText({ text, className }: { text: string; className?: string }) {
 // ===== Auth Screen =====
 export function AuthScreen() {
   const setAuthed = useStore((s) => s.setAuthed);
+  const guestMode = useStore((s) => s.guestMode);
+  const startGuestSession = useStore((s) => s.startGuestSession);
+  const completeGuestAuthentication = useStore((s) => s.completeGuestAuthentication);
   const updateUser = useStore((s) => s.updateUser);
   const switchClass = useStore((s) => s.switchClass);
   const user = useStore((s) => s.user);
@@ -137,6 +140,7 @@ export function AuthScreen() {
   const [name, setName] = useState(user.name);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [accountUnavailable, setAccountUnavailable] = useState(false);
   const [selectedClass, setSelectedClass] = useState<9 | 11>(11);
 
   const submit = async (e: React.FormEvent) => {
@@ -155,15 +159,26 @@ export function AuthScreen() {
         body: JSON.stringify({ email: email.trim(), password, name: resolvedName }),
       });
       const value = await response.json();
-      if (!response.ok) throw new Error(value.error || "Sign-in failed.");
-      switchClass(11);
-      updateUser({
+      if (!response.ok) {
+        if (response.status >= 500) setAccountUnavailable(true);
+        throw new Error(value.error || "Sign-in failed.");
+      }
+      setAccountUnavailable(false);
+      const profile = {
         email: value.user?.email || email,
         name: value.user?.name || resolvedName,
         username: (value.user?.name || resolvedName).toLowerCase().replace(/[^a-z0-9]+/g, "_"),
-        scholarClass: 11,
+        scholarClass: 11 as const,
         jeeMode: false,
-      });
+      };
+      if (guestMode) {
+        const keepPreferences = window.confirm("Keep your Guest appearance and study preferences on this account? Temporary guest records will not be migrated.");
+        completeGuestAuthentication(profile, keepPreferences);
+        window.dispatchEvent(new Event("scholar:session-changed"));
+        return;
+      }
+      switchClass(11);
+      updateUser(profile);
       if (!onboarded && markLoginIntroPlayed()) {
         void startTransition({ type: "login-intro", durationMs: 16_000 });
       }
@@ -439,7 +454,16 @@ export function AuthScreen() {
                 </div>
               </div>
 
-              {authError && <p role="alert" className="text-sm text-rose-300 lg-body">{authError}</p>}
+              {accountUnavailable ? (
+                <div role="alert" className="rounded-2xl border border-amber-200/20 bg-amber-300/10 p-4 text-left lg-body">
+                  <p className="text-sm font-medium text-amber-100">Account services are temporarily unavailable.</p>
+                  <p className="mt-1 text-xs leading-5 text-white/60">You can continue as Guest or try again later.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" onClick={startGuestSession} className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black">Continue as Guest</button>
+                    <button type="submit" className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-white">Retry</button>
+                  </div>
+                </div>
+              ) : authError ? <p role="alert" className="text-sm text-rose-300 lg-body">{authError}</p> : null}
 
               <button
                 type="submit"
@@ -453,6 +477,14 @@ export function AuthScreen() {
                   </>
                 )}
               </button>
+
+              <button
+                type="button"
+                onClick={startGuestSession}
+                className="w-full rounded-full border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white/85 transition-colors hover:bg-white/[0.09] hover:text-white lg-body"
+              >
+                Continue as Guest
+              </button>
             </form>
 
             <div className="mt-6 text-center">
@@ -465,7 +497,7 @@ export function AuthScreen() {
             </div>
 
             <div className="mt-4 text-center text-xs text-white/40 lg-body">
-              <p>Your Scholar account is protected by a secure server session.</p>
+              <p>{guestMode ? "Guest preferences remain local until account conversion succeeds." : "Your Scholar account is protected by a secure server session."}</p>
             </div>
           </motion.div>
 
