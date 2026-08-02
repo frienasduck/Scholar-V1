@@ -230,6 +230,8 @@ export function SettingsView() {
   const updateUser = useStore((s) => s.updateUser);
   const updateSettings = useStore((s) => s.updateSettings);
   const setAuthed = useStore((s) => s.setAuthed);
+  const guestMode = useStore((s) => s.guestMode);
+  const endGuestSession = useStore((s) => s.endGuestSession);
   const devMode = useStore((s) => s.devMode);
   const setDevMode = useStore((s) => s.setDevMode);
   const coins = useStore((s) => s.coins);
@@ -486,10 +488,21 @@ export function SettingsView() {
             <div className="flex items-center gap-4">
               <span className="text-white text-sm font-medium cursor-pointer hidden sm:inline">{user.name}</span>
               <button
-                onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); setAuthed(false); setDevMode(false); window.dispatchEvent(new Event("scholar:session-changed")); toast.success("Signed out"); }}
+                onClick={async () => {
+                  if (guestMode) {
+                    endGuestSession();
+                    toast.success("Guest session ended");
+                    return;
+                  }
+                  await fetch("/api/auth/logout", { method: "POST" });
+                  setAuthed(false);
+                  setDevMode(false);
+                  window.dispatchEvent(new Event("scholar:session-changed"));
+                  toast.success("Signed out");
+                }}
                 className="asme-glass rounded-full px-6 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors"
               >
-                Sign out
+                {guestMode ? "End guest session" : "Sign out"}
               </button>
             </div>
           </div>

@@ -135,6 +135,7 @@ const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title
   derivations: { entitlement: "derivation_library", title: "Derivation Library", description: "Study complete derivations with guided steps and focused practice." },
   formulas: { entitlement: "formula_explorer", title: "Formula Explorer", description: "Explore formulas visually, understand each symbol, and generate guided practice." },
 };
+const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment"]);
 
 function useNavBadges() {
   const flashcards = useStore((s) => s.flashcards);
@@ -253,6 +254,7 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
 
 function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onOpenCmd: () => void; onOpenMobile: () => void; onToggleSidebar: () => void; sidebarOpen: boolean }) {
   const user = useStore((s) => s.user);
+  const guestMode = useStore((s) => s.guestMode);
   const xp = useStore((s) => s.xp);
   const coins = useStore((s) => s.coins);
   const streak = useStore((s) => s.streak);
@@ -292,6 +294,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
         </Button>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          {guestMode && <Badge variant="outline" className="scholar-top-status border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
           {devMode && <Badge variant="outline" className="scholar-top-status text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
           <div className="scholar-top-status contents">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-500">
@@ -379,6 +382,7 @@ function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpen
 
 function Footer({ active }: { active: string }) {
   const user = useStore((s) => s.user);
+  const guestMode = useStore((s) => s.guestMode);
   const immersive = active === "ebook" || active === "mock-exam" || active === "subscription-payment";
   return (
     <footer className={cn("scholar-info-footer mt-auto -mx-3 -mb-3 border-t border-border/60 bg-background/80 px-4 py-2 pb-[calc(.5rem+72px+var(--safe-area-bottom))] backdrop-blur sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6 lg:px-6 lg:py-3 lg:pb-3", immersive && "hidden lg:block")}>
@@ -386,7 +390,7 @@ function Footer({ active }: { active: string }) {
         <div className="scholar-footer-label flex items-center gap-1.5">
           <GraduationCap className="h-3.5 w-3.5 text-primary" />
           <span className="sm:hidden">Scholar · Class {user.scholarClass} Study OS</span>
-          <span>{user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"} · Class {user.scholarClass} CBSE Study OS</span>
+          <span>{guestMode ? "Guest's Scholar" : user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"} · Class {user.scholarClass} CBSE Study OS</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden sm:inline">{user.scholarClass === 11 ? "Made with care for Ishan" : "Made with care for Neha Salah"}</span>
@@ -425,6 +429,8 @@ class ViewErrorBoundary extends Component<{ children: ReactNode; viewName: strin
 export function AppShell() {
   const startupReady = useScholarStartupReady();
   const user = useStore((s) => s.user);
+  const guestMode = useStore((s) => s.guestMode);
+  const setAuthed = useStore((s) => s.setAuthed);
   const switchClass = useStore((s) => s.switchClass);
   const toggleJeeMode = useStore((s) => s.toggleJeeMode);
   const settings = useStore((s) => s.settings);
@@ -673,7 +679,7 @@ export function AppShell() {
                 <GraduationCap className="h-5 w-5" />
               </div>
               <div className="scholar-sidebar-title">
-                <p className="text-sm font-semibold leading-tight">{user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</p>
+                <p className="text-sm font-semibold leading-tight">{guestMode ? "Guest's Scholar" : user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</p>
                 <p className="text-[10px] text-muted-foreground">Class {user.scholarClass} · CBSE{user.jeeMode ? " · JEE" : ""}</p>
               </div>
             </div>
@@ -694,7 +700,7 @@ export function AppShell() {
             <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
               <GraduationCap className="h-5 w-5" />
             </div>
-            <SheetTitle className="text-left">{user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</SheetTitle>
+            <SheetTitle className="text-left">{guestMode ? "Guest's Scholar" : user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</SheetTitle>
           </SheetHeader>
           <div className="overflow-y-auto h-[calc(100vh-4rem)] no-scrollbar">
             <NavList active={active} onNavigate={navigate} badges={badges} />
@@ -705,6 +711,12 @@ export function AppShell() {
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full">
         <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
+        {guestMode ? (
+          <section className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-300/15 bg-cyan-300/[0.07] px-3 py-2 text-xs text-cyan-50 sm:px-5" aria-label="Guest session information">
+            <p><strong>Guest session</strong><span className="ml-2 text-white/55">Your progress is saved only on this device until you create an account.</span></p>
+            <button type="button" onClick={() => setAuthed(false)} className="rounded-full border border-cyan-200/20 bg-white/[0.06] px-3 py-1.5 font-semibold hover:bg-white/[0.1]">Create account or Sign in</button>
+          </section>
+        ) : null}
         <BackgroundTaskNotifications onNavigate={navigate} />
         <main id="main-scroll" className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 transition-colors duration-500 sm:p-4 lg:p-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
@@ -716,7 +728,16 @@ export function AppShell() {
             className="w-full"
           >
             <ViewErrorBoundary viewName={active}>
-              {VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement) ? (
+              {guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (
+                <section className="mx-auto grid min-h-[55vh] max-w-lg place-items-center text-center">
+                  <div className="rounded-3xl border border-white/10 bg-black/25 p-8 backdrop-blur-xl">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Guest session</p>
+                    <h1 className="mt-3 text-2xl font-semibold">Sign in to use this private feature</h1>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">Guest Mode does not provide cloud files, purchases, payments, subscriptions, or cross-device storage.</p>
+                    <button type="button" onClick={() => setAuthed(false)} className="mt-6 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Create account or Sign in</button>
+                  </div>
+                </section>
+              ) : VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement) ? (
                 <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>
               ) : <View />}
             </ViewErrorBoundary>
@@ -726,7 +747,7 @@ export function AppShell() {
         </main>
       </div>
 
-      {startupReady ? <LamWidget currentView={active} /> : null}
+      {startupReady && !guestMode ? <LamWidget currentView={active} /> : null}
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 
