@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test:smoke": "playwright test tests/smoke.spec.ts --reporter=line --workers=1",
     "test:security": "bun test tests/subscription-security.test.ts",
+    "test:migrations": "bun test tests/postgres-migration-coverage.test.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
