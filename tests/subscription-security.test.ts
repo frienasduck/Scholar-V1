@@ -6,10 +6,39 @@ const root = process.cwd();
 const source = (path: string) => readFileSync(join(root, path), "utf8");
 
 describe("Scholar Plus security invariants", () => {
-  test("subscriptions fail open only through the explicit global switch", () => {
+  test("subscriptions fail closed unless the global unlock is explicit", () => {
     const config = source("src/lib/subscriptions/config.ts");
-    expect(config).toContain('enabled: bool("SUBSCRIPTIONS_ENABLED", false)');
-    expect(config).not.toContain('enabled: bool("SUBSCRIPTIONS_ENABLED", true)');
+    expect(config).toContain('return bool("SUBSCRIPTIONS_ENABLED", true)');
+    expect(config).toContain("enabled: areSubscriptionsEnabled()");
+    expect(config).toContain('["false", "0", "off", "no"]');
+  });
+
+  test("new accounts are explicitly free users in Class 11", () => {
+    const register = source("src/app/api/auth/register/route.ts");
+    expect(register).toContain("role: UserRole.USER");
+    expect(register).toContain("coins: 0");
+    expect(register).toContain("currentScholarClass: 11");
+    expect(register).not.toContain("scholarSubscription.create");
+  });
+
+  test("one central resolver exposes fail-closed plans and limits", () => {
+    const entitlements = source("src/lib/subscriptions/entitlements.ts");
+    const session = source("src/app/api/auth/session/route.ts");
+    expect(entitlements).toContain('type ScholarPlan = "FREE" | "PLUS" | "DEVELOPER" | "UNLOCKED"');
+    expect(entitlements).toContain("export async function resolveScholarPlan");
+    expect(entitlements).toContain("Promise.allSettled");
+    expect(session).toContain("entitlementsLoaded: access.entitlementsLoaded");
+    expect(session).toContain("dailyQuiz: access.dailyQuizLimit");
+    expect(session).toContain("dailySlideshow: access.dailySlideshowLimit");
+  });
+
+  test("client access clears stale privileges during account changes", () => {
+    const provider = source("src/components/subscriptions/subscription-provider.tsx");
+    const store = source("src/lib/store.ts");
+    expect(provider).toContain("refreshSequence");
+    expect(provider).toContain("setState({ loading: true, authenticated: false, developerMode: false })");
+    expect(provider).toContain("state.entitlementsLoaded === true");
+    expect(store).toContain("guestMode: false, devMode: false");
   });
 
   test("email review links cannot approve subscriptions", () => {

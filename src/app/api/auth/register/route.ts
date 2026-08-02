@@ -6,6 +6,7 @@ import { createAuthSession } from "@/lib/auth/session";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { accountError, databaseUnavailableError, isUniqueConstraintError } from "@/lib/auth/errors";
 import { normalizeEmail } from "@/lib/auth/identity";
+import { UserRole } from "@prisma/client";
 
 const schema = z.object({
   email: z.string().trim().email().max(254),
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
       email,
       name: input.data.name,
       passwordHash,
+      role: UserRole.USER,
+      coins: 0,
       currentScholarClass: 11,
     } }));
     await createAuthSession(user);

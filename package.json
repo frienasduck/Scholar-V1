@@ -19,6 +19,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:transfer:sqlite": "bun run scripts/transfer-sqlite-to-postgres.ts",
     "admin:grant": "bun run scripts/grant-scholar-admin.ts",
+    "subscription:diagnose": "bun run scripts/diagnose-scholar-plan.ts",
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {

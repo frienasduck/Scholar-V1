@@ -1040,7 +1040,7 @@ export const useStore = create<AppState>()(
     ...seed(),
     ...(persistedState as Partial<AppState>),
 
-      setAuthed: (v) => set({ authed: v }),
+      setAuthed: (v) => set(v ? { authed: true } : { authed: false, guestMode: false, devMode: false }),
       startGuestSession: () => {
         set(() => ({ ...seed(), authed: true, guestMode: true, onboarded: true, devMode: false }));
         get().switchClass(11);
