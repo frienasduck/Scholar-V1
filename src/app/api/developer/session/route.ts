@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const identifier = createHash("sha256").update(user.id).digest("hex").slice(0, 20);
     await enforceRateLimit(identifier, "developer-password", 5, 15 * 60 * 1000);
     const passwordHash = process.env.DEV_MODE_PASSWORD_HASH;
-    if (!passwordHash || !verifyPassword(parsed.data.password, passwordHash)) {
+  if (!passwordHash || !(await verifyPassword(parsed.data.password, passwordHash))) {
       return NextResponse.json({ error: "Developer Mode access was denied." }, { status: 401 });
     }
     await createDeveloperSession(user);

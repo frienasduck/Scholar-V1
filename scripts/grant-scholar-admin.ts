@@ -1,10 +1,11 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 import { loadEnvConfig } from "@next/env";
+import { normalizeEmail } from "../src/lib/auth/identity";
 
 loadEnvConfig(process.cwd());
 
 const prisma = new PrismaClient();
-const administratorEmail = "ishansalah123@gmail.com";
+const administratorEmail = normalizeEmail("ishansalah123@gmail.com");
 
 async function main() {
   const result = await prisma.user.updateMany({

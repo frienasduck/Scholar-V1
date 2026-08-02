@@ -12,8 +12,11 @@
     "test:security": "bun test tests/subscription-security.test.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:transfer:sqlite": "bun run scripts/transfer-sqlite-to-postgres.ts",
     "admin:grant": "bun run scripts/grant-scholar-admin.ts",
     "db:reset": "prisma migrate reset"
   },
