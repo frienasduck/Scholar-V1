@@ -160,8 +160,8 @@ export function AuthScreen() {
       });
       const value = await response.json();
       if (!response.ok) {
-        if (response.status >= 500) setAccountUnavailable(true);
-        throw new Error(value.error || "Sign-in failed.");
+        setAccountUnavailable(response.status >= 500);
+        throw new Error(value.message || "Sign-in failed.");
       }
       setAccountUnavailable(false);
       const profile = {
