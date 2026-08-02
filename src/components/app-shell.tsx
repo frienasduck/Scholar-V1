@@ -37,7 +37,7 @@ import { FocusView } from "@/components/views/focus";
 import { ResourcesView } from "@/components/views/resources";
 import { applyTheme, getEquippedTheme } from "@/lib/themes";
 import { AnalyticsView } from "@/components/views/analytics";
-import { AchievementsView } from "@/components/views/achievements";
+import { AchievementsComingSoon } from "@/components/views/achievements-coming-soon";
 import { CommunityView } from "@/components/views/community";
 import { FilesView } from "@/components/views/files";
 import { StoreView } from "@/components/views/store";
@@ -72,6 +72,12 @@ import { DerivationsView } from "@/components/views/derivations";
 import { LamWidget } from "@/components/lam-widget";
 import { useScholarTransition } from "@/components/scholar-transition";
 import { useScholarStartupReady } from "@/components/launch-readiness-gate";
+import { ScholarPlusView } from "@/components/views/scholar-plus";
+import { SubscriptionPaymentView } from "@/components/views/subscription-payment";
+import { PlusGate } from "@/components/subscriptions/plus-gate";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
+import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
@@ -85,7 +91,7 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   focus: FocusView,
   resources: ResourcesView,
   analytics: AnalyticsView,
-  achievements: AchievementsView,
+  achievements: AchievementsComingSoon,
   community: CommunityView,
   files: FilesView,
   store: StoreView,
@@ -117,6 +123,17 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   practicals: PracticalsView,
   python: PythonView,
   derivations: DerivationsView,
+  plus: ScholarPlusView,
+  "subscription-payment": SubscriptionPaymentView,
+};
+
+const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title: string; description: string }> = {
+  levels: { entitlement: "levels", title: "Levels", description: "Unlock Scholar progression, advanced rewards, and full level insights." },
+  "exam-prep": { entitlement: "exam_prep", title: "Exam Prep", description: "Build complete exam-focused revision plans and advanced preparation material." },
+  assignments: { entitlement: "assignments", title: "Assignments", description: "Create, manage, and improve assignments with Scholar’s advanced workflow." },
+  practicals: { entitlement: "practical_lab", title: "Practical Lab", description: "Explore practical procedures, observations, and interactive laboratory guidance." },
+  derivations: { entitlement: "derivation_library", title: "Derivation Library", description: "Study complete derivations with guided steps and focused practice." },
+  formulas: { entitlement: "formula_explorer", title: "Formula Explorer", description: "Explore formulas visually, understand each symbol, and generate guided practice." },
 };
 
 function useNavBadges() {
@@ -159,6 +176,7 @@ function useNavBadges() {
 
 function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges> }) {
   const backgroundTasks = useBackgroundTasks();
+  const access = useScholarAccess();
   return (
     <nav className="flex flex-col gap-6 px-3 py-2">
       {NAV_GROUPS.map((group) => (
@@ -167,6 +185,7 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
           <div className="flex flex-col gap-0.5">
             {NAV_ITEMS.filter((n) => n.group === group).map((item) => {
               const isActive = active === item.id;
+              const plusLocked = Boolean(VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
               const badge = (badges as Record<string, string | null>)[item.id];
               const hasFinishedTask = backgroundTasks.some(
                 (task) =>
@@ -214,6 +233,7 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
                   {item.badge && !badge && (
                     <span className="scholar-nav-badge text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">{item.badge}</span>
                   )}
+                  {plusLocked && <span className="scholar-nav-badge rounded-full border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-cyan-200">Plus</span>}
                   {badge && (
                     <span className={cn(
                       "scholar-nav-badge",
@@ -357,13 +377,15 @@ function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpen
   );
 }
 
-function Footer() {
+function Footer({ active }: { active: string }) {
   const user = useStore((s) => s.user);
+  const immersive = active === "ebook" || active === "mock-exam" || active === "subscription-payment";
   return (
-    <footer className="mt-auto -mx-3 -mb-3 border-t border-border/60 bg-background/80 px-4 py-3 pb-[calc(.75rem+72px+var(--safe-area-bottom))] backdrop-blur sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6 lg:px-6 lg:pb-3">
+    <footer className={cn("scholar-info-footer mt-auto -mx-3 -mb-3 border-t border-border/60 bg-background/80 px-4 py-2 pb-[calc(.5rem+72px+var(--safe-area-bottom))] backdrop-blur sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6 lg:px-6 lg:py-3 lg:pb-3", immersive && "hidden lg:block")}>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
+        <div className="scholar-footer-label flex items-center gap-1.5">
           <GraduationCap className="h-3.5 w-3.5 text-primary" />
+          <span className="sm:hidden">Scholar · Class {user.scholarClass} Study OS</span>
           <span>{user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"} · Class {user.scholarClass} CBSE Study OS</span>
         </div>
         <div className="flex items-center gap-3">
@@ -407,6 +429,8 @@ export function AppShell() {
   const toggleJeeMode = useStore((s) => s.toggleJeeMode);
   const settings = useStore((s) => s.settings);
   const { startTransition } = useScholarTransition();
+  const access = useScholarAccess();
+  const appearanceLabUnlocked = access.has("appearance_lab");
   const [active, setActive] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
     const segment = window.location.pathname.split("/").filter(Boolean)[0];
@@ -439,22 +463,38 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const sync = () => document.documentElement.dataset.scholarKeyboardOpen = String(window.innerHeight - viewport.height > 160);
+    sync();
+    viewport.addEventListener("resize", sync);
+    return () => { viewport.removeEventListener("resize", sync); delete document.documentElement.dataset.scholarKeyboardOpen; };
+  }, []);
+
+  useEffect(() => {
     applyTheme(getEquippedTheme(user.scholarClass));
   }, [user.scholarClass]);
+
+  useEffect(() => {
+    if (!access.loading && user.scholarClass === 9 && !access.has("class_9_access")) {
+      switchClass(11);
+      window.dispatchEvent(new CustomEvent("scholar:notification", { detail: { type: "info", title: "Scholar now opens in Class 11", message: "Class 9 is available with Scholar Plus." } }));
+    }
+  }, [access, switchClass, user.scholarClass]);
 
   useEffect(() => {
     const root = document.documentElement;
     // The experimental appearance engine is intentionally locked. Always
     // restore Scholar's original presentation on launch; the developer-only
     // font preview can opt in for the current session from Settings.
-    root.dataset.fontScale = "100";
-    root.dataset.density = "comfortable";
-    root.dataset.highContrast = "false";
-    root.dataset.readableFont = "false";
+    root.dataset.fontScale = settings.fontScale ?? "100";
+    root.dataset.density = appearanceLabUnlocked ? (settings.density ?? "comfortable") : "comfortable";
+    root.dataset.highContrast = String(appearanceLabUnlocked && Boolean(settings.highContrast));
+    root.dataset.readableFont = String(Boolean(settings.readableFont));
     root.dataset.backgroundPattern = "true";
     root.dataset.reduceMotion = String(Boolean(settings.reduceMotion));
     root.dataset.pageTransitions = String(settings.pageTransitions !== false);
-  }, [settings.pageTransitions, settings.reduceMotion]);
+  }, [appearanceLabUnlocked, settings.density, settings.fontScale, settings.highContrast, settings.pageTransitions, settings.readableFont, settings.reduceMotion]);
 
   useEffect(() => {
     if (settings.sidebarBehavior === "remember") return;
@@ -472,11 +512,24 @@ export function AppShell() {
 
   // Listen for class switch events from Settings
   useEffect(() => {
-    const onClassSwitch = (e: Event) => {
+    const onClassSwitch = async (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.newClass) {
         const toClass = detail.newClass as 9 | 11;
+        if (toClass === 9 && !access.has("class_9_access")) {
+          setActive("plus");
+          window.history.pushState({ viewId: "plus" }, "", "/plus");
+          return;
+        }
         if (toClass !== user.scholarClass) {
+          const response = await fetch("/api/academic-class", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scholarClass: toClass }) });
+          if (!response.ok) {
+            if (response.status === 403) {
+              setActive("plus");
+              window.history.pushState({ viewId: "plus" }, "", "/plus");
+            }
+            return;
+          }
           void startTransition({
             type: "academic-switch",
             fromClass: user.scholarClass,
@@ -505,9 +558,10 @@ export function AppShell() {
         }, 2000);
       }
     };
-    window.addEventListener("scholar:class-switch", onClassSwitch);
-    return () => window.removeEventListener("scholar:class-switch", onClassSwitch);
-  }, [startTransition, switchClass, toggleJeeMode, user.jeeMode, user.scholarClass]);
+    const listener = (event: Event) => { void onClassSwitch(event); };
+    window.addEventListener("scholar:class-switch", listener);
+    return () => window.removeEventListener("scholar:class-switch", listener);
+  }, [access, startTransition, switchClass, toggleJeeMode, user.jeeMode, user.scholarClass]);
 
   // Keyboard shortcut for command palette
   useEffect(() => {
@@ -662,11 +716,13 @@ export function AppShell() {
             className="w-full"
           >
             <ViewErrorBoundary viewName={active}>
-              <View />
+              {VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement) ? (
+                <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>
+              ) : <View />}
             </ViewErrorBoundary>
           </motion.div>
           </div>
-          <Footer />
+          <Footer active={active} />
         </main>
       </div>
 
@@ -704,7 +760,7 @@ export function AppShell() {
       )}
 
       {/* Mobile bottom navigation — hidden on desktop (lg+) */}
-      <nav className="scholar-bottom-nav lg:hidden">
+      {active !== "subscription-payment" && <nav className="scholar-bottom-nav lg:hidden">
         <button onClick={() => navigate("dashboard")} className={cn(active === "dashboard" && "active")} aria-label="Home">
           <Home /> Home
         </button>
@@ -720,13 +776,14 @@ export function AppShell() {
         <button onClick={() => setMobileOpen(true)} aria-label="More sections">
           <Menu /> More
         </button>
-      </nav>
+      </nav>}
 
       {/* Floating music widget — persistent across navigation */}
       <FloatingMusicWidget />
 
       {/* PWA install prompt */}
       <PWAInstallPrompt />
+      <PlusPromotion />
     </div>
   );
 }

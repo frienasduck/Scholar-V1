@@ -204,7 +204,7 @@ export function StudyView() {
       const r = await askAIJSON<{ questions: { question: string; options: string[]; answer: number | string; explanation: string }[] }>(
         prompt,
         personaFor(subjectId),
-        { timeoutMs: 180_000 } // 3-minute ceiling — JEE-mode quiz can take 60s+
+        { timeoutMs: 180_000, usage: "quiz_generation" } // server-authoritative daily quota
       );
       if (r?.questions?.length) {
         const cleaned = r.questions

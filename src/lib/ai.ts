@@ -78,6 +78,8 @@ type AIOptions = {
   timeoutMs?: number;
   mode?: AIMode;
   signal?: AbortSignal;
+  feature?: "aisig" | "homework_scanner";
+  usage?: "quiz_generation" | "slideshow_generation";
 };
 
 export async function askAI(
@@ -93,6 +95,8 @@ export async function askAI(
       persona,
       mode: opts.mode ?? "chat",
       temperature: opts.temperature ?? 0.6,
+      feature: opts.feature,
+      usage: opts.usage,
       ...getClassContext(),
     }, abort.controller.signal);
   } catch (error) {
@@ -118,6 +122,8 @@ export async function askAIJSON<T = unknown>(
       persona,
       mode: opts.mode ?? "json",
       temperature: opts.temperature ?? 0.4,
+      feature: opts.feature,
+      usage: opts.usage,
       ...getClassContext(),
     }, abort.controller.signal);
   } catch {
@@ -153,6 +159,8 @@ export async function askAIStream(
       persona,
       mode: opts.mode ?? "stream",
       temperature: opts.temperature ?? 0.6,
+      feature: opts.feature,
+      usage: opts.usage,
       ...getClassContext(),
     }, abort.controller.signal, opts.onDelta);
   } catch (error) {

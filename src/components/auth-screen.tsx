@@ -137,9 +137,9 @@ export function AuthScreen() {
   const [name, setName] = useState(user.name);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [selectedClass, setSelectedClass] = useState<9 | 11>(user.scholarClass ?? 9);
+  const [selectedClass, setSelectedClass] = useState<9 | 11>(11);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
       setAuthError("Enter both your email and password to continue.");
@@ -147,22 +147,33 @@ export function AuthScreen() {
     }
     setAuthError("");
     setLoading(true);
-    setTimeout(() => {
-      const defaultName = selectedClass === 11 ? "Ishan" : "Neha Salah";
-      const resolvedName = mode === "signup" ? (name.trim() || defaultName) : defaultName;
-      switchClass(selectedClass);
+    try {
+      const resolvedName = name.trim() || "Ishan";
+      const response = await fetch(`/api/auth/${mode === "signup" ? "register" : "login"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password, name: resolvedName }),
+      });
+      const value = await response.json();
+      if (!response.ok) throw new Error(value.error || "Sign-in failed.");
+      switchClass(11);
       updateUser({
-        email,
-        name: resolvedName,
-        username: selectedClass === 11 ? "ishan" : "neha_salah",
-        scholarClass: selectedClass,
+        email: value.user?.email || email,
+        name: value.user?.name || resolvedName,
+        username: (value.user?.name || resolvedName).toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+        scholarClass: 11,
         jeeMode: false,
       });
       if (!onboarded && markLoginIntroPlayed()) {
         void startTransition({ type: "login-intro", durationMs: 16_000 });
       }
       setAuthed(true);
-    }, 700);
+      window.dispatchEvent(new Event("scholar:session-changed"));
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -401,7 +412,7 @@ export function AuthScreen() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setSelectedClass(9)}
+                    onClick={() => { setSelectedClass(11); setAuthError("Class 9 is available with Scholar Plus after sign-in."); }}
                     className={`rounded-xl px-4 py-3 text-sm font-medium transition-all flex flex-col items-center gap-1 ${
                       selectedClass === 9
                         ? "lg-glass-strong text-white ring-2 ring-indigo-400"
@@ -410,11 +421,11 @@ export function AuthScreen() {
                   >
                     <span className="text-2xl">📘</span>
                     <span className="lg-body font-medium">Class 9</span>
-                    <span className="text-[10px] text-white/50">CBSE</span>
+                    <span className="text-[10px] text-amber-200">Scholar Plus</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedClass(11)}
+                    onClick={() => { setSelectedClass(11); setAuthError(""); }}
                     className={`rounded-xl px-4 py-3 text-sm font-medium transition-all flex flex-col items-center gap-1 ${
                       selectedClass === 11
                         ? "lg-glass-strong text-white ring-2 ring-blue-400"
@@ -454,7 +465,7 @@ export function AuthScreen() {
             </div>
 
             <div className="mt-4 text-center text-xs text-white/40 lg-body">
-              <p>Demo Mode — any email and password works. Data is stored locally only.</p>
+              <p>Your Scholar account is protected by a secure server session.</p>
             </div>
           </motion.div>
 

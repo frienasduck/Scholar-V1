@@ -739,6 +739,16 @@ export function SlideshowMaker() {
       );
       return;
     }
+    const quotaResponse = await fetch("/api/subscriptions/usage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "slideshow_generation" }),
+    });
+    if (!quotaResponse.ok) {
+      const quota = await quotaResponse.json().catch(() => ({}));
+      toast.error(quota.message || "The slideshow generation limit could not be verified.");
+      return;
+    }
     const backgroundTaskId = beginBackgroundTask({
       kind: "slideshow",
       title: "Creating your slideshow",

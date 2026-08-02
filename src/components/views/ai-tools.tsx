@@ -11,6 +11,8 @@ import {
   Wand, Presentation,
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
+import { PlusGate } from "@/components/subscriptions/plus-gate";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
 import { askAI, askAIJSON, type ChatMessage } from "@/lib/ai";
 import { useStore } from "@/lib/store";
@@ -388,6 +390,7 @@ function HomeworkScanner() {
     try {
       const form = new FormData();
       form.append("file", file);
+      form.append("feature", "homework_scanner");
       setOcrStatus("reading");
       const response = await fetch("/api/ocr", { method: "POST", body: form, signal: controller.signal });
       const data = await response.json() as { text?: string; confidence?: number; error?: string };
@@ -414,7 +417,7 @@ function HomeworkScanner() {
     try {
       const ctx = file ? `(Extracted from uploaded image: ${file.name}) ` : "";
       const prompt = `${ctx}Subject: ${subject}. Solve this Class ${scholarClass} CBSE question — but FIRST give only a HINT (no full answer) under a heading "## Hint". Then give the full solution under "## Solution" with step-by-step working.\n\nQuestion: ${question}`;
-      const r = await askAI(prompt, "homework-scanner");
+      const r = await askAI(prompt, "homework-scanner", { feature: "homework_scanner" });
       // Split out the hint section.
       const hintMatch = r.match(/##\s*Hint([\s\S]*?)(?=##\s*Solution|$)/i);
       const solMatch = r.match(/##\s*Solution([\s\S]*?)$/i);
@@ -777,7 +780,7 @@ function AISIG() {
         imageStyle ? `Style: ${imageStyle}.` : "",
       ].filter(Boolean).join(" ");
       const prompt = `You are an educational image-prompt engineer for CBSE students. Rewrite this idea as a vivid, detailed image-generation prompt that produces a CLEAR, EDUCATIONAL, SCHOOL-APPROPRIATE illustration suitable for a textbook or study notes.\n\nIdea: "${input}"\n${context}\n\nReturn ONLY the enhanced image prompt (1-3 sentences). Mention style, composition, colors, and any labels or annotations that would help a student understand the concept. No preamble, no quotes.`;
-      const r = await askAI(prompt, "default");
+      const r = await askAI(prompt, "default", { feature: "aisig" });
       const text = r.trim().replace(/^["']|["']$/g, "");
       setEnhanced(text);
       addXP(2);
@@ -1489,6 +1492,7 @@ function ToolContent({ id }: { id: string }) {
 export function AIToolsView() {
   const CURRICULUM = useCurriculum();
   const scholarClass = useStore((state) => state.user.scholarClass);
+  const access = useScholarAccess();
   const [openId, setOpenId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -1500,6 +1504,7 @@ export function AIToolsView() {
     }
   });
   const activeTool = openId ? TOOLS.find((t) => t.id === openId) : null;
+  const activeEntitlement = activeTool?.id === "aisig" ? "aisig" : activeTool?.id === "homework-scanner" ? "homework_scanner" : null;
 
   const BLOOM_CSS = `
     .bloom-glass {
@@ -1571,6 +1576,9 @@ export function AIToolsView() {
 
   // ===== Tool Page (when a tool is selected) =====
   if (activeTool) {
+    if (activeEntitlement && !access.has(activeEntitlement)) {
+      return <PlusGate entitlement={activeEntitlement} title={activeTool.name} description={activeTool.id === "aisig" ? "Generate educational study images from carefully enhanced prompts." : "Scan homework, extract its text, and receive guided hints and solutions."}><span /></PlusGate>;
+    }
     return (
       <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
         <style>{BLOOM_CSS}</style>
@@ -1757,6 +1765,7 @@ export function AIToolsView() {
                   tabIndex={0}
                   onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpenId(t.id); } }}
                 >
+                  {(t.id === "aisig" || t.id === "homework-scanner") && !access.has(t.id === "aisig" ? "aisig" : "homework_scanner") && <span className="absolute right-12 top-3 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-2 py-1 text-[9px] font-semibold uppercase text-cyan-100">Plus</span>}
                   {t.badge && (
                     <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg">
                       {t.badge}
@@ -1820,6 +1829,7 @@ export function AIToolsView() {
               tabIndex={0}
               onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpenId(t.id); } }}
             >
+              {(t.id === "aisig" || t.id === "homework-scanner") && !access.has(t.id === "aisig" ? "aisig" : "homework_scanner") && <span className="absolute right-12 top-3 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-2 py-1 text-[9px] font-semibold uppercase text-cyan-100">Plus</span>}
               {t.badge && (
                 <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg">
                   {t.badge}

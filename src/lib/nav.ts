@@ -56,7 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "derivations", label: "Derivation Library", icon: BookMarked, group: "Extra" },
 
   { id: "analytics", label: "Analytics", icon: BarChart3, group: "More" },
-  { id: "achievements", label: "Achievements", icon: Trophy, group: "More" },
+  { id: "achievements", label: "Achievements", icon: Trophy, group: "More", comingSoon: true },
   { id: "mindmap", label: "Mind Map", icon: Lock, group: "More", comingSoon: true },
   { id: "galaxy", label: "Concept Galaxy", icon: Lock, group: "More", comingSoon: true },
   { id: "formulas", label: "Formula Explorer", icon: Sigma, group: "More" },

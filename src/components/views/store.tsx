@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
 function productFile(product: StoreProduct) {
   const body = [
@@ -45,6 +46,7 @@ function downloadProduct(product: StoreProduct) {
 
 export function StoreView() {
   const scholarClass = useStore((state) => state.user.scholarClass);
+  const access = useScholarAccess();
   const coins = useStore((state) => state.coins);
   const purchases = useStore((state) => state.purchases);
   const purchaseItem = useStore((state) => state.purchaseItem);
@@ -63,8 +65,15 @@ export function StoreView() {
       && (!query || `${item.name} ${item.description} ${item.tags.join(" ")}`.toLowerCase().includes(query)));
   }, [category, search]);
 
-  const buy = () => {
+  const buy = async () => {
     if (!confirm) return;
+    const authorization = await fetch("/api/store/purchase", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: confirm.id }) });
+    if (!authorization.ok) {
+      const value = await authorization.json().catch(() => ({}));
+      if (authorization.status === 403) window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }));
+      toast.error(value.error === "PLUS_REQUIRED" ? "This Store item requires Scholar Plus." : (value.error || "Purchase could not be authorized."));
+      return;
+    }
     if (coins < confirm.price) { toast.error("Not enough coins", { description: `You need ${confirm.price - coins} more coins.` }); return; }
     if (purchaseItem(confirm.id, confirm.price, confirm.name, confirm.category)) {
       addXP(15);
@@ -127,13 +136,13 @@ export function StoreView() {
             return <article key={item.id} className="flex min-h-72 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
               <div className="flex items-start justify-between gap-3">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: `${item.accent}20`, color: item.accent }}>{item.themeId ? <Palette className="h-5 w-5" /> : <ShoppingBag className="h-5 w-5" />}</span>
-                {isEquipped ? <Badge>Equipped</Badge> : owned ? <Badge variant="secondary"><Check className="mr-1 h-3 w-3" />Owned</Badge> : <Badge variant="outline"><Coins className="mr-1 h-3 w-3" />{item.price}</Badge>}
+                <div className="flex flex-wrap justify-end gap-1.5">{item.requiresPlus && <Badge className="bg-violet-500/20 text-violet-200">Plus</Badge>}{isEquipped ? <Badge>Equipped</Badge> : owned ? <Badge variant="secondary"><Check className="mr-1 h-3 w-3" />Owned</Badge> : <Badge variant="outline"><Coins className="mr-1 h-3 w-3" />{item.price}</Badge>}</div>
               </div>
               <h2 className="mt-4 text-lg font-semibold">{item.name}</h2><p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">{item.tags.slice(0, 3).map((tag) => <span key={tag} className="rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">{tag}</span>)}</div>
               <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
                 <Button variant="outline" onClick={() => setPreview(item)}><Eye className="mr-1.5 h-4 w-4" />Preview</Button>
-                {owned ? <Button onClick={() => useItem(item)}>{item.themeId ? <Palette className="mr-1.5 h-4 w-4" /> : <Download className="mr-1.5 h-4 w-4" />}{item.themeId ? (isEquipped ? "Equipped" : "Equip") : "Download"}</Button> : <Button onClick={() => setConfirm(item)}><Lock className="mr-1.5 h-4 w-4" />Buy</Button>}
+                {owned ? <Button onClick={() => useItem(item)}>{item.themeId ? <Palette className="mr-1.5 h-4 w-4" /> : <Download className="mr-1.5 h-4 w-4" />}{item.themeId ? (isEquipped ? "Equipped" : "Equip") : "Download"}</Button> : item.requiresPlus && !access.has("store_plus_items") ? <Button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }))}><Lock className="mr-1.5 h-4 w-4" />Unlock</Button> : <Button onClick={() => setConfirm(item)}><Lock className="mr-1.5 h-4 w-4" />Buy</Button>}
               </div>
             </article>;
           })}

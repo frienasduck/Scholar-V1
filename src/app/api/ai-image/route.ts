@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateNvidiaImage } from "@/lib/ai/nvidia-image";
 import { publicAIError } from "@/lib/ai/errors";
 import { imageRequestSchema } from "@/lib/ai/schemas";
+import { requireEntitlement } from "@/lib/subscriptions/entitlements";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
 export async function POST(request: NextRequest) {
+  const access = await requireEntitlement("aisig");
+  if (!access.ok) return access.response;
   let raw: unknown;
   try {
     raw = await request.json();

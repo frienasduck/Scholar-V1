@@ -988,3 +988,11 @@ body.immersive-mode .scholar-bottom-nav {
   .scholar-ai-content .katex-display { break-inside: avoid; border-color: #ddd; background: transparent; }
   .scholar-ai-content a { color: #111; text-decoration: none; }
 }
+@media (max-width: 639px) {
+  .scholar-footer-label > span:last-child {
+    display: none;
+  }
+  html[data-scholar-keyboard-open="true"] .scholar-info-footer {
+    display: none;
+  }
+}

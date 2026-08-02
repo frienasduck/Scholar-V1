@@ -28,8 +28,10 @@ export const aiRequestSchema = z.object({
   mode: aiModeSchema.optional(),
   temperature: z.number().min(0).max(1.5).optional().default(0.6),
   json: z.boolean().optional().default(false),
-  scholarClass: z.union([z.literal(9), z.literal(11)]).optional().default(9),
+  scholarClass: z.union([z.literal(9), z.literal(11)]).optional().default(11),
   jeeMode: z.boolean().optional().default(false),
+  feature: z.enum(["aisig", "homework_scanner"]).optional(),
+  usage: z.enum(["quiz_generation", "slideshow_generation"]).optional(),
 });
 
 export type AIRequest = z.infer<typeof aiRequestSchema>;
