@@ -714,6 +714,14 @@ body.immersive-mode .scholar-bottom-nav {
   border-top-right-radius: 0;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .2), 0 12px 38px rgb(0 0 0 / .34), 0 0 28px rgb(99 102 241 / .08);
 }
+/* Desktop: keep the closed LAM capsule below the sticky 4rem top bar so it
+   never covers the search bar. The open assistant panel still overlays as a
+   modal. Mobile has its own docking rules below. */
+@media (min-width: 768px) {
+  .lam-system-root[data-state="closed"] {
+    top: calc(4rem + env(safe-area-inset-top)) !important;
+  }
+}
 .lam-system-root[data-state="listening"] { --lam-state-light: 103 232 249; }
 .lam-system-root[data-state="thinking"] { --lam-state-light: 196 181 253; }
 .lam-system-root[data-state="completed"] { --lam-state-light: 110 231 183; }

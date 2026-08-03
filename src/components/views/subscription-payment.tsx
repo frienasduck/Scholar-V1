@@ -268,6 +268,7 @@ export function SubscriptionPaymentView() {
                     autoComplete="off"
                     className="mt-1.5 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-cyan-300/50"
                   />
+                  <p className="mt-1.5 text-[11px] leading-5 text-white/40">The UTR is the 12-digit payment ID shown on your UPI app after you pay, so the administrator can confirm your transfer.</p>
                 </div>
                 <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-white/15 p-4 text-sm text-white/60 transition hover:border-white/25">
                   <Upload className="h-5 w-5 shrink-0" />
