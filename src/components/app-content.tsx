@@ -44,7 +44,7 @@ function ScholarContent() {
     }
   }, [session.loading, session.authenticated, session.developerMode, session.user?.currentScholarClass, authed, guestMode, devMode, scholarClass, setAuthed, setDevMode, switchClass]);
 
-  if (session.loading && authed && !guestMode) {
+  if (session.status === "initializing" && authed && !guestMode) {
     return <div className="grid min-h-screen place-items-center bg-black text-sm text-white/60">Checking your Scholar session…</div>;
   }
   if (!authed) return <AuthScreen />;

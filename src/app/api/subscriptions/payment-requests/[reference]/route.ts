@@ -4,12 +4,15 @@ import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/session";
 import { safePaymentRequest } from "@/lib/subscriptions/payment";
 import { subscriptionConfig } from "@/lib/subscriptions/config";
-import { paymentAdminEmail, sendScholarEmail } from "@/lib/subscriptions/email";
+import { paymentProofAdminEmail, sendScholarEmail } from "@/lib/subscriptions/email";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { recordAudit } from "@/lib/subscriptions/audit";
 import { UserRole } from "@prisma/client";
 
-const proofSchema = z.object({ payerName: z.string().trim().min(2).max(100), transactionReference: z.string().trim().min(4).max(100) });
+const proofSchema = z.object({
+  payerName: z.string().trim().min(2, "Enter the exact payer name shown in the UPI transaction.").max(100),
+  transactionReference: z.string().trim().min(4, "Enter the UPI transaction reference (UTR).").max(100).regex(/^[A-Za-z0-9]+[A-Za-z0-9._:-]*$/, "The UTR can only contain letters, numbers, dots, dashes, underscores, or colons."),
+});
 const proofTypes = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
 
 export async function GET(_: NextRequest, context: { params: Promise<{ reference: string }> }) {
@@ -32,7 +35,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ r
     if (!new Set(["created", "more_information_required", "submitted"]).has(payment.status)) return NextResponse.json({ error: "REQUEST_NOT_EDITABLE" }, { status: 409 });
     const form = await request.formData();
     const parsed = proofSchema.safeParse({ payerName: form.get("payerName"), transactionReference: form.get("transactionReference") });
-    if (!parsed.success) return NextResponse.json({ error: "Enter the payer name and a valid transaction reference." }, { status: 400 });
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Enter the payer name and a valid transaction reference." }, { status: 400 });
     const proof = form.get("proof");
     let proofData: Uint8Array<ArrayBuffer> | undefined;
     let proofMimeType: string | undefined;
@@ -60,18 +63,47 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ r
     } catch {
       return NextResponse.json({ error: "That transaction reference is already linked to another request." }, { status: 409 });
     }
-    if (subscriptionConfig.adminPaymentEmail) {
+    let emailNotice: string | null = null;
+    if (subscriptionConfig.adminPaymentEmail && !payment.proofEmailSentAt) {
       const reviewUrl = new URL(`/admin/subscriptions/payment-requests/${payment.id}`, request.nextUrl.origin).toString();
-      const result = await sendScholarEmail({
-        to: subscriptionConfig.adminPaymentEmail,
-        subject: "Scholar Plus payment submitted for review",
-        idempotencyKey: `proof-${payment.id}-${updated.proofSubmittedAt?.getTime()}`,
-        html: paymentAdminEmail({ title: "Scholar Plus payment submitted for review", userName: user.name || "Scholar user", userEmail: user.email, userId: user.id, requestId: payment.publicReference, amountInr: payment.expectedAmountPaise / 100, reviewUrl, details: `Payer: ${parsed.data.payerName}. Transaction reference: ${parsed.data.transactionReference}.` }),
-      });
-      await db.scholarPaymentRequest.update({ where: { id: payment.id }, data: { proofEmailSentAt: result.sent ? new Date() : undefined, emailNotificationStatus: result.sent ? "sent" : result.reason } });
+      try {
+        const result = await sendScholarEmail({
+          to: subscriptionConfig.adminPaymentEmail,
+          subject: "Scholar Plus payment submitted for review",
+          idempotencyKey: `proof-${payment.id}-${updated.proofSubmittedAt?.getTime() ?? Date.now()}`,
+          html: paymentProofAdminEmail({
+            title: "Scholar Plus payment submitted for review",
+            userName: user.name || "Scholar user",
+            userEmail: user.email,
+            requestId: payment.publicReference,
+            amountInr: payment.expectedAmountPaise / 100,
+            payerName: parsed.data.payerName,
+            transactionReference: parsed.data.transactionReference,
+            submittedAt: updated.proofSubmittedAt ?? new Date(),
+            proofUploaded: Boolean(proofData && proofData.length > 0),
+            reviewUrl,
+          }),
+        });
+        await db.scholarPaymentRequest.update({
+          where: { id: payment.id },
+          data: result.sent
+            ? { proofEmailSentAt: new Date(), emailNotificationStatus: "sent" }
+            : { emailNotificationStatus: result.reason },
+        });
+        if (!result.sent) {
+          emailNotice = "Payment saved, but the administrator notification could not be sent. An administrator will still review your payment.";
+        }
+      } catch (error) {
+        console.error("[Scholar] Admin payment notification failed for", payment.publicReference, error);
+        await db.scholarPaymentRequest.update({
+          where: { id: payment.id },
+          data: { emailNotificationStatus: "EMAIL_PROVIDER_UNAVAILABLE" },
+        }).catch(() => undefined);
+        emailNotice = "Payment saved, but the administrator notification could not be sent. An administrator will still review your payment.";
+      }
     }
     await recordAudit("PAYMENT_PROOF_SUBMITTED", { actorUserId: user.id, targetUserId: user.id, paymentRequestId: payment.id });
-    return NextResponse.json({ ok: true, request: safePaymentRequest(updated) });
+    return NextResponse.json({ ok: true, request: safePaymentRequest(updated), notice: emailNotice });
   } catch (error) {
     if (error instanceof RateLimitError) return NextResponse.json({ error: error.message }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
     return NextResponse.json({ error: "Payment proof could not be submitted. Please retry." }, { status: 500 });
