@@ -714,6 +714,13 @@ body.immersive-mode .scholar-bottom-nav {
   border-top-right-radius: 0;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .2), 0 12px 38px rgb(0 0 0 / .34), 0 0 28px rgb(99 102 241 / .08);
 }
+
+/* Laptop-only positioning offset for closed LAM capsule to clear topbar search bar */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .lam-system-root[data-state="closed"] .lam-docked-capsule {
+    margin-left: 140px;
+  }
+}
 .lam-system-root[data-state="listening"] { --lam-state-light: 103 232 249; }
 .lam-system-root[data-state="thinking"] { --lam-state-light: 196 181 253; }
 .lam-system-root[data-state="completed"] { --lam-state-light: 110 231 183; }
