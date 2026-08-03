@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Loader2, ShieldCheck, Upload, X } from "lucide-react";
+import { Check, Copy, Loader2, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
@@ -75,9 +75,15 @@ export function SubscriptionPaymentView() {
       const updated = { ...checkout, request: { ...checkout.request, status: "submitted" } };
       setCheckout(updated);
       sessionStorage.setItem("scholar:plus-checkout", JSON.stringify(updated));
-      toast.success("Payment submitted for verification", {
-        description: "Scholar Plus activates only after an administrator independently verifies the payment.",
-      });
+      if (value.notice) {
+        toast.info("Payment received", {
+          description: value.notice,
+        });
+      } else {
+        toast.success("Payment submitted for verification", {
+          description: "Scholar Plus activates only after an administrator independently verifies the payment.",
+        });
+      }
       await access.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Proof could not be submitted.");
@@ -129,87 +135,160 @@ export function SubscriptionPaymentView() {
   };
   const regularPrice = checkout.payment.regularPriceInr ?? 300;
   const canCancel = checkout.request.status === "created" || checkout.request.status === "more_information_required";
+  const submitted = checkout.request.status === "submitted";
 
   return (
-    <main className="mx-auto max-w-5xl py-6">
-      <section className="relative grid overflow-hidden rounded-[2rem] border border-white/10 bg-black/45 shadow-2xl backdrop-blur-2xl md:grid-cols-[.9fr_1.1fr]">
+    <main className="mx-auto w-full max-w-5xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:py-6">
+      <section className="relative w-full overflow-hidden rounded-[2rem] border border-white/10 bg-black/45 shadow-2xl backdrop-blur-2xl md:grid md:grid-cols-[.92fr_1.08fr]">
         <button
           type="button"
           onClick={() => navigate("plus")}
           aria-label="Close payment checkout"
-          className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/55 text-white transition hover:bg-black/75"
+          className="absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/60 text-white transition hover:bg-black/80"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <div className="bg-white p-6 text-black sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[.2em] text-black/45">Scholar Plus</p>
-          <div className="mt-3 flex flex-wrap items-end gap-2">
-            <span className="text-base text-black/40 line-through">₹{regularPrice}</span>
-            <span className="text-4xl font-semibold">₹{checkout.request.expectedAmountInr}</span>
-            {checkout.payment.offerLabel && (
-              <span className="mb-1 rounded-full bg-black px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-                {checkout.payment.offerLabel}
-              </span>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-black/50">Pay the exact amount shown. No billing interval is assumed.</p>
-          <img
-            src={checkout.payment.qrAsset}
-            alt="Scholar Plus UPI payment QR code"
-            className="mx-auto mt-5 h-auto w-full max-w-64 rounded-2xl object-contain shadow-lg"
-          />
-          <div className="mt-5 space-y-2 rounded-2xl bg-black/[.04] p-4 text-sm">
-            <p><span className="text-black/45">Recipient</span><br /><strong>{checkout.payment.recipient}</strong></p>
-            {checkout.payment.upiId && (
-              <button type="button" onClick={() => copy(checkout.payment.upiId!)} className="flex w-full items-center justify-between rounded-xl border border-black/10 px-3 py-2 text-left">
-                <span><span className="text-xs text-black/45">UPI ID</span><br />{checkout.payment.upiId}</span><Copy className="h-4 w-4" />
-              </button>
-            )}
-            {checkout.payment.phone && (
-              <button type="button" onClick={() => copy(checkout.payment.phone!)} className="flex w-full items-center justify-between rounded-xl border border-black/10 px-3 py-2 text-left">
-                <span><span className="text-xs text-black/45">UPI phone</span><br />{checkout.payment.phone}</span><Copy className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="p-6 text-white sm:p-8 md:p-10">
-          <div className="flex flex-wrap items-center gap-2 pr-12">
-            <span className="text-xs uppercase tracking-widest text-cyan-200">{checkout.request.publicReference}</span>
-            <span className="rounded-full border border-white/10 bg-white/[.07] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-              {checkout.request.status.replaceAll("_", " ")}
-            </span>
-          </div>
-          <h1 className="mt-3 text-3xl font-semibold">Submit payment proof</h1>
-          <ol className="mt-5 space-y-3 text-sm leading-6 text-white/65">
-            <li><strong className="text-white">1.</strong> Scan the QR code or copy the UPI details.</li>
-            <li><strong className="text-white">2.</strong> Pay exactly ₹{checkout.request.expectedAmountInr} to the recipient shown.</li>
-            <li><strong className="text-white">3.</strong> Return here and enter the payer name and UPI transaction reference (UTR).</li>
-            <li><strong className="text-white">4.</strong> Submit for verification. An administrator reviews payment independently.</li>
-          </ol>
-          <p className="mt-4 rounded-2xl border border-amber-200/15 bg-amber-200/[.06] p-3 text-xs leading-5 text-amber-100/75">
-            Entering a reference or uploading a screenshot never activates Scholar Plus automatically.
-          </p>
-
-          <div className="mt-6 space-y-4">
-            <input value={payerName} onChange={(event) => setPayerName(event.target.value)} placeholder="Payer name" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-300/50" />
-            <input value={reference} onChange={(event) => setReference(event.target.value)} placeholder="UPI transaction reference / UTR" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-300/50" />
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-white/15 p-4 text-sm text-white/60">
-              <Upload className="h-5 w-5" />
-              <span className="min-w-0 truncate">{proof ? proof.name : "Optional screenshot or PDF (max 5 MB)"}</span>
-              <input hidden type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(event) => setProof(event.target.files?.[0] || null)} />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button type="button" disabled={busy || !canCancel} onClick={cancel} className="rounded-full border border-white/15 px-5 py-3 font-semibold text-white disabled:opacity-40">
-                Cancel
-              </button>
-              <button type="button" disabled={busy || !payerName.trim() || !reference.trim() || checkout.request.status === "submitted"} onClick={submit} className="flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-black disabled:opacity-45">
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />} Submit for Verification
-              </button>
+        {!submitted && (
+          <div className="flex min-w-0 flex-col gap-5 bg-white p-5 text-black sm:p-7">
+            <div className="min-w-0 pr-10">
+              <p className="truncate text-[10px] font-semibold uppercase tracking-[.2em] text-black/45">Scholar Plus · {checkout.request.publicReference}</p>
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <span className="text-sm text-black/40 line-through">₹{regularPrice}</span>
+                <span className="text-3xl font-semibold sm:text-4xl">₹{checkout.request.expectedAmountInr}</span>
+                {checkout.payment.offerLabel && (
+                  <span className="mb-1 rounded-full bg-black px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                    {checkout.payment.offerLabel}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-black/50">Access details are shown before payment.</p>
+            </div>
+            <div className="mx-auto w-full max-w-60 sm:max-w-72">
+              <img
+                src={checkout.payment.qrAsset}
+                alt="Scholar Plus UPI payment QR code"
+                className="h-auto w-full rounded-2xl object-contain shadow-lg"
+              />
+            </div>
+            <div className="min-w-0 space-y-2.5 text-sm">
+              <div className="rounded-2xl bg-black/[.04] px-4 py-3">
+                <span className="text-xs text-black/45">Recipient</span>
+                <p className="font-semibold break-words">{checkout.payment.recipient}</p>
+              </div>
+              {checkout.payment.upiId && (
+                <button type="button" onClick={() => copy(checkout.payment.upiId!)} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-black/10 px-4 py-3 text-left transition hover:bg-black/[.04]">
+                  <span className="min-w-0">
+                    <span className="text-xs text-black/45">UPI ID</span>
+                    <br />
+                    <span className="break-all">{checkout.payment.upiId}</span>
+                  </span>
+                  <Copy className="h-4 w-4 shrink-0" />
+                </button>
+              )}
+              {checkout.payment.phone && (
+                <button type="button" onClick={() => copy(checkout.payment.phone!)} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-black/10 px-4 py-3 text-left transition hover:bg-black/[.04]">
+                  <span className="min-w-0">
+                    <span className="text-xs text-black/45">UPI phone</span>
+                    <br />
+                    <span className="break-all">{checkout.payment.phone}</span>
+                  </span>
+                  <Copy className="h-4 w-4 shrink-0" />
+                </button>
+              )}
             </div>
           </div>
-          <p className="mt-5 flex gap-2 text-xs leading-5 text-white/40"><ShieldCheck className="h-4 w-4 shrink-0" />Only you and authenticated administrators can access the submitted proof.</p>
+        )}
+
+        <div className="flex min-w-0 flex-col p-5 text-white sm:p-7 md:p-8">
+          {submitted ? (
+            <div className="flex min-h-72 flex-col items-center justify-center py-6 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl border border-emerald-200/20 bg-emerald-300/10 text-emerald-300">
+                <Check className="h-6 w-6" />
+              </span>
+              <h1 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">Payment under review</h1>
+              <p className="mt-2 max-w-sm text-sm leading-6 text-white/60">
+                Your payment details have been received. Scholar Plus will activate only after administrator approval.
+              </p>
+              <p className="mt-4 rounded-full border border-white/10 bg-white/[.06] px-4 py-1.5 text-xs text-white/55">
+                Reference · {checkout.request.publicReference}
+              </p>
+              <button onClick={() => navigate("plus")} className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90">
+                Back to Scholar Plus
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2 pr-10">
+                <span className="truncate text-xs uppercase tracking-widest text-cyan-200">{checkout.request.publicReference}</span>
+                <span className="rounded-full border border-white/10 bg-white/[.07] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">
+                  {checkout.request.status.replaceAll("_", " ")}
+                </span>
+              </div>
+              <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">Submit payment proof</h1>
+              <ol className="mt-4 space-y-2.5 text-sm leading-6 text-white/65">
+                <li><strong className="text-white">1.</strong> Scan the QR code or copy the UPI details.</li>
+                <li><strong className="text-white">2.</strong> Pay exactly ₹{checkout.request.expectedAmountInr} to the recipient shown.</li>
+                <li><strong className="text-white">3.</strong> Return here and enter the payer name and UPI transaction reference (UTR).</li>
+                <li><strong className="text-white">4.</strong> Submit for verification. An administrator reviews payment independently.</li>
+              </ol>
+              <p className="mt-4 rounded-2xl border border-amber-200/15 bg-amber-200/[.06] p-3 text-xs leading-5 text-amber-100/75">
+                Entering a reference or uploading a screenshot never activates Scholar Plus automatically.
+              </p>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <div className="rounded-2xl border border-cyan-200/15 bg-cyan-200/[.06] p-3 text-xs leading-5 text-cyan-100/80">
+                    <p className="font-semibold text-cyan-100">Important</p>
+                    <p className="mt-1">
+                      Enter the exact payer name shown in the UPI transaction.
+                      This must match the name from which the payment was sent.
+                    </p>
+                  </div>
+                  <label className="mt-3 block text-xs font-medium text-white/55" htmlFor="plus-payer-name">Payer name</label>
+                  <input
+                    id="plus-payer-name"
+                    value={payerName}
+                    onChange={(event) => setPayerName(event.target.value)}
+                    placeholder="Exact UPI payer name"
+                    autoComplete="off"
+                    className="mt-1.5 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-cyan-300/50"
+                  />
+                  <p className="mt-1.5 text-[11px] leading-5 text-white/40">
+                    Do not enter your Scholar profile name unless it matches the UPI sender name.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/55" htmlFor="plus-utr">UPI transaction reference (UTR)</label>
+                  <input
+                    id="plus-utr"
+                    value={reference}
+                    onChange={(event) => setReference(event.target.value)}
+                    placeholder="UPI transaction reference / UTR"
+                    autoComplete="off"
+                    className="mt-1.5 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition focus:border-cyan-300/50"
+                  />
+                </div>
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-white/15 p-4 text-sm text-white/60 transition hover:border-white/25">
+                  <Upload className="h-5 w-5 shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block truncate">{proof ? proof.name : "Optional payment proof"}</span>
+                    <span className="block text-[11px] text-white/40">PNG, JPG, WEBP or PDF · Maximum 5 MB</span>
+                  </span>
+                  <input hidden type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(event) => setProof(event.target.files?.[0] || null)} />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button type="button" disabled={busy || !canCancel} onClick={cancel} className="rounded-full border border-white/15 px-5 py-3 font-semibold text-white transition hover:bg-white/[.06] disabled:opacity-40">
+                    Cancel
+                  </button>
+                  <button type="button" disabled={busy || !payerName.trim() || !reference.trim()} onClick={submit} className="flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-black shadow-[0_8px_30px_rgba(255,255,255,.18)] transition hover:bg-white/90 disabled:opacity-45">
+                    {busy && <Loader2 className="h-4 w-4 animate-spin" />} Submit for Verification
+                  </button>
+                </div>
+              </div>
+              <p className="mt-5 flex gap-2 text-xs leading-5 text-white/40"><ShieldCheck className="h-4 w-4 shrink-0" />Only you and authenticated administrators can access the submitted proof.</p>
+            </>
+          )}
         </div>
       </section>
     </main>

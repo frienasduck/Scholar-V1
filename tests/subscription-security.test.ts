@@ -36,7 +36,10 @@ describe("Scholar Plus security invariants", () => {
     const provider = source("src/components/subscriptions/subscription-provider.tsx");
     const store = source("src/lib/store.ts");
     expect(provider).toContain("refreshSequence");
-    expect(provider).toContain("setState({ loading: true, authenticated: false, developerMode: false })");
+    expect(provider).toContain('reason === "switch"');
+    expect(provider).toContain("authenticated: false");
+    expect(provider).toContain("user: undefined");
+    expect(provider).toContain("access: undefined");
     expect(provider).toContain("state.entitlementsLoaded === true");
     expect(store).toContain("guestMode: false, devMode: false");
   });
