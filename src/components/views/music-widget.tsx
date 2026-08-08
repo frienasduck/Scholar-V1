@@ -5,10 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X,
   Minimize2, Maximize2, Repeat, Repeat1, Shuffle, Music as MusicIcon,
-  AlertCircle, Loader2,
+  AlertCircle, Loader2, Sparkles, ArrowRight,
 } from "lucide-react";
 import { useMusicStore } from "@/lib/music-store";
 import { cn } from "@/lib/utils";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import {
+  openScholarPlus,
+  shouldRunMusicPromo,
+  MUSIC_PROMO_WINDOW_MS,
+  MUSIC_PROMO_MESSAGE,
+} from "@/lib/subscriptions/promo";
+import { speakReminder, stopTalkSpeech } from "@/lib/reminders/talk";
 
 // YouTube IFrame API singleton
 let ytPlayer: any = null;
@@ -93,6 +101,31 @@ export function FloatingMusicWidget() {
   const [retryNonce, setRetryNonce] = useState(0);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ---- Scholar Plus spoken promotion gate -------------------------------
+  // Free users hear a ~10s spoken promo once per session before the first
+  // track starts. The YouTube player is NOT created until the promo finishes,
+  // so music never overlaps the speech.
+  const plusAccess = useScholarAccess();
+  const accessLoaded = plusAccess.entitlementsLoaded === true;
+  const adFree = accessLoaded && plusAccess.has("study_music_ad_free");
+  const [promoActive, setPromoActive] = useState(false);
+  const [promoElapsed, setPromoElapsed] = useState(0);
+  const promoActiveRef = useRef(false);
+  const approvedTrackRef = useRef<string | null>(null);
+  const promoTrackRef = useRef<string | null>(null);
+  const promoTimerRef = useRef<number | null>(null);
+  const currentTrackRef = useRef(currentTrack);
+  useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
+  const finishPromo = useCallback((trackId: string) => {
+    if (promoTimerRef.current) { window.clearTimeout(promoTimerRef.current); promoTimerRef.current = null; }
+    stopTalkSpeech();
+    if (promoTrackRef.current === trackId) promoTrackRef.current = null;
+    if (currentTrackRef.current?.id !== trackId) return;
+    approvedTrackRef.current = trackId;
+    promoActiveRef.current = false;
+    setPromoActive(false);
+  }, []);
+
   // Save position
   useEffect(() => {
     if (pos.x >= 0) {
@@ -100,9 +133,82 @@ export function FloatingMusicWidget() {
     }
   }, [pos]);
 
-  // Initialize YouTube player when a track is loaded
+  // ---- Promo lifecycle -----------------------------------------------------
+  // Refs + sessionStorage are the source of truth for the promo decision;
+  // render state (promoActive) is only for the overlay UI. The effect may
+  // re-run when entitlements finish loading, so an in-flight promo is guarded
+  // and never reset by its own re-run.
   useEffect(() => {
-    if (!currentTrack || !widgetVisible) return;
+    const track = currentTrack;
+    if (!track || !widgetVisible) {
+      // Widget hidden or closed mid-promo: cancel the speech and timer so the
+      // promotion never outlives the player.
+      if (promoTimerRef.current) { window.clearTimeout(promoTimerRef.current); promoTimerRef.current = null; }
+      if (promoActiveRef.current || promoTrackRef.current) {
+        promoTrackRef.current = null;
+        promoActiveRef.current = false;
+        stopTalkSpeech();
+        window.setTimeout(() => setPromoActive(false), 0);
+      }
+      return;
+    }
+
+    // A promo is already running for THIS track — leave it alone (e.g. when
+    // entitlements finish loading mid-promo). Track identity matters: a track
+    // change must reset, never early-return.
+    if (promoActiveRef.current && promoTimerRef.current && promoTrackRef.current === track.id) return;
+
+    // Reset any in-flight promo from a previous track.
+    if (promoTimerRef.current) { window.clearTimeout(promoTimerRef.current); promoTimerRef.current = null; }
+    promoTrackRef.current = null;
+    stopTalkSpeech();
+    promoActiveRef.current = false;
+    window.setTimeout(() => setPromoActive(false), 0);
+
+    if (approvedTrackRef.current === track.id) return;
+    if (!accessLoaded || adFree) { approvedTrackRef.current = track.id; return; }
+
+    let shown = false;
+    try { shown = sessionStorage.getItem("scholar:study-music-promo") === "1"; } catch { /* ignore */ }
+    if (!shouldRunMusicPromo({ adFree, loaded: accessLoaded, alreadyShown: shown })) {
+      approvedTrackRef.current = track.id;
+      return;
+    }
+
+    // Run the spoken promotion and hold playback for the promo window.
+    promoActiveRef.current = true;
+    promoTrackRef.current = track.id;
+    window.setTimeout(() => {
+      setPromoActive(true);
+      try { sessionStorage.setItem("scholar:study-music-promo", "1"); } catch { /* ignore */ }
+    }, 0);
+    speakReminder(MUSIC_PROMO_MESSAGE, { rate: 1, pitch: 1, volume: 1 });
+    promoTimerRef.current = window.setTimeout(() => finishPromo(track.id), MUSIC_PROMO_WINDOW_MS);
+  }, [currentTrack?.id, widgetVisible, accessLoaded, adFree, finishPromo]);
+
+  // Progress bar for the promo window.
+  useEffect(() => {
+    if (!promoActive) return;
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      setPromoElapsed(Math.min(Date.now() - started, MUSIC_PROMO_WINDOW_MS));
+    }, 250);
+    return () => {
+      window.clearInterval(timer);
+      setPromoElapsed(0);
+    };
+  }, [promoActive]);
+
+  // Stop speech + timer if the widget unmounts (page change / sign out).
+  useEffect(() => () => {
+    if (promoTimerRef.current) window.clearTimeout(promoTimerRef.current);
+    stopTalkSpeech();
+  }, []);
+
+  // Initialize YouTube player when a track is loaded — never while the promo
+  // is active, so music cannot start underneath the spoken promotion.
+  useEffect(() => {
+    if (!currentTrack || !widgetVisible || promoActive) return;
 
     let cancelled = false;
     setBuffering(true);
@@ -150,7 +256,7 @@ export function FloatingMusicWidget() {
     });
 
     return () => { cancelled = true; };
-  }, [currentTrack?.id, retryNonce, widgetVisible]);
+  }, [currentTrack?.id, retryNonce, widgetVisible, promoActive]);
 
   // Sync play/pause
   useEffect(() => {
@@ -493,6 +599,38 @@ export function FloatingMusicWidget() {
         </div>
       )}
       </div>
+
+      {/* Scholar Plus spoken-promo overlay — shown while the audio stays muted */}
+      {promoActive && !widgetMinimized && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col justify-between gap-2.5 rounded-2xl border border-amber-200/20 bg-slate-950/95 p-3.5 backdrop-blur-2xl"
+          role="status"
+          aria-live="polite"
+          aria-label="Scholar Plus promotion"
+        >
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/25 bg-amber-300/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-100 shadow-[0_0_14px_rgba(252,211,77,0.12)]">
+              <Sparkles className="h-2.5 w-2.5" /> Scholar Plus
+            </span>
+            <span className="text-[10px] text-white/55">Upgrade for an ad-free study experience.</span>
+          </div>
+          <p className="text-[11px] leading-5 text-white/70">{MUSIC_PROMO_MESSAGE}</p>
+          <div className="flex items-center gap-2">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10" aria-hidden>
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-300/80 to-violet-400/80"
+                style={{ width: `${Math.min(100, (promoElapsed / MUSIC_PROMO_WINDOW_MS) * 100)}%` }}
+              />
+            </div>
+            <button
+              onClick={() => openScholarPlus({ source: "study-music-ad" })}
+              className="flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-3 py-1.5 text-[11px] font-semibold text-slate-950 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+            >
+              Upgrade to Plus <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

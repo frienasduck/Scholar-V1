@@ -10,6 +10,7 @@ export const SCHOLAR_ENTITLEMENTS = [
   "expanded_file_storage", "appearance_lab", "class_9_access",
   "nigtube_ad_free", "study_music_ad_free", "quiz_generation_plus",
   "slideshow_generation_plus", "formula_explorer", "plus_coin_bonus",
+  "python_workspace",
 ] as const;
 
 export type ScholarEntitlement = (typeof SCHOLAR_ENTITLEMENTS)[number];

@@ -18,9 +18,25 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: "Enter the Developer Mode password." }, { status: 400 });
     const identifier = createHash("sha256").update(user.id).digest("hex").slice(0, 20);
-    await enforceRateLimit(identifier, "developer-password", 5, 15 * 60 * 1000);
     const passwordHash = process.env.DEV_MODE_PASSWORD_HASH;
-  if (!passwordHash || !(await verifyPassword(parsed.data.password, passwordHash))) {
+    if (!passwordHash || !(await verifyPassword(parsed.data.password, passwordHash))) {
+      // Only FAILED attempts count toward the brute-force window, so legit
+      // logins never consume it. The message stays generic — no hint about
+      // whether the password was close or even configured.
+      try {
+        await enforceRateLimit(identifier, "developer-password", 5, 15 * 60 * 1000);
+      } catch (error) {
+        if (error instanceof RateLimitError) {
+          await recordAudit("DEVELOPER_MODE_LOGIN_LOCKED", {
+            actorUserId: user.id,
+            targetUserId: user.id,
+            metadata: { retryAfterSeconds: error.retryAfterSeconds },
+          });
+          throw error;
+        }
+        throw error;
+      }
+      await recordAudit("DEVELOPER_MODE_LOGIN_FAILED", { actorUserId: user.id, targetUserId: user.id });
       return NextResponse.json({ error: "Developer Mode access was denied." }, { status: 401 });
     }
     await createDeveloperSession(user);

@@ -75,8 +75,43 @@ import {
   type StartupLoadingMode,
 } from "@/lib/startup/startup-modes";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { CustomCommandsPanel } from "@/components/reminders/custom-commands-panel";
 
 const SCHOLAR_UPDATE_LOG = [
+  {
+    version: "v5.3.0",
+    date: "7 Aug 2026",
+    title: "Scholar Plus Experience & Monetization Update",
+    items: [
+      "Nigtube pre-roll: free students see a 10-second liquid-glass Scholar Plus promotion before videos; Scholar Plus members go straight to playback.",
+      "Ad-free Nigtube & Study Music for Scholar Plus — no video ads, no spoken promotions.",
+      "Study Music spoken promotion: a UK female voice (Microsoft preferred) welcomes free students once per session before the first track.",
+      "Achievements, Mind Map and Concept Galaxy are now visible Scholar Plus benefits — clicking any of them opens Scholar Plus.",
+      "Generation limits reworked: quiz and slideshow usage is now enforced server-side and recorded only after a successful generation, so failed requests never burn daily quota.",
+      "Live “X of Y generations used today” indicators in Quiz and the Slideshow Maker, with Scholar Plus shown as unlimited.",
+      "AI Tutor shows one compact Scholar Plus card with the first answer only — answers are never blocked or replaced by promotion.",
+      "Developer Mode hardened: only failed logins count toward brute-force limits, and failed/locked attempts are audited.",
+      "Subscription entitlement hardening and centralized Scholar Plus routing across the app.",
+      "Accessibility and mobile pass on all promotional surfaces (keyboard access, reduced-motion, non-colour indicators).",
+    ],
+  },
+  {
+    version: "v5.2.0",
+    date: "7 Aug 2026",
+    title: "Smart Reminders 2.0",
+    items: [
+      "Redesigned Smart Reminders into a command centre with Today, Upcoming, Calendar, All, Completed, Templates and Activity views.",
+      "Natural-language quick add — type “Revise Laws of Motion tomorrow at 6 PM” and review Scholar's interpretation before saving.",
+      "Advanced scheduling: daily / weekday / weekly / monthly / custom recurrence, repeat counts, multiple alerts and full editors.",
+      "Talk Reminder: Scholar speaks reminders aloud, preferring Microsoft female UK voices, with voice, pitch, rate, volume and privacy controls.",
+      "Smart Suggestions: AI proposes reminders from exams, weak topics, mistakes and postponed tasks — you approve every creation.",
+      "Conflict detection (overlaps, quiet hours, past times, duplicates) and smart snooze/rescheduling with suggested new times.",
+      "Reusable templates (Daily Revision, Homework, Exam Countdown, Focus Sprint and more), exam revision series and reminder history.",
+      "LAM × FICA task automation: LAM can create, edit, complete, snooze, move, list and speak reminders, plus custom command phrases.",
+      "Unified reminder persistence shared with Chapter Command Center — legacy reminders were migrated safely, per Class profile.",
+      "Quiet hours, reminder digests, notification permission flow and a global due-reminder action centre.",
+    ],
+  },
   {
     version: "v5.1.0",
     date: "1 Aug 2026",
@@ -1047,6 +1082,12 @@ export function SettingsView() {
                   <GlassSettingRow icon={<MessageCircle className="h-4 w-4 text-white/70" />} title="Preferred response detail" desc="Control the default depth of academic answers."><Select value={lamPreferences.responseDetail} onValueChange={(value) => updateLam({ responseDetail: value as LamPreferences["responseDetail"] })}><SelectTrigger aria-label="LAM response detail" className="w-44 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="quick">Quick</SelectItem><SelectItem value="balanced">Balanced</SelectItem><SelectItem value="detailed">Detailed</SelectItem><SelectItem value="step-by-step">Teach step by step</SelectItem></SelectContent></Select></GlassSettingRow>
                   <GlassSettingRow icon={<Zap className="h-4 w-4 text-white/70" />} title="Keyboard shortcut" desc="Open LAM without leaving the current screen."><Select value={lamPreferences.keyboardShortcut} onValueChange={(value) => updateLam({ keyboardShortcut: value as LamPreferences["keyboardShortcut"] })}><SelectTrigger aria-label="LAM keyboard shortcut" className="w-44 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ctrl-space">Ctrl/⌘ + Space</SelectItem><SelectItem value="alt-space">Alt + Space</SelectItem><SelectItem value="ctrl-shift-l">Ctrl/⌘ + Shift + L</SelectItem></SelectContent></Select></GlassSettingRow>
                 </div>
+              </div>
+
+              <div className="asme-glass rounded-3xl p-6">
+                <h3 className="font-semibold text-white flex items-center gap-2 mb-2"><Zap className="h-4 w-4 text-fuchsia-300" />Custom Commands <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-200">LAM × FICA</span></h3>
+                <p className="mb-3 text-sm text-white/50">Create your own phrases that trigger approved Scholar actions — reminders, focus sessions, templates and exam rescue plans. Commands never run your own code.</p>
+                <CustomCommandsPanel scholarClass={user.scholarClass} />
               </div>
 
               <div className="asme-glass rounded-3xl p-6"><h3 className="font-semibold text-white">Privacy controls</h3><p className="mt-1 text-sm text-white/50">Clearing LAM removes conversations, preferences, memory, and action history for this Class {user.scholarClass} profile only. Scholar notes created through LAM remain in Notes.</p><button onClick={() => { if (!window.confirm(`Clear all LAM data for ${user.name}'s Class ${user.scholarClass} profile?`)) return; clearLamProfile(lamProfileId); setLamPreferences(loadLamState(lamProfileId).preferences); toast.success("LAM profile data cleared"); }} className="mt-4 rounded-full border border-rose-300/25 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-500/20">Clear this profile’s LAM data</button></div>

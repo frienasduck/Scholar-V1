@@ -15,6 +15,17 @@ import { toast } from "@/lib/notifications/notification-api";
 import { Markdown } from "@/lib/shared";
 import { cn } from "@/lib/utils";
 import { FreeAdSlot } from "@/components/subscriptions/free-ad-slot";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { NigtubePlusAd } from "@/components/subscriptions/nigtube-plus-ad";
+import { resolvePlusEligibility } from "@/lib/subscriptions/promo";
+import {
+  beginPlayback,
+  idleAdMachine,
+  isPlaying,
+  skipAd,
+  tickAd,
+  type NigtubeAdMachine,
+} from "@/lib/subscriptions/nigtube-ad";
 
 // ===== Real CBSE Class 9 YouTube videos (verified IDs) =====
 interface Video {
@@ -249,6 +260,19 @@ export function NigtubeView() {
   const scholarClass = useStore((s) => s.user.scholarClass);
   const jeeMode = useStore((s) => s.user.jeeMode);
   const { name: myName } = useUserName();
+  const plusAccess = useScholarAccess();
+  const eligibility = useMemo(
+    () => resolvePlusEligibility({
+      loaded: plusAccess.entitlementsLoaded === true,
+      entitlements: plusAccess.access?.entitlements ?? [],
+      plan: plusAccess.access?.plan,
+    }),
+    [plusAccess.entitlementsLoaded, plusAccess.access],
+  );
+  // Pre-roll ad state machine: free users watch the 10s Scholar Plus promo,
+  // Plus users skip straight to playback. The iframe only mounts at "playing"
+  // so no video audio ever starts underneath the advertisement.
+  const [adMachine, setAdMachine] = useState<NigtubeAdMachine>(() => idleAdMachine());
   // Filter out any entries with invalid YouTube IDs — they would render broken
   // embeds and missing thumbnails. This also drops the placeholder JEE_* entries.
   const activeVideos = (scholarClass === 11
@@ -292,6 +316,7 @@ export function NigtubeView() {
 
   function handlePlay(video: Video) {
     setSelectedVideo(video);
+    setAdMachine(beginPlayback({ adFree: eligibility.adFree, loaded: eligibility.loaded }));
     setAiSummary(null);
     setAiFlashcards(null);
     setAiQuiz(null);
@@ -304,6 +329,24 @@ export function NigtubeView() {
     addCoins(1);
     pushActivity({ type: "video", text: `Watched: ${video.title.substring(0, 40)}`, icon: "▶️" });
   }
+
+  // Countdown driver — only runs while the ad is showing, stops on unmount,
+  // video switch, or when the student leaves the player.
+  useEffect(() => {
+    if (adMachine.state !== "ad" || adMachine.countdown <= 0) return;
+    const timer = window.setInterval(() => setAdMachine((machine) => tickAd(machine)), 1000);
+    return () => window.clearInterval(timer);
+  }, [adMachine.state, adMachine.countdown]);
+
+  // Resolve the transient "checking" state once entitlements finish loading.
+  useEffect(() => {
+    if (adMachine.state !== "checking") return;
+    setAdMachine((machine) =>
+      machine.state === "checking"
+        ? beginPlayback({ adFree: eligibility.adFree, loaded: eligibility.loaded })
+        : machine,
+    );
+  }, [adMachine.state, eligibility.adFree, eligibility.loaded]);
 
   async function handleAI(mode: "summary" | "flashcards" | "quiz" | "notes") {
     if (!selectedVideo) return;
@@ -509,23 +552,33 @@ export function NigtubeView() {
             /* ===== Video Player View ===== */
             <div className="max-w-6xl mx-auto">
               <button
-                onClick={() => setSelectedVideo(null)}
+                onClick={() => { setSelectedVideo(null); setAdMachine(idleAdMachine()); }}
                 className="flex items-center gap-2 text-white/60 hover:text-white text-sm mb-4 nt-font"
               >
                 <ChevronRight className="h-4 w-4 rotate-180" /> Back to videos
               </button>
 
-              {/* YouTube Embed */}
+              {/* YouTube Embed — the iframe only mounts at "playing", so the
+                  pre-roll ad never has video audio running underneath it. */}
               <div className="nt-glass-strong rounded-2xl overflow-hidden mb-4">
                 <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                  <iframe
-                    src={ytEmbedUrl(selectedVideo)}
-                    title={selectedVideo.title}
-                    className="absolute inset-0 w-full h-full"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                  {isPlaying(adMachine) ? (
+                    <iframe
+                      src={ytEmbedUrl(selectedVideo)}
+                      title={selectedVideo.title}
+                      className="absolute inset-0 w-full h-full"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="absolute inset-0">
+                      <NigtubePlusAd
+                        machine={adMachine}
+                        onSkip={() => setAdMachine((machine) => skipAd(machine))}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-3 px-4 py-2 bg-black/40 text-xs text-white/70">
                   <span className="truncate">If the video doesn't play, the ID may be unavailable.</span>

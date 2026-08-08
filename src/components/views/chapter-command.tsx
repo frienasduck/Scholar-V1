@@ -22,6 +22,7 @@ import {
   type ChapterStatus,
 } from "@/lib/chapter-command";
 import { navigateTo } from "@/lib/nav-event";
+import { useReminderStore, useReminderProfile, REMINDERS_CHANGED_EVENT } from "@/lib/reminders/store";
 import { getFlashcardCountByChapter } from "@/lib/flashcards-class11-meta";
 import { getQuizCountByChapter } from "@/lib/quizzes-class11-meta";
 import { cn } from "@/lib/utils";
@@ -1059,50 +1060,66 @@ function PastPaperPanel({ data }: { data: ChapterCommandData }) {
 // ============================================================================
 
 function RemindersPanel({ data }: { data: ChapterCommandData }) {
-  const [reminders, setReminders] = useState<any[]>([]);
+  // Smart Reminders 2.0 — unified per-profile store (shared with Smart Reminders, LAM, dashboard).
+  const scholarClass = useStore((s) => s.user.scholarClass);
+  const profile = useReminderProfile(scholarClass);
+  const reminderStore = useReminderStore.getState();
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      try {
-        const stored = JSON.parse(localStorage.getItem("smart-reminders") || "[]");
-        const filtered = Array.isArray(stored)
-          ? stored.filter((r: any) => r && r.text && r.text.toLowerCase().includes(data.chapterTitle.toLowerCase().split(" ")[0]))
-          : [];
-        setReminders(filtered);
-      } catch { setReminders([]); }
-    });
-    return () => { cancelled = true; };
-  }, [data.chapterId, data.chapterTitle]);
+    const refresh = () => setTick((t) => t + 1);
+    window.addEventListener(REMINDERS_CHANGED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(REMINDERS_CHANGED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  const chapterKeyword = data.chapterTitle.toLowerCase().split(" ")[0];
+  const chapterReminders = profile.reminders
+    .filter((r) => r.status === "scheduled" || r.status === "active")
+    .filter((r) => r.chapter === data.chapterId || r.subject === data.subjectId || r.title.toLowerCase().includes(chapterKeyword))
+    .sort((a, b) => +new Date(a.dueAt) - +new Date(b.dueAt))
+    .slice(0, 3);
 
   const addReminder = () => {
-    const text = `Revise ${data.chapterTitle}`;
-    try {
-      const stored = JSON.parse(localStorage.getItem("smart-reminders") || "[]");
-      const next = [{ id: `r-${Date.now()}`, text, at: Date.now() + 86400000, done: false }, ...stored];
-      localStorage.setItem("smart-reminders", JSON.stringify(next));
-      setReminders(next.filter((r: any) => r.text.toLowerCase().includes(data.chapterTitle.toLowerCase().split(" ")[0])));
-      toast.success("Reminder added");
-    } catch {
-      toast.error("Could not add reminder");
-    }
+    const due = new Date();
+    due.setDate(due.getDate() + 1);
+    due.setHours(18, 0, 0, 0);
+    const created = reminderStore.createReminder(scholarClass, {
+      title: `Revise ${data.chapterTitle}`,
+      type: "revision",
+      subject: data.subjectId,
+      chapter: data.chapterId,
+      dueAt: due.toISOString(),
+      durationMin: 30,
+      priority: "medium",
+      alerts: [{ id: `al-${Date.now()}`, offsetMinutes: 10, label: "10 minutes before" }],
+    }, { source: "manual" });
+    void tick;
+    toast.success(`Reminder created · ${created.title}`, { description: "Due tomorrow at 6:00 PM · view it in Smart Reminders" });
   };
 
   return (
     <SectionCard title="Smart Reminders" icon={Bell} accent="#fb7185" onOpenAll={() => navigateTo("reminders")}>
       <div className="space-y-2">
-        {reminders.length === 0 ? (
-          <p className="text-[11px] text-white/50 text-center py-2">No reminders for this chapter yet.</p>
+        {chapterReminders.length === 0 ? (
+          <p className="text-[11px] text-white/50 text-center py-2">No reminders for this chapter yet. Add a revision reminder — it appears in Smart Reminders too.</p>
         ) : (
-          reminders.slice(0, 3).map((r) => (
-            <div key={r.id} className="rounded-lg bg-white/[0.03] border border-white/10 p-2">
-              <p className="text-[11px] text-white/80 truncate">{r.text}</p>
-              {r.at && <p className="text-[9px] text-white/40 mt-0.5">{new Date(r.at).toLocaleDateString()}</p>}
-            </div>
+          chapterReminders.map((r) => (
+            <button key={r.id} onClick={() => navigateTo("reminders", { openReminder: r.id })}
+              className="w-full text-left rounded-lg bg-white/[0.03] border border-white/10 p-2 hover:bg-white/[0.06] transition-colors">
+              <p className="text-[11px] text-white/80 truncate">{r.title}</p>
+              <p className="text-[9px] text-white/40 mt-0.5">
+                {new Date(r.dueAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {new Date(r.dueAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
+                {r.talkEnabled ? " · 🔊 talk" : ""}
+              </p>
+            </button>
           ))
         )}
         <button onClick={addReminder} className="w-full flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-200 hover:bg-rose-500/25 transition-colors">
-          <Plus className="h-3.5 w-3.5" /> Add Reminder
+          <Plus className="h-3.5 w-3.5" /> Add revision reminder
         </button>
       </div>
     </SectionCard>

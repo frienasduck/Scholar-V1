@@ -70,6 +70,8 @@ import { PracticalsView } from "@/components/views/practicals";
 import { PythonView } from "@/components/views/python";
 import { DerivationsView } from "@/components/views/derivations";
 import { LamWidget } from "@/components/lam-widget";
+import { ReminderScheduler } from "@/lib/reminders/scheduler";
+import { initReminderStoreSync } from "@/lib/reminders/store";
 import { useScholarTransition } from "@/components/scholar-transition";
 import { useScholarStartupReady } from "@/components/launch-readiness-gate";
 import { ScholarPlusView } from "@/components/views/scholar-plus";
@@ -77,6 +79,7 @@ import { SubscriptionPaymentView } from "@/components/views/subscription-payment
 import { PlusGate } from "@/components/subscriptions/plus-gate";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
+import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
@@ -134,6 +137,7 @@ const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title
   practicals: { entitlement: "practical_lab", title: "Practical Lab", description: "Explore practical procedures, observations, and interactive laboratory guidance." },
   derivations: { entitlement: "derivation_library", title: "Derivation Library", description: "Study complete derivations with guided steps and focused practice." },
   formulas: { entitlement: "formula_explorer", title: "Formula Explorer", description: "Explore formulas visually, understand each symbol, and generate guided practice." },
+  python: { entitlement: "python_workspace", title: "Python Workspace", description: "Write, run, and learn Python in browser with an interactive CPython environment and AI code assistance." },
 };
 const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment"]);
 
@@ -175,6 +179,12 @@ function useNavBadges() {
   }, [flashcards, tasks, dailyChallenge, forumPosts, qaItems, friendRequests]);
 }
 
+const PLUS_SOURCE_BY_NAV: Record<string, "achievements" | "mind-map" | "concept-galaxy"> = {
+  achievements: "achievements",
+  mindmap: "mind-map",
+  galaxy: "concept-galaxy",
+};
+
 function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges> }) {
   const backgroundTasks = useBackgroundTasks();
   const access = useScholarAccess();
@@ -194,16 +204,26 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
                   task.status === "complete" &&
                   !task.read,
               );
-              if (item.comingSoon) {
+              if (item.plus) {
+                // Scholar Plus benefit card — opens Scholar Plus rather than the
+                // (not yet built) feature itself.
                 return (
-                  <div
+                  <button
                     key={item.id}
-                    className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground/40 cursor-not-allowed relative"
+                    onClick={() =>
+                      openScholarPlus({
+                        source: PLUS_SOURCE_BY_NAV[item.id] ?? "nav",
+                        feature: item.id,
+                      })
+                    }
+                    className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all relative text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   >
-                    <item.icon className="scholar-nav-icon h-4.5 w-4.5 shrink-0 opacity-50" />
+                    <item.icon className="scholar-nav-icon h-4.5 w-4.5 shrink-0 text-amber-200/80" />
                     <span className="scholar-nav-label truncate flex-1 text-left">{item.label}</span>
-                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground/60 uppercase tracking-wider">Soon</span>
-                  </div>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/25 bg-gradient-to-r from-amber-300/15 to-violet-400/15 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-amber-100 shadow-[0_0_10px_rgba(252,211,77,0.14)]">
+                      <Sparkles className="h-2 w-2" /> Plus
+                    </span>
+                  </button>
                 );
               }
               return (
@@ -466,6 +486,12 @@ export function AppShell() {
   // call repeatedly — it short-circuits if the migration version is current.
   useEffect(() => {
     migrateLegacyStorage();
+  }, []);
+
+  // Cross-tab synchronisation for Smart Reminders (re-hydrate on storage events).
+  useEffect(() => {
+    const stop = initReminderStoreSync();
+    return stop;
   }, []);
 
   useEffect(() => {
@@ -798,6 +824,9 @@ export function AppShell() {
           <Menu /> More
         </button>
       </nav>}
+
+      {/* Smart Reminders 2.0 — global due-check scheduler (in-app + browser notifications + Talk Reminders) */}
+      <ReminderScheduler scholarClass={user.scholarClass} />
 
       {/* Floating music widget — persistent across navigation */}
       <FloatingMusicWidget />
