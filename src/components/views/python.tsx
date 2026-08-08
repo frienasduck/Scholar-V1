@@ -275,7 +275,12 @@ export function PythonView() {
       <div className="relative z-10 p-4 md:p-8 text-white">
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Class 11 • Computer Science</p>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <p className="text-[10px] uppercase tracking-widest text-white/40">Class 11 • Computer Science</p>
+              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-200">
+                <Sparkles className="h-2.5 w-2.5" /> Scholar Plus
+              </span>
+            </div>
             <h1 className="py-serif text-4xl md:text-5xl text-white leading-tight">Python Workspace</h1>
             <p className="text-sm text-white/50 mt-2">Write, run, and learn Python — powered by a real CPython runtime in your browser.</p>
           </motion.div>

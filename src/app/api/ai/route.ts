@@ -10,7 +10,7 @@ import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
 import { getSessionUser } from "@/lib/auth/session";
 import { requireEntitlement, resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
-import { consumeGeneration } from "@/lib/subscriptions/usage";
+import { checkGenerationQuota, consumeGeneration } from "@/lib/subscriptions/usage";
 import { subscriptionConfig } from "@/lib/subscriptions/config";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
         const required = await requireEntitlement(body.feature);
         if (!required.ok) return required.response;
       }
-      if (body.usage) await consumeGeneration(sessionUser.id, body.usage, await resolveUserEntitlements(sessionUser.id));
+      // Non-destructive quota check BEFORE the provider call. Usage is only
+      // recorded after a successful generation (see recordUsage), so genuine
+      // provider failures and client retries never burn daily quota.
+      if (body.usage) await checkGenerationQuota(sessionUser.id, body.usage, await resolveUserEntitlements(sessionUser.id));
     } catch (error) {
       if (error instanceof RateLimitError) return errorResponse("Too many AI requests. Please wait and try again.", 429, "RATE_LIMITED");
       if (error instanceof Error && (error as Error & { code?: string }).code === "QUOTA_REACHED") return errorResponse("Your daily generation limit has been reached. Upgrade to Scholar Plus for a higher limit.", 429, "QUOTA_REACHED");
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
   ];
 
   if (queryStream || mode === "stream") {
-    return streamResponse(messages, body.temperature, request.signal);
+    return streamResponse(messages, body.temperature, request.signal, body.usage, sessionUser?.id);
   }
 
   try {
@@ -119,8 +122,10 @@ export async function POST(request: NextRequest) {
             );
           }
         }
+        await recordUsage(body.usage, sessionUser?.id);
         return NextResponse.json({ ok: true, data: validated.data });
       }
+      await recordUsage(body.usage, sessionUser?.id);
       return NextResponse.json({ ok: true, data: value });
     }
 
@@ -130,6 +135,7 @@ export async function POST(request: NextRequest) {
       signal: request.signal,
       maxTokens: 6_000,
     });
+    await recordUsage(body.usage, sessionUser?.id);
     return NextResponse.json({ ok: true, text });
   } catch (error) {
     const detail = publicAIError(error);
@@ -150,10 +156,26 @@ function withJSONInstruction(
   ];
 }
 
+/**
+ * Record a successful generation against the user's daily quota.
+ * Best-effort: a quota race or DB hiccup must never fail an answer that was
+ * already produced.
+ */
+async function recordUsage(usage: "quiz_generation" | "slideshow_generation" | undefined, userId: string | undefined) {
+  if (!userId || !usage) return;
+  try {
+    await consumeGeneration(userId, usage, await resolveUserEntitlements(userId));
+  } catch {
+    // Deliberately swallowed — quota is already enforced by the pre-check.
+  }
+}
+
 function streamResponse(
   messages: ScholarGroqMessage[],
   temperature: number,
   signal: AbortSignal,
+  usage?: "quiz_generation" | "slideshow_generation",
+  userId?: string,
 ): Response {
   const encoder = new TextEncoder();
   const readable = new ReadableStream<Uint8Array>({
@@ -174,6 +196,9 @@ function streamResponse(
           send({ delta });
         });
         send({ done: true });
+        // Usage is recorded only after the stream completes without error, so
+        // aborted or failed generations never consume daily quota.
+        await recordUsage(usage, userId);
       } catch (error) {
         const detail = publicAIError(error);
         send({ error: { code: detail.code, message: detail.message } });

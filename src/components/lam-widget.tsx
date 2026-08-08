@@ -12,6 +12,9 @@ import { cn } from "@/lib/utils";
 import { createLamConversation, loadLamState, saveLamState } from "@/lib/lam/storage";
 import { cleanSpeechText, containsWakePhrase, isSleepPhrase } from "@/lib/lam/speech";
 import { parseLocalCommand, type LamAction } from "@/lib/lam/commands";
+import { parseReminderIntent, executeReminderLamAction, buildQuickPreview, summaryForLAM, type ReminderLamAction } from "@/lib/reminders/lam-actions";
+import { useReminderStore, useReminderProfile } from "@/lib/reminders/store";
+import type { ReminderProfileState, SmartReminder } from "@/lib/reminders/types";
 import { type LamConversation, type LamMessage, type LamMode, type LamPageContext, type LamProfileState } from "@/lib/lam/types";
 import { LiquidGlassSurface } from "@/components/lam/liquid-glass-surface";
 import { LamMark } from "@/components/lam/lam-mark";
@@ -31,6 +34,23 @@ type Recognition = {
   onstart: (() => void) | null;
 };
 type RecognitionCtor = new () => Recognition;
+
+function reminderPendingDescription(action: ReminderLamAction, profile: ReminderProfileState): string {
+  if (action.op === "delete") return "Delete this reminder permanently?";
+  if (action.op === "complete") return "Mark this reminder as completed?";
+  if (action.op === "snooze") return "Snooze this reminder?";
+  if (action.op === "reschedule") return "Move this reminder to a different time?";
+  if (action.op === "exam-plan" || action.op === "create-series") {
+    const date = action.payload?.series?.examDate ? new Date(action.payload.series.examDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
+    return `Create a revision series${date ? ` up to ${date}` : ""}?\n\nSessions are shown for review after Scholar builds them.`;
+  }
+  if (action.op === "custom") return `Run custom command “${action.payload?.title}”?`;
+  if (action.op === "create") {
+    const preview = buildQuickPreview(action);
+    return `Create this reminder?\n\n${preview.title}\n${preview.dueLabel}${preview.subject ? ` · ${preview.subject}` : ""}\nPriority: ${preview.priority}${preview.recurrenceLabel ? `\nRepeat: ${preview.recurrenceLabel}` : ""}${preview.preAlertLabel ? `\nPre-alert: ${preview.preAlertLabel}` : ""}`;
+  }
+  return "Run this reminder action?";
+}
 
 const labels: Record<LamMode, string> = {
   general: "General", tutor: "Tutor", "doubt-solver": "Doubt Solver", "current-page": "Current Page", "question-coach": "Question Coach",
@@ -100,6 +120,9 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const [selectedText, setSelectedText] = useState("");
   const [runtimeContext, setRuntimeContext] = useState<LamRuntimeContext>(() => getLamPageContext());
   const [pendingAction, setPendingAction] = useState<LamAction | null>(null);
+  const reminderProfile = useReminderProfile(user.scholarClass);
+  const lastCreatedReminderIdRef = useRef<string | null>(null);
+  const pendingDisambiguationRef = useRef<{ op: ReminderLamAction["op"]; matches: SmartReminder[]; userCommand: string } | null>(null);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [historyQuery, setHistoryQuery] = useState("");
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
@@ -300,21 +323,21 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const executeAction = useCallback((action: LamAction) => {
     try {
       setStatus("performing");
-      if (action.type === "navigate") navigateTo(action.view);
-      else if (action.type === "create-note") addNote({ title: action.title, content: action.content, folder: "LAM" });
-      else if (action.type === "start-focus") navigateTo("focus", { minutes: action.minutes, source: "lam" });
-      else if (action.type === "open-ebook-page") navigateTo("ebook", { bookId: action.bookId, page: action.page, source: "lam" });
-      else if (action.type === "open-file") navigateTo("files", { fileId: action.fileId, source: "lam" });
-      else if (action.type === "create-quiz") navigateTo("quiz", { subject: action.subject, chapter: action.chapter, source: "lam" });
-      else if (action.type === "create-slideshow") navigateTo("ai-tools", { tool: "slideshow", subject: action.subject, chapter: action.chapter, source: "lam" });
-      commit((previous) => ({ ...previous, actionHistory: [{ id: uid(), action: action.type, result: "success" as const, at: now() }, ...previous.actionHistory].slice(0, 100) }));
-      const result = action.type === "navigate" ? `Opened ${action.view}.`
-        : action.type === "create-note" ? `Created note “${action.title}”.`
-        : action.type === "start-focus" ? `Opened Focus with a ${action.minutes}-minute session request.`
-        : action.type === "open-ebook-page" ? `Opened page ${action.page}.`
-        : action.type === "open-file" ? "Opened the file."
-        : action.type === "create-quiz" ? "Opened Quiz with this context attached."
-        : "Opened the slideshow maker with this context attached.";
+      let result = "";
+      if (action.type === "navigate") { navigateTo(action.view); result = `Opened ${action.view}.`; }
+      else if (action.type === "create-note") { addNote({ title: action.title, content: action.content, folder: "LAM" }); result = `Created note “${action.title}”.`; }
+      else if (action.type === "start-focus") { navigateTo("focus", { minutes: action.minutes, source: "lam" }); result = `Opened Focus with a ${action.minutes}-minute session request.`; }
+      else if (action.type === "open-ebook-page") { navigateTo("ebook", { bookId: action.bookId, page: action.page, source: "lam" }); result = `Opened page ${action.page}.`; }
+      else if (action.type === "open-file") { navigateTo("files", { fileId: action.fileId, source: "lam" }); result = "Opened the file."; }
+      else if (action.type === "create-quiz") { navigateTo("quiz", { subject: action.subject, chapter: action.chapter, source: "lam" }); result = "Opened Quiz with this context attached."; }
+      else if (action.type === "create-slideshow") { navigateTo("ai-tools", { tool: "slideshow", subject: action.subject, chapter: action.chapter, source: "lam" }); result = "Opened the slideshow maker with this context attached."; }
+      else if (action.type === "reminder") {
+        const outcome = executeReminderLamAction(user.scholarClass, action);
+        if (outcome.reminderId) lastCreatedReminderIdRef.current = outcome.reminderId;
+        if (outcome.reminderIds?.length) lastCreatedReminderIdRef.current = outcome.reminderIds[0];
+        result = outcome.ok ? outcome.message : `I couldn't do that: ${outcome.message}`;
+      }
+      commit((previous) => ({ ...previous, actionHistory: [{ id: uid(), action: action.type === "reminder" ? `reminder:${action.op}` : action.type, result: "success" as const, at: now() }, ...previous.actionHistory].slice(0, 100) }));
       addMessage({ id: uid(), role: "tool", content: result, createdAt: now() });
       setPendingAction(null);
       setStatus("completed");
@@ -322,7 +345,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     } catch {
       setError("Scholar could not complete that action.");
     }
-  }, [addMessage, addNote, commit, prefs.wakeWordEnabled]);
+  }, [addMessage, addNote, commit, prefs.wakeWordEnabled, user.scholarClass]);
 
   const send = useCallback(async (preset?: string, inputMode: "text" | "voice" = "text") => {
     const content = (preset ?? input).trim();
@@ -333,6 +356,49 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     const local = parseLocalCommand(content);
     if (local?.type === "navigate") { executeAction(local); return; }
     if (local?.type === "start-focus") { setPendingAction(local); return; }
+
+    // ---- LAM × FICA reminder intents ---------------------------------------
+    const disambiguationPick = content.trim().toLowerCase();
+    if (pendingDisambiguationRef.current && (/^\d{1,2}$/.test(disambiguationPick) || /^(first|second|third|fourth|fifth)$/.test(disambiguationPick))) {
+      const pending = pendingDisambiguationRef.current;
+      const pick = disambiguationPick === "first" ? 0 : disambiguationPick === "second" ? 1 : disambiguationPick === "third" ? 2 : disambiguationPick === "fourth" ? 3 : disambiguationPick === "fifth" ? 4 : Number(disambiguationPick) - 1;
+      const match = pending.matches[pick];
+      if (match) {
+        pendingDisambiguationRef.current = null;
+        const action: ReminderLamAction = { type: "reminder", op: pending.op, reminderId: match.id, userCommand: pending.userCommand };
+        if (pending.op === "delete" || pending.op === "complete" || pending.op === "snooze" || pending.op === "reschedule") setPendingAction(action);
+        else executeAction(action);
+        return;
+      }
+    }
+    const reminderIntent = parseReminderIntent(content, {
+      scholarClass: user.scholarClass,
+      reminders: reminderProfile.reminders,
+      templates: reminderProfile.templates,
+      commands: reminderProfile.commands,
+      lastCreatedReminderId: lastCreatedReminderIdRef.current ?? undefined,
+    });
+    if (reminderIntent) {
+      if (reminderIntent.kind === "ambiguous") {
+        pendingDisambiguationRef.current = { op: "find", matches: reminderIntent.matches, userCommand: content };
+        addMessage({ id: uid(), role: "tool", content: `I found several reminders that match. Reply with the number:\n${reminderIntent.matches.map((r, i) => `${i + 1}. ${r.title} — ${new Date(r.dueAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`).join("\n")}`, createdAt: now() });
+        return;
+      }
+      if (reminderIntent.kind === "confirm-create") {
+        const quick = reminderProfile.settings.quickLamActions && !reminderIntent.action.payload?.recurrence && !reminderIntent.action.payload?.alerts?.length;
+        if (quick) { executeAction(reminderIntent.action); return; }
+        setPendingAction(reminderIntent.action);
+        return;
+      }
+      const action = reminderIntent.action;
+      if (action.op === "delete" || action.op === "create-series" || action.op === "exam-plan") { setPendingAction(action); return; }
+      if (action.op === "custom") {
+        const command = reminderProfile.commands.find((c) => c.name === action.payload?.title);
+        if (!command || command.confirmRequired) { setPendingAction(action); return; }
+      }
+      executeAction(action);
+      return;
+    }
     const scholarSearch = content.match(/(?:search scholar for|where did i (?:read|save|ask about)|find in scholar)\s+(.+)/i);
     if (scholarSearch) {
       const query = scholarSearch[1].trim().toLowerCase();
@@ -363,6 +429,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     try {
       const response = await fetch("/api/lam/chat", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal, body: JSON.stringify({
         profileId, message: content, inputMode, assistantMode: conversation.mode, pageContext: context, responseDetail: prefs.responseDetail,
+        reminderSummary: summaryForLAM(reminderProfile.reminders, user.scholarClass),
         messages: conversation.messages.filter((message) => message.role !== "tool" && message.content).slice(-10).map(({ role, content: value }) => ({ role, content: value })),
       }) });
       if (!response.ok || !response.body) { const data = await response.json().catch(() => null) as { error?: string } | null; throw new Error(data?.error ?? "LAM could not connect to Groq."); }
@@ -393,7 +460,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
       if ((caught as Error).name === "AbortError") setStatus("sleeping");
       else { setError(caught instanceof Error ? caught.message : "LAM could not answer."); setStatus("error"); }
     } finally { abortRef.current = null; }
-  }, [addMessage, commit, context, conversation, executeAction, files, input, notes, prefs.followUpListeningEnabled, prefs.responseDetail, prefs.voiceRepliesEnabled, profileId, speak, state.conversations, status, stopSpeech]);
+  }, [addMessage, commit, context, conversation, executeAction, files, input, notes, prefs.followUpListeningEnabled, prefs.responseDetail, prefs.voiceRepliesEnabled, profileId, reminderProfile, speak, state.conversations, status, stopSpeech, user]);
 
   const stopCapturedAudio = useCallback(() => {
     recognitionGenerationRef.current += 1;
@@ -590,7 +657,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     return animateLamWakeReveal(mark, details, animationQuality);
   }, [animationQuality, open, prefs.onboardingComplete]);
   const renderedMessages = mobileOptimized && conversation.messages.length > 8 ? conversation.messages.slice(-8) : conversation.messages;
-  const pendingDescription = !pendingAction ? "" : pendingAction.type === "create-note" ? `Save “${pendingAction.title}” in the LAM notes folder?` : pendingAction.type === "start-focus" ? `Start a ${pendingAction.minutes}-minute focus session?` : pendingAction.type === "create-quiz" ? `Create a quiz${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "create-slideshow" ? `Create a slideshow${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "open-ebook-page" ? `Open page ${pendingAction.page}?` : pendingAction.type === "open-file" ? "Open this uploaded file?" : `Open ${pendingAction.view}?`;
+  const pendingDescription = !pendingAction ? "" : pendingAction.type === "create-note" ? `Save “${pendingAction.title}” in the LAM notes folder?` : pendingAction.type === "start-focus" ? `Start a ${pendingAction.minutes}-minute focus session?` : pendingAction.type === "create-quiz" ? `Create a quiz${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "create-slideshow" ? `Create a slideshow${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "open-ebook-page" ? `Open page ${pendingAction.page}?` : pendingAction.type === "open-file" ? "Open this uploaded file?" : pendingAction.type === "reminder" ? reminderPendingDescription(pendingAction, reminderProfile) : `Open ${pendingAction.view}?`;
 
   if (!prefs.assistantEnabled && !open) return null;
 

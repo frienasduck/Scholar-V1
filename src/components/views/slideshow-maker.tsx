@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/lib/notifications/notification-api";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { GenerationQuotaIndicator } from "@/components/subscriptions/generation-quota";
 import {
   Sparkles,
   Loader2,
@@ -219,6 +221,7 @@ export function SlideshowMaker() {
   const addCoins = useStore((s) => s.addCoins);
   const pushActivity = useStore((s) => s.pushActivity);
   const curriculum = useCurriculum();
+  const plusAccess = useScholarAccess();
 
   // ===== Generation settings =====
   const [inputMode, setInputMode] = useState<InputMode>("prompt");
@@ -739,14 +742,23 @@ export function SlideshowMaker() {
       );
       return;
     }
+    // Non-destructive quota check — actual usage is recorded server-side only
+    // after a successful generation, so failures never burn the daily limit.
     const quotaResponse = await fetch("/api/subscriptions/usage", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "slideshow_generation" }),
+      method: "GET",
+      cache: "no-store",
     });
     if (!quotaResponse.ok) {
       const quota = await quotaResponse.json().catch(() => ({}));
       toast.error(quota.message || "The slideshow generation limit could not be verified.");
+      return;
+    }
+    const quotaData = (await quotaResponse.json().catch(() => ({}))) as { slideshow?: { used: number; limit: number } };
+    const slideshowQuota = quotaData?.slideshow;
+    if (slideshowQuota && slideshowQuota.limit >= 0 && slideshowQuota.used >= slideshowQuota.limit) {
+      toast.error("Daily generation limit reached", {
+        description: "Upgrade to Scholar Plus for more slideshow generations.",
+      });
       return;
     }
     const backgroundTaskId = beginBackgroundTask({
@@ -948,6 +960,14 @@ export function SlideshowMaker() {
         backgroundTaskId,
         `${slideshow.slides.length} slides are ready to open.`,
       );
+      // Record the successful generation server-side (best-effort; a failure
+      // here must never undo an already-completed slideshow).
+      void fetch("/api/subscriptions/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "slideshow_generation" }),
+      }).catch(() => undefined);
+      void plusAccess.refresh();
     } catch {
       failBackgroundTask(
         backgroundTaskId,
@@ -2227,6 +2247,11 @@ No markdown fences.`;
           </p>
         </div>
       )}
+
+      {/* Daily generation usage — server-verified, updated after each success */}
+      <div className="flex items-center justify-center pb-1">
+        <GenerationQuotaIndicator kind="slideshow" />
+      </div>
 
       {/* Generate button */}
       <button

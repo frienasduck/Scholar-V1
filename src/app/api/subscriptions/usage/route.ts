@@ -2,9 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
 import { resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
-import { consumeGeneration } from "@/lib/subscriptions/usage";
+import { consumeGeneration, getUsage } from "@/lib/subscriptions/usage";
 
 const schema = z.object({ key: z.enum(["quiz_generation", "slideshow_generation"]) });
+
+/**
+ * GET — non-destructive check of today's generation usage. Never consumes.
+ * The frontend uses this to render "X of Y used today" indicators before the
+ * actual generation (which records usage server-side only on success).
+ */
+export async function GET(request: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "AUTH_REQUIRED", message: "Sign in to generate content." }, { status: 401 });
+  try {
+    const usage = await getUsage(user.id, await resolveUserEntitlements(user.id));
+    return NextResponse.json({ ok: true, ...usage });
+  } catch {
+    return NextResponse.json({ error: "USAGE_CHECK_FAILED", message: "Scholar could not verify your generation limit." }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUser();

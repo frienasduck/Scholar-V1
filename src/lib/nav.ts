@@ -5,7 +5,7 @@ import {
   FlaskConical, Music, Pencil, Wrench,
   FileStack, PenTool, RefreshCw, ClipboardCheck, Flag, BellRing, History,
   Download, ClipboardList, LayoutGrid, FlaskRound, Code2, BookMarked, Calculator,
-  ListChecks, type LucideIcon,
+  ListChecks, Network, Orbit, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -15,6 +15,8 @@ export interface NavItem {
   group: "Learn" | "Revise" | "More" | "Extra";
   badge?: string;
   comingSoon?: boolean;
+  /** Scholar Plus benefit — clicking opens Scholar Plus instead of the view. */
+  plus?: boolean;
   highlight?: boolean;
 }
 
@@ -56,9 +58,9 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "derivations", label: "Derivation Library", icon: BookMarked, group: "Extra" },
 
   { id: "analytics", label: "Analytics", icon: BarChart3, group: "More" },
-  { id: "achievements", label: "Achievements", icon: Trophy, group: "More", comingSoon: true },
-  { id: "mindmap", label: "Mind Map", icon: Lock, group: "More", comingSoon: true },
-  { id: "galaxy", label: "Concept Galaxy", icon: Lock, group: "More", comingSoon: true },
+  { id: "achievements", label: "Achievements", icon: Trophy, group: "More", plus: true },
+  { id: "mindmap", label: "Mind Map", icon: Network, group: "More", plus: true },
+  { id: "galaxy", label: "Concept Galaxy", icon: Orbit, group: "More", plus: true },
   { id: "formulas", label: "Formula Explorer", icon: Sigma, group: "More" },
   { id: "community", label: "Community", icon: Users, group: "More" },
   { id: "friends", label: "Friends", icon: UserPlus, group: "More" },

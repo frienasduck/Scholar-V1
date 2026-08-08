@@ -4,6 +4,8 @@
 // Uses the static POOL of ~40 Class 9 questions and the store-based Leitner system.
 
 import { useStore, type QuizQuestion, type QuizAttempt } from "@/lib/store";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { GenerationQuotaIndicator } from "@/components/subscriptions/generation-quota";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { CURRICULUM } from "@/lib/curriculum";
 import { askAIJSON } from "@/lib/ai";
@@ -91,6 +93,7 @@ function fmtTime(s: number): string {
 type Phase = "home" | "taking" | "results";
 
 export function Class9QuizView() {
+  const plusAccess = useScholarAccess();
   const scholarClass = useStore((s) => s.user.scholarClass);
   const quizAttempts = useStore((s) => s.quizAttempts);
   const CURRICULUM = useCurriculum();
@@ -187,6 +190,8 @@ export function Class9QuizView() {
         backgroundTaskId,
         `${qs.length} questions are ready.`,
       );
+      // Refresh the server-verified usage count so the indicator stays current.
+      void plusAccess.refresh();
     } catch {
       failBackgroundTask(backgroundTaskId, "Quiz generation failed.");
       toast.error("Could not generate quiz.");
@@ -354,6 +359,7 @@ export function Class9QuizView() {
               <AIGenerateDialog loading={aiLoading} onGenerate={startAIQuiz} curriculum={CURRICULUM} scholarClass={scholarClass} />
             </Dialog>
           } />
+          <div className="flex justify-end"><GenerationQuotaIndicator kind="quiz" /></div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard icon={Target} label="Attempts" value={quizAttempts.length} accent="#6366f1" />
             <StatCard icon={Award} label="Avg Score" value={`${avgScore}%`} accent="#14b8a6" />

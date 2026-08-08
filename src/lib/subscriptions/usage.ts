@@ -2,30 +2,25 @@ import "server-only";
 import { db } from "@/lib/db";
 import type { ResolvedEntitlements } from "@/lib/subscriptions/entitlements";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { usageDay } from "@/lib/subscriptions/usage-day";
+import { evaluateQuota } from "@/lib/subscriptions/quota";
 
 export type UsageKey = "quiz_generation" | "slideshow_generation";
 
-export function usageDay(timezone = "Asia/Kolkata", now = new Date()) {
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
-    const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-    return `${value.year}-${value.month}-${value.day}`;
-  } catch {
-    return now.toISOString().slice(0, 10);
-  }
-}
+export { usageDay };
 
 export async function consumeGeneration(userId: string, key: UsageKey, access: ResolvedEntitlements) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { timezone: true } });
   const day = usageDay(user?.timezone);
   const limit = key === "quiz_generation" ? access.dailyQuizLimit : access.dailySlideshowLimit;
-  if (limit < 0) return { count: 0, limit, remaining: -1, day };
+  if (evaluateQuota(limit, 0).kind === "unlimited") return { count: 0, limit, remaining: -1, day };
 
   try {
     return await db.$transaction(async (tx) => {
       const existing = await tx.usageCounter.findUnique({ where: { userId_key_day: { userId, key, day } } });
       const count = existing?.count ?? 0;
-      if (count >= limit) {
+      const status = evaluateQuota(limit, count);
+      if (status.kind === "exhausted") {
         const error = new Error("QUOTA_REACHED") as Error & { code?: string; limit?: number };
         error.code = "QUOTA_REACHED";
         error.limit = limit;
@@ -44,6 +39,30 @@ export async function consumeGeneration(userId: string, key: UsageKey, access: R
     }
     throw error;
   }
+}
+
+/**
+ * Non-destructive quota check — rejects when the user is already at the
+ * limit, but does NOT increment. Used to gate a generation BEFORE the
+ * provider call; the atomic `consumeGeneration` records usage only after a
+ * successful generation, so genuine provider failures never burn quota.
+ */
+export async function checkGenerationQuota(userId: string, key: UsageKey, access: ResolvedEntitlements) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  const day = usageDay(user?.timezone);
+  const limit = key === "quiz_generation" ? access.dailyQuizLimit : access.dailySlideshowLimit;
+  const status = evaluateQuota(limit, 0);
+  if (status.kind === "unlimited") return { used: 0, limit, remaining: -1, day };
+  const existing = await db.usageCounter.findUnique({ where: { userId_key_day: { userId, key, day } } });
+  const used = existing?.count ?? 0;
+  const quota = evaluateQuota(limit, used);
+  if (quota.kind === "exhausted") {
+    const error = new Error("QUOTA_REACHED") as Error & { code?: string; limit?: number };
+    error.code = "QUOTA_REACHED";
+    error.limit = limit;
+    throw error;
+  }
+  return { used, limit, remaining: quota.remaining, day };
 }
 
 export async function getUsage(userId: string, access: ResolvedEntitlements) {

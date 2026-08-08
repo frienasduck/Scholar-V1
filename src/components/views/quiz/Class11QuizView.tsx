@@ -3,6 +3,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useStore } from "@/lib/store";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { GenerationQuotaIndicator } from "@/components/subscriptions/generation-quota";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { loadSubjectQuizzes } from "@/lib/quizzes-loader";
 import { CLASS11_QUIZ_META, getQuizCountBySubject } from "@/lib/quizzes-class11-meta";
@@ -88,6 +90,7 @@ function inferMistakeType(subject: string, question: string, qType: string): str
 }
 
 export function Class11QuizView() {
+  const plusAccess = useScholarAccess();
   const scholarClass = useStore((s) => s.user.scholarClass);
   const quizAttempts = useStore((s) => s.quizAttempts);
   const curriculum = useCurriculum();
@@ -348,6 +351,8 @@ export function Class11QuizView() {
         backgroundTaskId,
         `${drafts.length} questions are ready for review.`,
       );
+      // Refresh the server-verified usage count so the indicator stays current.
+      void plusAccess.refresh();
     } catch {
       failBackgroundTask(backgroundTaskId, "Quiz generation failed.");
       toast.error("Could not generate quiz.");
@@ -671,6 +676,7 @@ export function Class11QuizView() {
           <button onClick={() => setAiOpen(true)} className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-200 hover:bg-fuchsia-500/25 transition-colors">
             <Sparkles className="h-4 w-4" /> AI Generate Quiz
           </button>
+          <div className="flex items-center self-center"><GenerationQuotaIndicator kind="quiz" /></div>
         </div>
 
         {/* Exact questions extracted from the bundled e-books */}

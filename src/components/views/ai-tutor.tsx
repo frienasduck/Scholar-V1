@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, Volume2, Plus, Loader2, Sparkles, SquarePen, Eraser, Maximize2, Minimize2 } from "lucide-react";
@@ -12,6 +12,8 @@ import { Markdown } from "@/lib/shared";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { openScholarPlus, shouldShowTutorPlusCard } from "@/lib/subscriptions/promo";
 
 const VIDEO_SRC =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4";
@@ -234,12 +236,24 @@ export function AITutorView() {
     [threads, activePersonaId]
   );
 
+  const plusAccess = useScholarAccess();
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const activeThread = useMemo(() => {
     const explicit = threads.find((t) => t.id === activeThreadId && t.persona === activePersonaId);
     if (explicit) return explicit;
     return personaThreads[0] ?? null;
   }, [threads, activeThreadId, activePersonaId, personaThreads]);
+
+  // Scholar Plus intro card — free users see it once, attached to the FIRST
+  // assistant answer of a conversation. Rendered by the UI layer, never by the
+  // AI model, and it never delays or replaces the actual answer.
+  const tutorPlusEligible = plusAccess.entitlementsLoaded === true && plusAccess.access?.plan === "FREE";
+  const [tutorPlusShownForThread, setTutorPlusShownForThread] = useState(false);
+  const activeThreadIdSafe = activeThread?.id ?? null;
+  useEffect(() => {
+    if (!activeThreadIdSafe) { setTutorPlusShownForThread(false); return; }
+    try { setTutorPlusShownForThread(localStorage.getItem(`scholar:tutor-plus-card:${activeThreadIdSafe}`) === "1"); } catch { setTutorPlusShownForThread(false); }
+  }, [activeThreadIdSafe]);
 
   const selectPersona = (id: string) => {
     setActivePersonaId(id);
@@ -292,6 +306,18 @@ export function AITutorView() {
     try {
       const reply = await chatAI(content, activePersonaId, history);
       addMessage(threadId, { role: "assistant", content: reply, persona: activePersonaId });
+      // Mark this conversation as having received its one-time Plus intro.
+      const isFirstAssistantReply = !priorMessages.some((m) => m.role === "assistant");
+      if (
+        shouldShowTutorPlusCard({
+          loaded: plusAccess.entitlementsLoaded === true,
+          isPlus: !tutorPlusEligible,
+          isFirstAssistantMessage: isFirstAssistantReply,
+          alreadyShownForThread: false,
+        })
+      ) {
+        try { localStorage.setItem(`scholar:tutor-plus-card:${threadId}`, "1"); } catch { /* ignore */ }
+      }
       addXP(2);
       pushActivity({ type: "chat", text: `Chatted with ${activePersona.name}`, icon: "💬" });
     } catch (e: any) {
@@ -717,9 +743,17 @@ export function AITutorView() {
                   <AnimatePresence initial={false}>
                     {activeThread?.messages.map((m) => {
                       const isUser = m.role === "user";
+                      const firstAssistantId = activeThread.messages.find((msg) => msg.role === "assistant")?.id;
+                      const isFirstAssistant = !isUser && m.id === firstAssistantId;
+                      const showCard = shouldShowTutorPlusCard({
+                        loaded: plusAccess.entitlementsLoaded === true,
+                        isPlus: !tutorPlusEligible,
+                        isFirstAssistantMessage: isFirstAssistant,
+                        alreadyShownForThread: tutorPlusShownForThread,
+                      });
                       return (
+                        <Fragment key={m.id}>
                         <motion.div
-                          key={m.id}
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.25 }}
@@ -766,6 +800,30 @@ export function AITutorView() {
                             )}
                           </div>
                         </motion.div>
+                        {showCard && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="flex justify-start"
+                          >
+                            <div className="ml-10 flex max-w-[78%] items-center gap-3 rounded-2xl border border-amber-200/25 bg-gradient-to-r from-amber-300/10 to-violet-400/10 px-4 py-3 backdrop-blur-md">
+                              <Sparkles className="h-4 w-4 shrink-0 text-amber-200" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-amber-100">Scholar Plus</p>
+                                <p className="text-[11px] leading-5 text-white/60">Unlock higher AI limits and an even more powerful Scholar experience.</p>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => openScholarPlus({ source: "ai-tutor" })}
+                                className="shrink-0 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-3.5 text-xs font-semibold text-slate-950 hover:brightness-110"
+                              >
+                                Upgrade
+                              </Button>
+                            </div>
+                          </motion.div>
+                        )}
+                        </Fragment>
                       );
                     })}
                     {loading && (

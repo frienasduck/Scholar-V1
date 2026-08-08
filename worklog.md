@@ -2435,3 +2435,65 @@ Stage Summary:
 - Resource preview with related resources
 - External links to official NCERT/DIKSHA/CBSE sources
 - Class-aware: works for both Class 9 and Class 11
+
+---
+
+# Smart Reminders 2.0 — 7 Aug 2026
+
+## What's new (user-facing)
+- **Redesigned Smart Reminders command centre**: header actions (New Reminder, Ask LAM, Quick Add, Settings), summary cards (Due Today, Upcoming, Overdue, Completed This Week, Study Streak) and views for Today, Upcoming, Calendar, All, Completed, Templates and Activity.
+- **Natural-language quick add**: type "Revise Laws of Motion tomorrow at 6 PM" and review Scholar's structured interpretation (Confirm / Edit / Cancel) before anything is saved.
+- **Advanced scheduling**: daily / weekday / weekly (choose days) / monthly / custom-interval recurrence, repeat counts, multiple alerts (at due, 5/10/30/60 min, 1 day before, custom), all-day, timezone-aware due times.
+- **Talk Reminder**: Scholar speaks reminders aloud when due, preferring Microsoft female en-GB voices (fallback: any female en-GB → any en-GB → system). Voice/language/rate/pitch/volume, spoken-content modes, custom messages, repeat count, privacy toggle ("Speak reminder details aloud"), preview voice, stop control.
+- **Smart Suggestions**: AI proposes reminders from upcoming exams, weak topics, recent mistakes and postponed tasks; nothing is created without approval (modes: Suggestions Only / Ask Before Creating / Auto-create).
+- **Conflict detection** (overlaps, exam/quiet-hours conflicts, duplicates, past times) with suggested alternatives; **smart snooze** (5m/10m/30m/1h/tonight/tomorrow) and **smart reschedule** with reasons ("Your Physics test is in three days").
+- **Templates**: Daily Revision, Homework Session, Exam Countdown, Weekly Formula Review, Focus Sprint, Assignment Deadline, Practical Preparation, Morning Study Plan, Evening Review + create/duplicate/pin/delete.
+- **Exam revision series**: generates a spaced revision sequence (chapter sessions, mixed practice, formula review, night-before, mock test) that the student edits before confirmation.
+- **Reminder detail view** with history, actions (Start/Complete/Snooze/Move/Duplicate/Edit/Delete), delete confirmation and undo.
+- **Quiet hours** (allow important/exams, silence speech, deliver-later digest) and optional reminder digests.
+
+## LAM × FICA task automation
+- Whitelisted LAM reminder actions: create, update, delete, complete, snooze, reschedule, list, find, create-series, exam-plan, create-template, apply-template, enable/disable Talk Reminder, change voice.
+- LAM understands "remind me to revise chemical bonding tomorrow at 6", "snooze the homework reminder for 20 minutes", "move my chemistry reminder to tomorrow evening", "create a revision schedule for my physics exam next Friday", follow-up edits ("make it 7 PM instead", "repeat it every weekday", "use the British female voice") and asks the user to pick when several reminders match.
+- **Custom Commands** in LAM Settings: user-defined trigger phrases mapped to approved actions only (create reminder, focus session, apply template, exam rescue, navigate) with conflict detection, test preview, export/import and usage history. Ten editable default commands ship pre-configured.
+- Every reminder action is recorded in LAM action history and the reminder activity log (actor LAM / manual / FICA / automatic).
+
+## Technical
+- New `src/lib/reminders/` module: `types.ts` (unified data model), `engine.ts` (recurrence, conflicts, quiet hours, NLP parsing, legacy migration, templates, revision series), `talk.ts` (voice selection + speech controller), `store.ts` (per-profile Zustand store with localStorage persistence + cross-tab sync), `scheduler.tsx` (due checks on startup/visibility/focus/ticks, in-app + browser notifications, global due-reminder action centre), `lam-actions.ts` (whitelisted LAM actions + intent parser + custom command executor).
+- **Unified persistence**: Chapter Command Center's Smart Reminders panel now reads/writes the same per-Class store (new key `scholar:<profile>:smart-reminders-v2`). Legacy `smart-reminders`, `smart-reminders-custom` and `smart-reminders-state` data is migrated once, deduplicated, and the originals are never deleted.
+- Browser notifications only fire while a Scholar tab is open (no push server — never claimed otherwise); permission is requested after user interaction with a Test Notification action.
+- `ReminderScheduler` is mounted globally in AppShell; `ReminderEditorDialog`, Talk editor, settings and custom commands added to Settings → LAM.
+- Added `tests/reminders-engine.test.ts` (bun) covering NLP parsing, recurrence, quiet hours, migration, conflicts, smart reschedule, revision series and voice hints.
+
+## Notes
+- No schema migration was required — reminders persist per profile in localStorage like the rest of the app; PostgreSQL-backed reminder sync remains future work.
+
+---
+
+# Scholar Plus Experience & Monetization Update — 7 Aug 2026
+
+## What's new (user-facing)
+- **Nigtube pre-roll**: free students now see a 10-second liquid-glass Scholar Plus promotion (Study without interruptions. / three benefits / Skip in 10 → Skip Ad / Upgrade to Plus) before any video plays. Scholar Plus members bypass the ad entirely — the YouTube iframe is only mounted once the ad completes, so no video audio ever plays underneath it.
+- **Study Music spoken promotion**: free users hear one short UK-female-voice Scholar Plus message (once per session) before the first track; the audio stays muted and the player isn't created until the ~10s promo window finishes. Scholar Plus members hear nothing. A compact overlay shows the message text, a progress bar and an Upgrade button.
+- **Achievements, Mind Map and Concept Galaxy** are no longer "Soon" — they are now visible Scholar Plus benefit cards with a premium gold PLUS badge; clicking them opens Scholar Plus (the features themselves are not enabled yet).
+- **AI Tutor**: free users get one small Scholar Plus card attached to the first answer of each conversation only. The answer renders immediately and is never replaced or delayed; Plus users never see it.
+- **Generation-limit indicators**: Quiz (Class 9 & 11) and the Slideshow Maker now show live "X of Y generations used today" (Scholar Plus shows unlimited) from the server-verified session.
+
+## Monetization / limits (technical)
+- Generation quota is now enforced server-side with **check-before + record-after-success**: `/api/ai` rejects early via a new non-destructive `checkGenerationQuota`, then atomically records usage (`consumeGeneration`) only after the generation succeeds — genuine provider failures, aborts and automatic retries no longer burn daily quota (streams included).
+- The Slideshow Maker no longer pre-consumes quota; it checks via a new `GET /api/subscriptions/usage` and records once on success.
+- Limits stay centralized in `subscriptions/config.ts` (`FREE_DAILY_QUIZ_GENERATIONS`, `FREE_DAILY_SLIDESHOW_GENERATIONS`, `PLUS_*`; `-1` = unlimited), resolved from authenticated server-side data only — never from client-sent `isPlus`/`usage` values.
+- New `src/lib/subscriptions/promo.ts` centralizes all Scholar Plus navigation (`openScholarPlus({ source, feature })`) and pure eligibility/promo-gate helpers used by Nigtube, Study Music and the cards.
+
+## Developer Mode security
+- Only **failed** password attempts now count toward the brute-force window (successful logins no longer consume it).
+- New audit events: `DEVELOPER_MODE_LOGIN_FAILED` and `DEVELOPER_MODE_LOGIN_LOCKED` (with retry-after metadata); the response message stays generic.
+- Developer Mode remains: server-side password verification against `DEV_MODE_PASSWORD_HASH`, HttpOnly/Secure/SameSite signed session cookie with 8h expiry + sessionVersion invalidation, hard-disabled when `DEV_MODE_ENABLED != true`, and entitlements resolved only from authenticated server state.
+
+## Files
+- New: `src/lib/subscriptions/promo.ts`, `src/lib/subscriptions/nigtube-ad.ts`, `src/components/subscriptions/nigtube-plus-ad.tsx`, `src/components/subscriptions/generation-quota.tsx`, `tests/monetization.test.ts`.
+- Changed: `src/components/views/nigtube.tsx`, `music-widget.tsx`, `ai-tutor.tsx`, `slideshow-maker.tsx`, `quiz/Class11QuizView.tsx`, `quiz/Class9QuizView.tsx`, `src/components/app-shell.tsx`, `src/lib/nav.ts`, `src/lib/subscriptions/usage.ts`, `src/app/api/ai/route.ts`, `src/app/api/subscriptions/usage/route.ts`, `src/app/api/developer/session/route.ts`, `src/components/views/settings.tsx`.
+
+## Notes
+- No database schema changes; usage counters were already in PostgreSQL (`UsageCounter`).
+- No secrets added; Developer Mode password remains a hash-only environment variable.

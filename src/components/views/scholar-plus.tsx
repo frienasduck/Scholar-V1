@@ -6,7 +6,7 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import { toast } from "@/lib/notifications/notification-api";
 
 const BENEFIT_GROUPS = [
-  { title: "AI & Study Tools", icon: Wand2, items: ["AISIG", "Homework Scanner", "Exam Prep", "Assignments", "Practical Lab", "Derivation Library", "Formula Explorer"] },
+  { title: "AI & Study Tools", icon: Wand2, items: ["AISIG", "Homework Scanner", "Exam Prep", "Assignments", "Practical Lab", "Derivation Library", "Formula Explorer", "Python Workspace"] },
   { title: "Content & Media", icon: Crown, items: ["Levels", "Higher Quiz generation", "Higher Slideshow generation", "More Store items", "Ad-free Nigtube", "Ad-free Study Music"] },
   { title: "Storage & Account", icon: HardDrive, items: ["Expanded Files storage", "Class 9 access", "Appearance Lab", "One-time +5,000 Coins bonus"] },
 ];
