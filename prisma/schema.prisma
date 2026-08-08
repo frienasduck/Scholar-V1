@@ -43,6 +43,15 @@ model User {
   auditEvents           AuditEvent[]            @relation("AuditActor")
   targetedAuditEvents   AuditEvent[]            @relation("AuditTarget")
   sessions              Session[]
+  entitlements          Entitlement[]
+  usageEvents           UsageEvent[]
+  adImpressions         AdImpression[]
+  automationWorkflows   AutomationWorkflow[]
+  pushSubscriptions     DevicePushSubscription[]
+  masteryRecords        MasteryRecord[]
+  practiceAttempts      PracticeAttempt[]
+  mistakeRecords        MistakeRecord[]
+  revisionItems         RevisionItem[]
 }
 
 model Session {
@@ -194,3 +203,256 @@ model SecurityAttempt {
 
   @@index([key, action, createdAt])
 }
+
+// ============================================================================
+// Scholar V2 platform core (additive — see 20260809000000_v2_platform_core)
+// Capability-oriented entitlements. Paid access is account-based and
+// server-authoritative; this table is written by billing webhooks, admin
+// grants, promotions and legacy migration — never by client callbacks.
+// ============================================================================
+
+model Entitlement {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String
+  source    String // billing | iap | promotion | manual | legacy
+  status    String   @default("active") // active | grace | expired | revoked
+  startsAt  DateTime @default(now())
+  endsAt    DateTime?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key, source])
+  @@index([userId, status])
+  @@index([key, status, endsAt])
+}
+
+model UsageEvent {
+  id             String   @id @default(cuid())
+  userId         String
+  feature        String
+  idempotencyKey String   @unique
+  units          Int      @default(1)
+  status         String   @default("reserved") // reserved | consumed | released
+  periodDay      String
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, feature, status])
+  @@index([userId, periodDay])
+}
+
+model AdCampaign {
+  id                   String   @id @default(cuid())
+  key                  String
+  placement            String
+  provider             String   @default("scholar_house") // scholar_house | external
+  enabled              Boolean  @default(true)
+  skipAfterSeconds     Int?
+  maxImpressionsPerUser Int?    @default(3)
+  cooldownMinutes      Int?     @default(20)
+  startsAt             DateTime?
+  endsAt               DateTime?
+  targetingRules       Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  impressions AdImpression[]
+
+  @@unique([key, placement])
+  @@index([placement, enabled])
+}
+
+model AdImpression {
+  id          String    @id @default(cuid())
+  campaignId  String
+  userId      String?
+  placement   String
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  skippedAt   DateTime?
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, startedAt])
+  @@index([userId, placement, startedAt])
+}
+
+model AutomationWorkflow {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  state       String   @default("queued") // queued | running | awaiting_confirmation | completed | failed | cancelled | expired
+  source      String   @default("lam")
+  input       Json?
+  currentStep String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actions AutomationAction[]
+
+  @@index([userId, state])
+  @@index([state, updatedAt])
+}
+
+model AutomationAction {
+  id                   String   @id @default(cuid())
+  workflowId           String
+  actionType           String
+  parameters           Json?
+  status               String   @default("proposed") // proposed | confirmed | running | completed | failed | cancelled
+  confirmationRequired Boolean  @default(false)
+  confirmedAt          DateTime?
+  idempotencyKey       String   @unique
+  createdAt            DateTime @default(now())
+
+  workflow AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId, status])
+}
+
+model DevicePushSubscription {
+  id                    String   @id @default(cuid())
+  userId                String
+  endpointHash          String   @unique
+  encryptedSubscription Json?
+  enabled               Boolean  @default(true)
+  lastSeenAt            DateTime @default(now())
+  createdAt             DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+}
+
+model AnalyticsEvent {
+  id                 String   @id @default(cuid())
+  anonymousOrUserKey String?
+  name               String
+  properties         Json?
+  occurredAt         DateTime @default(now())
+
+  @@index([name, occurredAt])
+  @@index([anonymousOrUserKey, occurredAt])
+}
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  rolloutPct Int     @default(100)
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// Scholar V2.1 — Scholar Intelligence core (additive — see 20260809010000_v2_intelligence_core)
+// Evidence → mastery → weak topics → revision queue. The server stores raw
+// evidence (PracticeAttempt, MistakeRecord, RevisionItem) and derived mastery
+// snapshots (MasteryRecord). Mastery is always recomputed server-side from
+// evidence; client state is a rendering convenience only.
+// ============================================================================
+
+model MasteryRecord {
+  id            String    @id @default(cuid())
+  userId        String
+  subject       String
+  chapter       String?
+  topic         String?
+  level         String    @default("UNKNOWN") // UNKNOWN | INTRODUCED | LEARNING | DEVELOPING | STRONG | MASTERED | DECAYING
+  score         Float     @default(0) // 0..1 recency-weighted estimate
+  accuracy      Float?
+  evidenceCount Int       @default(0)
+  decayed       Boolean   @default(false)
+  lastAttemptAt DateTime?
+  lastRevisedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subject, chapter, topic])
+  @@index([userId, updatedAt])
+}
+
+model PracticeAttempt {
+  id            String    @id @default(cuid())
+  userId        String
+  kind          String // quiz | practice | exam-sim | tutor | flashcard | confidence
+  subject       String
+  chapter       String?
+  topic         String?
+  correct       Boolean?
+  score         Float?
+  total         Int?
+  difficulty    String?
+  rating        Int? // 1..4 (again/hard/good/easy)
+  questionId    String?
+  question      String?
+  userAnswer    String?
+  correctAnswer String?
+  explanation   String?
+  source        String    @default("quiz")
+  occurredAt    DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([userId, subject, occurredAt])
+}
+
+model MistakeRecord {
+  id            String    @id @default(cuid())
+  userId        String
+  subject       String
+  chapter       String?
+  topic         String?
+  question      String
+  userAnswer    String?
+  correctAnswer String?
+  explanation   String?
+  mistakeType   String    @default("Concept Error")
+  originalType  String?
+  source        String    @default("quiz")
+  resolved      Boolean   @default(false)
+  resolvedAt    DateTime?
+  occurredAt    DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, subject, occurredAt])
+  @@index([userId, resolved, occurredAt])
+}
+
+model RevisionItem {
+  id             String    @id @default(cuid())
+  userId         String
+  subject        String
+  chapter        String?
+  topic          String?
+  kind           String    @default("concept") // concept | mistake | flashcard | formula | question
+  title          String
+  state          String    @default("NEW") // NEW | LEARNING | REVIEW | MATURE | RELEARNING
+  intervalDays   Float     @default(0)
+  ease           Float     @default(2.5)
+  dueAt          DateTime  @default(now())
+  reviewCount    Int       @default(0)
+  lapses         Int       @default(0)
+  sourceId       String?
+  priority       Int       @default(50)
+  createdAt      DateTime  @default(now())
+  lastReviewedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, sourceId])
+  @@index([userId, dueAt, state])
+}
+

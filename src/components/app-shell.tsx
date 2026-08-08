@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { DashboardView } from "@/components/views/dashboard";
+import { IntelligenceView } from "@/components/views/intelligence";
 import { ChapterCommandCenter } from "@/components/views/chapter-command";
 import { AITutorView } from "@/components/views/ai-tutor";
 import { AIToolsView } from "@/components/views/ai-tools";
@@ -84,6 +85,7 @@ import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
+  intelligence: IntelligenceView,
   "chapter-command": ChapterCommandCenter,
   "ai-tutor": AITutorView,
   "ai-tools": AIToolsView,

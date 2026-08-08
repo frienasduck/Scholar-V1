@@ -2497,3 +2497,70 @@ Stage Summary:
 ## Notes
 - No database schema changes; usage counters were already in PostgreSQL (`UsageCounter`).
 - No secrets added; Developer Mode password remains a hash-only environment variable.
+
+---
+
+# Scholar V2 Platform Core — 8 Aug 2026
+
+## What's new (user-facing)
+- **Capability API**: a single server-authoritative entitlement surface (`GET /api/v2/entitlements`) now exposes the V2 capability model (`scholar_plus`, `ad_free`, `premium_ai_limits`, `advanced_lam`, `advanced_reminders`, `premium_nigtube`, `premium_study_music`, `mind_map`, `concept_galaxy`, `achievements`, `premium_storage`) on top of the existing plan resolution. Client state remains rendering-only; every protected action still re-checks server-side.
+- **Client-safe feature-flag snapshot**: `GET /api/v2/flags` returns the public V2 flag defaults. Flags gate rollout only — never authorization.
+- **Billing boundary**: `/api/v2/billing/webhook` implements the verify → normalize → idempotency → audit pipeline. With no payment provider configured it returns `BILLING_NOT_CONFIGURED` and can never grant Plus; a real adapter (e.g. Stripe) plugs in later without touching feature code.
+
+## Platform / technical
+- **Feature flags** (`src/lib/v2/flags.ts` + `FeatureFlag` table): all V2 subsystems (`v2_entitlements`, `v2_usage_limits`, `v2_nigtube_ads`, `v2_nigtube_midroll`, `v2_study_music_promo`, `v2_lam_automation`, `v2_offline_sync`, `v2_push`, `v2_developer_mode`) with env overrides, DB overrides (TTL-cached), deterministic per-user rollout buckets, and defaults that keep existing behavior on while high-risk automation stays off.
+- **Usage ledger** (`src/lib/v2/usage/ledger.ts`): idempotent reservation flow over the existing `UsageCounter` — `reserve → commit | release` with unique `UsageEvent.idempotencyKey`, so double-clicks/HTTP retries/multi-tab requests never double-consume and provider failures never burn final quota. Policy core is pure/unit-tested (`policy.ts`).
+- **Billing adapters** (`src/lib/v2/billing/`): provider-neutral `BillingProvider` interface, `PlaceholderBillingProvider` (returns `BILLING_NOT_CONFIGURED`), registry gated by `BILLING_PROVIDER` env, and pure webhook normalization/idempotency/reconciliation-planning helpers.
+- **Shared TTS** (`src/lib/v2/tts/`): voice-preference heuristic per blueprint (`Microsoft + en-GB + female-like → en-GB female → any en-GB → system default`), async voice loading, speak/cancel/preview controller — one pipeline for Study Music promos, Talk Reminders, LAM voice and accessibility speech.
+- **AdOrchestrator** (`src/lib/v2/ads/orchestrator.ts`): placement-aware decisions (`nigtube_preroll/midroll/postroll`, `study_music_preroll`, `plus_house_banner`) with data-driven house campaigns, Plus bypass, skip-after-countdown, per-user frequency caps, cooldowns, and mid-roll eligibility (never short content, no insert on resume/focus workflows). Countdown UI stays in the existing `nigtube-ad` machine.
+- **LAM action framework** (`src/lib/v2/lam/action-framework.ts`): allowlisted action registry, structured request contract with idempotency keys, risk classification, autonomy levels (default `ask_before_acting`), confirmation policy (high-risk always confirmed), and agent budgets that stop runaway runs. Custom commands remain template-bound — no arbitrary code.
+- **Migration** `20260809000000_v2_platform_core` (additive): `Entitlement`, `UsageEvent`, `AdCampaign`, `AdImpression`, `AutomationWorkflow`, `AutomationAction`, `DevicePushSubscription`, `AnalyticsEvent`, `FeatureFlag` + indexes/FKs. No V1 table touched. **Apply with `bunx prisma migrate deploy` in an environment with `DB_DATABASE_URL`** (no local Postgres in this checkout).
+- `prisma validate` ✅ (with dummy DB URLs — env vars are injected at deploy), `bunx tsc --noEmit` ✅, `bun run lint` ✅, `bun test tests/*.test.ts` → 116 pass / 0 fail (incl. new `tests/v2-platform.test.ts`).
+
+## Files
+- New: `docs/scholar-v2-inventory.md`, `src/lib/v2/flags.ts`, `src/lib/v2/server-flags.ts`, `src/lib/v2/entitlements-core.ts`, `src/lib/v2/entitlements.ts`, `src/lib/v2/billing/{types,placeholder,registry,webhook}.ts`, `src/lib/v2/usage/{policy,ledger}.ts`, `src/lib/v2/tts/{score,browser}.ts`, `src/lib/v2/ads/orchestrator.ts`, `src/lib/v2/lam/action-framework.ts`, `src/app/api/v2/{entitlements,flags,billing/webhook}/route.ts`, `prisma/migrations/20260809000000_v2_platform_core/migration.sql`, `tests/v2-platform.test.ts`.
+- Changed: `prisma/schema.prisma` (additive V2 models), `.env.example` (V2 flags + `BILLING_PROVIDER`).
+
+## Notes
+- No secrets added. No user-facing behavior changed: all V2 surfaces are additive and most are off by default; existing auth/subscription/reminder/media flows are untouched.
+- Remaining roadmap (not in this batch): entitlement backfill from V1 subscriptions, Nigtube/Study Music V2 features, durable workflows, Web Push, offline sync, external ad adapters, native billing.
+
+---
+
+# Scholar V2.1 — Scholar Intelligence (Phase 2) — 8 Aug 2026
+
+## What's new (user-facing)
+- **Scholar Intelligence view** (`Learn → Scholar Intelligence`, badge NEW): one dashboard for the academic brain — Today with Scholar brief, subject mastery map, Weak Topic Radar, Mistake Book + pattern analysis, Smart Revision Queue and Exam Intelligence.
+- **Mastery Engine**: evidence-based estimates at Subject → Chapter → Topic using quiz results, practice, mistakes, revision recency, confidence ratings and difficulty. States: UNKNOWN → INTRODUCED → LEARNING → DEVELOPING → STRONG → MASTERED, plus DECAYING. Mastery is always labelled an estimate.
+- **Knowledge decay**: strong/mastered topics not revised for 10–14 days become “Needs refresh” (DECAYING) without destroying the underlying score; one revision restores them.
+- **Weak Topic Radar**: repeated recent struggles flagged with severity (mild/moderate/severe), accuracy, last attempted, and a suggested action (Revise / Practice / Watch / Ask Tutor / Create Reminder) that navigates to the right Scholar view.
+- **Personal Mistake Book**: wrong answers from quizzes/practice auto-collected, classified (Concept / Formula / Calculation / Reading / Guess / Memory Error), resolvable, with hedged pattern insights (“Scholar noticed a possible pattern…”).
+- **Smart Revision Queue**: spaced repetition (Again / Hard / Good / Easy → NEW/LEARNING/REVIEW/MATURE/RELEARNING), exam- and recency-aware prioritisation, manual reordering, Active Recall review flow. Ratings feed confidence evidence back into mastery.
+- **Exam Intelligence**: days remaining, syllabus coverage, revision completion, weak chapters, practice volume and a Preparedness ESTIMATE (null until enough evidence — no fake scores). **CRASH MODE** compresses revision into Must Do / Should Do / Optional for exams ≤ 3 days away.
+- **Today with Scholar**: daily brief from real data (assignments, exams, weak topics, revision due, focus recommendation).
+- **Weekly learning report**: study time, questions, accuracy, consistency, mastery movement vs last week’s baseline; deeper trends promoted as a Scholar Plus benefit.
+
+## Platform / technical
+- **Pure intelligence core** (`src/lib/v2/intelligence/`): `mastery`, `spaced-repetition`, `mistakes`, `weak-topics`, `revision-queue`, `exam-intelligence`, `brief`, `schemas`. Zero React/server deps — unit-tested and importable from client and server.
+- **Server-authoritative APIs**: `POST /api/v2/intelligence/events` (zod-validated evidence + mistake ingest, idempotent upsert by id, ownership bound to session), `GET /api/v2/intelligence/state` (recomputes mastery from raw evidence and returns mastery/mistakes/weak topics/patterns), `POST /api/v2/intelligence/revision` (review ratings apply the spaced-repetition engine server-side; manual order stored). Client-computed mastery is never accepted.
+- **Client profile** (`src/lib/v2/intelligence/profile.ts`): derives evidence from the existing store (quiz attempts → per-question results, revision-hub sessions → revision events, quiz mistake book → MistakeRecords, exam tasks → exams), persists resolved mistakes / schedules / manual order / weekly baselines per class profile, and mirrors evidence to the server best-effort (Synced / Syncing / Offline / Local mode chip).
+- **Migration** `20260809010000_v2_intelligence_core` (additive): `MasteryRecord`, `PracticeAttempt`, `MistakeRecord`, `RevisionItem` + FKs/indexes. No existing table touched. Apply with `bunx prisma migrate deploy` in an environment with `DB_DATABASE_URL`.
+- `prisma validate` ✅ (dummy URLs locally), `bunx tsc --noEmit` ✅, `bun run lint` ✅, `bun test tests/*.test.ts` → 159 pass / 0 fail (incl. new `tests/v2-intelligence.test.ts`: 41 tests).
+- Prisma client regenerated with `prisma generate --no-engine` (the running dev servers hold the query-engine DLL lock; a normal `prisma generate` on deploy refreshes it).
+
+## Files
+- New: `src/lib/v2/intelligence/{types,mastery,spaced-repetition,mistakes,weak-topics,revision-queue,exam-intelligence,brief,schemas,index,server,profile}.ts`, `src/app/api/v2/intelligence/{events,state,revision}/route.ts`, `src/components/views/intelligence.tsx`, `prisma/migrations/20260809010000_v2_intelligence_core/migration.sql`, `tests/v2-intelligence.test.ts`.
+- Changed: `prisma/schema.prisma` (additive V2.1 models), `src/lib/nav.ts` (Scholar Intelligence nav item), `src/components/app-shell.tsx` (view registry), `src/components/views/settings.tsx` (in-app update log entry), `worklog.md` (this entry).
+
+## Security & privacy
+- All intelligence writes are server-validated (zod), session-bound and audited (`INTELLIGENCE_EVIDENCE_INGESTED`, `INTELLIGENCE_REVISION_REVIEWED`). No new secrets. No API keys. Personal academic data is only stored for the authenticated owner and never sent to analytics or advertisers.
+- LAM is not given database access through this layer; there is no arbitrary execution path.
+
+## Known limitations
+- Preparedness and mastery are estimates derived from local evidence; a brand-new user sees “no evidence yet” until they take a quiz — no invented scores.
+- Cross-device sync of the intelligence profile is Phase 11 (behind `v2_offline_sync`); the server mirror API is ready and the client syncs best-effort when logged in.
+- CRASH MODE runs on planner exam tasks; exams created only as reminders are not yet included.
+
+## Notes
+- No database reset; migration is purely additive. No user data deleted.
+- Remaining roadmap: entitlement backfill, Nigtube/Study Music V2, LAM Phase 3 (action registry runtime), durable workflows, Web Push, offline sync, native billing.
