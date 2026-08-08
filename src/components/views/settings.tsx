@@ -79,6 +79,24 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "V2.1 · Scholar Intelligence",
+    date: "8 Aug 2026",
+    title: "Scholar Intelligence — The Academic Brain",
+    items: [
+      "New Scholar Intelligence view (Learn → Scholar Intelligence): mastery, weak topics, mistakes, revision queue and exam intelligence in one place.",
+      "Mastery Engine: subject → chapter → topic estimates (Unknown → Mastered) built from quiz results, practice, mistakes, revision recency and confidence ratings — always presented as an estimate.",
+      "Knowledge decay: strong/mastered topics that haven't been revised become “Needs refresh” without destroying their underlying score.",
+      "Weak Topic Radar: repeated struggles are flagged with severity, accuracy, last attempted and a suggested action (Revise / Practice / Watch / Ask Tutor / Create Reminder).",
+      "Personal Mistake Book: wrong answers from quizzes and practice are collected automatically, classified (Concept / Formula / Calculation / Reading / Guess / Memory) and analysed with hedged pattern insights.",
+      "Smart Revision Queue with spaced repetition (Again / Hard / Good / Easy) and manual reordering; priorities respond to exams, recency and mistakes.",
+      "Exam Intelligence: days remaining, syllabus coverage, revision completion, weak chapters and a Preparedness estimate (never a score guarantee), plus CRASH MODE plans (Must Do / Should Do / Optional) when exams are close.",
+      "Today with Scholar: a daily brief generated from real data — assignments, exams, weak topics, revision due and a focus recommendation.",
+      "Weekly learning report with study time, accuracy, consistency and mastery movement vs the previous week; deeper trends are a Scholar Plus benefit.",
+      "Server-side intelligence APIs (evidence ingest, state, revision): mastery is always recomputed from raw evidence server-side; client state is rendering-only.",
+      "New additive database tables: MasteryRecord, PracticeAttempt, MistakeRecord, RevisionItem. Existing data is untouched.",
+    ],
+  },
+  {
     version: "v5.3.0",
     date: "7 Aug 2026",
     title: "Scholar Plus Experience & Monetization Update",

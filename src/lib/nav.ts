@@ -5,7 +5,7 @@ import {
   FlaskConical, Music, Pencil, Wrench,
   FileStack, PenTool, RefreshCw, ClipboardCheck, Flag, BellRing, History,
   Download, ClipboardList, LayoutGrid, FlaskRound, Code2, BookMarked, Calculator,
-  ListChecks, Network, Orbit, type LucideIcon,
+  ListChecks, Network, Orbit, BrainCircuit, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -22,6 +22,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Learn" },
+  { id: "intelligence", label: "Scholar Intelligence", icon: BrainCircuit, group: "Learn", highlight: true, badge: "NEW" },
   { id: "chapter-command", label: "Chapter Command Center", icon: LayoutGrid, group: "Learn", highlight: true, badge: "NEW" },
   { id: "nigtube", label: "NIGTUBE", icon: PlayCircle, group: "Learn", highlight: true, badge: "NEW" },
   { id: "levels", label: "Levels", icon: Trophy, group: "Learn", highlight: true },
