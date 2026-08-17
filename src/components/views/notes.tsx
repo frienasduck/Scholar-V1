@@ -184,7 +184,7 @@ export function NotesView() {
   ];
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-notes relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
       <style dangerouslySetInnerHTML={{ __html: MINDLOOP_STYLES }} />
 
       {/* Background video */}
@@ -265,7 +265,7 @@ export function NotesView() {
         </section>
 
         {/* ===== Mobile tab switcher ===== */}
-        <div className="lg:hidden px-6 mb-3">
+        <div className="scholar-notes-tabs lg:hidden px-6 mb-3">
           <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as typeof mobileTab)}>
             <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10">
               <TabsTrigger value="folders" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Folders</TabsTrigger>

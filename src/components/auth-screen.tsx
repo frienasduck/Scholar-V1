@@ -251,7 +251,7 @@ export function AuthScreen() {
       `}</style>
 
       {/* ===== Section 1: Hero (full viewport) ===== */}
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="scholar-landing-hero relative h-screen w-full overflow-hidden">
         {/* Background video — 120% width/height, top-aligned */}
         <FadingVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4"
@@ -352,7 +352,7 @@ export function AuthScreen() {
       </section>
 
       {/* ===== Section 2: Capabilities (min-h-screen) ===== */}
-      <section className="relative min-h-screen w-full overflow-hidden">
+      <section className="scholar-landing-capabilities relative min-h-screen w-full overflow-hidden">
         {/* Background video — full-bleed */}
         <FadingVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_094631_d30ab262-45ee-4b7d-99f3-5d5848c8ef13.mp4"

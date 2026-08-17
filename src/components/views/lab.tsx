@@ -2351,7 +2351,7 @@ export function LabView() {
         </div>
 
         {/* Category filter */}
-        <div className="px-4 md:px-8 pb-4 flex gap-2 overflow-x-auto">
+        <div className="scholar-filter-rail px-4 md:px-8 pb-4 flex gap-2 overflow-x-auto" aria-label="Experiment categories">
           <button
             onClick={() => setActiveCategory("all")}
             className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeCategory === "all" ? "bg-white text-black" : "lab-glass text-white/70"}`}

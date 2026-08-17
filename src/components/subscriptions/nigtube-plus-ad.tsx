@@ -68,7 +68,7 @@ export function NigtubePlusAd({ machine, onSkip }: NigtubePlusAdProps) {
       )}
 
       {/* Frosted promotional panel */}
-      <div className="relative z-10 mx-auto w-[min(30rem,calc(100%-2rem))] rounded-[1.75rem] border border-white/12 bg-white/[0.06] p-6 backdrop-blur-2xl sm:p-8">
+      <div className="scholar-nigtube-ad-panel relative z-10 mx-auto w-[min(30rem,calc(100%-2rem))] rounded-[1.75rem] border border-white/12 bg-white/[0.06] p-6 backdrop-blur-2xl sm:p-8">
         <div className="flex items-center justify-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/25 bg-gradient-to-r from-amber-300/15 to-violet-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-100 shadow-[0_0_18px_rgba(252,211,77,0.12)]">
             <Sparkles className="h-3 w-3" /> Scholar Plus
@@ -83,7 +83,7 @@ export function NigtubePlusAd({ machine, onSkip }: NigtubePlusAdProps) {
           powerful learning tools.
         </p>
 
-        <ul className="mt-5 space-y-2.5">
+        <ul className="scholar-nigtube-ad-benefits mt-5 space-y-2.5">
           {BENEFITS.map((benefit) => (
             <li key={benefit.label} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.04] px-3.5 py-2.5">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-cyan-300/20 to-violet-400/20 text-cyan-100">

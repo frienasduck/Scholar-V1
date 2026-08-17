@@ -466,7 +466,7 @@ export function SettingsView() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-settings relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
       {/* Liquid glass + cinematic CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
@@ -577,7 +577,7 @@ export function SettingsView() {
         {/* Tabs — liquid glass */}
         <div className="relative z-10 flex-1 px-4 pb-8 max-w-5xl mx-auto w-full">
           <Tabs defaultValue="account" className="w-full">
-            <TabsList className="asme-glass flex flex-wrap h-auto w-full sm:w-fit rounded-full p-1.5 gap-1 mb-4">
+            <TabsList className="scholar-settings-tabs asme-glass flex flex-wrap h-auto w-full sm:w-fit rounded-full p-1.5 gap-1 mb-4">
               <TabsTrigger value="account" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <User className="h-3.5 w-3.5" />Account
               </TabsTrigger>

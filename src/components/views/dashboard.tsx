@@ -319,7 +319,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-[#010101] overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-dashboard relative min-h-[calc(100vh-4rem)] bg-[#010101] overflow-hidden -m-4 lg:-m-6">
       <style>{`
         @import url('https://db.onlinewebfonts.com/c/2bf40ab72ea4897a3fd9b6e48b233a19?family=Garamond');
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap');
@@ -404,7 +404,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
         </nav>
 
         {/* Hero content */}
-        <div className="relative z-10 flex flex-col items-center text-center px-5 sm:px-8 pt-4 sm:pt-8 pb-6">
+        <div className="scholar-dashboard-hero relative z-10 flex flex-col items-center text-center px-5 sm:px-8 pt-4 sm:pt-8 pb-6">
           {/* Greeting + date */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -439,7 +439,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 2.0 }}
-            className="flex items-center gap-4 mb-6"
+            className="scholar-dashboard-metrics flex items-center gap-4 mb-6"
           >
             <div className="dash-glass rounded-full px-4 py-2 flex items-center gap-2">
               <Trophy className="h-3.5 w-3.5 text-white/70" />

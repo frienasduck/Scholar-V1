@@ -1822,14 +1822,14 @@ export function AIToolsView() {
             <div
               onClick={() => setOpenId(t.id)}
               className={cn(
-                "bloom-glass rounded-2xl p-4 cursor-pointer hover:scale-[1.02] transition-transform group relative",
+                "scholar-feature-card bloom-glass rounded-2xl p-4 cursor-pointer hover:scale-[1.02] transition-transform group relative",
                 t.highlight && "ring-2 ring-rose-500/50 bg-rose-500/5"
               )}
               role="button"
               tabIndex={0}
               onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOpenId(t.id); } }}
             >
-              {(t.id === "aisig" || t.id === "homework-scanner") && !access.has(t.id === "aisig" ? "aisig" : "homework_scanner") && <span className="absolute right-12 top-3 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-2 py-1 text-[9px] font-semibold uppercase text-cyan-100">Plus</span>}
+              {(t.id === "aisig" || t.id === "homework-scanner") && !access.has(t.id === "aisig" ? "aisig" : "homework_scanner") && <span className="scholar-feature-badge absolute right-12 top-3 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-2 py-1 text-[9px] font-semibold uppercase text-cyan-100">Plus</span>}
               {t.badge && (
                 <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg">
                   {t.badge}

@@ -348,7 +348,7 @@ export function AITutorView() {
     <>
       <style dangerouslySetInnerHTML={{ __html: GLASS_STYLES }} />
 
-      <div className="view-enter relative -m-3 min-h-[calc(100vh-4rem)] w-auto overflow-hidden sm:-m-4 lg:-m-6">
+      <div className="scholar-ai-tutor view-enter relative -m-3 min-h-[calc(100vh-4rem)] w-auto overflow-hidden sm:-m-4 lg:-m-6">
         {/* Cinematic video background */}
         <video
           autoPlay
@@ -679,7 +679,7 @@ export function AITutorView() {
               {/* RIGHT — chat */}
               <div className="liquid-glass rounded-3xl flex flex-col h-[calc(100vh-12rem)] min-h-[560px] overflow-hidden">
                 {/* Chat header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
+                <div className="scholar-ai-tutor-header flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
                     <motion.div
                       className={cn(
@@ -769,7 +769,7 @@ export function AITutorView() {
                               {activePersona.avatar}
                             </div>
                           )}
-                          <div className={cn("max-w-[78%] group", isUser && "flex flex-col items-end")}>
+                          <div className={cn("scholar-ai-tutor-message max-w-[78%] group", isUser && "flex flex-col items-end")}>
                             <div
                               className={cn(
                                 "rounded-2xl px-4 py-2.5 text-sm leading-relaxed border backdrop-blur-md",
@@ -849,7 +849,7 @@ export function AITutorView() {
                 </div>
 
                 {/* Input */}
-                <div className="border-t border-white/10 p-3 shrink-0">
+                <div className="scholar-ai-tutor-composer border-t border-white/10 p-3 shrink-0">
                   <div className="flex items-end gap-2">
                     <Button
                       size="icon"
@@ -929,7 +929,7 @@ export function AITutorView() {
               />
 
               {/* Header */}
-              <div className="relative z-10 flex items-center justify-between px-5 h-14 border-b border-white/10 shrink-0">
+              <div className="scholar-ai-tutor-fullscreen-header relative z-10 flex items-center justify-between px-5 h-14 border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
@@ -974,7 +974,7 @@ export function AITutorView() {
               </div>
 
               {/* Messages */}
-              <div className="relative z-10 flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full ai-tutor-scroll">
+              <div className="scholar-ai-tutor-fullscreen-messages relative z-10 flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full ai-tutor-scroll">
                 {activeThread?.messages.length === 0 || !activeThread ? (
                   <div className="h-full grid place-items-center">
                     <div className="text-center max-w-md">
@@ -1029,7 +1029,7 @@ export function AITutorView() {
                           )}
                           <div
                             className={cn(
-                              "max-w-[75%] px-4 py-3 rounded-2xl border backdrop-blur-md",
+                              "scholar-ai-tutor-message max-w-[75%] px-4 py-3 rounded-2xl border backdrop-blur-md",
                               m.role === "user"
                                 ? "bg-white/15 text-white rounded-br-sm border-white/15"
                                 : "bg-white/10 text-white/95 rounded-bl-sm border-white/10"
@@ -1079,7 +1079,7 @@ export function AITutorView() {
               </div>
 
               {/* Input */}
-              <div className="relative z-10 border-t border-white/10 p-4 shrink-0">
+              <div className="scholar-ai-tutor-composer relative z-10 border-t border-white/10 p-4 shrink-0">
                 <div className="max-w-4xl mx-auto flex gap-2 items-end">
                   <button
                     onClick={onMicClick}

@@ -1,0 +1,39 @@
+diff --git a/node_modules/react-native-cookies/android/build.gradle b/node_modules/react-native-cookies/android/build.gradle
+index 149aa19..3b3880b 100644
+--- a/node_modules/react-native-cookies/android/build.gradle
++++ b/node_modules/react-native-cookies/android/build.gradle
+@@ -1,22 +1,12 @@
+-buildscript {
+-    repositories {
+-        jcenter()
+-    }
+-
+-    dependencies {
+-        classpath 'com.android.tools.build:gradle:1.1.3'
+-    }
+-}
+-
+ apply plugin: 'com.android.library'
+ 
+ android {
+-    compileSdkVersion 23
+-    buildToolsVersion "25.0.2"
++    namespace 'com.psykar.cookiemanager'
++    compileSdkVersion rootProject.ext.compileSdkVersion ?: 36
+ 
+     defaultConfig {
+-        minSdkVersion 16
+-        targetSdkVersion 22
++        minSdkVersion rootProject.ext.minSdkVersion ?: 24
++        targetSdkVersion rootProject.ext.targetSdkVersion ?: 36
+         versionCode 1
+         versionName "1.0"
+     }
+@@ -30,5 +20,6 @@ repositories {
+ }
+ 
+ dependencies {
+-    compile 'com.facebook.react:react-native:+'
++    //noinspection GradleDynamicVersion
++    implementation "com.facebook.react:react-native:+"
+ }

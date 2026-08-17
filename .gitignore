@@ -59,3 +59,11 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# ===== Scholar Android (apps/android) =====
+# Generated native projects (regenerated via `npx expo prebuild`)
+apps/android/android/
+apps/android/ios/
+apps/android/.expo/
+apps/android/dist/
+apps/android/web-build/

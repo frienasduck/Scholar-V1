@@ -213,7 +213,7 @@ export function MusicView() {
   };
 
   return (
-    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
+    <div className="scholar-study-music relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .mu-glass {
@@ -286,7 +286,7 @@ export function MusicView() {
           </div>
         </nav>
 
-        <div className="px-4 md:px-8"><FreeAdSlot entitlement="study_music_ad_free" label="Study Music" /></div>
+        <div className="scholar-music-sponsor px-4 md:px-8"><FreeAdSlot entitlement="study_music_ad_free" label="Study Music" /></div>
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto mu-scroll px-4 md:px-8 pb-32">
@@ -478,7 +478,7 @@ export function MusicView() {
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="sticky bottom-0 z-20 px-4 md:px-8 pb-4"
+            className="scholar-music-player sticky bottom-0 z-20 px-4 md:px-8 pb-4"
           >
             <div className="mu-glass-strong rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4 max-w-5xl mx-auto">
               {/* Track info */}

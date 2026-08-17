@@ -617,7 +617,10 @@ export function AppShell() {
       if (window.location.pathname !== nextPath) window.history.pushState({ viewId: id }, "", nextPath);
     }
     const main = document.getElementById("main-scroll");
-    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+    if (main) main.scrollTo({
+      top: 0,
+      behavior: document.documentElement.dataset.scholarNative === "android" ? "auto" : "smooth",
+    });
   }, []);
 
   useEffect(() => {
@@ -740,9 +743,9 @@ export function AppShell() {
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full">
         <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
         {guestMode ? (
-          <section className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-300/15 bg-cyan-300/[0.07] px-3 py-2 text-xs text-cyan-50 sm:px-5" aria-label="Guest session information">
-            <p><strong>Guest session</strong><span className="ml-2 text-white/55">Your progress is saved only on this device until you create an account.</span></p>
-            <button type="button" onClick={() => setAuthed(false)} className="rounded-full border border-cyan-200/20 bg-white/[0.06] px-3 py-1.5 font-semibold hover:bg-white/[0.1]">Create account or Sign in</button>
+          <section className="scholar-guest-banner flex flex-wrap items-center justify-between gap-2 border-b border-cyan-300/15 bg-cyan-300/[0.07] px-3 py-2 text-xs text-cyan-50 sm:px-5" aria-label="Guest session information">
+            <p className="scholar-guest-copy"><strong>Guest session</strong><span className="ml-2 text-white/55">Your progress is saved only on this device until you create an account.</span></p>
+            <button type="button" onClick={() => setAuthed(false)} className="scholar-guest-action rounded-full border border-cyan-200/20 bg-white/[0.06] px-3 py-1.5 font-semibold hover:bg-white/[0.1]">Create account or Sign in</button>
           </section>
         ) : null}
         <BackgroundTaskNotifications onNavigate={navigate} />
