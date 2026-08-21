@@ -67,3 +67,5 @@ apps/android/ios/
 apps/android/.expo/
 apps/android/dist/
 apps/android/web-build/
+apps/android/*.apk
+.freebuff/

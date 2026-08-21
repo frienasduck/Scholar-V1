@@ -808,7 +808,7 @@ function seed() {
       sound: true,
       transitionMusic: true,
       transitionVolume: 65,
-      loginIntroMusic: true,
+      loginIntroMusic: false,
       academicSwitchMusic: true,
       autoArchive: false,
       fontScale: "100" as const,
@@ -861,7 +861,8 @@ function seed() {
 // ===== Manual persistence (safer than persist middleware — guarantees arrays exist) =====
 const STORAGE_KEY = "neha-scholar-v5";
 const GUEST_STORAGE_KEY = "scholar-guest-session-v1";
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
+const PREV_SCHEMA_VERSION = 5;
 
 function hasClass9Leakage(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
@@ -919,10 +920,19 @@ function loadPersistedState(): Partial<AppState> | null {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
 
-    // Schema version check — if mismatch, wipe and start fresh
+    // Schema version check — handle migrations
     if (parsed.schema !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
+      // Migrate from schema 5 → 6: entry music OFF by default
+      if (parsed.schema === PREV_SCHEMA_VERSION && parsed.state?.settings) {
+        parsed.state.settings.loginIntroMusic = false;
+        parsed.state.settings.academicSwitchMusic = false;
+        parsed.schema = SCHEMA_VERSION;
+        // Persist migrated state immediately
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch { /* ignore */ }
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
     }
 
     const state = parsed.state ?? parsed;

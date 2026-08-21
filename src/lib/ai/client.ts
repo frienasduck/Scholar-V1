@@ -1,5 +1,57 @@
 import type { AIMode } from "@/lib/ai/schemas";
 
+// ===== Retry helpers =====
+
+/**
+ * Retry with exponential backoff. Only retries on transient errors
+ * (5xx, network, timeout). Never retries 4xx client errors or quota/rate
+ * limit responses. Returns the first successful result or throws the
+ * last error.
+ */
+export async function withRetry<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  { retries = 1, baseDelayMs = 800, signal }: { retries?: number; baseDelayMs?: number; signal?: AbortSignal } = {},
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const composite = signal ? composeAbort(signal, controller.signal) : controller.signal;
+      return await fn(composite);
+    } catch (error) {
+      lastError = error;
+      // Only retry on transient errors
+      if (!isRetryable(error) || attempt >= retries) throw error;
+      if (signal?.aborted) throw error;
+      const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * 200;
+      await sleep(delay);
+    }
+  }
+  throw lastError;
+}
+
+function isRetryable(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") return false;
+  const msg = error instanceof Error ? error.message : "";
+  // Don't retry 4xx, quota, rate limit, or auth errors
+  if (/4[0-9]{2}|QUOTA|RATE_LIMIT|AUTH|PLUS_REQUIRED|ENTITLEMENT/i.test(msg)) return false;
+  // Retry on 5xx, timeout, network, and generic provider errors
+  return true;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function composeAbort(a: AbortSignal, b: AbortSignal): AbortSignal {
+  if (a.aborted || b.aborted) return AbortSignal.abort();
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  a.addEventListener("abort", onAbort, { once: true });
+  b.addEventListener("abort", onAbort, { once: true });
+  return controller.signal;
+}
+
 export interface AIClientMessage {
   role: "system" | "user" | "assistant";
   content: string;

@@ -5,7 +5,7 @@ import {
   streamScholarGroqText,
   type ScholarGroqMessage,
 } from "@/lib/ai/scholar-groq";
-import { publicAIError, AIProviderError } from "@/lib/ai/errors";
+import { publicAIError, AIProviderError, aiErrorTitle } from "@/lib/ai/errors";
 import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
 import { getSessionUser } from "@/lib/auth/session";
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (error instanceof RateLimitError) return errorResponse("Too many AI requests. Please wait and try again.", 429, "RATE_LIMITED");
       if (error instanceof Error && (error as Error & { code?: string }).code === "QUOTA_REACHED") return errorResponse("Your daily generation limit has been reached. Upgrade to Scholar Plus for a higher limit.", 429, "QUOTA_REACHED");
-      return errorResponse("Scholar could not verify this AI request.", 500, "ACCESS_CHECK_FAILED");
+      return errorResponse("Scholar could not verify this AI request. Try again.", 500, "ACCESS_CHECK_FAILED");
     }
   }
   const queryStream = request.nextUrl.searchParams.get("stream") === "1";

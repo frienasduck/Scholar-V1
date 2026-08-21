@@ -22,7 +22,7 @@ import {
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   GraduationCap, Sparkles, Flame, Coins, Zap, Menu, Search, Command as CmdIcon, Bot, X,
-  PanelLeftClose, AlertCircle, Home, BookOpen, ListChecks, Lightbulb, LayoutGrid,
+  PanelLeftClose, AlertCircle, Home, BookOpen, ListChecks, Lightbulb, LayoutGrid, Lock,
 } from "lucide-react";
 
 import { DashboardView } from "@/components/views/dashboard";
@@ -82,6 +82,7 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
+import { LockedSection } from "@/components/locked-section";
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
@@ -142,6 +143,13 @@ const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title
   python: { entitlement: "python_workspace", title: "Python Workspace", description: "Write, run, and learn Python in browser with an interactive CPython environment and AI code assistance." },
 };
 const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment"]);
+const DEV_ONLY_VIEWS = new Set(["intelligence", "music", "friends", "store"]);
+const DEV_ONLY_GRADIENTS: Record<string, string> = {
+  intelligence: "bg-gradient-to-br from-indigo-500/20 via-background to-teal-500/20",
+  music: "bg-gradient-to-br from-purple-500/20 via-background to-indigo-500/20",
+  friends: "bg-gradient-to-br from-pink-500/20 via-background to-fuchsia-500/20",
+  store: "bg-gradient-to-br from-emerald-500/20 via-background to-green-500/20",
+};
 
 function useNavBadges() {
   const flashcards = useStore((s) => s.flashcards);
@@ -190,6 +198,7 @@ const PLUS_SOURCE_BY_NAV: Record<string, "achievements" | "mind-map" | "concept-
 function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges> }) {
   const backgroundTasks = useBackgroundTasks();
   const access = useScholarAccess();
+  const devMode = useStore((s) => s.devMode);
   return (
     <nav className="flex flex-col gap-6 px-3 py-2">
       {NAV_GROUPS.map((group) => (
@@ -257,6 +266,9 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
                     <span className="scholar-nav-badge text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">{item.badge}</span>
                   )}
                   {plusLocked && <span className="scholar-nav-badge rounded-full border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-cyan-200">Plus</span>}
+                  {item.devOnly && !devMode && (
+                    <Lock className="scholar-nav-icon h-3 w-3 shrink-0 text-white/30" />
+                  )}
                   {badge && (
                     <span className={cn(
                       "scholar-nav-badge",
@@ -458,6 +470,7 @@ export function AppShell() {
   const settings = useStore((s) => s.settings);
   const { startTransition } = useScholarTransition();
   const access = useScholarAccess();
+  const devMode = useStore((s) => s.devMode);
   const appearanceLabUnlocked = access.has("appearance_lab");
   const [active, setActive] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -768,6 +781,11 @@ export function AppShell() {
                     <button type="button" onClick={() => setAuthed(false)} className="mt-6 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Create account or Sign in</button>
                   </div>
                 </section>
+              ) : DEV_ONLY_VIEWS.has(active) && !devMode ? (
+                <LockedSection
+                  sectionTitle={NAV_ITEMS.find((n) => n.id === active)?.label ?? active}
+                  gradientClass={DEV_ONLY_GRADIENTS[active]}
+                />
               ) : VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement) ? (
                 <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>
               ) : <View />}

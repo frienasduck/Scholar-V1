@@ -5,6 +5,142 @@
 
 ---
 
+## 2026-08-21 — Developer-only sections, entry music, AI UX, Plus promotion
+
+**What happened**: Major product/security/UX update — developer-only section locking, entry music disabled by default, AI error UX improvements, and Scholar Plus promotion expansion.
+
+### 1. Entry Music Disabled by Default
+- Changed `loginIntroMusic` default from `true` to `false` in `src/lib/store.ts`
+- Added schema migration (v5 → v6) so existing users also get music disabled
+- `academicSwitchMusic` also set to `false` during migration
+- Music feature and controls preserved — users can re-enable manually
+
+### 2. Developer-Only Section Lock System
+- Added `devOnly?: boolean` to `NavItem` interface in `src/lib/nav.ts`
+- Marked 4 sections as `devOnly`: Scholar Intelligence, Study Music, Friends, Store
+- Created `src/components/locked-section.tsx` — reusable locked section component:
+  - Premium liquid-glass blur overlay (blurred background + dark translucent layer)
+  - Professional lock icon (lucide-react `Lock` — no emoji)
+  - "Developer Access Required" heading with supporting text
+  - "Developer Only" status badge
+  - Expandable "See why" panel with 16 detailed restriction reasons
+  - Developer Unlock section with password input (masked, show/hide toggle)
+  - Server-side password validation via existing `/api/developer/session`
+  - Loading and error states
+  - "Contact Developer" mailto button → `ishansalah123@gmail.com`
+- Updated `src/components/app-shell.tsx`:
+  - Added `DEV_ONLY_VIEWS` set and `DEV_ONLY_GRADIENTS` map
+  - Locked section check renders `LockedSection` for non-developer users
+  - Added lock icon in sidebar navigation for `devOnly` items
+  - Uses existing `devMode` state from Zustand store
+- Security: No password in client code; all validation server-side via existing HttpOnly cookie system
+
+### 3. Scholar Plus Promotion Component
+- Created `src/components/subscriptions/scholar-plus-promo.tsx` — reusable promo component
+- Supports 6 variants: `compact`, `horizontal`, `inline`, `locked`, `pre-roll`, `modal`
+- Liquid glass styling consistent with Scholar identity
+- Shows price with offer/regular toggle and Scholar Plus badge
+- Auto-hides for Plus/developer users
+- Added to AI Tools view as compact promo
+- Extended `PlusPromoSource` type with new source values (`ai-tools`, `intelligence`, `dashboard`, `locked-section`)
+
+### 4. AI Error UX Improvements
+- Enhanced `src/lib/ai/errors.ts` with structured error map:
+  - Specific titles and descriptions for `AI_TIMEOUT`, `AI_CONTEXT_TOO_LARGE`, `AI_SCHEMA_MISMATCH`, `AI_PROVIDER_ERROR`, `AI_INTERNAL_ERROR`, `AI_RATE_LIMITED`, `AI_UNAVAILABLE`
+  - Exported `aiErrorTitle()` and `aiErrorDescription()` helpers
+  - Production errors never expose stack traces
+- Improved error messages in AI route (`src/app/api/ai/route.ts`)
+
+### 5. AI Retry Behavior
+- Added `withRetry()` utility to `src/lib/ai/client.ts`:
+  - Exponential backoff with jitter (800ms base)
+  - Only retries on transient 5xx/network/timeout errors
+  - Never retries 4xx, quota, rate limit, or auth errors
+  - Composable AbortSignal for clean cancellation
+- Integrated retry into `askAI()` in `src/lib/ai.ts`
+- Added user-friendly error surfacing for QUOTA_REACHED and RATE_LIMITED
+
+### Files Modified
+- `src/lib/store.ts` — entry music default OFF, schema v6 migration
+- `src/lib/nav.ts` — `devOnly` flag on NavItem, 4 sections locked
+- `src/components/app-shell.tsx` — locked section rendering, lock icons in nav
+- `src/lib/ai/errors.ts` — structured error map, title/description helpers
+- `src/lib/ai/client.ts` — `withRetry()` utility
+- `src/lib/ai.ts` — retry integration, improved error surfacing
+- `src/lib/ai/groq.ts` — updated default model to `openai/gpt-oss-120b`
+- `src/app/api/ai/route.ts` — improved error message
+- `src/lib/subscriptions/promo.ts` — extended PlusPromoSource type
+- `src/components/views/ai-tools.tsx` — Plus promo addition
+- `.env.local` — `GROQ_MODEL` updated from retired `llama-3.3-70b-versatile` to `openai/gpt-oss-120b`
+
+### Files Created
+- `src/components/locked-section.tsx` — reusable developer lock component
+- `src/components/subscriptions/scholar-plus-promo.tsx` — reusable Plus promo component
+
+### AI Provider Audit (2026-08-21)
+
+**Root cause of AI failures found**: The configured Groq model `llama-3.3-70b-versatile` no longer exists on the Groq platform. This caused every AI feature to fail with `model_not_found`.
+
+**Groq model availability** (verified live via API):
+- ✅ `openai/gpt-oss-120b` — text + JSON mode (with reasoning tokens)
+- ✅ `openai/gpt-oss-20b` — text, no JSON mode
+- ✅ `groq/compound` — text, compound routing
+- ✅ `allam-2-7b` — text, no JSON mode
+- ✅ `qwen/qwen3.6-27b` — text, no JSON mode
+- ❌ `llama-3.3-70b-versatile` — RETIRED
+- ❌ `llama-3.1-8b-instant` — RETIRED
+
+**NVIDIA text API**: Returns 404 — the `nemotron-3-ultra-550b-a55b` model endpoint is deprecated. The code already migrated to Groq (provider-policy.ts), so this is unused.
+
+**Gemini image API**: API key works but free-tier quota is exhausted (HTTP 429). Code handles this gracefully.
+
+**AISIG/NVIDIA image API**: ✅ Working — returns valid JPEG images.
+
+**LAM (Learning Assistant)**: ✅ Working with updated model — streams responses via SSE.
+
+**Main AI route** (`/api/ai`): Requires auth. DB unavailable (`DB_DATABASE_URL` not set), so cannot test authenticated routes locally.
+
+**AI Features inventory** (all route through Groq):
+- AI Tutor (5 personas) — `chatAI()` → `/api/ai` → Groq ✅ (when DB available)
+- AI Tools (9 tools) — `askAI()`/`askAIJSON()` → `/api/ai` → Groq ✅
+- Quiz generation — `askAIJSON()` → `/api/ai` → Groq ✅
+- Slideshow generation — `askAIJSON()` → `/api/ai` → Groq ✅
+- Homework Scanner — `askAI()` → `/api/ai` → Groq ✅
+- AI Flashcards — `askAIJSON()` → `/api/ai` → Groq ✅
+- AI Study Planning — `askAIJSON()` → `/api/ai` → Groq ✅
+- AI Summaries — `askAI()` → `/api/ai` → Groq ✅
+- AI Revision — `askAI()` → `/api/ai` → Groq ✅
+- LAM — `streamGroqText()` → `/api/lam/chat` → Groq ✅ (tested)
+- AISIG Image — `/api/ai-image` → NVIDIA ✅ (tested)
+- Gemini Image — available but quota exhausted ⚠️
+
+### Developer Lock Security Verification
+- Without auth: `"Sign in before enabling Developer Mode."` ✅
+- `DEV_MODE_ENABLED` not set: Developer Mode disabled on this deployment ✅
+- No passwords in client code (verified via grep) ✅
+- No API keys in client code (verified via grep) ✅
+- Password sent only to `/api/developer/session` (server-side HMAC validation) ✅
+- Developer session: HttpOnly cookie, 8hr expiry, server-side signed ✅
+- Rate limiting: 5 failed attempts per 15 minutes, server-side enforcement ✅
+
+### Entry Music Verification
+- Default: `loginIntroMusic: false` ✅
+- Schema migration v5→v6: existing users get `loginIntroMusic: false` ✅
+- `academicSwitchMusic: false` also set during migration ✅
+- Feature and controls preserved — users can re-enable manually ✅
+
+### Verification
+- `bunx tsc --noEmit` — passes (0 errors)
+- `bunx eslint` on all modified/created files — passes (0 errors)
+- LAM streaming: tested with new model, works ✅
+- AISIG image generation: tested, works ✅
+- Developer session endpoint: rejects unauthenticated requests ✅
+- Developer Mode disabled without env config ✅
+- No secrets in client bundle ✅
+
+---
+---
+
 ## 2026-08-08 — Scholar Android development begins (Phase 1: foundation)
 
 **What happened**: Started the native Android version of Scholar inside the existing repository at `apps/android/` (React Native via Expo SDK 57). The Next.js web app and backend are untouched and remain the single source of truth; Android reuses the same account database via the existing `/api/*` routes.

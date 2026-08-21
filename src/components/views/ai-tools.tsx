@@ -13,6 +13,7 @@ import {
 import { toast } from "@/lib/notifications/notification-api";
 import { PlusGate } from "@/components/subscriptions/plus-gate";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { ScholarPlusPromo } from "@/components/subscriptions/scholar-plus-promo";
 
 import { askAI, askAIJSON, type ChatMessage } from "@/lib/ai";
 import { useStore } from "@/lib/store";
@@ -1811,7 +1812,7 @@ export function AIToolsView() {
       </div>
 
       {/* Mobile tools list */}
-      <div className="lg:hidden relative z-10 px-4 pb-8 space-y-3">
+      <div className="lg:hidden relative z-10 px-4 pb-4 space-y-3">
         {TOOLS.map((t, i) => (
           <motion.div
             key={t.id}
@@ -1848,6 +1849,11 @@ export function AIToolsView() {
             </div>
           </motion.div>
         ))}
+      </div>
+
+      {/* Scholar Plus promotional banner */}
+      <div className="lg:hidden relative z-10 px-4 pb-8">
+        <ScholarPlusPromo variant="compact" source="ai-tools" feature="ai-tools-grid" />
       </div>
     </div>
   );

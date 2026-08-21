@@ -17,12 +17,14 @@ export interface NavItem {
   comingSoon?: boolean;
   /** Scholar Plus benefit — clicking opens Scholar Plus instead of the view. */
   plus?: boolean;
+  /** Developer-only section — locked for non-developer users. */
+  devOnly?: boolean;
   highlight?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Learn" },
-  { id: "intelligence", label: "Scholar Intelligence", icon: BrainCircuit, group: "Learn", highlight: true, badge: "NEW" },
+  { id: "intelligence", label: "Scholar Intelligence", icon: BrainCircuit, group: "Learn", highlight: true, badge: "NEW", devOnly: true },
   { id: "chapter-command", label: "Chapter Command Center", icon: LayoutGrid, group: "Learn", highlight: true, badge: "NEW" },
   { id: "nigtube", label: "NIGTUBE", icon: PlayCircle, group: "Learn", highlight: true, badge: "NEW" },
   { id: "levels", label: "Levels", icon: Trophy, group: "Learn", highlight: true },
@@ -40,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "exam-prep", label: "Exam Prep", icon: PenLine, group: "Revise" },
   { id: "planner", label: "Planner", icon: CalendarDays, group: "Revise" },
   { id: "focus", label: "Focus", icon: Timer, group: "Revise" },
-  { id: "music", label: "Study Music", icon: Music, group: "Revise", highlight: true, badge: "NEW" },
+  { id: "music", label: "Study Music", icon: Music, group: "Revise", highlight: true, badge: "NEW", devOnly: true },
 
   { id: "past-papers", label: "Past Papers", icon: FileStack, group: "Extra", highlight: true, badge: "NEW" },
   { id: "answer-lab", label: "Answer Lab", icon: PenTool, group: "Extra", highlight: true, badge: "NEW" },
@@ -64,8 +66,8 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "galaxy", label: "Concept Galaxy", icon: Orbit, group: "More", plus: true },
   { id: "formulas", label: "Formula Explorer", icon: Sigma, group: "More" },
   { id: "community", label: "Community", icon: Users, group: "More" },
-  { id: "friends", label: "Friends", icon: UserPlus, group: "More" },
-  { id: "store", label: "Store", icon: ShoppingCart, group: "More" },
+  { id: "friends", label: "Friends", icon: UserPlus, group: "More", devOnly: true },
+  { id: "store", label: "Store", icon: ShoppingCart, group: "More", devOnly: true },
   { id: "files", label: "Files", icon: FolderOpen, group: "More" },
   { id: "settings", label: "Settings", icon: SettingsIcon, group: "More" },
 ];

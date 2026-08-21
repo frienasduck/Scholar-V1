@@ -4,8 +4,8 @@ import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { AIProviderError } from "@/lib/ai/errors";
 
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
-const DEFAULT_FALLBACK_MODEL = "llama-3.1-8b-instant";
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
+const DEFAULT_FALLBACK_MODEL = "openai/gpt-oss-20b";
 const DEFAULT_TIMEOUT_MS = 90_000;
 const FALLBACK_MAX_TOKENS = 1_500;
 
