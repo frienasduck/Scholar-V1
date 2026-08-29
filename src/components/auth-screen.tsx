@@ -427,7 +427,7 @@ export function AuthScreen() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => { setSelectedClass(11); setAuthError("Class 9 is available with Scholar Plus after sign-in."); }}
+                    onClick={() => { setSelectedClass(9); setAuthError("Class 9 is available with Scholar Plus after sign-in."); }}
                     className={`rounded-xl px-4 py-3 text-sm font-medium transition-all flex flex-col items-center gap-1 ${
                       selectedClass === 9
                         ? "lg-glass-strong text-white ring-2 ring-indigo-400"
