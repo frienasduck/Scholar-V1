@@ -4,9 +4,9 @@ import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { AIProviderError } from "@/lib/ai/errors";
 
-const REQUEST_TIMEOUT_MS = 120_000;
-const DEFAULT_TEXT_MAX_TOKENS = 8_000;
-const DEFAULT_JSON_MAX_TOKENS = 6_000;
+const REQUEST_TIMEOUT_MS = 45_000;
+const DEFAULT_TEXT_MAX_TOKENS = 3_000;
+const DEFAULT_JSON_MAX_TOKENS = 3_000;
 
 export type ScholarGroqMessage = ChatCompletionMessageParam;
 
@@ -27,7 +27,7 @@ export function getScholarGroqConfig(): ScholarGroqConfig {
   const configuredModel = process.env.GROQ_MODEL?.trim();
   const model = configuredModel && configuredModel !== "llama-3.3-70b-versatile"
     ? configuredModel
-    : "openai/gpt-oss-120b";
+    : "openai/gpt-oss-20b";
   if (!apiKey) {
     throw new AIProviderError(
       "Scholar AI is temporarily unavailable. Please try again.",
@@ -49,7 +49,7 @@ function client(config: ScholarGroqConfig): Groq {
   return new Groq({
     apiKey: config.apiKey,
     timeout: REQUEST_TIMEOUT_MS,
-    maxRetries: 1,
+    maxRetries: 0,
   });
 }
 

@@ -4,9 +4,12 @@ import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { AIProviderError } from "@/lib/ai/errors";
 
-const DEFAULT_MODEL = "openai/gpt-oss-120b";
-const DEFAULT_FALLBACK_MODEL = "openai/gpt-oss-20b";
-const DEFAULT_TIMEOUT_MS = 90_000;
+// Keep the interactive path on the faster Groq model. The larger model can
+// spend a long time reasoning on short classroom prompts, which presents as
+// a frozen AI surface on mobile and slower connections.
+const DEFAULT_MODEL = "openai/gpt-oss-20b";
+const DEFAULT_FALLBACK_MODEL = "openai/gpt-oss-120b";
+const DEFAULT_TIMEOUT_MS = 45_000;
 const FALLBACK_MAX_TOKENS = 1_500;
 
 function getClient(): Groq {
@@ -14,7 +17,7 @@ function getClient(): Groq {
   if (!apiKey) {
     throw new AIProviderError("Groq is not configured on the server.", 503, "GROQ_NOT_CONFIGURED");
   }
-  return new Groq({ apiKey, timeout: DEFAULT_TIMEOUT_MS, maxRetries: 1 });
+  return new Groq({ apiKey, timeout: DEFAULT_TIMEOUT_MS, maxRetries: 0 });
 }
 
 function models(): string[] {

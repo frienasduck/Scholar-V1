@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       messages,
       temperature: body.temperature,
       signal: request.signal,
-      maxTokens: 6_000,
+      maxTokens: 3_000,
     });
     await recordUsage(body.usage, sessionUser?.id);
     return NextResponse.json({ ok: true, text });
@@ -192,7 +192,7 @@ function streamResponse(
       };
 
       try {
-        await streamScholarGroqText({ messages, temperature, signal, maxTokens: 6_000 }, (delta) => {
+        await streamScholarGroqText({ messages, temperature, signal, maxTokens: 3_000 }, (delta) => {
           send({ delta });
         });
         send({ done: true });
