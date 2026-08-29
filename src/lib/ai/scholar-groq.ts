@@ -24,7 +24,10 @@ type ScholarGroqConfig = {
 
 export function getScholarGroqConfig(): ScholarGroqConfig {
   const apiKey = process.env.GROQ_API_KEY?.trim();
-  const model = process.env.GROQ_MODEL?.trim();
+  const configuredModel = process.env.GROQ_MODEL?.trim();
+  const model = configuredModel && configuredModel !== "llama-3.3-70b-versatile"
+    ? configuredModel
+    : "openai/gpt-oss-120b";
   if (!apiKey) {
     throw new AIProviderError(
       "Scholar AI is temporarily unavailable. Please try again.",

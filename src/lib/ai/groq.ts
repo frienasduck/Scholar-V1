@@ -18,8 +18,10 @@ function getClient(): Groq {
 }
 
 function models(): string[] {
-  const primary = process.env.GROQ_MODEL?.trim() || DEFAULT_MODEL;
-  const fallback = process.env.GROQ_FALLBACK_MODEL?.trim() || DEFAULT_FALLBACK_MODEL;
+  const configuredPrimary = process.env.GROQ_MODEL?.trim();
+  const configuredFallback = process.env.GROQ_FALLBACK_MODEL?.trim();
+  const primary = configuredPrimary && configuredPrimary !== "llama-3.3-70b-versatile" ? configuredPrimary : DEFAULT_MODEL;
+  const fallback = configuredFallback && configuredFallback !== "llama-3.3-70b-versatile" ? configuredFallback : DEFAULT_FALLBACK_MODEL;
   return primary === fallback ? [primary] : [primary, fallback];
 }
 
