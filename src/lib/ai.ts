@@ -55,7 +55,10 @@ function getClassContext(): { scholarClass: 9 | 11; jeeMode: boolean } {
   }
 }
 
-const DEFAULT_TIMEOUT_MS = 240_000;
+// Keep the browser responsive when a provider stalls. Server routes have a
+// shorter 45s deadline, so the client should surface a retryable error soon
+// after that rather than appearing to hang for several minutes.
+const DEFAULT_TIMEOUT_MS = 60_000;
 
 function makeAbort(timeoutMs = DEFAULT_TIMEOUT_MS, externalSignal?: AbortSignal): { controller: AbortController; cleanup: () => void } {
   const controller = new AbortController();
