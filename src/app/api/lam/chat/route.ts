@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: object) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-      send({ type: "start", model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile" });
+      send({ type: "start", model: process.env.GROQ_MODEL || "openai/gpt-oss-120b" });
       try {
         await streamGroqText({
           messages: [{ role: "system", content: system }, ...input.messages, { role: "user", content: input.message }],
