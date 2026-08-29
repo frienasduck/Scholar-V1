@@ -1,7 +1,7 @@
 // Client-side AI helpers. Provider secrets and SDK calls stay behind /api/ai.
 
 import { useStore } from "@/lib/store";
-import { requestAIData, requestAIStream, requestAIText, withRetry } from "@/lib/ai/client";
+import { requestAIData, requestAIStream, requestAIText } from "@/lib/ai/client";
 import type { AIMode } from "@/lib/ai/schemas";
 
 export interface ChatMessage {
@@ -90,31 +90,20 @@ export async function askAI(
   const messages = [...(opts.history ?? []), { role: "user" as const, content: message }];
   const abort = makeAbort(opts.timeoutMs, opts.signal);
   try {
-    return await withRetry(
-      (signal) => requestAIText({
-        messages,
-        persona,
-        mode: opts.mode ?? "chat",
-        temperature: opts.temperature ?? 0.6,
-        feature: opts.feature,
-        usage: opts.usage,
-        ...getClassContext(),
-      }, signal),
-      { retries: 1, baseDelayMs: 800, signal: abort.controller.signal },
-    );
+    return await requestAIText({
+      messages,
+      persona,
+      mode: opts.mode ?? "chat",
+      temperature: opts.temperature ?? 0.6,
+      feature: opts.feature,
+      usage: opts.usage,
+      ...getClassContext(),
+    }, abort.controller.signal);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("AI request timed out. Please try again.");
     }
-    const msg = error instanceof Error ? error.message : "Network error reaching the AI service.";
-    // Surface user-friendly errors from the API
-    if (/QUOTA_REACHED|daily generation limit/i.test(msg)) {
-      throw new Error("Daily generation limit reached. Upgrade to Scholar Plus for a higher limit.");
-    }
-    if (/RATE_LIMITED|Too many/i.test(msg)) {
-      throw new Error("Too many AI requests. Please wait a moment and try again.");
-    }
-    throw new Error(msg);
+    throw error instanceof Error ? error : new Error("Network error reaching the AI service.");
   } finally {
     abort.cleanup();
   }

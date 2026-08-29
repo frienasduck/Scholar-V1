@@ -441,7 +441,7 @@ export function NigtubeView() {
   }
 
   return (
-    <div className="scholar-nigtube relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
+    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .nt-glass {
@@ -530,7 +530,7 @@ export function NigtubeView() {
         </nav>
 
         {/* Subject filter */}
-        <div className="scholar-filter-rail px-4 md:px-8 pb-4 flex gap-2 overflow-x-auto nt-scroll" aria-label="Nigtube subjects">
+        <div className="px-4 md:px-8 pb-4 flex gap-2 overflow-x-auto nt-scroll">
           {(scholarClass === 11 ? SUBJECTS_CLASS11 : SUBJECTS_CLASS9).map((s) => (
             <button
               key={s}
@@ -544,7 +544,7 @@ export function NigtubeView() {
           ))}
         </div>
 
-        <div className="scholar-nigtube-sponsor px-4 md:px-8"><FreeAdSlot entitlement="nigtube_ad_free" label="Nigtube" /></div>
+        <div className="px-4 md:px-8"><FreeAdSlot entitlement="nigtube_ad_free" label="Nigtube" /></div>
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto nt-scroll px-4 md:px-8 pb-8">
@@ -560,7 +560,7 @@ export function NigtubeView() {
 
               {/* YouTube Embed — the iframe only mounts at "playing", so the
                   pre-roll ad never has video audio running underneath it. */}
-              <div className="scholar-nigtube-player nt-glass-strong rounded-2xl overflow-hidden mb-4">
+              <div className="nt-glass-strong rounded-2xl overflow-hidden mb-4">
                 <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                   {isPlaying(adMachine) ? (
                     <iframe
@@ -580,7 +580,7 @@ export function NigtubeView() {
                     </div>
                   )}
                 </div>
-                <div className="scholar-nigtube-fallback flex items-center justify-between gap-3 px-4 py-2 bg-black/40 text-xs text-white/70">
+                <div className="flex items-center justify-between gap-3 px-4 py-2 bg-black/40 text-xs text-white/70">
                   <span className="truncate">If the video doesn't play, the ID may be unavailable.</span>
                   <a
                     href={ytSearchUrl(selectedVideo)}

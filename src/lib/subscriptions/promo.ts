@@ -10,14 +10,10 @@ export type PlusPromoSource =
   | "nigtube-ad"
   | "study-music-ad"
   | "ai-tutor"
-  | "ai-tools"
-  | "intelligence"
-  | "dashboard"
   | "achievements"
   | "mind-map"
   | "concept-galaxy"
   | "generation-limit"
-  | "locked-section"
   | "nav";
 
 export interface OpenPlusOptions {
