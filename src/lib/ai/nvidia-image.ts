@@ -4,7 +4,7 @@ import { AIProviderError } from "@/lib/ai/errors";
 
 const DEFAULT_ENDPOINT =
   "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.2-klein-4b";
-const IMAGE_TIMEOUT_MS = 180_000;
+const IMAGE_TIMEOUT_MS = 90_000;
 const MAX_IMAGE_BASE64_LENGTH = 20_000_000;
 
 export interface GeneratedNvidiaImage {
@@ -56,6 +56,7 @@ export async function generateNvidiaImage(
   const timeout = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
   const abortFromRequest = () => controller.abort();
   requestSignal?.addEventListener("abort", abortFromRequest, { once: true });
+  if (requestSignal?.aborted) controller.abort();
 
   try {
     const first = await requestImage(endpoint, apiKey, prompt, aspectRatio, controller.signal);
@@ -117,6 +118,8 @@ async function requestImage(
     body: JSON.stringify({
       prompt: providerPrompt,
       ...IMAGE_SIZE_MAP[aspectRatio],
+      // Verified against the live hosted endpoint: despite its documentation
+      // listing 0, it rejects 0 with a minimum-value validation error (>= 1).
       cfg_scale: 1,
       samples: 1,
       seed: 0,

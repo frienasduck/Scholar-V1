@@ -4,6 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import { useStore, type FileItem } from "@/lib/store";
 import { askAI } from "@/lib/ai";
+import { readLocalFile } from "@/lib/local-files";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { setLamPageContext } from "@/lib/lam-context";
 import { Button } from "@/components/ui/button";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
@@ -188,7 +190,22 @@ export function FilePreviewModal({
   const [ocrText, setOcrText] = useState("");
   const [ocrBusy, setOcrBusy] = useState(false);
   const type = useMemo(() => detectPreviewType(file), [file]);
-  const source = useMemo(() => safeSource(file), [file]);
+  const accountId = useScholarAccess().user?.id;
+  const [localSource, setLocalSource] = useState<{ key: string; url: string } | null>(null);
+  const source = safeSource(file) || (localSource?.key === file.localBlobKey ? localSource?.url ?? null : null);
+  useEffect(() => {
+    if (!file.localBlobKey || !accountId) return;
+    let cancelled = false;
+    let objectUrl: string | undefined;
+    const key = file.localBlobKey;
+    void readLocalFile(accountId, key).then(blob => {
+      if (cancelled) return;
+      if (!blob) { setError("This file is not available in this account on this browser. Upload the original again."); return; }
+      objectUrl = URL.createObjectURL(blob);
+      setLocalSource({ key, url: objectUrl });
+    }).catch(() => { if (!cancelled) setError("The saved file could not be opened. Please retry."); });
+    return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [file.localBlobKey, accountId]);
   const currentIndex = files.findIndex((item) => item.id === file.id);
   const reduceMotion = useStore((state) => state.settings.reduceMotion);
   const animationQuality = useMemo(() => resolveScholarAnimationQuality({ reduceMotion }), [reduceMotion]);

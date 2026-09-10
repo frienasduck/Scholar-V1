@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser, createDeveloperSession, clearDeveloperSession } from "@/lib/auth/session";
 import { verifyPassword } from "@/lib/auth/password";
-import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import { checkRateLimit, enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { recordAudit } from "@/lib/subscriptions/audit";
 
 const schema = z.object({ password: z.string().min(1).max(128) });
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: "Enter the Developer Mode password." }, { status: 400 });
     const identifier = createHash("sha256").update(user.id).digest("hex").slice(0, 20);
+    await checkRateLimit(identifier, "developer-password", 5, 15 * 60 * 1000);
     const passwordHash = process.env.DEV_MODE_PASSWORD_HASH;
     if (!passwordHash || !(await verifyPassword(parsed.data.password, passwordHash))) {
       // Only FAILED attempts count toward the brute-force window, so legit

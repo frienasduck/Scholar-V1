@@ -7,7 +7,7 @@ import { toast } from "@/lib/notifications/notification-api";
 
 const BENEFIT_GROUPS = [
   { title: "AI & Study Tools", icon: Wand2, items: ["AISIG", "Homework Scanner", "Exam Prep", "Assignments", "Practical Lab", "Derivation Library", "Formula Explorer", "Python Workspace"] },
-  { title: "Content & Media", icon: Crown, items: ["Levels", "Higher Quiz generation", "Higher Slideshow generation", "More Store items", "Ad-free Nigtube", "Ad-free Study Music"] },
+  { title: "Content & Media", icon: Crown, items: ["Levels", "Higher Quiz generation", "Higher Slideshow generation", "Ad-free Nigtube", "Ad-free Study Music"] },
   { title: "Storage & Account", icon: HardDrive, items: ["Expanded Files storage", "Class 9 access", "Appearance Lab", "One-time +5,000 Coins bonus"] },
 ];
 
@@ -28,11 +28,10 @@ export function ScholarPlusView() {
     setLoading(true);
     const started = Date.now();
     try {
-      const response = await fetch("/api/subscriptions/payment-requests", { method: "POST" });
+      const response = await fetch("/api/subscriptions/payment-requests", { method: "POST", signal: AbortSignal.timeout(20_000) });
       const value = await response.json();
       if (!response.ok) throw new Error(value.message || value.error || "Checkout could not be opened.");
       sessionStorage.setItem("scholar:plus-checkout", JSON.stringify(value));
-      await new Promise((resolve) => setTimeout(resolve, Math.max(0, 5000 - (Date.now() - started))));
       navigate("subscription-payment");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Checkout could not be opened."); }
     finally { setLoading(false); }

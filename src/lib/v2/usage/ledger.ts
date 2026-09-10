@@ -103,6 +103,7 @@ export async function reserveGeneration(input: {
 
     const existing = await tx.usageEvent.findUnique({ where: { idempotencyKey } });
     if (existing) {
+      if (existing.userId !== userId || existing.feature !== feature || existing.periodDay !== day) throw new ReservationConflictError("Reservation does not belong to this request.");
       if (existing.status === "released") throw new ReservationConflictError("This reservation was already released.");
       // Replay (double-click / HTTP retry / refresh): return the true ledger
       // state for this feature/day — never an under-reported count.
@@ -141,34 +142,28 @@ export async function reserveGeneration(input: {
   });
 }
 
-/** Successful generation: reserved → consumed exactly once (idempotent).
- *  Ownership is enforced by the reservation key itself (only the caller that
- *  received the key can commit it). */
-export async function commitGeneration(idempotencyKey: string): Promise<void> {
+/** Successful generation: atomically claim the reservation before counting it. */
+export async function commitGeneration(idempotencyKey: string, userId: string): Promise<void> {
   await db.$transaction(async (tx) => {
     const event = await tx.usageEvent.findUnique({ where: { idempotencyKey } });
-    if (!event || event.status === "released") {
+    if (!event || event.userId !== userId || event.status === "released") {
       throw new ReservationConflictError("Cannot commit an unknown or released reservation.");
     }
     if (event.status === "consumed") return; // replay — idempotent no-op
+    const claimed = await tx.usageEvent.updateMany({ where: { id: event.id, userId, status: "reserved" }, data: { status: "consumed" } });
+    if (claimed.count !== 1) throw new ReservationConflictError("Reservation changed before completion.");
     const key = usageKeyForFeature(event.feature as GenerationFeature);
     await tx.usageCounter.upsert({
       where: { userId_key_day: { userId: event.userId, key, day: event.periodDay } },
       create: { userId: event.userId, key, day: event.periodDay, count: event.units },
       update: { count: { increment: event.units } },
     });
-    await tx.usageEvent.update({ where: { id: event.id }, data: { status: "consumed" } });
   });
 }
 
 /** Provider/network failure: reservation released, quota restored. */
-export async function releaseGeneration(idempotencyKey: string): Promise<void> {
-  await db.$transaction(async (tx) => {
-    const event = await tx.usageEvent.findUnique({ where: { idempotencyKey } });
-    if (!event) return;
-    if (event.status === "consumed") return; // too late — already consumed
-    await tx.usageEvent.update({ where: { id: event.id }, data: { status: "released" } });
-  });
+export async function releaseGeneration(idempotencyKey: string, userId: string): Promise<void> {
+  await db.usageEvent.updateMany({ where: { idempotencyKey, userId, status: "reserved" }, data: { status: "released" } });
 }
 
 async function effectiveUsed(tx: Tx, userId: string, feature: GenerationFeature, day: string): Promise<number> {

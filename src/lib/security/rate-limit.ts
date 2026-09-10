@@ -6,10 +6,15 @@ export class RateLimitError extends Error {
     super("Too many attempts. Please wait and try again.");
   }
 }
+export async function checkRateLimit(key: string, action: string, maximum: number, windowMs: number) {
+  const count = await db.securityAttempt.count({ where: { key, action, createdAt: { gte: new Date(Date.now() - windowMs) } } });
+  if (count >= maximum) throw new RateLimitError(Math.ceil(windowMs / 1000));
+}
+
 export async function enforceRateLimit(key: string, action: string, maximum: number, windowMs: number) {
   const since = new Date(Date.now() - windowMs);
   const count = await db.securityAttempt.count({ where: { key, action, createdAt: { gte: since } } });
   if (count >= maximum) throw new RateLimitError(Math.ceil(windowMs / 1000));
   await db.securityAttempt.create({ data: { key, action } });
-  if (Math.random() < 0.02) void db.securityAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 7 * 86_400_000) } } });
+  if (Math.random() < 0.02) void db.securityAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 7 * 86_400_000) } } }).catch(() => console.warn("[Scholar security] attempt cleanup deferred"));
 }

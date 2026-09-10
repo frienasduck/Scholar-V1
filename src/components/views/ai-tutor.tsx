@@ -3,10 +3,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, Volume2, Plus, Loader2, Sparkles, SquarePen, Eraser, Maximize2, Minimize2 } from "lucide-react";
+import { Send, Mic, Volume2, Plus, Loader2, Sparkles, Square, SquarePen, Eraser, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 
-import { chatAI, TEACHER_PERSONAS_CLASS9, TEACHER_PERSONAS_CLASS11, getPersona, type ChatMessage, type Persona } from "@/lib/ai";
+import { askAIStream, TEACHER_PERSONAS_CLASS9, TEACHER_PERSONAS_CLASS11, getPersona, type ChatMessage, type Persona } from "@/lib/ai";
 import { useStore } from "@/lib/store";
 import { Markdown } from "@/lib/shared";
 import { Button } from "@/components/ui/button";
@@ -238,11 +238,14 @@ export function AITutorView() {
 
   const plusAccess = useScholarAccess();
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [streamDraft, setStreamDraft] = useState<{ threadId: string; text: string; at: number } | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
   const activeThread = useMemo(() => {
     const explicit = threads.find((t) => t.id === activeThreadId && t.persona === activePersonaId);
-    if (explicit) return explicit;
-    return personaThreads[0] ?? null;
-  }, [threads, activeThreadId, activePersonaId, personaThreads]);
+    const thread = explicit ?? personaThreads[0] ?? null;
+    if (!thread || streamDraft?.threadId !== thread.id || !streamDraft.text) return thread;
+    return { ...thread, messages: [...thread.messages, { id: "stream-draft", role: "assistant" as const, content: streamDraft.text, at: streamDraft.at, persona: thread.persona }] };
+  }, [threads, activeThreadId, activePersonaId, personaThreads, streamDraft]);
 
   // Scholar Plus intro card — free users see it once, attached to the FIRST
   // assistant answer of a conversation. Rendered by the UI layer, never by the
@@ -256,6 +259,7 @@ export function AITutorView() {
   }, [activeThreadIdSafe]);
 
   const selectPersona = (id: string) => {
+    stopGeneration();
     setActivePersonaId(id);
     setActiveThreadId(null);
   };
@@ -264,6 +268,17 @@ export function AITutorView() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const stopGeneration = () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setStreamDraft(null);
+    setLoading(false);
+  };
+  useEffect(() => () => {
+    requestRef.current?.abort(); requestRef.current = null;
+    setStreamDraft(null); setLoading(false);
+  }, [scholarClass]);
+  const selectThread = (id: string) => { stopGeneration(); setActiveThreadId(id); };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -286,7 +301,7 @@ export function AITutorView() {
 
   const handleSend = async (override?: string) => {
     const content = (override ?? input).trim();
-    if (!content || loading) return;
+    if (!content || loading || requestRef.current) return;
     setInput("");
 
     let threadId = activeThread?.id;
@@ -302,9 +317,24 @@ export function AITutorView() {
 
     addMessage(threadId, { role: "user", content, persona: activePersonaId });
     setLoading(true);
+    const controller = new AbortController();
+    requestRef.current = controller;
+    let partial = "";
+    let updateTimer: ReturnType<typeof setTimeout> | undefined;
+    const at = Date.now();
+    const flush = () => {
+      updateTimer = undefined;
+      if (requestRef.current === controller && !controller.signal.aborted) setStreamDraft({ threadId, text: partial, at });
+    };
 
     try {
-      const reply = await chatAI(content, activePersonaId, history);
+      const reply = await askAIStream(content, activePersonaId, { history, signal: controller.signal, onDelta: (_delta, full) => {
+        partial = full;
+        updateTimer ??= setTimeout(flush, 64);
+      } });
+      if (requestRef.current !== controller || controller.signal.aborted) return;
+      clearTimeout(updateTimer);
+      setStreamDraft(null);
       addMessage(threadId, { role: "assistant", content: reply, persona: activePersonaId });
       // Mark this conversation as having received its one-time Plus intro.
       const isFirstAssistantReply = !priorMessages.some((m) => m.role === "assistant");
@@ -321,19 +351,24 @@ export function AITutorView() {
       addXP(2);
       pushActivity({ type: "chat", text: `Chatted with ${activePersona.name}`, icon: "💬" });
     } catch (e: any) {
+      if (controller.signal.aborted || requestRef.current !== controller) return;
+      if (partial.trim()) addMessage(threadId, { role: "assistant", content: `${partial}\n\n*Response interrupted. Please retry.*`, persona: activePersonaId });
       toast.error("AI couldn't respond", { description: e?.message ?? "Try again in a moment." });
     } finally {
-      setLoading(false);
+      clearTimeout(updateTimer);
+      if (requestRef.current === controller) { requestRef.current = null; setStreamDraft(null); setLoading(false); }
     }
   };
 
   const handleNewChat = () => {
+    stopGeneration();
     const id = addThread({ persona: activePersonaId, title: `Chat with ${activePersona.name}` });
     setActiveThreadId(id);
     toast.success("Started a new chat", { description: `with ${activePersona.name} ${activePersona.avatar}` });
   };
 
   const handleClear = () => {
+    stopGeneration();
     if (!activeThread) return;
     clearThread(activeThread.id);
     toast.success("Chat cleared");
@@ -501,11 +536,12 @@ export function AITutorView() {
                     />
                     <Button
                       size="icon"
-                      onClick={() => handleSend()}
-                      disabled={loading || !input.trim()}
+                      onClick={() => loading ? stopGeneration() : handleSend()}
+                      aria-label={loading ? "Stop response" : "Send message"}
+                      disabled={!loading && !input.trim()}
                       className="h-10 w-10 shrink-0 bg-white/15 hover:bg-white/25 text-white border border-white/15"
                     >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {loading ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                   <p className="text-[10px] text-white/40 mt-2 text-center">
@@ -542,7 +578,7 @@ export function AITutorView() {
                           return (
                             <button
                               key={t.id}
-                              onClick={() => setActiveThreadId(t.id)}
+                              onClick={() => selectThread(t.id)}
                               className={cn(
                                 "w-full text-left px-2.5 py-1.5 rounded-lg transition-colors",
                                 isActive ? "bg-white/15" : "hover:bg-white/10"
@@ -644,7 +680,7 @@ export function AITutorView() {
                         return (
                           <button
                             key={t.id}
-                            onClick={() => setActiveThreadId(t.id)}
+                            onClick={() => selectThread(t.id)}
                             className={cn(
                               "w-full text-left px-2.5 py-2 rounded-lg transition-colors mb-1",
                               isActive ? "bg-white/15" : "hover:bg-white/10"
@@ -826,7 +862,7 @@ export function AITutorView() {
                         </Fragment>
                       );
                     })}
-                    {loading && (
+                    {loading && !streamDraft?.text && (
                       <motion.div
                         key="typing"
                         initial={{ opacity: 0, y: 8 }}
@@ -879,11 +915,12 @@ export function AITutorView() {
                     />
                     <Button
                       size="icon"
-                      onClick={() => handleSend()}
-                      disabled={loading || !input.trim()}
+                      onClick={() => loading ? stopGeneration() : handleSend()}
+                      aria-label={loading ? "Stop response" : "Send message"}
+                      disabled={!loading && !input.trim()}
                       className="h-10 w-10 shrink-0 bg-white/15 hover:bg-white/25 text-white border border-white/15"
                     >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {loading ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                   <p className="text-[10px] text-white/40 mt-1.5 px-1">
@@ -1052,7 +1089,7 @@ export function AITutorView() {
                         </motion.div>
                       ))}
                     </AnimatePresence>
-                    {loading && (
+                    {loading && !streamDraft?.text && (
                       <div className="flex gap-3 justify-start">
                         <div
                           className={cn(
@@ -1105,12 +1142,12 @@ export function AITutorView() {
                     className="glass-input flex-1 resize-none min-h-[44px] max-h-32 px-4 py-3 rounded-xl bg-white/10 border border-white/15 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/25"
                   />
                   <button
-                    onClick={() => handleSend()}
-                    disabled={loading || !input.trim()}
-                    title="Send"
+                    onClick={() => loading ? stopGeneration() : handleSend()}
+                    disabled={!loading && !input.trim()}
+                    title={loading ? "Stop response" : "Send message"}
                     className="h-11 w-11 shrink-0 grid place-items-center rounded-xl bg-white/15 hover:bg-white/25 border border-white/15 text-white disabled:opacity-50 transition-colors"
                   >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {loading ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                   </button>
                 </div>
                 <p className="text-[10px] text-white/40 mt-1.5 text-center max-w-4xl mx-auto">

@@ -382,13 +382,13 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
         {/* Navbar */}
         <nav className="relative z-20 px-5 sm:px-8 py-6 flex items-center justify-between">
           <span className="font-geist text-white font-light uppercase tracking-[0.25em] sm:tracking-[0.3em] text-sm">
-            {user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}
+            {user.name && user.name !== "Guest" ? `${user.name.split(" ")[0]}'s Scholar` : "Scholar"}
           </span>
           <div className="hidden md:flex items-center gap-8">
             {[
               { label: "Dashboard", view: "dashboard" },
               { label: "Analytics", view: "analytics" },
-              { label: "Community", view: "community" },
+              { label: "Study", view: "study" },
               { label: "Settings", view: "settings" },
             ].map((link) => (
               <button

@@ -79,6 +79,20 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Website reliability pass",
+    date: "10 Sep 2026",
+    title: "Faster answers, safer saved work",
+    items: [
+      "AI Tutor now streams answers and has a Stop control. LAM and shared AI requests detect interrupted output and use bounded request deadlines.",
+      "Mock-exam and answer-evaluation response formats now match their question and feedback screens.",
+      "Fixed a reminder notification loop and crashes when older saved profiles were missing progress fields.",
+      "Files persist locally across reloads. Account switching preserves separate local workspaces without deleting the previous account's saved work.",
+      "Feature screens load on demand. Background videos pause when hidden, and nonessential playback respects reduced motion.",
+      "Improved mobile settings tabs, useful note/file search, public help and privacy pages, and quieter Scholar Plus prompts.",
+      "Unfinished social and visual previews are hidden from normal navigation. The repository worklog distinguishes verified flows from remaining account-dependent checks.",
+    ],
+  },
+  {
     version: "V2.1 · Scholar Intelligence",
     date: "8 Aug 2026",
     title: "Scholar Intelligence — The Academic Brain",
@@ -528,7 +542,7 @@ export function SettingsView() {
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
                 <Globe className="h-6 w-6 text-white" size={24} />
-                <span className="text-white font-semibold text-lg">Asme</span>
+                <span className="text-white font-semibold text-lg">Scholar</span>
               </div>
               <div className="hidden md:flex items-center gap-6">
                 {["Account", "Appearance", "Data"].map((link) => (
@@ -577,7 +591,7 @@ export function SettingsView() {
         {/* Tabs — liquid glass */}
         <div className="relative z-10 flex-1 px-4 pb-8 max-w-5xl mx-auto w-full">
           <Tabs defaultValue="account" className="w-full">
-            <TabsList className="scholar-settings-tabs asme-glass flex flex-wrap h-auto w-full sm:w-fit rounded-full p-1.5 gap-1 mb-4">
+            <TabsList className="scholar-settings-tabs asme-glass grid grid-cols-2 min-[480px]:grid-cols-3 lg:grid-cols-5 h-auto w-full rounded-2xl p-1.5 gap-1 mb-4 [&>button]:min-w-0 [&>button]:min-h-11 [&>button]:px-2 [&>button]:whitespace-normal">
               <TabsTrigger value="account" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <User className="h-3.5 w-3.5" />Account
               </TabsTrigger>

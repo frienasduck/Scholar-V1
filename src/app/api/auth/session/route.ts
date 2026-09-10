@@ -20,7 +20,7 @@ export async function GET() {
         select: { publicReference: true, status: true, createdAt: true, proofSubmittedAt: true },
       }),
     ]);
-    const currentScholarClass = user.currentScholarClass === 9 && !access.entitlements.includes("class_9_access") ? 11 : user.currentScholarClass;
+    const currentScholarClass = access.entitlementsLoaded && user.currentScholarClass === 9 && !access.entitlements.includes("class_9_access") ? 11 : user.currentScholarClass;
     if (currentScholarClass !== user.currentScholarClass) {
       await db.user.update({ where: { id: user.id }, data: { currentScholarClass } });
     }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/store";
 
 export const BACKGROUND_READY_EVENT = "scholar:background-ready";
 
@@ -23,9 +24,28 @@ export function ReadyBackgroundVideo({
   readinessId = "page-background",
 }: ReadyBackgroundVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const visibleRef = useRef(false);
+  const [loadVideo, setLoadVideo] = useState(false);
+  const reduceMotion = useStore(state => state.settings.reduceMotion);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const announcedRef = useRef(false);
+  useEffect(() => { if (loadVideo) videoRef.current?.load(); }, [loadVideo, src]);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => {
+      const active = visibleRef.current && !document.hidden && !media.matches && !reduceMotion;
+      if (active) { setLoadVideo(true); if (videoRef.current?.readyState && videoRef.current.readyState >= 2) void videoRef.current.play().catch(() => undefined); }
+      else videoRef.current?.pause();
+    };
+    const observer = new IntersectionObserver(entries => { visibleRef.current = entries[0]?.isIntersecting ?? false; sync(); }, { rootMargin: "100px" });
+    if (containerRef.current) observer.observe(containerRef.current);
+    media.addEventListener("change", sync);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+    return () => { observer.disconnect(); media.removeEventListener("change", sync); document.removeEventListener("visibilitychange", sync); videoRef.current?.pause(); };
+  }, [reduceMotion, src]);
 
   const announceReady = (status: "video" | "poster") => {
     if (announcedRef.current) return;
@@ -37,7 +57,7 @@ export function ReadyBackgroundVideo({
 
   const activateVideo = async () => {
     const video = videoRef.current;
-    if (!video || ready || failed) return;
+    if (!video || failed || !visibleRef.current || document.hidden || reduceMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     try {
       await video.play();
       // The poster remains visible until the browser confirms actual playback.
@@ -53,7 +73,7 @@ export function ReadyBackgroundVideo({
   };
 
   return (
-    <div className={cn("absolute inset-0 overflow-hidden", className)} style={style} aria-hidden="true">
+    <div ref={containerRef} className={cn("absolute inset-0 overflow-hidden", className)} style={style} aria-hidden="true">
       <img
         src={poster}
         alt=""
@@ -63,17 +83,16 @@ export function ReadyBackgroundVideo({
         )}
         style={{ objectPosition }}
         onLoad={() => {
-          if (failed) announceReady("poster");
+          announceReady("poster");
         }}
         onError={() => announceReady("poster")}
       />
       <video
         ref={videoRef}
         muted
-        autoPlay
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
         poster={poster}
         className={cn(
           "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
@@ -92,7 +111,7 @@ export function ReadyBackgroundVideo({
         }}
         onEmptied={() => setReady(false)}
       >
-        <source src={src} type="video/mp4" />
+        {loadVideo && <source src={src} type="video/mp4" />}
       </video>
     </div>
   );

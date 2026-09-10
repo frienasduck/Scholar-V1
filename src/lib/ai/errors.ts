@@ -55,16 +55,13 @@ export function publicAIError(error: unknown): { message: string; status: number
     return { message: error.message, status: error.status, code: error.code };
   }
 
-  if (error instanceof Error && error.name === "AbortError") {
+  if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) {
     return { message: AI_ERROR_MAP.AI_TIMEOUT.description, status: 504, code: "AI_TIMEOUT" };
   }
 
-  // In development, show the real error; in production, use a safe generic.
+  // Public errors never include infrastructure details, even in development.
   return {
-    message:
-      process.env.NODE_ENV === "development" && error instanceof Error
-        ? error.message
-        : AI_ERROR_MAP.AI_INTERNAL_ERROR.description,
+    message: AI_ERROR_MAP.AI_INTERNAL_ERROR.description,
     status: 500,
     code: "AI_INTERNAL_ERROR",
   };

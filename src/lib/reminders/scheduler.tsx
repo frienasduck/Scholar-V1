@@ -224,6 +224,7 @@ export function ReminderScheduler({ scholarClass }: SchedulerHook) {
   const timerRef = useRef<number | null>(null);
   const lastCheckRef = useRef(0);
   const mountedRef = useRef(true);
+  const checkingRef = useRef(false);
 
   const handleDue = useCallback((reminder: SmartReminder, firedAlert: string) => {
     if (!mountedRef.current) return;
@@ -275,9 +276,11 @@ export function ReminderScheduler({ scholarClass }: SchedulerHook) {
   }, [scholarClass]);
 
   const checkNow = useCallback(() => {
+    if (checkingRef.current) return;
     const now = Date.now();
     if (now - lastCheckRef.current < 2_000) return;
     lastCheckRef.current = now;
+    checkingRef.current = true;
     try {
       runDueCheck(scholarClass, handleDue);
       advanceRecurring(scholarClass);
@@ -288,7 +291,9 @@ export function ReminderScheduler({ scholarClass }: SchedulerHook) {
         flushDigest(scholarClass);
       }
     } catch {
-      // Scheduler must never break the app.
+      console.warn("[reminders] Scheduled check failed; will retry on the next tick.");
+    } finally {
+      checkingRef.current = false;
     }
   }, [scholarClass, handleDue]);
 
@@ -310,6 +315,7 @@ export function ReminderScheduler({ scholarClass }: SchedulerHook) {
 
     return () => {
       mountedRef.current = false;
+      window.clearTimeout(first);
       window.clearInterval(timerRef.current ?? undefined);
       document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("focus", focus);

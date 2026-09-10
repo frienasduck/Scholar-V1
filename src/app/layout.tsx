@@ -12,12 +12,14 @@ const inter = Inter({
 });
 
 const jetbrainsMono = JetBrains_Mono({
+  preload: false,
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
 });
 
 const poppins = Poppins({
+  preload: false,
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -25,6 +27,7 @@ const poppins = Poppins({
 });
 
 const sourceSerif4 = Source_Serif_4({
+  preload: false,
   variable: "--font-source-serif-4",
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -33,6 +36,8 @@ const sourceSerif4 = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://scholar-v1.vercel.app"),
+  openGraph: { type: "website", siteName: "Scholar", title: "Scholar — Your intelligent learning system", description: "Study, practice and organize your CBSE learning with Scholar." },
   title: "Scholar — Study OS for CBSE Class 9 & Class 11",
   description:
     "A premium, minimal, all-in-one study operating system for CBSE students. AI tutors, notes, flashcards, quizzes, planner, analytics and more. Supports Class 9 (Science, Maths, SST, English) and Class 11 (Physics, Chemistry, Maths, Computer Science, English) with an optional JEE Mode.",

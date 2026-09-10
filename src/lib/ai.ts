@@ -129,8 +129,9 @@ export async function askAIJSON<T = unknown>(
       usage: opts.usage,
       ...getClassContext(),
     }, abort.controller.signal);
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw new Error("AI request timed out. Please try again.");
+    throw error instanceof Error ? error : new Error("The AI request failed. Please retry.");
   } finally {
     abort.cleanup();
   }

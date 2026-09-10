@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { tmpdir } from "node:os";
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { createWorker } from "tesseract.js";
@@ -62,50 +63,36 @@ async function requestImage(request: NextRequest): Promise<{ source: Buffer; hom
 }
 
 async function runOcr(source: Buffer): Promise<OcrResult> {
-  const prepared = await sharp(source, { failOn: "error" })
-    .rotate()
-    .grayscale()
-    .normalize()
-    .sharpen({ sigma: 0.8 })
-    .resize({ width: 2200, withoutEnlargement: true })
-    .png()
-    .toBuffer();
-
-  if (!workerPromise) {
-    const workerPath = path.join(process.cwd(), "node_modules", "tesseract.js", "src", "worker-script", "node", "index.js");
-    workerPromise = createWorker("eng", undefined, {
-      workerPath,
-      cachePath: path.join(process.cwd(), ".cache", "tesseract"),
-      errorHandler: () => {
-        sharedWorker = null;
-        workerPromise = null;
-      },
-    });
-  }
-  const worker = sharedWorker ?? await workerPromise;
-  sharedWorker = worker;
+  let expired = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const result = await Promise.race([
-      worker.recognize(prepared),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error("OCR_TIMEOUT")), OCR_TIMEOUT_MS);
-      }),
-    ]);
-    return {
-      text: result.data.text.trim(),
-      confidence: Math.max(0, Math.min(100, Math.round(result.data.confidence))),
-    };
-  } catch (error) {
-    if (error instanceof Error && error.message === "OCR_TIMEOUT") {
-      await worker.terminate().catch(() => undefined);
-      sharedWorker = null;
-      workerPromise = null;
+  const work = async () => {
+    const prepared = await sharp(source, { failOn: "error", limitInputPixels: 40_000_000 })
+      .rotate().grayscale().normalize().sharpen({ sigma: 0.8 })
+      .resize({ width: 2200, withoutEnlargement: true }).png().toBuffer();
+    if (expired) throw new Error("OCR_TIMEOUT");
+    if (!workerPromise) {
+      workerPromise = createWorker("eng", undefined, {
+        workerPath: path.join(process.cwd(), "node_modules", "tesseract.js", "src", "worker-script", "node", "index.js"),
+        cachePath: tmpdir(),
+        errorHandler: () => { sharedWorker = null; workerPromise = null; },
+      }).catch(error => { workerPromise = null; throw error; });
     }
+    const worker = sharedWorker ?? await workerPromise;
+    if (expired) { void worker.terminate().catch(() => undefined); throw new Error("OCR_TIMEOUT"); }
+    sharedWorker = worker;
+    const result = await worker.recognize(prepared);
+    return { text: result.data.text.trim(), confidence: Math.max(0, Math.min(100, Math.round(result.data.confidence))) };
+  };
+  try {
+    return await Promise.race([
+      work(),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error("OCR_TIMEOUT")); }, OCR_TIMEOUT_MS); }),
+    ]);
+  } catch (error) {
+    if (sharedWorker) void sharedWorker.terminate().catch(() => undefined);
+    sharedWorker = null; workerPromise = null;
     throw error;
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
+  } finally { if (timer) clearTimeout(timer); }
 }
 
 export async function POST(request: NextRequest) {
@@ -119,6 +106,7 @@ export async function POST(request: NextRequest) {
     const jobId = createHash("sha256").update(source).digest("hex");
     let job = activeJobs.get(jobId);
     if (!job) {
+      if (activeJobs.size > 0) return errorResponse(429, "OCR_BUSY", "Another page is being read. Please retry in a moment.");
       job = runOcr(source).finally(() => activeJobs.delete(jobId));
       activeJobs.set(jobId, job);
     }
@@ -143,7 +131,7 @@ export async function POST(request: NextRequest) {
       PAGE_NOT_FOUND: [404, "The page image could not be found."],
       OCR_TIMEOUT: [504, "OCR took too long. Crop the image to the text area and try again."],
     };
-    const [status, message] = known[code] ?? [500, "OCR could not start. Please retry; if it continues, restart the development server."];
+    const [status, message] = known[code] ?? [500, "The image could not be read. Try a clearer PNG or JPEG, then retry."];
     return errorResponse(status, known[code] ? code : "OCR_FAILED", message);
   }
 }

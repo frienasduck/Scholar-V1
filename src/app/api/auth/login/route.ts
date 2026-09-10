@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return accountError("INVALID_CREDENTIALS", "Incorrect email or password.", 401);
     }
     await createAuthSession(user);
-    return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+    return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name, role: user.role, currentScholarClass: user.currentScholarClass } });
   } catch (error) {
     if (error instanceof RateLimitError) return NextResponse.json({ error: "RATE_LIMITED", message: error.message }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
     return databaseUnavailableError();

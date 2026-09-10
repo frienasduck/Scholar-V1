@@ -122,44 +122,9 @@ async function askAIJSONWithTimeout(
   opts: { temperature?: number },
   timeoutMs: number,
 ): Promise<any | null> {
-  const controller = new AbortController();
-  const tid = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    // Use askAIJSON but with abort signal — we'll reimplement here to add abort support
-    const { useStore: _useStore } = await import("@/lib/store");
-    const state = _useStore.getState();
-    const scholarClass = state.user.scholarClass ?? 9;
-    const jeeMode = state.user.jeeMode ?? false;
-
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [{ role: "user", content: message }],
-        persona,
-        temperature: opts.temperature ?? 0.55,
-        json: true,
-        scholarClass,
-        jeeMode,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(tid);
-    if (!res.ok) return null;
-    const text = await res.text();
-    let data: { ok?: boolean; data?: any };
-    try {
-      data = JSON.parse(text);
-    } catch {
-      return null;
-    }
-    if (!data.ok || !data.data) return null;
-    return data.data;
-  } catch (e: any) {
-    clearTimeout(tid);
-    if (e?.name === "AbortError") return null;
-    return null;
-  }
+  // Keep the shared deadline/error contract. A provider failure must not turn
+  // into null and then be presented as a successfully generated AI deck.
+  return askAIJSON(message, persona, { ...opts, timeoutMs: Math.min(timeoutMs, 60_000) });
 }
 
 // ============================================================================
@@ -968,7 +933,7 @@ export function SlideshowMaker() {
         body: JSON.stringify({ key: "slideshow_generation" }),
       }).catch(() => undefined);
       void plusAccess.refresh();
-    } catch {
+    } catch (error) {
       failBackgroundTask(
         backgroundTaskId,
         "Generation stopped. Completed work was autosaved.",
@@ -983,7 +948,7 @@ export function SlideshowMaker() {
       }
       toast.error("Slideshow generation failed", {
         description:
-          "Completed work was autosaved. Review the source and retry the failed stage.",
+          `${error instanceof Error ? error.message : "The AI could not complete this request."} Completed work was autosaved.`,
       });
     } finally {
       setGenerating(false);

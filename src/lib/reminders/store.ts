@@ -153,20 +153,20 @@ export const useReminderStore = create<ReminderStoreState>()((set, get) => ({
         : [],
       migrationDone: true,
     };
-    persistProfile(scholarClass, next);
     profileSetJSON(scholarClass, REMINDERS_MIGRATION_KEY, true);
-    set((state) => ({ byProfile: { ...state.byProfile, [scholarClass]: next } }));
+    get().persist(scholarClass, next);
   },
 
   persist: (scholarClass, state) => {
-    persistProfile(scholarClass, state);
+    // Publish before notifying synchronous listeners. A scheduler reading the
+    // profile during the notification must see the new (already fired) state.
     set((current) => ({ byProfile: { ...current.byProfile, [scholarClass]: state } }));
+    persistProfile(scholarClass, state);
   },
 
   resetProfile: (scholarClass) => {
     const fresh = { ...createEmptyReminderProfileState(), templates: defaultTemplateSeed(), commands: defaultCommandSeed() };
-    persistProfile(scholarClass, fresh);
-    set((state) => ({ byProfile: { ...state.byProfile, [scholarClass]: fresh } }));
+    get().persist(scholarClass, fresh);
   },
 
   // --- Reminders -----------------------------------------------------------
@@ -604,10 +604,11 @@ export function initReminderStoreSync(): () => void {
     const match = event.key.match(/^scholar:(class9|class11):smart-reminders-v2$/);
     if (!match) return;
     const scholarClass: 9 | 11 = match[1] === "class11" ? 11 : 9;
-    const state = useReminderStore.getState();
     const reloaded = profileGetJSON<ReminderProfileState | null>(scholarClass, REMINDERS_STORAGE_KEY, null);
     if (reloaded && reloaded.version === 2) {
-      state.persist(scholarClass, cloneProfileState(reloaded));
+      // A cross-tab read must not write back and trigger a storage ping-pong.
+      useReminderStore.setState(current => ({ byProfile: { ...current.byProfile, [scholarClass]: cloneProfileState(reloaded) } }));
+      window.dispatchEvent(new CustomEvent(REMINDERS_CHANGED_EVENT, { detail: { scholarClass } }));
     }
   };
   window.addEventListener("storage", onStorage);

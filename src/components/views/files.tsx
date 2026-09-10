@@ -2,7 +2,8 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useStore } from "@/lib/store";
-import { askAIJSON } from "@/lib/ai";
+import { saveLocalFile, removeLocalFile } from "@/lib/local-files";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { SectionHeader, EmptyState, Pill } from "@/lib/shared";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ function formatSize(bytes: number): string {
 const FILTERS = ["All", "Images", "Videos", "Documents", "PDFs", "Audio", "Other", "Recent"] as const;
 
 export function FilesView() {
+  const accountId = useScholarAccess().user?.id;
   const files = useStore((s) => s.files) ?? [];
   const addFile = useStore((s) => s.addFile);
   const deleteFile = useStore((s) => s.deleteFile);
@@ -58,6 +60,12 @@ export function FilesView() {
   const [uploading, setUploading] = useState(false);
   const [serverQuota, setServerQuota] = useState({ usedBytes: 0, limitBytes: 30 * 1024 * 1024 });
   const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const target = sessionStorage.getItem("scholar:files:target");
+    const file = files.find(item => item.id === target);
+    if (file) setPreview(file);
+    sessionStorage.removeItem("scholar:files:target");
+  }, [files]);
 
   const refreshQuota = () => fetch("/api/files/quota", { cache: "no-store" })
     .then((response) => response.ok ? response.json() : null)
@@ -70,10 +78,10 @@ export function FilesView() {
     let list = [...files];
     if (filter === "Images") list = list.filter((f) => getType(f.name, f.type) === "image");
     else if (filter === "Videos") list = list.filter((f) => getType(f.name, f.type) === "video");
-    else if (filter === "Documents") list = list.filter((f) => ["doc", "docx", "txt", "rtf"].includes(getType(f.name, f.type)));
+    else if (filter === "Documents") list = list.filter((f) => ["office", "text", "code"].includes(getType(f.name, f.type)));
     else if (filter === "PDFs") list = list.filter((f) => getType(f.name, f.type) === "pdf");
     else if (filter === "Audio") list = list.filter((f) => getType(f.name, f.type) === "audio");
-    else if (filter === "Other") list = list.filter((f) => !["image", "video", "pdf", "audio", "doc", "docx", "txt", "rtf"].includes(getType(f.name, f.type)));
+    else if (filter === "Other") list = list.filter((f) => !["image", "video", "pdf", "audio", "office", "text", "code"].includes(getType(f.name, f.type)));
     else if (filter === "Recent") list = list.sort((a, b) => b.uploadedAt - a.uploadedAt).slice(0, 6);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -86,67 +94,60 @@ export function FilesView() {
   const storagePct = Math.min(100, (totalSize / serverQuota.limitBytes) * 100);
 
   async function handleUpload(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
+    if (!fileList?.length || uploading) return;
+    if (!accountId) { toast.error("Sign in to save files."); return; }
     setUploading(true);
     let uploaded = 0;
-    for (const file of Array.from(fileList)) {
-      const type = getType(file.name, file.type);
-      const clientId = crypto.randomUUID();
-      const quotaResponse = await fetch("/api/files/quota", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, name: file.name, mimeType: file.type || "application/octet-stream", sizeBytes: file.size }),
-      });
-      const quotaValue = await quotaResponse.json().catch(() => ({}));
-      if (!quotaResponse.ok) {
-        toast.error(quotaValue.message || quotaValue.error || `Could not upload ${file.name}`);
-        continue;
-      }
-      let dataUrl: string | undefined;
-      // Retain the original bytes in this local-first build. Hosted storage may
-      // populate FileItem.url with an authenticated, short-lived signed URL.
-      if (file.size <= 20 * 1024 * 1024) {
-        dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-      }
-      addFile({
-        id: clientId,
-        name: file.name,
-        type,
-        mimeType: file.type || "application/octet-stream",
-        size: file.size,
-        dataUrl,
-        tags: [],
-      });
-      uploaded += 1;
-      // AI auto-tagging (best-effort, non-blocking)
-      try {
-        const result = await askAIJSON<{ tags: string[] }>(
-          `Suggest 3 short tags (single words) for a file named "${file.name}" of type ${type}. JSON: {tags:[...]}`,
-          "default"
-        );
-        if (result?.tags?.length) {
-          // tags were added without tags; update is best-effort — we just push activity
-          pushActivity({ type: "file", text: `Uploaded & tagged: ${file.name}`, icon: "📎" });
+    try {
+      for (const file of Array.from(fileList)) {
+        if (!file.size || file.size > 100 * 1024 * 1024) { toast.error("Choose a nonempty file smaller than 100 MB."); continue; }
+        const clientId = crypto.randomUUID();
+        // Commit bytes before creating the visible entry. A storage failure
+        // never becomes a successful-looking upload with missing content.
+        const localBlobKey = await saveLocalFile(accountId, clientId, file);
+        let reserved = false;
+        try {
+          const response = await fetch("/api/files/quota", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ clientId, name: file.name, mimeType: file.type || "application/octet-stream", sizeBytes: file.size }),
+            signal: AbortSignal.timeout(20_000),
+          });
+          const value = await response.json();
+          if (!response.ok) throw new Error(value.message || value.error || "The file allowance could not be checked.");
+          reserved = true;
+          addFile({ id: clientId, name: file.name, type: getType(file.name, file.type), mimeType: file.type, size: file.size, localBlobKey, tags: [] });
+          uploaded += 1;
+        } catch (error) {
+          if (!reserved) await removeLocalFile(accountId, localBlobKey);
+          throw error;
         }
-      } catch {
-        /* ignore */
       }
+      if (uploaded) {
+        pushActivity({ type: "file", text: `Saved ${uploaded} file(s) on this browser`, icon: "📎" });
+        toast.success(`${uploaded} file(s) saved on this browser`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The upload could not finish. Please retry.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+      void refreshQuota();
     }
-    setUploading(false);
-    await refreshQuota();
-    pushActivity({ type: "file", text: `Uploaded ${fileList.length} file(s)`, icon: "📎" });
-    if (uploaded > 0) toast.success(`${uploaded} file(s) uploaded`);
   }
 
   async function handleDelete(id: string, name: string) {
-    await fetch("/api/files/quota", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientId: id }) }).catch(() => undefined);
-    deleteFile(id);
-    await refreshQuota();
-    toast.success(`Deleted ${name}`);
+    if (!window.confirm(`Delete “${name}” from Scholar? Keep an original copy if you need it later.`)) return;
+    try {
+      const response = await fetch("/api/files/quota", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientId: id }), signal: AbortSignal.timeout(15_000) });
+      if (!response.ok) throw new Error("The file could not be deleted. Please retry.");
+      const item = files.find(file => file.id === id);
+      if (item?.localBlobKey && accountId) await removeLocalFile(accountId, item.localBlobKey);
+      deleteFile(id);
+      void refreshQuota();
+      toast.success(`Deleted ${name}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Deletion failed. Your file has been kept.");
+    }
   }
 
   return (
@@ -160,7 +161,7 @@ export function FilesView() {
       <div className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-12 sm:p-6">
       <SectionHeader
         title="Files"
-        subtitle="Upload, organize, and let AI auto-tag your study materials"
+        subtitle="Save and organize study materials on this browser. Keep original copies; files are not backed up to the cloud."
         action={
           <Button
             onClick={() => inputRef.current?.click()}
@@ -347,103 +348,6 @@ export function FilesView() {
       )}
 
       {/* Preview modal */}
-      <Dialog open={false}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="pr-8 break-all">{preview?.name}</DialogTitle>
-          </DialogHeader>
-          {preview && (
-            <div className="space-y-4">
-              <div className="grid place-items-center bg-muted rounded-xl p-6 min-h-[240px] overflow-hidden">
-                {preview.type === "image" && preview.dataUrl ? (
-                  <img src={preview.dataUrl} alt={preview.name} className="max-h-[400px] rounded-lg shadow-lg" />
-                ) : preview.type === "pdf" && preview.dataUrl ? (
-                  <iframe src={preview.dataUrl} title={preview.name} className="w-full h-[400px] rounded-lg bg-white" />
-                ) : preview.type === "video" && preview.dataUrl ? (
-                  <video src={preview.dataUrl} controls className="max-h-[400px] rounded-lg shadow-lg" />
-                ) : preview.type === "audio" && preview.dataUrl ? (
-                  <div className="text-center w-full max-w-md">
-                    <FileAudio className="h-16 w-16 mx-auto mb-3 text-amber-500" />
-                    <audio src={preview.dataUrl} controls className="w-full" />
-                  </div>
-                ) : preview.dataUrl ? (
-                  <div className="text-center">
-                    {(() => {
-                      const meta = TYPE_META[preview.type] ?? { icon: FileIcon, color: "#71717a" };
-                      const Icon = meta.icon;
-                      return (
-                        <div
-                          className="grid place-items-center h-20 w-20 rounded-2xl mx-auto mb-4"
-                          style={{ background: `${meta.color}1a`, color: meta.color }}
-                        >
-                          <Icon className="h-10 w-10" />
-                        </div>
-                      );
-                    })()}
-                    <p className="text-sm font-medium mb-1">{preview.name}</p>
-                    <p className="text-xs text-muted-foreground mb-3">Preview not available for this file type</p>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const a = document.createElement("a");
-                        a.href = preview.dataUrl || "";
-                        a.download = preview.name;
-                        a.click();
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" /> Download to view
-                    </Button>
-                  </div>
-                ) : (
-                  (() => {
-                    const meta = TYPE_META[preview.type] ?? { icon: FileIcon, color: "#71717a" };
-                    const Icon = meta.icon;
-                    return (
-                      <div className="text-center">
-                        <div
-                          className="grid place-items-center h-20 w-20 rounded-2xl mx-auto mb-4"
-                          style={{ background: `${meta.color}1a`, color: meta.color }}
-                        >
-                          <Icon className="h-10 w-10" />
-                        </div>
-                        <p className="text-sm font-medium mb-1">{preview.name}</p>
-                        <p className="text-xs text-muted-foreground">Seeded file — upload your own to preview</p>
-                      </div>
-                    );
-                  })()
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="secondary">Type: {preview.type}</Badge>
-                <Badge variant="secondary">Size: {formatSize(preview.size)}</Badge>
-                {preview.tags.map((t) => (
-                  <Badge key={t} variant="outline">{t}</Badge>
-                ))}
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Uploaded {new Date(preview.uploadedAt).toLocaleString("en-IN")}
-                </p>
-                {preview.dataUrl && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const a = document.createElement("a");
-                      a.href = preview.dataUrl || "";
-                      a.download = preview.name;
-                      a.click();
-                      toast.success("Download started");
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" /> Download
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
       {preview && (
         <FilePreviewModal
           file={preview}

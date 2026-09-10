@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { recoverWorkspaceSwitch, switchWorkspace, workspaceOwner } from "./account-workspace";
 import { CURRICULUM } from "./curriculum";
 import type { StartupLoadingMode } from "./startup/startup-modes";
 import type { ScholarAppearanceSettings } from "./appearance/appearance-schema";
@@ -141,6 +142,8 @@ export interface FileItem {
   type: string;
   size: number;
   dataUrl?: string;
+  /** Browser-local original bytes, isolated by the authenticated account ID. */
+  localBlobKey?: string;
   /** Original browser-reported MIME type. The previewer also checks the extension. */
   mimeType?: string;
   /** Optional authenticated/signed storage URL used by hosted deployments. */
@@ -436,7 +439,7 @@ const levelFromXP = (xp: number) => {
 };
 
 // ===== Seed =====
-function seed() {
+function legacyDefaults() {
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
   return {
@@ -858,34 +861,37 @@ function seed() {
   };
 }
 
+// New users start with real empty progress. Existing persisted work is merged
+// afterwards and is never classified as demo content by matching its words.
+function seed() {
+  const defaults = legacyDefaults();
+  return {
+    ...defaults,
+    user: { ...defaults.user, name: "", username: "", email: "", bio: "", school: "", avatar: "S", class: "11 - CBSE", scholarClass: 11 as 9 | 11 },
+    xp: 0, coins: 0, streak: 0, level: 1, lastStudyDay: null as string | null,
+    mastery: {}, studyProgress: {},
+    notes: [] as Note[], folders: [] as Folder[], decks: [] as Deck[], flashcards: [] as Flashcard[],
+    tasks: [] as Task[], quizAttempts: [] as QuizAttempt[], sessions: defaults.sessions.slice(0, 0),
+    activity: defaults.activity.slice(0, 0), chatThreads: defaults.chatThreads.slice(0, 0),
+    files: defaults.files.slice(0, 0), bookmarks: defaults.bookmarks.slice(0, 0),
+    friends: [] as Friend[], friendRequests: [] as FriendRequest[],
+    forumPosts: defaults.forumPosts.slice(0, 0), qaItems: defaults.qaItems.slice(0, 0), studyGroups: defaults.studyGroups.slice(0, 0),
+    purchases: defaults.purchases.slice(0, 0),
+    badges: defaults.badges.map(badge => ({ ...badge, earned: false, earnedAt: undefined })),
+    dailyChallenge: { date: today(), completed: false, streak: 0 },
+  };
+}
+
 // ===== Manual persistence (safer than persist middleware — guarantees arrays exist) =====
 const STORAGE_KEY = "neha-scholar-v5";
 const GUEST_STORAGE_KEY = "scholar-guest-session-v1";
 const SCHEMA_VERSION = 5;
 
-function hasClass9Leakage(value: unknown): boolean {
-  if (!value || typeof value !== "object") return false;
-  const profile = value as {
-    mastery?: Record<string, unknown>;
-    tasks?: Array<{ subject?: unknown }>;
-    notes?: Array<{ title?: unknown; content?: unknown }>;
-  };
-  const class9Subjects = new Set(["science", "sst", "hindi"]);
-  if (Object.keys(profile.mastery ?? {}).some((key) => class9Subjects.has(key.toLowerCase()))) return true;
-  if ((profile.tasks ?? []).some((task) => typeof task.subject === "string" && class9Subjects.has(task.subject.toLowerCase()))) return true;
-  return (profile.notes ?? []).some((note) => {
-    const text = `${String(note.title ?? "")} ${String(note.content ?? "")}`.toLowerCase();
-    return text.includes("photosynthesis") || text.includes("french revolution") || text.includes("beehive");
-  });
-}
-
 function loadPersistedState(): Partial<AppState> | null {
   if (typeof window === "undefined") return null;
   try {
-    // Clean up ALL old versions
-    ["neha-scholar-v1", "neha-scholar-v2", "neha-scholar-v3", "neha-scholar-v4"].forEach((key) => {
-      if (localStorage.getItem(key)) localStorage.removeItem(key);
-    });
+    recoverWorkspaceSwitch(localStorage);
+    // Retain legacy versions as recoverable backups; startup is not a reset.
 
     const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
     if (guestRaw) {
@@ -919,10 +925,9 @@ function loadPersistedState(): Partial<AppState> | null {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
 
-    // Schema version check — if mismatch, wipe and start fresh
     if (parsed.schema !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
+      const backupKey = `${STORAGE_KEY}-backup-schema-${String(parsed.schema ?? "legacy")}`;
+      if (!localStorage.getItem(backupKey)) localStorage.setItem(backupKey, raw);
     }
 
     const state = parsed.state ?? parsed;
@@ -940,8 +945,14 @@ function loadPersistedState(): Partial<AppState> | null {
     }
     safe.friends = (safe.friends as Friend[]).filter((friend) => friend.type !== "kpop");
     const objFields = ["mastery", "studyProgress", "user", "dailyChallenge"];
+    const defaults = seed();
     for (const f of objFields) {
-      safe[f] = (state[f] !== undefined && state[f] !== null) ? state[f] : undefined;
+      const value = state[f];
+      const fallback = defaults[f as keyof typeof defaults];
+      // Partial/older records must not overwrite valid defaults with undefined.
+      safe[f] = value && typeof value === "object" && !Array.isArray(value)
+        ? { ...(fallback as object), ...value }
+        : fallback;
     }
     // Merge settings so older saved profiles receive newly introduced preferences.
     safe.settings = {
@@ -960,7 +971,7 @@ function loadPersistedState(): Partial<AppState> | null {
     // Developer access is restored only from the signed, HTTP-only server session.
     safe.devMode = false;
     safe.class9Data = state.class9Data ?? null;
-    safe.class11Data = hasClass9Leakage(state.class11Data) ? null : (state.class11Data ?? null);
+    safe.class11Data = state.class11Data ?? null;
     // Ensure user has scholarClass and jeeMode
     if (safe.user && typeof (safe.user as Record<string, unknown>).scholarClass !== "number") {
       (safe.user as Record<string, unknown>).scholarClass = 9;
@@ -968,40 +979,21 @@ function loadPersistedState(): Partial<AppState> | null {
     if (safe.user && typeof (safe.user as Record<string, unknown>).jeeMode !== "boolean") {
       (safe.user as Record<string, unknown>).jeeMode = false;
     }
-    if ((safe.user as User | undefined)?.scholarClass === 11 && hasClass9Leakage(state)) {
-      Object.assign(safe, {
-        xp: 0,
-        coins: 0,
-        streak: 0,
-        level: 1,
-        lastStudyDay: null,
-        mastery: {},
-        studyProgress: {},
-        notes: [],
-        folders: [],
-        decks: [],
-        flashcards: [],
-        tasks: [],
-        quizAttempts: [],
-        sessions: [],
-        activity: [],
-        chatThreads: [],
-        files: [],
-        bookmarks: [],
-        badges: [],
-        purchases: [],
-        dailyChallenge: { date: today(), completed: false, streak: 0 },
-      });
-    }
     return safe as Partial<AppState>;
   } catch {
     return null;
   }
 }
 
+let persistenceWarningShown = false;
 function savePersistedState(state: AppState) {
   if (typeof window === "undefined") return;
+  // A different tab switched accounts. Do not overwrite its workspace with
+  // this tab's stale in-memory data while the storage event triggers a reload.
   try {
+    if (workspaceOwner(localStorage) !== loadedWorkspaceOwner) return;
+    // A failed recovery must not replace the preserved workspace with defaults.
+    if (localStorage.getItem("scholar-workspace-switch-v1")) throw new Error("Workspace recovery is pending");
     if (state.guestMode) {
       localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({
         state: {
@@ -1025,12 +1017,17 @@ function savePersistedState(state: AppState) {
       return;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { ...state, devMode: false }, schema: SCHEMA_VERSION }));
+    persistenceWarningShown = false;
   } catch {
-    /* ignore quota errors */
+    if (!persistenceWarningShown) {
+      persistenceWarningShown = true;
+      window.dispatchEvent(new CustomEvent("scholar:notification", { detail: { type: "error", title: "Your changes are not saved yet", message: "This browser’s storage is full or unavailable. Keep this tab open and export your work from Settings → Data.", duration: 12000 } }));
+    }
   }
 }
 
 const persistedState = loadPersistedState();
+let loadedWorkspaceOwner = typeof window === "undefined" ? "" : workspaceOwner(localStorage);
 
 export const useStore = create<AppState>()(
   (set, get) => ({
@@ -1042,6 +1039,15 @@ export const useStore = create<AppState>()(
 
       setAuthed: (v) => set(v ? { authed: true } : { authed: false, guestMode: false, devMode: false }),
       startGuestSession: () => {
+        const guest = { ...seed(), authed: true, guestMode: true, onboarded: true, devMode: false };
+        guest.user = { ...guest.user, name: "Guest", username: "guest", email: "", avatar: "G", scholarClass: 11, jeeMode: false };
+        try {
+          if (switchWorkspace(localStorage, "guest", JSON.stringify({ schema: SCHEMA_VERSION, state: guest }))) { window.location.reload(); return; }
+          loadedWorkspaceOwner = workspaceOwner(localStorage);
+        } catch {
+          window.alert("Scholar could not safely open a separate Guest workspace. Your saved account data has been kept. Please free browser storage without clearing Scholar’s data, then retry.");
+          return;
+        }
         set(() => ({ ...seed(), authed: true, guestMode: true, onboarded: true, devMode: false }));
         get().switchClass(11);
         set((state) => ({
@@ -1056,6 +1062,10 @@ export const useStore = create<AppState>()(
       endGuestSession: () => {
         if (typeof window !== "undefined") {
           localStorage.removeItem(GUEST_STORAGE_KEY);
+          const guestSnapshot = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          if (guestSnapshot.state?.guestMode) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...guestSnapshot, state: { ...guestSnapshot.state, authed: false, guestMode: false, devMode: false } }));
+          }
           window.location.reload();
           return;
         }
@@ -1330,7 +1340,7 @@ export const useStore = create<AppState>()(
       addFile: (f) =>
         set((s) => ({
           files: [
-            { id: f.id ?? uid(), name: f.name ?? "file", type: f.type ?? "file", mimeType: f.mimeType, url: f.url, size: f.size ?? 0, dataUrl: f.dataUrl, tags: f.tags ?? [], uploadedAt: Date.now() },
+            { id: f.id ?? uid(), name: f.name ?? "file", type: f.type ?? "file", mimeType: f.mimeType, url: f.url, size: f.size ?? 0, dataUrl: f.dataUrl, localBlobKey: f.localBlobKey, tags: f.tags ?? [], uploadedAt: Date.now() },
             ...s.files,
           ],
         })),
@@ -1445,6 +1455,9 @@ export const useStore = create<AppState>()(
 
 // ===== Auto-save to localStorage on every state change =====
 if (typeof window !== "undefined") {
+  window.addEventListener("storage", event => {
+    if (event.key === "scholar-workspace-owner-v1" && event.newValue !== loadedWorkspaceOwner) window.location.reload();
+  });
   useStore.subscribe((state) => {
     savePersistedState(state);
   });
@@ -1453,4 +1466,16 @@ if (typeof window !== "undefined") {
 // Helper to compute level info from xp
 export function getLevelInfo(xp: number) {
   return levelFromXP(xp);
+}
+
+/** Called only after the existing server session verifies the account. */
+export function activateAccountWorkspace(profile: Pick<User, "email" | "name" | "scholarClass">) {
+  const defaults = seed();
+  const fresh = JSON.stringify({ schema: SCHEMA_VERSION, state: {
+    ...defaults, user: { ...defaults.user, ...profile }, authed: true, guestMode: false, onboarded: false,
+  } });
+  const changed = switchWorkspace(localStorage, profile.email, fresh);
+  loadedWorkspaceOwner = workspaceOwner(localStorage);
+  if (changed) window.location.reload();
+  return changed;
 }

@@ -18,7 +18,7 @@ export async function storeEvidence(userId: string, events: EvidenceEvent[]): Pr
   for (const event of events) {
     try {
       await db.practiceAttempt.upsert({
-        where: { id: event.id },
+        where: { id: event.id, userId },
         create: {
           id: event.id,
           userId,
@@ -42,7 +42,7 @@ export async function storeEvidence(userId: string, events: EvidenceEvent[]): Pr
       });
       stored += 1;
     } catch (error) {
-      console.error("[Scholar intelligence] failed to store evidence", error instanceof Error ? error.message : "unknown");
+      console.error("[Scholar intelligence] evidence write failed");
     }
   }
   return stored;
@@ -53,7 +53,7 @@ export async function storeMistakes(userId: string, mistakes: MistakeRecord[]): 
   for (const mistake of mistakes) {
     try {
       await db.mistakeRecord.upsert({
-        where: { id: mistake.id },
+        where: { id: mistake.id, userId },
         create: {
           id: mistake.id,
           userId,
@@ -78,7 +78,7 @@ export async function storeMistakes(userId: string, mistakes: MistakeRecord[]): 
       });
       stored += 1;
     } catch (error) {
-      console.error("[Scholar intelligence] failed to store mistake", error instanceof Error ? error.message : "unknown");
+      console.error("[Scholar intelligence] mistake write failed");
     }
   }
   return stored;

@@ -104,11 +104,15 @@ export function NotesView() {
 
   const [selection, setSelection] = useState<Selection>({ kind: "virtual", id: "all" });
   const [search, setSearch] = useState("");
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(notes[0]?.id ?? null);
-  const [mobileTab, setMobileTab] = useState<"folders" | "list" | "editor">("list");
+  const [requestedNote] = useState(() => sessionStorage.getItem("scholar:notes:target"));
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(() => notes.find(note => note.id === requestedNote)?.id ?? notes[0]?.id ?? null);
+  const [mobileTab, setMobileTab] = useState<"folders" | "list" | "editor">(requestedNote ? "editor" : "list");
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState("violet");
+  useEffect(() => {
+    sessionStorage.removeItem("scholar:notes:target");
+  }, []);
 
   const selectedNote = useMemo(
     () => notes.find((n) => n.id === selectedNoteId) ?? null,

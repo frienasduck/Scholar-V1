@@ -40,7 +40,7 @@ export function ScholarPlusPromo({
   const access = useScholarAccess();
   const [dismissed, setDismissed] = useState(false);
 
-  if (access.access?.source === "plus" || access.access?.source === "developer") {
+  if (access.loading || access.status === "error" || !access.entitlementsLoaded || access.config?.subscriptionsEnabled === false || access.access?.source === "plus" || access.access?.source === "developer" || access.access?.source === "subscriptions_disabled") {
     return null;
   }
   if (dismissed) return null;
@@ -57,7 +57,7 @@ export function ScholarPlusPromo({
       {offerEnabled && regularPrice > offerPrice && (
         <span className="text-white/30 line-through">₹{regularPrice}</span>
       )}
-      <span className="font-semibold text-white">₹{offerPrice}</span>
+      <span className="font-semibold text-white">₹{offerEnabled ? offerPrice : regularPrice}</span>
       {offerEnabled && (
         <Badge className="border border-cyan-200/20 bg-cyan-200/10 text-[9px] font-bold text-cyan-100">
           {offerLabel}

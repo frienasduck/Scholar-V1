@@ -64,8 +64,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setState((previous) => ({ ...previous, status: "refreshing", loading: false, refreshing: true }));
     }
     try {
-      const response = await fetch("/api/auth/session", { cache: "no-store" });
+      const response = await fetch("/api/auth/session", { cache: "no-store", signal: AbortSignal.timeout(12_000) });
+      if (!response.ok) throw new Error("Session service unavailable");
       const value = await response.json();
+      if (!value || typeof value.authenticated !== "boolean") throw new Error("Invalid session response");
       if (sequence !== refreshSequence.current) return;
       initialized.current = true;
       const authenticated = value.authenticated === true;
@@ -118,7 +120,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       action: { label: "Explore Scholar Plus", onClick: () => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } })) },
     } }));
   }, [state.access, state.authenticated, state.loading]);
-  const value = useMemo<AccessContextValue>(() => ({ ...state, refresh: () => refresh("silent"), has: (entitlement) => state.entitlementsLoaded === true && Boolean(state.access?.entitlements.includes(entitlement)) }), [state, refresh]);
+  const value = useMemo<AccessContextValue>(() => ({ ...state, refresh: () => refresh("silent"), has: (entitlement) => state.status !== "error" && state.entitlementsLoaded === true && Boolean(state.access?.entitlements.includes(entitlement)) }), [state, refresh]);
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
 }
 

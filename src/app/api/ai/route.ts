@@ -10,12 +10,11 @@ import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
 import { getSessionUser } from "@/lib/auth/session";
 import { requireEntitlement, resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
-import { checkGenerationQuota, consumeGeneration } from "@/lib/subscriptions/usage";
-import { subscriptionConfig } from "@/lib/subscriptions/config";
+import { reserveGeneration, commitGeneration, releaseGeneration, QuotaExceededError, ReservationConflictError } from "@/lib/v2/usage/ledger";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const JSON_MODES = new Set<AIMode>([
   "json",
@@ -26,6 +25,9 @@ const JSON_MODES = new Set<AIMode>([
 ]);
 
 export async function POST(request: NextRequest) {
+  // One budget for provider fallback AND schema repair; nested attempts must
+  // never outlive the browser's 60-second deadline.
+  const signal = AbortSignal.any([request.signal, AbortSignal.timeout(50_000)]);
   let raw: unknown;
   try {
     raw = await request.json();
@@ -46,8 +48,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = parsed.data;
-  const sessionUser = await getSessionUser();
-  if (subscriptionConfig.enabled && !sessionUser) return errorResponse("Sign in to use Scholar AI.", 401, "AUTH_REQUIRED");
+  let sessionUser: Awaited<ReturnType<typeof getSessionUser>>;
+  try { sessionUser = await getSessionUser(); }
+  catch { return errorResponse("Scholar could not verify your session. Please retry.", 503, "SESSION_UNAVAILABLE"); }
+  if (!sessionUser) return errorResponse("Sign in to use Scholar AI.", 401, "AUTH_REQUIRED");
   if (sessionUser) {
     try {
       await enforceRateLimit(sessionUser.id, "ai-generation", 90, 60 * 60 * 1000);
@@ -55,10 +59,6 @@ export async function POST(request: NextRequest) {
         const required = await requireEntitlement(body.feature);
         if (!required.ok) return required.response;
       }
-      // Non-destructive quota check BEFORE the provider call. Usage is only
-      // recorded after a successful generation (see recordUsage), so genuine
-      // provider failures and client retries never burn daily quota.
-      if (body.usage) await checkGenerationQuota(sessionUser.id, body.usage, await resolveUserEntitlements(sessionUser.id));
     } catch (error) {
       if (error instanceof RateLimitError) return errorResponse("Too many AI requests. Please wait and try again.", 429, "RATE_LIMITED");
       if (error instanceof Error && (error as Error & { code?: string }).code === "QUOTA_REACHED") return errorResponse("Your daily generation limit has been reached. Upgrade to Scholar Plus for a higher limit.", 429, "QUOTA_REACHED");
@@ -86,58 +86,59 @@ export async function POST(request: NextRequest) {
       .map((message) => ({ role: message.role, content: message.content }) as ScholarGroqMessage),
   ];
 
+  let reservationKey: string | undefined;
+  if (body.usage) {
+    try {
+      const key = `${sessionUser.id}:${body.requestId ?? crypto.randomUUID()}:${body.usage}`;
+      const reserved = await reserveGeneration({ userId: sessionUser.id, feature: body.usage === "quiz_generation" ? "quiz" : "slideshow", idempotencyKey: key, access: await resolveUserEntitlements(sessionUser.id) });
+      if (reserved.replayed) return errorResponse("This generation is already running or completed. Check your saved result before retrying.", 409, "GENERATION_REPLAY");
+      reservationKey = key;
+    } catch (error) {
+      if (error instanceof QuotaExceededError) return errorResponse("Your daily generation allowance has been reached.", 429, "QUOTA_REACHED");
+      if (error instanceof ReservationConflictError) return errorResponse("This request has already been handled. Start a new generation to retry.", 409, "GENERATION_REPLAY");
+      console.warn("[Scholar AI] quota reservation unavailable");
+      return errorResponse("Scholar could not check your generation allowance. Please retry.", 503, "QUOTA_UNAVAILABLE");
+    }
+  }
   if (queryStream || mode === "stream") {
-    return streamResponse(messages, body.temperature, request.signal, body.usage, sessionUser?.id);
+    return streamResponse(messages, body.temperature, signal, reservationKey, sessionUser.id);
   }
 
   try {
     if (JSON_MODES.has(mode)) {
-      let value = await generateScholarGroqJSON({
-        messages: withJSONInstruction(messages),
-        temperature: Math.min(body.temperature, 0.8),
-        signal: request.signal,
-      });
       const schema = schemaForMode(mode);
-      if (schema) {
-        let validated = schema.safeParse(value);
-        if (!validated.success) {
-          value = await generateScholarGroqJSON({
-            messages: [
-              ...withJSONInstruction(messages),
-              {
-                role: "system",
-                content:
-                  "The prior JSON did not match the required feature schema. Regenerate it once with every required field, correct field type, and no additional prose.",
-              },
-            ],
-            temperature: Math.min(body.temperature, 0.5),
-            signal: request.signal,
+      let repair = "";
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const value = await generateScholarGroqJSON({
+            messages: [...withJSONInstruction(messages), ...(repair ? [{ role: "system" as const, content: repair }] : [])],
+            temperature: Math.min(body.temperature, attempt ? 0.4 : 0.8), signal,
           });
-          validated = schema.safeParse(value);
-          if (!validated.success) {
-            throw new AIProviderError(
-              "The AI response did not match the required structure. Please retry.",
-              502,
-              "AI_SCHEMA_MISMATCH",
-            );
+          const validated = schema?.safeParse(value);
+          if (validated && !validated.success) {
+            repair = `Return a complete JSON object matching the requested format. Fix these validation issues: ${validated.error.issues.map(issue => `${issue.path.join(".")}: ${issue.message}`).join("; ").slice(0, 1500)}`;
+            throw new AIProviderError("The AI response did not match the required structure. Please retry.", 502, "AI_SCHEMA_MISMATCH");
           }
+          await recordUsage(reservationKey, sessionUser.id);
+          return NextResponse.json({ ok: true, data: validated?.success ? validated.data : value });
+        } catch (error) {
+          if (attempt || signal.aborted || !(error instanceof AIProviderError) || !["AI_SCHEMA_MISMATCH", "GROQ_INVALID_JSON"].includes(error.code)) throw error;
+          repair ||= "Return valid JSON only. Escape newlines and backslashes correctly, close all brackets, and include every requested field.";
         }
-        await recordUsage(body.usage, sessionUser?.id);
-        return NextResponse.json({ ok: true, data: validated.data });
       }
-      await recordUsage(body.usage, sessionUser?.id);
-      return NextResponse.json({ ok: true, data: value });
+      throw new AIProviderError("The AI returned invalid structured data. Please retry.");
     }
 
     const text = await generateScholarGroqText({
       messages,
       temperature: body.temperature,
-      signal: request.signal,
-      maxTokens: 3_000,
+      signal,
+      maxTokens: 4_000,
     });
-    await recordUsage(body.usage, sessionUser?.id);
+    await recordUsage(reservationKey, sessionUser.id);
     return NextResponse.json({ ok: true, text });
   } catch (error) {
+    await releaseUsage(reservationKey, sessionUser.id);
     const detail = publicAIError(error);
     return errorResponse(detail.message, detail.status, detail.code);
   }
@@ -158,48 +159,49 @@ function withJSONInstruction(
 
 /**
  * Record a successful generation against the user's daily quota.
- * Best-effort: a quota race or DB hiccup must never fail an answer that was
- * already produced.
+ * A reserved unit is committed exactly once, only after output validation.
  */
-async function recordUsage(usage: "quiz_generation" | "slideshow_generation" | undefined, userId: string | undefined) {
-  if (!userId || !usage) return;
-  try {
-    await consumeGeneration(userId, usage, await resolveUserEntitlements(userId));
-  } catch {
-    // Deliberately swallowed — quota is already enforced by the pre-check.
-  }
+async function recordUsage(key: string | undefined, userId: string) {
+  if (key) await commitGeneration(key, userId);
+}
+
+async function releaseUsage(key: string | undefined, userId: string) {
+  if (key) await releaseGeneration(key, userId).catch(() => console.warn("[Scholar AI] reservation release deferred to expiry"));
 }
 
 function streamResponse(
   messages: ScholarGroqMessage[],
   temperature: number,
   signal: AbortSignal,
-  usage?: "quiz_generation" | "slideshow_generation",
-  userId?: string,
+  reservationKey: string | undefined,
+  userId: string,
 ): Response {
   const encoder = new TextEncoder();
+  const disconnected = new AbortController();
+  const streamSignal = AbortSignal.any([signal, disconnected.signal]);
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
       let closed = false;
       const close = () => {
-        if (closed) return;
+        if (closed || disconnected.signal.aborted) return;
         closed = true;
         try { controller.close(); } catch { /* already closed */ }
       };
       const send = (event: unknown) => {
-        if (closed) return;
+        if (closed || disconnected.signal.aborted) return;
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       };
 
       try {
-        await streamScholarGroqText({ messages, temperature, signal, maxTokens: 3_000 }, (delta) => {
+        await streamScholarGroqText({ messages, temperature, signal: streamSignal, maxTokens: 4_000 }, (delta) => {
           send({ delta });
         });
-        send({ done: true });
         // Usage is recorded only after the stream completes without error, so
         // aborted or failed generations never consume daily quota.
-        await recordUsage(usage, userId);
+        await recordUsage(reservationKey, userId);
+        send({ done: true });
       } catch (error) {
+        await releaseUsage(reservationKey, userId);
         const detail = publicAIError(error);
         send({ error: { code: detail.code, message: detail.message } });
       } finally {
@@ -207,7 +209,7 @@ function streamResponse(
       }
     },
     cancel() {
-      // The request signal is forwarded to Groq and aborts when the client disconnects.
+      disconnected.abort();
     },
   });
 

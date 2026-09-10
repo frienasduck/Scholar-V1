@@ -23,6 +23,7 @@ export const chatMessageSchema = z.object({
 });
 
 export const aiRequestSchema = z.object({
+  requestId: z.string().uuid().optional(),
   messages: z.array(chatMessageSchema).min(1).max(30),
   persona: z.string().trim().min(1).max(80).optional().default("default"),
   mode: aiModeSchema.optional(),
@@ -41,6 +42,10 @@ export const checkpointSchema = z.object({
   options: z.array(z.string().trim().min(1)).min(2).max(6),
   correctAnswer: z.union([z.number().int().nonnegative(), z.string().trim().min(1)]),
   explanation: z.string().trim().min(1),
+}).superRefine((question, ctx) => {
+  if (typeof question.correctAnswer === "number" && question.correctAnswer >= question.options.length) {
+    ctx.addIssue({ code: "custom", path: ["correctAnswer"], message: "correctAnswer must be a valid zero-based option index" });
+  }
 });
 
 export const flashcardSchema = z.object({
@@ -72,6 +77,9 @@ export const mockExamQuestionSchema = z.object({
     }
     if (question.correctAnswer === undefined) {
       context.addIssue({ code: "custom", message: "MCQs require correctAnswer", path: ["correctAnswer"] });
+    }
+    if (typeof question.correctAnswer === "number" && question.correctAnswer >= (question.options?.length ?? 0)) {
+      context.addIssue({ code: "custom", message: "correctAnswer must be a valid zero-based option index", path: ["correctAnswer"] });
     }
   } else if (!question.modelAnswer) {
     context.addIssue({ code: "custom", message: "Descriptive questions require modelAnswer", path: ["modelAnswer"] });

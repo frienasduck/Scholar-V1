@@ -27,7 +27,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400 });
   const payload = body as { events?: unknown; mistakes?: unknown };
+  if ((payload.events !== undefined && !Array.isArray(payload.events)) || (payload.mistakes !== undefined && !Array.isArray(payload.mistakes))) return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400 });
   const hasEvents = Array.isArray(payload.events) && payload.events.length > 0;
   const hasMistakes = Array.isArray(payload.mistakes) && payload.mistakes.length > 0;
 
@@ -36,8 +38,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ storedEvents: 0, storedMistakes: 0 });
   }
 
-  const eventsResult = hasEvents ? ingestEventsSchema.safeParse(payload.events) : { success: true as const, data: { events: [] } };
-  const mistakesResult = hasMistakes ? ingestMistakesSchema.safeParse(payload.mistakes) : { success: true as const, data: { mistakes: [] } };
+  const eventsResult = hasEvents ? ingestEventsSchema.safeParse({ events: payload.events }) : { success: true as const, data: { events: [] } };
+  const mistakesResult = hasMistakes ? ingestMistakesSchema.safeParse({ mistakes: payload.mistakes }) : { success: true as const, data: { mistakes: [] } };
 
   if (!eventsResult.success || !mistakesResult.success) {
     return NextResponse.json(

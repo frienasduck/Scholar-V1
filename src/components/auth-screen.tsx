@@ -2,93 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useStore } from "@/lib/store";
+import { activateAccountWorkspace, useStore } from "@/lib/store";
+import { ReadyBackgroundVideo } from "@/components/ready-background-video";
+import { ScholarFooter } from "@/components/scholar-footer";
 import { ArrowUpRight, Play, BookOpen, Brain, Trophy } from "lucide-react";
 import { markLoginIntroPlayed, useScholarTransition } from "@/components/scholar-transition";
 
-// ===== FadingVideo component (custom JS crossfade, no CSS transitions) =====
-function FadingVideo({ src, className, style }: { src: string; className?: string; style?: React.CSSProperties }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const fadingOutRef = useRef(false);
-  const FADE_MS = 500;
-  const FADE_OUT_LEAD = 0.55;
-
-  const fadeTo = (target: number, duration: number) => {
-    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    const video = videoRef.current;
-    if (!video) return;
-    const startOpacity = video.style.opacity ? parseFloat(video.style.opacity) : 0;
-    const startTime = performance.now();
-    const step = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      const eased = progress * (2 - progress);
-      video.style.opacity = String(startOpacity + (target - startOpacity) * eased);
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(step);
-      } else {
-        rafRef.current = null;
-      }
-    };
-    rafRef.current = requestAnimationFrame(step);
-  };
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleLoadedData = () => {
-      video.style.opacity = "0";
-      video.play().catch(() => {});
-      fadeTo(1, FADE_MS);
-    };
-
-    const handleTimeUpdate = () => {
-      if (!video.duration || fadingOutRef.current) return;
-      const remaining = video.duration - video.currentTime;
-      if (remaining <= FADE_OUT_LEAD && remaining > 0) {
-        fadingOutRef.current = true;
-        fadeTo(0, FADE_MS);
-      }
-    };
-
-    const handleEnded = () => {
-      video.style.opacity = "0";
-      setTimeout(() => {
-        video.currentTime = 0;
-        video.play().catch(() => {});
-        fadingOutRef.current = false;
-        fadeTo(1, FADE_MS);
-      }, 100);
-    };
-
-    video.addEventListener("loadeddata", handleLoadedData);
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    video.addEventListener("ended", handleEnded);
-
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      video.removeEventListener("loadeddata", handleLoadedData);
-      video.removeEventListener("timeupdate", handleTimeUpdate);
-      video.removeEventListener("ended", handleEnded);
-    };
-  }, []);
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      muted
-      playsInline
-      preload="auto"
-      className={className}
-      style={{ opacity: 0, ...style }}
-    >
-      <source src={src} type="video/mp4" />
-    </video>
-  );
-}
+// Decorative media shares lazy loading, poster fallback and visibility policy.
+const FadingVideo = ReadyBackgroundVideo;
 
 // ===== BlurText component (word-by-word blur-in) =====
 function BlurText({ text, className }: { text: string; className?: string }) {
@@ -142,6 +63,10 @@ export function AuthScreen() {
   const [authError, setAuthError] = useState("");
   const [accountUnavailable, setAccountUnavailable] = useState(false);
   const [selectedClass, setSelectedClass] = useState<9 | 11>(11);
+  const openSignup = () => {
+    setMode("signup");
+    document.getElementById("scholar-auth-form")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,11 +77,12 @@ export function AuthScreen() {
     setAuthError("");
     setLoading(true);
     try {
-      const resolvedName = name.trim() || "Ishan";
+      const resolvedName = name.trim() || "Scholar";
       const response = await fetch(`/api/auth/${mode === "signup" ? "register" : "login"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password, name: resolvedName }),
+        signal: AbortSignal.timeout(20_000),
       });
       const value = await response.json();
       if (!response.ok) {
@@ -168,19 +94,20 @@ export function AuthScreen() {
         email: value.user?.email || email,
         name: value.user?.name || resolvedName,
         username: (value.user?.name || resolvedName).toLowerCase().replace(/[^a-z0-9]+/g, "_"),
-        scholarClass: 11 as const,
+        scholarClass: value.user?.currentScholarClass === 9 ? 9 as const : 11 as const,
         jeeMode: false,
       };
+      if (activateAccountWorkspace(profile)) return;
       if (guestMode) {
         const keepPreferences = window.confirm("Keep your Guest appearance and study preferences on this account? Temporary guest records will not be migrated.");
         completeGuestAuthentication(profile, keepPreferences);
         window.dispatchEvent(new Event("scholar:session-changed"));
         return;
       }
-      switchClass(11);
+      switchClass(profile.scholarClass);
       updateUser(profile);
       if (!onboarded && markLoginIntroPlayed()) {
-        void startTransition({ type: "login-intro", durationMs: 16_000 });
+        void startTransition({ type: "login-intro", durationMs: 1_200 });
       }
       setAuthed(true);
       window.dispatchEvent(new Event("scholar:session-changed"));
@@ -247,7 +174,7 @@ export function AuthScreen() {
           box-shadow: none !important;
         }
         .lg-input::placeholder { color: rgba(255,255,255,0.4) !important; }
-        .lg-input:focus { box-shadow: none !important; outline: none !important; }
+        .lg-input:focus { box-shadow: none !important; outline: 2px solid rgba(165,180,252,.8) !important; outline-offset: 3px; }
       `}</style>
 
       {/* ===== Section 1: Hero (full viewport) ===== */}
@@ -272,7 +199,7 @@ export function AuthScreen() {
                 </span>
               ))}
               <button
-                onClick={() => setMode("signup")}
+                onClick={openSignup}
                 className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1 lg-body hover:scale-105 transition-transform"
               >
                 Get Started <ArrowUpRight className="h-4 w-4" />
@@ -319,16 +246,16 @@ export function AuthScreen() {
             className="flex items-center gap-6 mt-10"
           >
             <button
-              onClick={() => setMode("signup")}
+              onClick={openSignup}
               className="lg-glass-strong rounded-full px-6 py-3 text-sm font-medium text-white flex items-center gap-2 lg-body hover:scale-105 transition-transform"
             >
               Start Your Journey <ArrowUpRight className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setMode("login")}
+              onClick={startGuestSession}
               className="text-white text-sm font-medium flex items-center gap-2 lg-body hover:text-white/80 transition-colors"
             >
-              View Demo <Play className="h-4 w-4 fill-white" />
+              Explore as Guest <Play className="h-4 w-4 fill-white" />
             </button>
           </motion.div>
         </div>
@@ -387,21 +314,23 @@ export function AuthScreen() {
               </p>
             </div>
 
-            <form onSubmit={submit} className="space-y-4">
+            <form id="scholar-auth-form" onSubmit={submit} className="space-y-4">
               {mode === "signup" && (
                 <div>
-                  <label className="text-xs text-white/50 lg-body block mb-1.5">Full Name</label>
+                  <label htmlFor="scholar-name" className="text-xs text-white/50 lg-body block mb-1.5">Full Name</label>
                   <input
+                    id="scholar-name" autoComplete="name" required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder={selectedClass === 11 ? "Ishan" : "Neha Salah"}
+                    placeholder="Your full name"
                     className="lg-input lg-body w-full px-4 py-3 rounded-xl bg-white/5"
                   />
                 </div>
               )}
               <div>
-                <label className="text-xs text-white/50 lg-body block mb-1.5">Email</label>
+                <label htmlFor="scholar-email" className="text-xs text-white/50 lg-body block mb-1.5">Email</label>
                 <input
+                  id="scholar-email" autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -411,8 +340,9 @@ export function AuthScreen() {
                 />
               </div>
               <div>
-                <label className="text-xs text-white/50 lg-body block mb-1.5">Password</label>
+                <label htmlFor="scholar-password" className="text-xs text-white/50 lg-body block mb-1.5">Password</label>
                 <input
+                  id="scholar-password" autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   type="password"
                   required
                   value={password}
@@ -557,6 +487,7 @@ export function AuthScreen() {
           </div>
         </div>
       </section>
+      <ScholarFooter />
     </div>
   );
 }

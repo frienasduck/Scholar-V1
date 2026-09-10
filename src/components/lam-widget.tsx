@@ -184,6 +184,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   }, []);
 
   useEffect(() => { setState(loadLamState(profileId)); setStatus("sleeping"); setOpen(false); }, [profileId]);
+  useEffect(() => () => { abortRef.current?.abort(); }, [profileId, currentView, conversation.id]);
   useEffect(() => () => {
     abortRef.current?.abort();
     recognitionRef.current?.abort();
@@ -418,12 +419,16 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     }
     setStatus("thinking");
     const controller = new AbortController(); abortRef.current = controller;
+    let timedOut = false;
+    const deadline = window.setTimeout(() => { timedOut = true; controller.abort(); }, 55_000);
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let finished = false;
     const assistantId = uid(); let full = ""; let streamFlushTimer: number | null = null; let lastFlushed = "";
     const flushStream = () => {
       streamFlushTimer = null;
       if (full === lastFlushed) return;
       lastFlushed = full;
-      commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, content: full } : message), updatedAt: now() } : item) }));
+      commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === conversation.id ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, content: full } : message), updatedAt: now() } : item) }));
     };
     addMessage({ id: assistantId, role: "assistant", content: "", createdAt: now() });
     try {
@@ -433,7 +438,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
         messages: conversation.messages.filter((message) => message.role !== "tool" && message.content).slice(-10).map(({ role, content: value }) => ({ role, content: value })),
       }) });
       if (!response.ok || !response.body) { const data = await response.json().catch(() => null) as { error?: string } | null; throw new Error(data?.error ?? "LAM could not connect to Groq."); }
-      const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
+      reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
       while (true) {
         const chunk = await reader.read(); if (chunk.done) break;
         buffer += decoder.decode(chunk.value, { stream: true }).replace(/\r\n/g, "\n");
@@ -442,24 +447,32 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
           const event = JSON.parse(line.slice(5).trim()) as { type: string; value?: string; message?: string; source?: { label: string; route?: string } };
            if (event.type === "text-delta" && event.value) {
              full += event.value;
-             if (renderQualityRef.current === "mobile-optimized") {
-               if (streamFlushTimer === null) streamFlushTimer = window.setTimeout(flushStream, 64);
-             } else flushStream();
+             if (streamFlushTimer === null) streamFlushTimer = window.setTimeout(flushStream, 64);
           }
           if (event.type === "source" && event.source) commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, sources: [...(message.sources ?? []), event.source!] } : message) } : item) }));
           if (event.type === "error") throw new Error(event.message ?? "LAM could not answer.");
+          if (event.type === "finish") finished = true;
         }
        }
       if (streamFlushTimer !== null) window.clearTimeout(streamFlushTimer);
       flushStream();
       if (!full.trim()) throw new Error("LAM returned an empty response.");
+      if (!finished) throw new Error("Connection lost before LAM finished. Please retry.");
       setStatus("sleeping"); speak(full);
       if (prefs.followUpListeningEnabled && !prefs.voiceRepliesEnabled) { if (voiceTransitionTimerRef.current) window.clearTimeout(voiceTransitionTimerRef.current); voiceTransitionTimerRef.current = window.setTimeout(() => { voiceTransitionTimerRef.current = null; startListeningRef.current(false); }, 250); }
     } catch (caught) {
       if (streamFlushTimer !== null) window.clearTimeout(streamFlushTimer);
-      if ((caught as Error).name === "AbortError") setStatus("sleeping");
+      flushStream();
+      if (!full.trim()) commit(previous => ({ ...previous, conversations: previous.conversations.map(item => item.id === conversation.id ? { ...item, messages: item.messages.filter(message => message.id !== assistantId) } : item) }));
+      if (timedOut) { setError("LAM took too long. Please retry or ask a shorter question."); setStatus("error"); }
+      else if ((caught as Error).name === "AbortError") setStatus("sleeping");
       else { setError(caught instanceof Error ? caught.message : "LAM could not answer."); setStatus("error"); }
-    } finally { abortRef.current = null; }
+    } finally {
+      window.clearTimeout(deadline);
+      await reader?.cancel().catch(() => undefined);
+      reader?.releaseLock();
+      if (abortRef.current === controller) abortRef.current = null;
+    }
   }, [addMessage, commit, context, conversation, executeAction, files, input, notes, prefs.followUpListeningEnabled, prefs.responseDetail, prefs.voiceRepliesEnabled, profileId, reminderProfile, speak, state.conversations, status, stopSpeech, user]);
 
   const stopCapturedAudio = useCallback(() => {
@@ -494,7 +507,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
       setStatus("transcribing");
       try {
         const form = new FormData(); form.set("audio", new File([blob], "lam-recording.webm", { type: blob.type || "audio/webm" }));
-        const response = await fetch("/api/lam/transcribe", { method: "POST", body: form });
+        const response = await fetch("/api/lam/transcribe", { method: "POST", body: form, signal: AbortSignal.timeout(50_000) });
         const result = await response.json() as { ok?: boolean; text?: string; error?: string };
         if (!response.ok || !result.text) throw new Error(result.error || "The recording could not be transcribed.");
         setInterim(result.text); await send(result.text, "voice");

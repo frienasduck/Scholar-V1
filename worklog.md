@@ -1,5 +1,18 @@
 # Neha's Scholar — Worklog
 
+## 10 September 2026 — Website reliability overhaul (in-place, Android untouched)
+
+This entry supersedes the historical project-status notes below. This is a tested reliability release, **not certification that every feature is finished**. Detailed scope and limitations: [website overhaul report](docs/website-overhaul-report-2026-09-10.md); initial inventory and security/AI audits are alongside it.
+
+- Centralized Groq transport without a new AI SDK/gateway; bounded retries, validated completion, schema repair budget, actionable errors, and request cancellation. Corrected mock-exam/evaluation prompt contracts. Tutor now streams with Stop; LAM batches streaming updates.
+- Fixed reminder hydration/scheduler recursion and cross-tab write-back; covered with regression tests. Fixed partial saved-profile defaults that crashed Dashboard/LAM.
+- Removed destructive persistence heuristics. Account changes preserve recoverable local workspaces. Uploaded file bytes use account-scoped IndexedDB and survive refresh; this is explicitly not cloud storage.
+- Session outages preserve state and show recovery. API session/entitlement checks remain server-owned. Declared quiz usage uses the existing reservation ledger; generic quota omission and client-orchestrated slideshow accounting remain open, documented issues.
+- Code-split heavy screens; pause/lazy-load background video; shorten artificial login/class transitions; retain Scholar's visual identity. Improve settings tabs, search targets, accessible auth labels, public footer/help/privacy/terms/updates, and unknown-route handling.
+- Reduce misleading/cluttered promotions and hide unfinished previews from regular navigation. No database reset, major dependency upgrade, new auth/billing system, or Android work.
+- Validation: production build and TypeScript pass; source lint has no errors; 176 unit/policy/source tests pass (nine live tests skipped in the offline run). Nine separately opted-in live provider checks pass. Six Chrome browser tests pass (synthetic account/provider responses where noted), plus real bundled-page OCR. Details and untested boundaries are in the report.
+
+
 ## Project Status
 **Phase**: Foundation complete, dispatching view-building subagents.
 

@@ -176,7 +176,8 @@ function MemoryPredictor() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<MemoryTopic[] | null>(null);
 
-  // Build a snapshot of studied chapters with mock last-studied dates within 14 days.
+  // Study progress does not contain review timestamps. Never invent dates or
+  // present a generated retention percentage as a measured memory score.
   const studied = useMemo(() => {
     const now = Date.now();
     return Object.entries(studyProgress)
@@ -184,11 +185,9 @@ function MemoryPredictor() {
       .map(([chapterId, progress]) => {
         const ch = CURRICULUM.flatMap((s) => s.chapters).find((c) => c.id === chapterId);
         const subj = CURRICULUM.find((s) => s.chapters.some((c) => c.id === chapterId));
-        const daysAgo = Math.floor(Math.random() * 14);
         return {
           name: ch ? `${subj?.name ?? ""}: ${ch.title}` : chapterId,
           progress,
-          lastStudied: now - daysAgo * 86400000,
         };
       })
       .slice(0, 15);
@@ -198,12 +197,12 @@ function MemoryPredictor() {
     if (studied.length === 0) { toast.error("Study some chapters first!"); return; }
     setLoading(true); setData(null);
     try {
-      const context = studied.map((c) => `- ${c.name}: ${c.progress}% mastery, last studied ${Math.round((Date.now() - c.lastStudied) / 86400000)}d ago`).join("\n");
-      const prompt = `Here is a list of chapters a Class ${scholarClass} CBSE student has studied, with mastery % and days since last review:\n${context}\n\nBased on the Ebbinghaus forgetting curve, predict current memory retention for each. Return JSON: { "topics": [{ "name": string, "retention": number (0-100), "risk": "high" | "medium" | "low", "reviseBy": string (e.g. "Today", "In 2 days", "This week") }] }`;
+      const context = studied.map((c) => `- ${c.name}: ${c.progress}% recorded chapter progress`).join("\n");
+      const prompt = `Suggest revision priorities for this Class ${scholarClass} CBSE student based only on recorded chapter progress:\n${context}\nReview dates are unknown. Do not claim to measure memory or predict forgetting. The legacy retention field must copy the supplied chapter progress, not invent a memory score. Return JSON: { "topics": [{ "name": string, "retention": number (0-100), "risk": "high" | "medium" | "low", "reviseBy": string (suggested schedule, such as "Today") }] }`;
       const r = await askAIJSON<{ topics: MemoryTopic[] }>(prompt, "memory-predictor");
       if (!r?.topics?.length) { toast.error("Couldn't build memory model"); return; }
       setData(r.topics);
-      toast.success(`Predicted memory for ${r.topics.length} topics`);
+      toast.success(`Revision suggestions for ${r.topics.length} topics`);
     } catch (e: any) {
       toast.error("Prediction failed", { description: e?.message });
     } finally { setLoading(false); }
@@ -229,9 +228,10 @@ function MemoryPredictor() {
       </div>
       <Button onClick={run} disabled={loading} className="w-full">
         {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Brain className="h-4 w-4 mr-2" />}
-        Predict memory decay
+        Suggest revision priorities
       </Button>
-      {loading && <Loading label="Modelling forgetting curves..." />}
+      <p className="text-xs text-muted-foreground">Suggestions use recorded chapter progress. Review dates and actual memory retention are not known.</p>
+      {loading && <Loading label="Preparing revision suggestions…" />}
       {data && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
           <div className="rounded-xl border border-border overflow-hidden">
@@ -239,13 +239,13 @@ function MemoryPredictor() {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left px-3 py-2 font-medium">Topic</th>
-                  <th className="text-right px-3 py-2 font-medium">Retention</th>
+                  <th className="text-right px-3 py-2 font-medium">Progress</th>
                   <th className="text-center px-3 py-2 font-medium">Risk</th>
                   <th className="text-right px-3 py-2 font-medium">Revise by</th>
                 </tr>
               </thead>
               <tbody>
-                {data.sort((a, b) => a.retention - b.retention).map((t, i) => (
+                {[...data].sort((a, b) => a.retention - b.retention).map((t, i) => (
                   <tr key={i} className="border-t border-border">
                     <td className="px-3 py-2 max-w-[160px] truncate">{t.name}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{Math.round(t.retention)}%</td>

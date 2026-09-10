@@ -4,8 +4,10 @@ import { streamGroqText } from "@/lib/ai/groq";
 import { AIProviderError } from "@/lib/ai/errors";
 import { LAM_MODES } from "@/lib/lam/types";
 import { SCHOLAR_AI_FORMATTING_RULES } from "@/lib/ai/formatting";
+import { checkAssistantAccess } from "@/lib/ai/access";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const pageContextSchema = z.object({
   profileId: z.string().regex(/^class-(9|11)$/), profileName: z.string().trim().max(80), scholarClass: z.union([z.literal(9), z.literal(11)]),
@@ -32,15 +34,6 @@ const schema = z.object({
   }
 });
 
-const buckets = new Map<string, number[]>();
-function limited(id: string) {
-  const now = Date.now();
-  const recent = (buckets.get(id) ?? []).filter((time) => now - time < 60_000);
-  if (recent.length >= 15) return true;
-  buckets.set(id, [...recent, now]);
-  return false;
-}
-
 const modeRules: Record<(typeof LAM_MODES)[number], string> = {
   general: "Be concise and practical.", tutor: "Teach one idea at a time, ask a checkpoint, and wait for the student's reply.",
   "doubt-solver": "Solve carefully with known information, concept, steps, verification, and common mistakes.",
@@ -55,11 +48,11 @@ const modeRules: Record<(typeof LAM_MODES)[number], string> = {
 };
 
 export async function POST(request: NextRequest) {
+  const access = await checkAssistantAccess("lam-chat");
+  if (!access.ok) return access.response;
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid or profile-mismatched LAM request." }, { status: 400 });
   const input = parsed.data;
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
-  if (limited(`${ip}:${input.profileId}`)) return NextResponse.json({ ok: false, error: "LAM is receiving too many requests. Try again shortly." }, { status: 429 });
 
   const context = input.pageContext;
   const retrieved = [context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `page ${context.sourcePageNumber}` : "", context.activeFileName ? `Active uploaded file: ${context.activeFileName}` : "", context.selectedText ? `Selected material:\n${context.selectedText}` : "", context.visibleText ? `Visible or extracted text:\n${context.visibleText}` : ""].filter(Boolean).join(" · ");
@@ -79,23 +72,26 @@ export async function POST(request: NextRequest) {
   ].join("\n\n");
 
   const encoder = new TextEncoder();
+  const disconnected = new AbortController();
+  const signal = AbortSignal.any([request.signal, disconnected.signal]);
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: object) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      const send = (event: object) => { if (!disconnected.signal.aborted) controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`)); };
       const configuredModel = process.env.GROQ_MODEL?.trim();
       send({ type: "start", model: configuredModel && configuredModel !== "llama-3.3-70b-versatile" ? configuredModel : "openai/gpt-oss-20b" });
       try {
         await streamGroqText({
           messages: [{ role: "system", content: system }, ...input.messages, { role: "user", content: input.message }],
-          temperature: 0.3, maxTokens: 1_600, signal: request.signal,
+          temperature: 0.3, maxTokens: 4_000, signal,
         }, (value) => send({ type: "text-delta", value }));
         if (retrieved) send({ type: "source", source: { label: [context.activeFileName ?? context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `Page ${context.sourcePageNumber}` : ""].filter(Boolean).join(" · "), route: context.currentRoute } });
         send({ type: "finish" });
       } catch (error) {
         const message = error instanceof AIProviderError ? error.message : "LAM could not reach Groq. Local Scholar commands still work.";
         send({ type: "error", message });
-      } finally { controller.close(); }
+      } finally { if (!disconnected.signal.aborted) controller.close(); }
     },
+    cancel() { disconnected.abort(); },
   });
   return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
 }

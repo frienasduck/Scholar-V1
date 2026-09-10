@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ScholarFooter } from "@/components/scholar-footer";
 import { useState, useEffect, useMemo, useCallback, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore, getLevelInfo } from "@/lib/store";
@@ -25,63 +27,67 @@ import {
   PanelLeftClose, AlertCircle, Home, BookOpen, ListChecks, Lightbulb, LayoutGrid,
 } from "lucide-react";
 
-import { DashboardView } from "@/components/views/dashboard";
-import { IntelligenceView } from "@/components/views/intelligence";
-import { ChapterCommandCenter } from "@/components/views/chapter-command";
-import { AITutorView } from "@/components/views/ai-tutor";
-import { AIToolsView } from "@/components/views/ai-tools";
-import { NotesView } from "@/components/views/notes";
-import { FlashcardsView } from "@/components/views/flashcards";
-import { QuizView } from "@/components/views/quiz";
-import { PlannerView } from "@/components/views/planner";
-import { FocusView } from "@/components/views/focus";
-import { ResourcesView } from "@/components/views/resources";
+const DashboardView = dynamic(() => import("@/components/views/dashboard").then((module) => module.DashboardView), { loading: ViewLoading });
+const IntelligenceView = dynamic(() => import("@/components/views/intelligence").then((module) => module.IntelligenceView), { loading: ViewLoading });
+const ChapterCommandCenter = dynamic(() => import("@/components/views/chapter-command").then((module) => module.ChapterCommandCenter), { loading: ViewLoading });
+const AITutorView = dynamic(() => import("@/components/views/ai-tutor").then((module) => module.AITutorView), { loading: ViewLoading });
+const AIToolsView = dynamic(() => import("@/components/views/ai-tools").then((module) => module.AIToolsView), { loading: ViewLoading });
+const NotesView = dynamic(() => import("@/components/views/notes").then((module) => module.NotesView), { loading: ViewLoading });
+const FlashcardsView = dynamic(() => import("@/components/views/flashcards").then((module) => module.FlashcardsView), { loading: ViewLoading });
+const QuizView = dynamic(() => import("@/components/views/quiz").then((module) => module.QuizView), { loading: ViewLoading });
+const PlannerView = dynamic(() => import("@/components/views/planner").then((module) => module.PlannerView), { loading: ViewLoading });
+const FocusView = dynamic(() => import("@/components/views/focus").then((module) => module.FocusView), { loading: ViewLoading });
+const ResourcesView = dynamic(() => import("@/components/views/resources").then((module) => module.ResourcesView), { loading: ViewLoading });
 import { applyTheme, getEquippedTheme } from "@/lib/themes";
-import { AnalyticsView } from "@/components/views/analytics";
-import { AchievementsComingSoon } from "@/components/views/achievements-coming-soon";
-import { CommunityView } from "@/components/views/community";
-import { FilesView } from "@/components/views/files";
-import { StoreView } from "@/components/views/store";
-import { ExamPrepView } from "@/components/views/exam-prep";
-import { MindMapView } from "@/components/views/mindmap";
-import { GalaxyView } from "@/components/views/galaxy";
-import { FormulaExplorerView } from "@/components/views/formulas";
-import { StudyView } from "@/components/views/study";
-import { EBookView } from "@/components/views/ebook";
-import { PracticeView } from "@/components/views/practice";
-import { SettingsView } from "@/components/views/settings";
-import { FriendsView } from "@/components/views/friends";
-import { NigtubeView } from "@/components/views/nigtube";
-import { LabView } from "@/components/views/lab";
-import { LevelsView } from "@/components/views/levels";
-import { PastPapersView } from "@/components/views/past-papers";
-import { AnswerLabView } from "@/components/views/answer-lab";
-import { RevisionHubView } from "@/components/views/revision-hub";
-import { MockExamView } from "@/components/views/mock-exam";
-import { GoalCenterView } from "@/components/views/goal-center";
-import { RemindersView } from "@/components/views/reminders";
-import { DoubtHistoryView } from "@/components/views/doubt-history";
-import { DownloadsView } from "@/components/views/downloads";
-import { AssignmentsView } from "@/components/views/assignments";
-import { WorkspaceView } from "@/components/views/workspace";
-import { MusicView } from "@/components/views/music";
-import { CanvasView } from "@/components/views/canvas";
-import { ToolboxView } from "@/components/views/toolbox";
-import { PracticalsView } from "@/components/views/practicals";
-import { PythonView } from "@/components/views/python";
-import { DerivationsView } from "@/components/views/derivations";
+const AnalyticsView = dynamic(() => import("@/components/views/analytics").then((module) => module.AnalyticsView), { loading: ViewLoading });
+const AchievementsComingSoon = dynamic(() => import("@/components/views/achievements-coming-soon").then((module) => module.AchievementsComingSoon), { loading: ViewLoading });
+const CommunityView = dynamic(() => import("@/components/views/community").then((module) => module.CommunityView), { loading: ViewLoading });
+const FilesView = dynamic(() => import("@/components/views/files").then((module) => module.FilesView), { loading: ViewLoading });
+const StoreView = dynamic(() => import("@/components/views/store").then((module) => module.StoreView), { loading: ViewLoading });
+const ExamPrepView = dynamic(() => import("@/components/views/exam-prep").then((module) => module.ExamPrepView), { loading: ViewLoading });
+const MindMapView = dynamic(() => import("@/components/views/mindmap").then((module) => module.MindMapView), { loading: ViewLoading });
+const GalaxyView = dynamic(() => import("@/components/views/galaxy").then((module) => module.GalaxyView), { loading: ViewLoading });
+const FormulaExplorerView = dynamic(() => import("@/components/views/formulas").then((module) => module.FormulaExplorerView), { loading: ViewLoading });
+const StudyView = dynamic(() => import("@/components/views/study").then((module) => module.StudyView), { loading: ViewLoading });
+const EBookView = dynamic(() => import("@/components/views/ebook").then((module) => module.EBookView), { loading: ViewLoading });
+const PracticeView = dynamic(() => import("@/components/views/practice").then((module) => module.PracticeView), { loading: ViewLoading });
+const SettingsView = dynamic(() => import("@/components/views/settings").then((module) => module.SettingsView), { loading: ViewLoading });
+const FriendsView = dynamic(() => import("@/components/views/friends").then((module) => module.FriendsView), { loading: ViewLoading });
+const NigtubeView = dynamic(() => import("@/components/views/nigtube").then((module) => module.NigtubeView), { loading: ViewLoading });
+const LabView = dynamic(() => import("@/components/views/lab").then((module) => module.LabView), { loading: ViewLoading });
+const LevelsView = dynamic(() => import("@/components/views/levels").then((module) => module.LevelsView), { loading: ViewLoading });
+const PastPapersView = dynamic(() => import("@/components/views/past-papers").then((module) => module.PastPapersView), { loading: ViewLoading });
+const AnswerLabView = dynamic(() => import("@/components/views/answer-lab").then((module) => module.AnswerLabView), { loading: ViewLoading });
+const RevisionHubView = dynamic(() => import("@/components/views/revision-hub").then((module) => module.RevisionHubView), { loading: ViewLoading });
+const MockExamView = dynamic(() => import("@/components/views/mock-exam").then((module) => module.MockExamView), { loading: ViewLoading });
+const GoalCenterView = dynamic(() => import("@/components/views/goal-center").then((module) => module.GoalCenterView), { loading: ViewLoading });
+const RemindersView = dynamic(() => import("@/components/views/reminders").then((module) => module.RemindersView), { loading: ViewLoading });
+const DoubtHistoryView = dynamic(() => import("@/components/views/doubt-history").then((module) => module.DoubtHistoryView), { loading: ViewLoading });
+const DownloadsView = dynamic(() => import("@/components/views/downloads").then((module) => module.DownloadsView), { loading: ViewLoading });
+const AssignmentsView = dynamic(() => import("@/components/views/assignments").then((module) => module.AssignmentsView), { loading: ViewLoading });
+const WorkspaceView = dynamic(() => import("@/components/views/workspace").then((module) => module.WorkspaceView), { loading: ViewLoading });
+const MusicView = dynamic(() => import("@/components/views/music").then((module) => module.MusicView), { loading: ViewLoading });
+const CanvasView = dynamic(() => import("@/components/views/canvas").then((module) => module.CanvasView), { loading: ViewLoading });
+const ToolboxView = dynamic(() => import("@/components/views/toolbox").then((module) => module.ToolboxView), { loading: ViewLoading });
+const PracticalsView = dynamic(() => import("@/components/views/practicals").then((module) => module.PracticalsView), { loading: ViewLoading });
+const PythonView = dynamic(() => import("@/components/views/python").then((module) => module.PythonView), { loading: ViewLoading });
+const DerivationsView = dynamic(() => import("@/components/views/derivations").then((module) => module.DerivationsView), { loading: ViewLoading });
 import { LamWidget } from "@/components/lam-widget";
 import { ReminderScheduler } from "@/lib/reminders/scheduler";
 import { initReminderStoreSync } from "@/lib/reminders/store";
 import { useScholarTransition } from "@/components/scholar-transition";
 import { useScholarStartupReady } from "@/components/launch-readiness-gate";
-import { ScholarPlusView } from "@/components/views/scholar-plus";
-import { SubscriptionPaymentView } from "@/components/views/subscription-payment";
+const ScholarPlusView = dynamic(() => import("@/components/views/scholar-plus").then((module) => module.ScholarPlusView), { loading: ViewLoading });
+const SubscriptionPaymentView = dynamic(() => import("@/components/views/subscription-payment").then((module) => module.SubscriptionPaymentView), { loading: ViewLoading });
 import { PlusGate } from "@/components/subscriptions/plus-gate";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
+
+function ViewLoading() {
+  return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
+}
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
@@ -196,7 +202,7 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
         <div key={group}>
           <p className="scholar-nav-section px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p>
           <div className="flex flex-col gap-0.5">
-            {NAV_ITEMS.filter((n) => n.group === group).map((item) => {
+            {NAV_ITEMS.filter((n) => n.group === group && (!n.preview || access.developerMode)).map((item) => {
               const isActive = active === item.id;
               const plusLocked = Boolean(VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
               const badge = (badges as Record<string, string | null>)[item.id];
@@ -289,7 +295,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
           <Button id="scholar-mobile-menu" variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobile} aria-label="Open navigation menu" aria-haspopup="dialog">
             <Menu className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden lg:flex" onClick={onToggleSidebar} title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
+          <Button variant="ghost" size="icon" className="hidden lg:flex" onClick={onToggleSidebar} aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
             <PanelLeftClose className={`h-5 w-5 transition-transform ${sidebarOpen ? "" : "rotate-180"}`} />
           </Button>
 
@@ -306,7 +312,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             {user.jeeMode && <span className="px-1 py-0.5 rounded-full bg-orange-500 text-white text-[8px]">JEE</span>}
           </div>
 
-          <Button variant="outline" size="sm" onClick={onOpenCmd} className="scholar-top-search max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
+          <Button variant="outline" size="sm" onClick={onOpenCmd} className="scholar-top-search min-w-0 max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
             <Search className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Search or jump to…</span>
           <span className="sm:hidden">Search</span>
@@ -315,10 +321,10 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
           </kbd>
         </Button>
 
-        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           {guestMode && <Badge variant="outline" className="scholar-top-status border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
           {devMode && <Badge variant="outline" className="scholar-top-status text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
-          <div className="scholar-top-status contents">
+          <div className="scholar-top-status hidden sm:contents">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-500">
             <Flame className="h-4 w-4" />
             <span className="text-sm font-semibold tabular-nums">{streak}</span>
@@ -332,7 +338,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             <span className="text-sm font-semibold tabular-nums">Lv {li.level}</span>
           </div>
           </div>
-          <div className="scholar-top-profile grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
+          <div className="scholar-top-profile shrink-0 grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
             {user.avatar.startsWith("data:") ? (
               <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
             ) : (
@@ -352,7 +358,7 @@ function CommandPalette({ open, onOpenChange, onNavigate }: { open: boolean; onO
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Navigate">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => !item.preview).map((item) => (
             <CommandItem
               key={item.id}
               onSelect={() => { onNavigate(item.id); onOpenChange(false); }}
@@ -392,7 +398,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpenChange: (o: boolean) => void; children: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden p-0 shadow-2xl max-w-xl" showCloseButton={false}>
+      <DialogContent className="overflow-hidden p-0 shadow-2xl max-w-xl" showCloseButton={true}>
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
           {children}
@@ -403,24 +409,7 @@ function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpen
 }
 
 function Footer({ active }: { active: string }) {
-  const user = useStore((s) => s.user);
-  const guestMode = useStore((s) => s.guestMode);
-  const immersive = active === "ebook" || active === "mock-exam" || active === "subscription-payment";
-  return (
-    <footer className={cn("scholar-info-footer mt-auto -mx-3 -mb-3 border-t border-border/60 bg-background/80 px-4 py-2 pb-[calc(.5rem+72px+var(--safe-area-bottom))] backdrop-blur sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6 lg:px-6 lg:py-3 lg:pb-3", immersive && "hidden lg:block")}>
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-        <div className="scholar-footer-label flex items-center gap-1.5">
-          <GraduationCap className="h-3.5 w-3.5 text-primary" />
-          <span className="sm:hidden">Scholar · Class {user.scholarClass} Study OS</span>
-          <span>{guestMode ? "Guest's Scholar" : user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"} · Class {user.scholarClass} CBSE Study OS</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:inline">{user.scholarClass === 11 ? "Made with care for Ishan" : "Made with care for Neha Salah"}</span>
-          <span className="font-mono">v5.0</span>
-        </div>
-      </div>
-    </footer>
-  );
+  return <ScholarFooter compact={["ebook", "mock-exam", "subscription-payment", "ai-tutor"].includes(active)} />;
 }
 
 // ===== Error Boundary — prevents view crashes from taking down the sidebar =====
@@ -437,8 +426,7 @@ class ViewErrorBoundary extends Component<{ children: ReactNode; viewName: strin
               <AlertCircle className="h-8 w-8 text-red-400" />
             </div>
             <h2 className="text-xl font-semibold text-white">This view encountered an error</h2>
-            <p className="text-sm text-white/50">The {this.props.viewName} view crashed, but the rest of Scholar is still working. Try navigating to another section.</p>
-            {this.state.error && <pre className="text-xs text-red-300/60 bg-red-500/5 border border-red-500/10 rounded-lg p-3 overflow-auto max-h-32 text-left">{this.state.error.message}</pre>}
+            <p className="text-sm text-white/50">We couldn’t open this section. Retry, or choose another section from navigation. Your saved work has not been removed.</p>
             <Button variant="outline" onClick={() => this.setState({ hasError: false, error: null })} className="bg-white/5 border-white/15 text-white hover:bg-white/10">Try again</Button>
           </div>
         </div>
@@ -510,7 +498,7 @@ export function AppShell() {
   }, [user.scholarClass]);
 
   useEffect(() => {
-    if (!access.loading && user.scholarClass === 9 && !access.has("class_9_access")) {
+    if (!access.loading && access.entitlementsLoaded && access.status !== "error" && user.scholarClass === 9 && !access.has("class_9_access")) {
       switchClass(11);
       window.dispatchEvent(new CustomEvent("scholar:notification", { detail: { type: "info", title: "Scholar now opens in Class 11", message: "Class 9 is available with Scholar Plus." } }));
     }
@@ -568,7 +556,7 @@ export function AppShell() {
             type: "academic-switch",
             fromClass: user.scholarClass,
             toClass,
-            durationMs: 18_000,
+            durationMs: 1_200,
             prepare: async () => {
               await Promise.all([
                 import("@/lib/curriculum"),
@@ -692,7 +680,8 @@ export function AppShell() {
 
   return (
     <div className="scholar-shell flex h-dvh w-full overflow-hidden bg-background">
-      {/* Desktop sidebar — collapsible, closed by default */}
+      <a href="#main-scroll" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[11000] focus:rounded-xl focus:bg-background focus:p-3">Skip to study content</a>
+      {/* Desktop sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.aside
@@ -707,7 +696,7 @@ export function AppShell() {
                 <GraduationCap className="h-5 w-5" />
               </div>
               <div className="scholar-sidebar-title">
-                <p className="text-sm font-semibold leading-tight">{guestMode ? "Guest's Scholar" : user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</p>
+                <p className="text-sm font-semibold leading-tight">{guestMode ? "Guest workspace" : `${user.name.split(" ")[0] || "Your"}’s Scholar`}</p>
                 <p className="text-[10px] text-muted-foreground">Class {user.scholarClass} · CBSE{user.jeeMode ? " · JEE" : ""}</p>
               </div>
             </div>
@@ -728,7 +717,7 @@ export function AppShell() {
             <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
               <GraduationCap className="h-5 w-5" />
             </div>
-            <SheetTitle className="text-left">{guestMode ? "Guest's Scholar" : user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</SheetTitle>
+            <SheetTitle className="text-left">{guestMode ? "Guest workspace" : `${user.name.split(" ")[0] || "Your"}’s Scholar`}</SheetTitle>
           </SheetHeader>
           <div className="overflow-y-auto h-[calc(100vh-4rem)] no-scrollbar">
             <NavList active={active} onNavigate={navigate} badges={badges} />
@@ -746,7 +735,7 @@ export function AppShell() {
           </section>
         ) : null}
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 transition-colors duration-500 sm:p-4 lg:p-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 transition-colors duration-500 sm:p-4 lg:p-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}

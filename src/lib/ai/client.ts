@@ -15,8 +15,8 @@ export async function withRetry<T>(
   let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const controller = new AbortController();
-      const composite = signal ? composeAbort(signal, controller.signal) : controller.signal;
+      signal?.throwIfAborted();
+      const composite = signal ?? new AbortController().signal;
       return await fn(composite);
     } catch (error) {
       lastError = error;
@@ -31,7 +31,8 @@ export async function withRetry<T>(
 }
 
 function isRetryable(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return false;
+  if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) return false;
+  if (error instanceof AIClientError) return error.status >= 500;
   const msg = error instanceof Error ? error.message : "";
   // Don't retry 4xx, quota, rate limit, or auth errors
   if (/4[0-9]{2}|QUOTA|RATE_LIMIT|AUTH|PLUS_REQUIRED|ENTITLEMENT/i.test(msg)) return false;
@@ -43,13 +44,11 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function composeAbort(a: AbortSignal, b: AbortSignal): AbortSignal {
-  if (a.aborted || b.aborted) return AbortSignal.abort();
-  const controller = new AbortController();
-  const onAbort = () => controller.abort();
-  a.addEventListener("abort", onAbort, { once: true });
-  b.addEventListener("abort", onAbort, { once: true });
-  return controller.signal;
+export class AIClientError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "AIClientError";
+  }
 }
 
 export interface AIClientMessage {
@@ -58,6 +57,7 @@ export interface AIClientMessage {
 }
 
 export interface AIClientRequest {
+  requestId?: string;
   messages: AIClientMessage[];
   persona?: string;
   mode?: AIMode;
@@ -97,11 +97,11 @@ export async function requestAIText(request: AIClientRequest, signal: AbortSigna
   const response = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...request, mode: request.mode ?? "chat" }),
+    body: JSON.stringify({ ...request, requestId: request.requestId ?? crypto.randomUUID(), mode: request.mode ?? "chat" }),
     signal,
   });
   const value = await readJSON(response) as { ok?: boolean; text?: unknown };
-  if (!response.ok || value.ok !== true) throw new Error(errorMessage(value, `AI request failed (HTTP ${response.status}).`));
+  if (!response.ok || value.ok !== true) throw new AIClientError(errorMessage(value, `AI request failed (HTTP ${response.status}).`), response.status);
   if (typeof value.text !== "string" || !value.text.trim()) throw new Error("The AI service returned no text.");
   return value.text;
 }
@@ -110,11 +110,11 @@ export async function requestAIData<T>(request: AIClientRequest, signal: AbortSi
   const response = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...request, mode: request.mode ?? "json" }),
+    body: JSON.stringify({ ...request, requestId: request.requestId ?? crypto.randomUUID(), mode: request.mode ?? "json" }),
     signal,
   });
   const value = await readJSON(response) as { ok?: boolean; data?: unknown };
-  if (!response.ok || value.ok !== true) throw new Error(errorMessage(value, `AI request failed (HTTP ${response.status}).`));
+  if (!response.ok || value.ok !== true) throw new AIClientError(errorMessage(value, `AI request failed (HTTP ${response.status}).`), response.status);
   if (!("data" in value)) throw new Error("The AI service returned no structured data.");
   return value.data as T;
 }
@@ -127,13 +127,13 @@ export async function requestAIStream(
   const response = await fetch("/api/ai?stream=1", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...request, mode: request.mode ?? "stream" }),
+    body: JSON.stringify({ ...request, requestId: request.requestId ?? crypto.randomUUID(), mode: request.mode ?? "stream" }),
     signal,
   });
   const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
   if (!response.ok || !response.body) {
     const value = await readJSON(response).catch(() => null);
-    throw new Error(errorMessage(value, `AI stream failed (HTTP ${response.status}).`));
+    throw new AIClientError(errorMessage(value, `AI stream failed (HTTP ${response.status}).`), response.status);
   }
   if (!contentType.includes("text/event-stream")) {
     throw new Error("The AI service returned an unsupported stream format.");
@@ -166,12 +166,16 @@ export async function requestAIStream(
             onDelta?.(event.delta, full);
           }
           if (event.error) throw new Error(errorMessage({ error: event.error }, "AI streaming failed."));
-          if (event.done === true) return full;
+          if (event.done === true) {
+            if (!full.trim()) throw new Error("The AI returned an empty answer. Please retry.");
+            return full;
+          }
         }
       }
     }
-    return full;
+    throw new Error("Connection lost before the AI finished. Please retry.");
   } finally {
+    await reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
 }
