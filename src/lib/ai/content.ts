@@ -44,7 +44,10 @@ export function prepareAIContentForRendering(content: string, legacy = true): st
   const normalizedNewlines = String(content ?? "").replace(/\r\n?/g, "\n");
   const protectedContent = protectCode(normalizedNewlines);
   let prepared = normalizeLatexDelimiters(protectedContent.text);
-  if (legacy) prepared = normalizeLegacyAcademicMath(prepared);
+  // Explicit math is already delimited. Running the legacy line heuristic
+  // inside it adds nested $$ fences and exposes otherwise valid LaTeX as text.
+  if (legacy) prepared = prepared.split(/(\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\.|[^$\n])*?(?<!\\)\$)/g)
+    .map((part, index) => index % 2 ? part : normalizeLegacyAcademicMath(part)).join("");
   return restoreCode(prepared, protectedContent.blocks);
 }
 

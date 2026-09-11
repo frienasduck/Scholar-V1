@@ -1,5 +1,11 @@
 # Neha's Scholar — Worklog
 
+## 11 September 2026 — Signed-in Tutor math verification
+
+- User signed in through Chrome; tested a separate Tutor conversation without modifying existing chats. Real provider returned the correct 6 N answer to a 2 kg / 3 m/s² Newton's-law problem.
+- Found an actual display failure: the legacy equation heuristic wrapped an existing display-math body in a second pair of dollar fences, exposing valid LaTeX as plain text. Preserve explicit inline/display math while normalizing only legacy prose segments. Original stored answers are not rewritten.
+- Added regression cases using the actual returned equation and mixed legacy/code content. Unit suite: 179 pass, 9 opt-in live tests skipped, 0 failures. Deployment and saved-answer re-render verification follow the build.
+
 ## 11 September 2026 — Production OCR packaging repair
 
 - Production release `9af00d7` deployed successfully, but its live `POST /api/ocr` probe returned `504 OCR_TIMEOUT` after 46.9 seconds. Runtime logs captured `Cannot find module '..'` from `/var/task/node_modules/tesseract.js/src/worker-script/node/index.js`.
