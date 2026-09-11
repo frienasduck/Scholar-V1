@@ -1,5 +1,13 @@
 # Neha's Scholar — Worklog
 
+## 11 September 2026 — Live quiz quality failure
+
+- Signed-in Chrome generation returned five reviewable Laws of Motion questions, but explanations explicitly contradicted their options (Atwood acceleration 2.45 m/s² absent from choices; projectile range absent), with chapter drift. Did not start or save that set. Generation consumed one of the displayed three daily credits; no usage records were manually changed.
+- Root cause: quiz requests used generic JSON mode with no quiz schema before quota commit. Added a quiz response contract for both Class 9/11 answer keys, unique options, exact answer membership, and explicit self-contradiction rejection. Existing bounded schema repair handles failures before quota commit. Added server instructions for chapter scope, solving before options, constants/rounding and final-only explanations.
+- These are structural/heuristic safeguards, not comprehensive mathematical verification or a fix for optional-usage quota bypass. Added three regression tests from actual failures; 182 tests pass, nine opt-in live tests skipped.
+- Previous math fix `2f461e1` deployed READY; Chrome refresh preserved signed-in session and both chats, and the original 6 N equation now renders correctly. Mistake Analyzer also completed a real response, but used an inaccurate reciprocal/inverse description; answer-quality review remains necessary.
+- LAM is disabled in this user's settings; asked permission to temporarily enable text chat and restore it. No microphone or preference changes made.
+
 ## 11 September 2026 — Signed-in Tutor math verification
 
 - User signed in through Chrome; tested a separate Tutor conversation without modifying existing chats. Real provider returned the correct 6 N answer to a 2 kg / 3 m/s² Newton's-law problem.

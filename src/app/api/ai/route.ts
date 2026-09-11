@@ -7,7 +7,7 @@ import {
 } from "@/lib/ai/scholar-groq";
 import { publicAIError, AIProviderError } from "@/lib/ai/errors";
 import { buildSystemPrompt } from "@/lib/ai/personas";
-import { aiRequestSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
+import { aiRequestSchema, quizGenerationSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
 import { getSessionUser } from "@/lib/auth/session";
 import { requireEntitlement, resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
 import { reserveGeneration, commitGeneration, releaseGeneration, QuotaExceededError, ReservationConflictError } from "@/lib/v2/usage/ledger";
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     jeeMode: body.jeeMode,
   });
   const messages: ScholarGroqMessage[] = [
-    { role: "system", content: systemPrompt },
+    { role: "system", content: systemPrompt + (body.usage === "quiz_generation" ? "\nFor quiz generation: stay strictly within the requested chapter. Solve each question before constructing four distinct options. Include exactly one correct option matching the answer and explanation. State constants and rounding assumptions in numerical questions. Recalculate arithmetic and units; replace any question with inconsistent choices. Return only polished final explanations, never draft self-corrections or a nearest-option guess." : "") },
     ...body.messages
       .filter((message) => message.role !== "system")
       .slice(-24)
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (JSON_MODES.has(mode)) {
-      const schema = schemaForMode(mode);
+      const schema = body.usage === "quiz_generation" ? quizGenerationSchema : schemaForMode(mode);
       let repair = "";
       for (let attempt = 0; attempt < 2; attempt++) {
         try {

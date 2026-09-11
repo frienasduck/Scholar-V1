@@ -37,6 +37,29 @@ export const aiRequestSchema = z.object({
 
 export type AIRequest = z.infer<typeof aiRequestSchema>;
 
+// Structural validation is not proof of academic correctness. Reject explicit
+// contradictions instead of charging for a draft the model itself disowns.
+export const quizGenerationSchema = z.object({
+  questions: z.array(z.object({
+    question: z.string().trim().min(6),
+    options: z.array(z.string().trim().min(1)).length(4),
+    correctAnswer: z.string().trim().min(1).optional(),
+    answer: z.string().trim().min(1).optional(),
+    explanation: z.string().trim().min(3),
+    topic: z.string().optional(),
+    difficulty: z.string().optional(),
+    type: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  }).superRefine((q, ctx) => {
+    const answer = q.correctAnswer ?? q.answer;
+    if (!answer || !q.options.includes(answer)) ctx.addIssue({ code: "custom", path: ["correctAnswer"], message: "The solved answer must exactly match one of the four options." });
+    if (new Set(q.options.map(option => option.toLowerCase())).size !== 4) ctx.addIssue({ code: "custom", path: ["options"], message: "Provide four distinct options." });
+    if (/none\s+(?:of\s+(?:the\s+)?(?:options|answers)\s+)?match|(?:correct\s+)?answer\s+should\s+be|not\s+(?:listed|among\s+the\s+options)|wait[,]?\s+(?:the\s+)?correct/i.test(q.explanation)) {
+      ctx.addIssue({ code: "custom", path: ["explanation"], message: "The solution disputes its own options or answer. Recalculate and rewrite the entire question with a consistent answer and explanation." });
+    }
+  })).min(1).max(50),
+});
+
 export const checkpointSchema = z.object({
   question: z.string().trim().min(1),
   options: z.array(z.string().trim().min(1)).min(2).max(6),
