@@ -62,12 +62,12 @@ Existing session cookies, password hashing, subscription resolution and independ
 
 - TypeScript and production build: PASS on repaired source; final release build rechecked before push.
 - Source lint: PASS (no errors). Existing warning cleanup is not complete.
-- Unit/policy/source tests: 176 pass, 9 live tests intentionally skipped. Some legacy security tests assert source structure; they are not database integration tests.
+- Unit/policy/source tests: 177 pass, 9 live tests intentionally skipped (11 September follow-up). Some legacy security tests assert source structure; they are not database integration tests.
 - Separate live provider suite: 9 pass, 0 fail.
 - Chrome browser suite: 6 pass. Guest flow, error recovery, synthetic-session restoration, old note preservation, durable real IndexedDB file upload/reload/preview, Tutor completion/failure/cancel, public links/404 and route layouts.
 - Production-mode local build: the five website-overhaul browser tests also pass against `next start`, including the 17-route pass; this checks built chunks rather than relying only on the development server.
 - Routes: dashboard, study, notes, files, settings, ai-tutor, ai-tools, quiz, flashcards, planner, focus, nigtube, music, lab, reminders, intelligence, plus. Page rendering does not certify every feature workflow.
-- Local OCR: PASS on a bundled page. Serverless OCR worker packaging still needs deployed runtime validation.
+- Local OCR: PASS on a bundled page. Production release `9af00d7` returned `504 OCR_TIMEOUT` after 46.9s; runtime logs identified `Cannot find module '..'` in `/var/task/node_modules/tesseract.js/src/worker-script/node/index.js`. The serverless trace omitted its parent worker implementation. Follow-up externalizes Tesseract and adds route-scoped worker/runtime file tracing; generated build manifest now contains the missing dependencies. Live verification of the packaging fix is pending.
 - Other browsers/physical devices/accessibility audit: not performed.
 
 ## L. Remaining and next priorities

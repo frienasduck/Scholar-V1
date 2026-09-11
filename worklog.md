@@ -1,5 +1,11 @@
 # Neha's Scholar — Worklog
 
+## 11 September 2026 — Production OCR packaging repair
+
+- Production release `9af00d7` deployed successfully, but its live `POST /api/ocr` probe returned `504 OCR_TIMEOUT` after 46.9 seconds. Runtime logs captured `Cannot find module '..'` from `/var/task/node_modules/tesseract.js/src/worker-script/node/index.js`.
+- The build traced the worker entry but omitted its parent implementation. Externalize Tesseract and explicitly include its worker/runtime dependencies for this route only. No timeout increase, UI changes, or Android changes.
+- Local production build and TypeScript pass; generated OCR manifest now includes the parent worker, regenerator runtime, feature detection, and WASM cores. Automated suite: 177 pass, 9 opt-in live tests skipped, 0 failures. Deployed runtime verification pending this fix's release.
+
 ## 10 September 2026 — Website reliability overhaul (in-place, Android untouched)
 
 This entry supersedes the historical project-status notes below. This is a tested reliability release, **not certification that every feature is finished**. Detailed scope and limitations: [website overhaul report](docs/website-overhaul-report-2026-09-10.md); initial inventory and security/AI audits are alongside it.

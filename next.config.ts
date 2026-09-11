@@ -3,6 +3,21 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: false,
+  // OCR launches a native Node worker; its runtime require() tree is not part
+  // of the route's JS bundle. Preserve it explicitly for serverless deployment.
+  serverExternalPackages: ["tesseract.js"],
+  outputFileTracingIncludes: {
+    "/api/ocr": [
+      "./node_modules/tesseract.js/src/**/*",
+      "./node_modules/tesseract.js/package.json",
+      "./node_modules/tesseract.js-core/**/*",
+      "./node_modules/wasm-feature-detect/**/*",
+      "./node_modules/regenerator-runtime/**/*",
+      "./node_modules/is-url/**/*",
+      "./node_modules/zlibjs/**/*",
+      "./node_modules/bmp-js/**/*",
+    ],
+  },
   env: {
     // Public deployment identity used only to invalidate non-sensitive startup warm-up markers.
     NEXT_PUBLIC_APP_BUILD_ID:
