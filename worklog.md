@@ -4,7 +4,8 @@
 
 - Production release `9af00d7` deployed successfully, but its live `POST /api/ocr` probe returned `504 OCR_TIMEOUT` after 46.9 seconds. Runtime logs captured `Cannot find module '..'` from `/var/task/node_modules/tesseract.js/src/worker-script/node/index.js`.
 - The build traced the worker entry but omitted its parent implementation. Externalize Tesseract and explicitly include its worker/runtime dependencies for this route only. No timeout increase, UI changes, or Android changes.
-- Local production build and TypeScript pass; generated OCR manifest now includes the parent worker, regenerator runtime, feature detection, and WASM cores. Automated suite: 177 pass, 9 opt-in live tests skipped, 0 failures. Deployed runtime verification pending this fix's release.
+- Local production build and TypeScript pass; generated OCR manifest now includes the parent worker, regenerator runtime, feature detection, and WASM cores. Automated suite: 177 pass, 9 opt-in live tests skipped, 0 failures.
+- Fix `37ad8ad` pushed to main and deployed READY as `dpl_AdFx7zuecxvT4CH6Azh2xz8vHzdr`. The same production OCR request returns HTTP 200, 2,008 characters, confidence 81, in 7.14s. Live public-page browser check passes across 14 widths, including footer/privacy/unknown-route checks. This does not verify authenticated Homework Scanner, payment, or every AI workflow.
 
 ## 10 September 2026 — Website reliability overhaul (in-place, Android untouched)
 
