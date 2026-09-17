@@ -28,7 +28,7 @@ async function setup(page: Page, host = true, pending = false) {
     const url = new URL(route.request().url());
     const path = url.pathname;
     if (path.endsWith("/events")) {
-      return route.fulfill({ contentType: "text/event-stream", body: `event: snapshot\ndata: ${JSON.stringify(state)}\n\n` });
+      return route.fulfill({ json: { ok: true } });
     }
     if (path.endsWith("/actions")) {
       const input = route.request().postDataJSON();
@@ -83,6 +83,7 @@ test("developer landing → create → real code → clipboard → room → refr
   await expect(page.getByRole("banner").getByLabel("Participant count")).toHaveText("1 studying");
   await page.reload();
   await expect(page.getByRole("banner").getByLabel(`Study code ${code}`, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Room menu", exact: true }).click();
   await page.getByRole("tab", { name: "Host controls" }).click();
   await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.getByRole("button", { name: "Locked", exact: true })).toBeVisible();

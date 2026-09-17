@@ -2638,3 +2638,26 @@ Stage Summary:
 ## Notes
 - No database reset; migration is purely additive. No user data deleted.
 - Remaining roadmap: entitlement backfill, Nigtube/Study Music V2, LAM Phase 3 (action registry runtime), durable workflows, Web Push, offline sync, native billing.
+# GROUP STUDY V2 — 2026-09-17
+
+## Connection stability and performance
+- Replaced bounded Vercel SSE streams with one visibility-aware, single-flight polling controller: approximately 3 seconds foreground / 30 seconds background, bounded failure backoff, cancellation on exit, and conditional unchanged responses.
+- Root cause: healthy bounded streams closed normally but the client treated closure as failure, then waited, fetched another expensive full snapshot, and reopened the stream. Snapshot reads also acquired write locks. Live tracing showed a normal HTTP 200 closure followed by a 3.9-second snapshot and 9-second stream startup, not an authentication rejection.
+- Snapshot reads no longer lock rooms or write presence. Heartbeat acknowledgments are throttled to 30 seconds and create neither events nor revision storms. Chat is bounded to 60 recent messages with authorized 50-message pagination; materials/events are bounded, and extracted document contents stay off snapshots.
+- Mutation snapshots update locally without an additional read; scoped action state avoids freezing unrelated controls. Optimistic chat uses idempotent client message IDs. Unchanged slices retain references; document, notes, and timer workspaces skip unrelated updates. Countdown ticks remain local, and hidden document/timer work is paused.
+
+## Premium collaborative workspace
+- Preserved the public landing and cinematic live background. Added a coherent dark liquid-glass room, compact identity/code header, left navigation, collapsible context panel, mobile drawer/bottom navigation, safe-area spacing, reduced-motion and reduced-transparency support.
+- Useful Overview, immediate admission notifications, participant status/host badges, announcements, raised hands with host clearing, invite copy feedback, and confirmed host moderation/end controls.
+- Real PDF.js page rendering with same-origin worker, host page sharing, participant follow/independent browsing, and material uploader/date/page/text-readiness metadata.
+- Dedicated contextual Group LAM with the existing safe Scholar Markdown/math renderer and existing provider infrastructure. Unsupported OCR is reported honestly instead of inventing document content.
+- Manual graded quizzes (2–6 answers), answer-once behavior, reveal/explanations/aggregate distributions, independently visible quick polls, synchronized focus presets/custom/pause/resume/end, and debounced shared notes with independent revision/conflict-preserved drafts.
+
+## Authorization and verification
+- Existing Scholar/Developer Access authorization retained. Strict schemas reject forged role/status fields, host actions remain server-enforced, cross-room access is rejected, revoked/pending memberships are revalidated, chat has a durable rate limit, and quiz snapshots expose no other participant's individual answers.
+- No Prisma schema change or migration; no Android rebuild, authentication redesign, destructive database operation, or unrelated platform refactor.
+- Targeted backend/policy/synchronization tests: 24 passing; Developer Access tests: 16 passing. Two isolated browser-context collaboration flow and a four-minute stability/offline recovery run passed against controlled API fixtures, including real PDF rendering. Screenshots reviewed; 390/430/768/desktop overflow checks passed.
+- The single local optimized production build passed. Final live tracing additionally identified an old production join failure: PostgreSQL 40001 during the SERIALIZABLE room row-lock query. Mutations now use READ COMMITTED with the existing FOR UPDATE lock: waiters see the latest room state while capacity, roles, and permissions remain atomic. The final Git-triggered Vercel build validates this last correction. Actual production host/participant verification follows deployment; controlled fixtures are not presented as proof of live provider/database behavior.
+
+## Deliberately not introduced
+- No fake whiteboard, unsafe host promotion, CRDT editor, OCR service, or unsupported quiz timer. Existing permissions and private-beta access are preserved.

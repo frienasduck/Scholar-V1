@@ -4,7 +4,7 @@ export const MAX_ROOM_PARTICIPANTS = 15;
 export const ROOM_LIFETIME_MS = 8 * 60 * 60 * 1000;
 export const ROOM_IDLE_MS = 2 * 60 * 60 * 1000;
 export const PRESENCE_ONLINE_MS = 90_000;
-export const HEARTBEAT_WRITE_MS = 60_000;
+export const HEARTBEAT_WRITE_MS = 30_000;
 export const displayNameSchema = z.string().trim().min(2).max(40).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Use a readable display name.");
 export const createRoomSchema = z.object({
   name: z.string().trim().min(2).max(80), subject: z.string().trim().max(80).default(""),
@@ -20,11 +20,12 @@ export const groupActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.enum(["approve", "deny", "remove"]), participantId: z.string().min(1).max(80) }).strict(),
   z.object({ action: z.literal("mute"), participantId: z.string().min(1).max(80), muted: z.boolean() }).strict(),
   z.object({ action: z.literal("hand"), raised: z.boolean() }).strict(),
-  z.object({ action: z.literal("chat"), body: z.string().trim().min(1).max(2000) }).strict(),
+  z.object({ action: z.literal("chat"), body: z.string().trim().min(1).max(2000), clientMessageId: z.string().uuid().optional() }).strict(),
   z.object({ action: z.literal("announce"), body: z.string().trim().max(1000) }).strict(),
   z.object({ action: z.literal("lock"), locked: z.boolean() }).strict(),
   z.object({ action: z.literal("settings"), settings: z.object({ requireApproval: z.boolean().optional(), aiEnabled: z.boolean().optional(), chatEnabled: z.boolean().optional(), pdfEnabled: z.boolean().optional(), participantUploads: z.boolean().optional(), notesEditable: z.boolean().optional(), followHost: z.boolean().optional() }).strict() }).strict(),
-  z.object({ action: z.literal("notes"), text: z.string().max(20_000), revision: z.number().int().nonnegative() }).strict(),
+  z.object({ action: z.literal("notes"), text: z.string().max(20_000), revision: z.number().int().nonnegative(), notesRevision: z.number().int().nonnegative().optional() }).strict(),
+  z.object({ action: z.literal("clear-hand"), participantId: z.string().min(1).max(80) }).strict(),
   z.object({ action: z.literal("focus"), operation: z.enum(["start", "pause", "resume", "stop"]), durationSeconds: z.number().int().min(60).max(7200).optional() }).strict(),
   z.object({ action: z.literal("quiz"), title: z.string().trim().min(1).max(120).default("Room quiz"), questions: z.array(quizQuestionSchema).min(1).max(10) }).strict(),
   z.object({ action: z.literal("answer"), quizId: z.string().min(1).max(80), questionId: z.string().min(1).max(80), answer: z.number().int().min(0).max(5) }).strict(),
@@ -35,7 +36,7 @@ export const groupActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("page"), page: z.number().int().min(1).max(2000) }).strict(),
 ]);
 export type GroupAction = z.infer<typeof groupActionSchema>;
-export const HOST_ACTIONS = new Set(["approve", "deny", "remove", "mute", "announce", "start", "pause", "resume", "end", "lock", "settings", "focus", "quiz", "reveal", "poll", "resource", "page", "clear-chat", "regenerate-code"]);
+export const HOST_ACTIONS = new Set(["approve", "deny", "remove", "mute", "clear-hand", "announce", "start", "pause", "resume", "end", "lock", "settings", "focus", "quiz", "reveal", "poll", "resource", "page", "clear-chat", "regenerate-code"]);
 export function canPerformAction(role: string, status: string, action: string): boolean {
   if (status !== "approved") return action === "heartbeat" || action === "leave";
   return role === "host" || !HOST_ACTIONS.has(action);

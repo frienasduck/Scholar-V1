@@ -120,7 +120,10 @@ export async function withLockedRoom<T>(roomId: string, callback: (tx: RoomTrans
         const room = rows[0];
         if (!room) throw new GroupStudyError("Study room not found.", 404, "ROOM_NOT_FOUND");
         return callback(tx, room);
-      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 5000, timeout: 10000 });
+      // The room row lock serializes every mutation. READ COMMITTED makes a
+      // waiter read the latest row after acquiring that lock, rather than
+      // failing with PostgreSQL 40001 against an earlier SERIALIZABLE snapshot.
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, maxWait: 5000, timeout: 10000 });
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034" || attempt >= 3) throw error;
       await new Promise((resolve) => setTimeout(resolve, 30 * (attempt + 1) + randomInt(30)));
@@ -134,15 +137,19 @@ export async function touchRoom(tx: RoomTransaction, roomId: string) {
   return tx.groupStudyRoom.update({ where: { id: roomId }, data: { revision: { increment: 1 }, lastActivityAt: new Date() } });
 }
 function publicMember(member: GroupStudyParticipant): RoomMember {
-  return { id: member.id, role: member.role as RoomMember["role"], status: member.status as RoomMember["status"], displayName: member.displayName, handRaised: member.handRaised, chatMuted: member.chatMuted };
+  return { id: member.id, role: member.role as RoomMember["role"], status: member.status as RoomMember["status"], displayName: member.displayName, handRaised: member.handRaised, chatMuted: member.chatMuted, joinedAt: member.joinedAt.toISOString() };
 }
-export function sanitizeQuiz(quiz: StoredQuiz, meId: string, participants: Array<{ id: string; displayName: string }>): RoomQuiz {
+export function sanitizeQuiz(quiz: StoredQuiz, meId: string, _participants: Array<{ id: string; displayName: string }>): RoomQuiz {
   return {
     id: quiz.id, title: quiz.title, revealed: quiz.revealed,
     questions: quiz.questions.map((q) => ({ id: q.id, question: q.question, options: q.options, ...(quiz.revealed ? { correctAnswer: q.correctAnswer, explanation: q.explanation } : {}) })),
     responseCount: Object.values(quiz.answers).filter((answers) => quiz.questions.every((q) => Number.isInteger(answers[q.id]))).length,
     myAnswers: quiz.answers[meId] ?? {},
-    ...(quiz.revealed ? { results: participants.filter((p) => quiz.answers[p.id]).map((p) => ({ participantId: p.id, displayName: p.displayName, score: quiz.questions.filter((q) => quiz.answers[p.id]?.[q.id] === q.correctAnswer).length, total: quiz.questions.length })) } : {}),
+    // Aggregate results only: other students' identities/answers stay private.
+    ...(quiz.revealed ? {
+      distribution: Object.fromEntries(quiz.questions.map(q => [q.id, q.options.map((_, i) => Object.values(quiz.answers).filter(a => a[q.id] === i).length)])),
+      correctPercent: Math.round(100 * quiz.questions.reduce((sum, q) => sum + Object.values(quiz.answers).filter(a => a[q.id] === q.correctAnswer).length, 0) / Math.max(1, Object.values(quiz.answers).reduce((sum, a) => sum + Object.keys(a).length, 0))),
+    } : {}),
   };
 }
 export function resolveFocus(focus: StoredFocus, now = Date.now()): StoredFocus {
@@ -150,30 +157,42 @@ export function resolveFocus(focus: StoredFocus, now = Date.now()): StoredFocus 
   return { ...focus, remainingSeconds, status: remainingSeconds <= 0 ? "completed" : focus.status };
 }
 
-export async function getRoomSnapshot(roomId: string): Promise<RoomSnapshot> {
-  const principal = await getRoomPrincipal(roomId, { allowPending: true });
-  return withRoomTransaction(roomId, principal, async (tx, me, room) => {
+export function roomStateVersion(principal: RoomPrincipal, now = Date.now()) {
+  return `${principal.room.revision}:${Math.floor(now / 30_000)}:${principal.member.status}`;
+}
+
+/** Read consistency without a FOR UPDATE lock; only mutations serialize. */
+export async function getRoomSnapshot(roomId: string, authenticated?: RoomPrincipal): Promise<RoomSnapshot> {
+  const principal = authenticated ?? await getRoomPrincipal(roomId, { allowPending: true });
+  return db.$transaction(async tx => {
+    const room = await tx.groupStudyRoom.findUnique({ where: { id: roomId } });
+    if (!room) throw new GroupStudyError("Study room not found.", 404, "ROOM_NOT_FOUND");
+    const me = await revalidateRoomPrincipal(tx, room, principal, { allowPending: true });
     const isHost = me.role === "host";
     const pending = me.member.status === "pending";
-    if (Date.now() - me.member.lastSeenAt.getTime() >= HEARTBEAT_WRITE_MS) {
-      await tx.groupStudyParticipant.update({ where: { id: me.id }, data: { lastSeenAt: new Date() } });
-      if (!pending) await tx.groupStudyRoom.update({ where: { id: room.id }, data: { lastActivityAt: new Date() } });
-    }
     const result: RoomSnapshot = {
       room: { id: room.id, name: pending ? "" : room.name, subject: pending ? "" : room.subject, topic: pending ? "" : room.topic, status: room.status as RoomSnapshot["room"]["status"], locked: pending ? false : room.locked, requireApproval: true, aiEnabled: !pending && room.aiEnabled, chatEnabled: !pending && room.chatEnabled, pdfEnabled: !pending && room.pdfEnabled, participantUploads: !pending && room.participantUploads, notesEditable: !pending && room.notesEditable, maxParticipants: pending ? 0 : room.maxParticipants, ...(isHost ? { code: `SCH-${room.code.slice(3)}` } : {}), activeResourceId: pending ? null : room.activeResourceId, page: pending ? 1 : room.page, followHost: !pending && room.followHost, announcement: pending ? "" : room.announcement, createdAt: pending ? "" : room.createdAt.toISOString(), startedAt: pending ? null : room.startedAt?.toISOString() ?? null, expiresAt: room.expiresAt.toISOString() },
-      me: publicMember(me.member), participants: [], messages: [], resources: [], quiz: null, poll: null, focus: null, notes: pending ? "" : room.notes, revision: pending ? 0 : room.revision,
+      me: publicMember(me.member), participants: [], messages: [], resources: [], quiz: null, poll: null, focus: null, notes: pending ? "" : room.notes, revision: pending ? 0 : room.revision, version: roomStateVersion(me), activity: [], notesRevision: 0,
     };
     if (pending) return result;
     result.room.requireApproval = room.requireApproval;
-    const [participants, messages, resources, activities] = await Promise.all([
+    const [participants, messages, resources, activities, events] = await Promise.all([
       tx.groupStudyParticipant.findMany({ where: { roomId, status: isHost ? { in: ["approved", "pending"] } : "approved" }, orderBy: { joinedAt: "asc" } }),
-      tx.groupStudyMessage.findMany({ where: { roomId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 100, include: { participant: { select: { displayName: true } } } }),
-      tx.groupStudyResource.findMany({ where: { roomId }, select: { id: true, name: true, mimeType: true, sizeBytes: true, pageCount: true }, orderBy: { createdAt: "asc" } }),
-      tx.groupStudyActivity.findMany({ where: { roomId } }),
+      tx.groupStudyMessage.findMany({ where: { roomId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 60, include: { participant: { select: { displayName: true, role: true } } } }),
+      // Compute extraction readiness in PostgreSQL; never ship document text/bytes
+      // in a snapshot and never run an extra per-material query.
+      tx.$queryRaw<Array<{ id: string; name: string; mimeType: string; sizeBytes: number; pageCount: number; createdAt: Date; uploadedBy: string; readable: boolean }>>`
+        SELECT r."id", r."name", r."mimeType", r."sizeBytes", r."pageCount", r."createdAt",
+          p."displayName" AS "uploadedBy", LENGTH(TRIM(r."text")) > 0 AS "readable"
+        FROM "GroupStudyResource" r JOIN "GroupStudyParticipant" p ON p."id" = r."uploadedById"
+        WHERE r."roomId" = ${roomId} ORDER BY r."createdAt" ASC LIMIT 20`,
+      tx.groupStudyActivity.findMany({ where: { roomId }, take: 4 }),
+      tx.groupStudyEvent.findMany({ where: { roomId, type: { notIn: ["heartbeat", "chat", "notes", "page"] } }, orderBy: { createdAt: "desc" }, take: 16, select: { id: true, type: true, createdAt: true } }),
     ]);
     result.participants = participants.map((p) => ({ ...publicMember(p), online: Date.now() - p.lastSeenAt.getTime() <= PRESENCE_ONLINE_MS, lastSeenAt: p.lastSeenAt.toISOString() }));
-    result.messages = messages.reverse().map((message) => ({ id: message.id, author: message.participant?.displayName ?? (message.kind === "ai" ? "Group LAM" : "Scholar"), kind: message.kind as RoomSnapshot["messages"][number]["kind"], body: message.body, createdAt: message.createdAt.toISOString() }));
-    result.resources = room.pdfEnabled || isHost ? resources : [];
+    result.messages = messages.reverse().map((message) => ({ id: message.id, authorId: message.participantId ?? undefined, authorRole: message.participant?.role, author: message.participant?.displayName ?? (message.kind === "ai" ? "Group LAM" : "Scholar"), kind: message.kind as RoomSnapshot["messages"][number]["kind"], body: message.body, createdAt: message.createdAt.toISOString() }));
+    result.resources = room.pdfEnabled || isHost ? resources.map(r => ({ id: r.id, name: r.name, mimeType: r.mimeType, sizeBytes: r.sizeBytes, pageCount: r.pageCount, uploadedBy: r.uploadedBy, createdAt: r.createdAt.toISOString(), analysisStatus: r.readable ? "ready" : "needs-ocr" })) : [];
+    result.activity = events.map(event => ({ ...event, createdAt: event.createdAt.toISOString() }));
     for (const activity of activities) {
       if (activity.kind === "quiz") result.quiz = sanitizeQuiz(activity.state as unknown as StoredQuiz, me.id, participants);
       if (activity.kind === "poll") {
@@ -181,9 +200,10 @@ export async function getRoomSnapshot(roomId: string): Promise<RoomSnapshot> {
         result.poll = { id: poll.id, question: poll.question, options: poll.options, counts: poll.options.map((_, i) => Object.values(poll.votes).filter((v) => v === i).length), myVote: poll.votes[me.id] ?? null };
       }
       if (activity.kind === "focus") result.focus = resolveFocus(activity.state as unknown as StoredFocus);
+      if (activity.kind === "notes") result.notesRevision = Number((activity.state as { revision?: number }).revision ?? 0);
     }
     return result;
-  }, { allowPending: true });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, maxWait: 5000, timeout: 10000 });
 }
 
 async function updateActivity(tx: RoomTransaction, roomId: string, kind: string, state: object) {
@@ -194,10 +214,11 @@ export async function performRoomAction(roomId: string, principal: RoomPrincipal
     if (!canPerformAction(me.role, me.member.status, input.action)) throw new GroupStudyError("Only the host can perform that action.", 403, "HOST_REQUIRED");
     if (input.action === "heartbeat") {
       if (Date.now() - me.member.lastSeenAt.getTime() >= HEARTBEAT_WRITE_MS) await tx.groupStudyParticipant.update({ where: { id: me.id }, data: { lastSeenAt: new Date() } });
+      if (me.member.status === "approved" && Date.now() - room.lastActivityAt.getTime() >= HEARTBEAT_WRITE_MS) await tx.groupStudyRoom.update({ where: { id: roomId }, data: { lastActivityAt: new Date() } });
       return;
     }
     if (me.role !== "host" && room.status === "paused" && !["leave", "hand"].includes(input.action)) throw new GroupStudyError("The host has paused this room.", 409, "ROOM_PAUSED");
-    if (["approve", "deny", "remove", "mute"].includes(input.action)) {
+    if (["approve", "deny", "remove", "mute", "clear-hand"].includes(input.action)) {
       const action = input as Extract<GroupAction, { participantId: string }>;
       const target = await tx.groupStudyParticipant.findFirst({ where: { id: action.participantId, roomId, role: "participant" } });
       if (!target) throw new GroupStudyError("Participant not found.", 404, "PARTICIPANT_NOT_FOUND");
@@ -207,7 +228,8 @@ export async function performRoomAction(roomId: string, principal: RoomPrincipal
         const count = await tx.groupStudyParticipant.count({ where: { roomId, status: "approved" } });
         if (count >= room.maxParticipants) throw new GroupStudyError("This study room is full.", 409, "ROOM_FULL");
         await tx.groupStudyParticipant.update({ where: { id: target.id }, data: { status: "approved", approvedAt: new Date() } });
-      } else if (input.action === "mute") await tx.groupStudyParticipant.update({ where: { id: target.id }, data: { chatMuted: input.muted } });
+      } else if (input.action === "clear-hand") await tx.groupStudyParticipant.update({ where: { id: target.id }, data: { handRaised: false } });
+      else if (input.action === "mute") await tx.groupStudyParticipant.update({ where: { id: target.id }, data: { chatMuted: input.muted } });
       else await tx.groupStudyParticipant.update({ where: { id: target.id }, data: { status: input.action === "deny" ? "denied" : "removed", removedAt: new Date() } });
     } else switch (input.action) {
       case "hand": await tx.groupStudyParticipant.update({ where: { id: me.id }, data: { handRaised: input.raised } }); break;
@@ -216,7 +238,18 @@ export async function performRoomAction(roomId: string, principal: RoomPrincipal
         await tx.groupStudyParticipant.update({ where: { id: me.id }, data: { status: "left", removedAt: new Date() } }); break;
       case "chat":
         if (!room.chatEnabled || me.member.chatMuted) throw new GroupStudyError("Chat is disabled for you in this room.", 403, "CHAT_DISABLED");
-        await tx.groupStudyMessage.create({ data: { roomId, participantId: me.id, body: input.body, kind: "chat" } }); break;
+        if (input.clientMessageId) {
+          const existing = await tx.groupStudyMessage.findUnique({ where: { id: input.clientMessageId } });
+          if (existing) {
+            if (existing.roomId !== roomId || existing.participantId !== me.id) throw new GroupStudyError("This message cannot be sent.", 409, "MESSAGE_CONFLICT");
+            return;
+          }
+        }
+        const chatKey = `group-chat:${me.id}`;
+        const recent = await tx.securityAttempt.count({ where: { key: chatKey, action: "group-chat", createdAt: { gte: new Date(Date.now() - 60_000) } } });
+        if (recent >= 20) throw new GroupStudyError("Please wait a moment before sending another message.", 429, "RATE_LIMITED");
+        await tx.securityAttempt.create({ data: { key: chatKey, action: "group-chat" } });
+        await tx.groupStudyMessage.create({ data: { ...(input.clientMessageId ? { id: input.clientMessageId } : {}), roomId, participantId: me.id, body: input.body, kind: "chat" } }); break;
       case "announce":
         await tx.groupStudyRoom.update({ where: { id: roomId }, data: { announcement: input.body } });
         if (input.body) await tx.groupStudyMessage.create({ data: { roomId, participantId: me.id, body: input.body, kind: "announcement" } }); break;
@@ -236,10 +269,14 @@ export async function performRoomAction(roomId: string, principal: RoomPrincipal
         await tx.groupStudyResource.deleteMany({ where: { roomId } }); break;
       case "lock": await tx.groupStudyRoom.update({ where: { id: roomId }, data: { locked: input.locked } }); break;
       case "settings": await tx.groupStudyRoom.update({ where: { id: roomId }, data: input.settings }); break;
-      case "notes":
+      case "notes": {
         if (me.role !== "host" && !room.notesEditable) throw new GroupStudyError("Shared notes are currently read-only.", 403, "NOTES_READ_ONLY");
-        if (input.revision !== room.revision) throw new GroupStudyError("The room changed while you were editing. Refresh and merge your notes.", 409, "NOTES_CONFLICT");
-        await tx.groupStudyRoom.update({ where: { id: roomId }, data: { notes: input.text } }); break;
+        const activity = await tx.groupStudyActivity.findUnique({ where: { roomId_kind: { roomId, kind: "notes" } } });
+        const revision = Number((activity?.state as { revision?: number } | undefined)?.revision ?? 0);
+        if (input.notesRevision === undefined ? input.revision !== room.revision : input.notesRevision !== revision) throw new GroupStudyError("Someone updated the notes. Compare their version with your draft before saving again.", 409, "NOTES_CONFLICT");
+        await tx.groupStudyRoom.update({ where: { id: roomId }, data: { notes: input.text } });
+        await updateActivity(tx, roomId, "notes", { revision: revision + 1 }); break;
+      }
       case "focus": {
         assertRoomActive(room);
         const stored = await tx.groupStudyActivity.findUnique({ where: { roomId_kind: { roomId, kind: "focus" } } });
@@ -294,7 +331,7 @@ export async function performRoomAction(roomId: string, principal: RoomPrincipal
       case "regenerate-code": await tx.groupStudyRoom.update({ where: { id: roomId }, data: { code: generateRoomCode() } }); break;
     }
     await touchRoom(tx, roomId);
-    await recordRoomEvent(tx, roomId, me.id, input.action);
+    if (!["chat", "notes", "page"].includes(input.action)) await recordRoomEvent(tx, roomId, me.id, input.action);
   }, { allowPending: input.action === "heartbeat" || input.action === "leave" });
 }
 async function pauseFocus(tx: RoomTransaction, roomId: string) {

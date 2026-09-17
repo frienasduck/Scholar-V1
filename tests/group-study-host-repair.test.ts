@@ -21,10 +21,17 @@ const createMember = (data: Partial<Member>) => {
 };
 let nestedHost = false;
 let versionSelected = false;
+let readLocks = 0;
+let snapshotReads = 0;
+let eventWrites = 0;
+let rateCount = 0;
+let transactionIsolation: string | undefined;
+const activities = new Map<string, { kind: string; state: object }>();
+const messages = new Map<string, { id: string; roomId: string; participantId: string; kind: string; body: string; createdAt: Date; participant: { displayName: string; role: string } }>();
 const tx = {
-  $queryRaw: async () => [room],
+  $queryRaw: async (sql: TemplateStringsArray) => { if (sql.join("").includes('FROM "GroupStudyResource"')) return []; readLocks++; return [room]; },
   user: { findUnique: async (args: { select?: { sessionVersion?: boolean } }) => { versionSelected = args.select?.sessionVersion === true; return host; } },
-  securityAttempt: { create: async () => ({}), count: async () => 0 },
+  securityAttempt: { create: async () => ({}), count: async () => rateCount },
   groupStudyRoom: {
     create: async ({ data }: { data: { code: string; participants?: { create: Partial<Member> } } }) => { room.code = data.code; nestedHost = Boolean(data.participants); if (data.participants) createMember(data.participants.create); return room; },
     findUnique: async ({ where }: { where: Where }) => (where.id && where.id !== room.id) || (where.code && where.code !== room.code) ? null : room,
@@ -38,19 +45,38 @@ const tx = {
     update: async ({ where, data }: { where: Where; data: Partial<Member> }) => { const member = members.find(value => matches(value, where))!; Object.assign(member, data); return member; },
     updateMany: async () => ({ count: 0 }),
   },
-  groupStudyMessage: { findMany: async () => [], create: async () => ({}) },
+  groupStudyMessage: {
+    findMany: async () => { snapshotReads++; return [...messages.values()].reverse(); },
+    findUnique: async ({ where }: { where: { id: string } }) => messages.get(where.id) ?? null,
+    create: async ({ data }: { data: { id?: string; roomId: string; participantId: string; kind: string; body: string } }) => { const member = members.find(m => m.id === data.participantId)!; const value = { ...data, id: data.id ?? `message-${messages.size}`, createdAt: new Date(), participant: { displayName: member.displayName, role: member.role } }; messages.set(value.id, value); return value; },
+  },
   groupStudyResource: { findMany: async () => [], deleteMany: async () => ({ count: 0 }) },
-  groupStudyActivity: { findMany: async () => [] },
-  groupStudyEvent: { create: async () => ({}) },
+  groupStudyActivity: {
+    findMany: async () => [...activities.values()],
+    findUnique: async ({ where }: { where: { roomId_kind: { kind: string } } }) => activities.get(where.roomId_kind.kind) ?? null,
+    upsert: async ({ create }: { create: { kind: string; state: object } }) => { activities.set(create.kind, create); return create; },
+  },
+  groupStudyEvent: { create: async () => { eventWrites++; return {}; }, findMany: async () => [] },
 };
-mock.module("../src/lib/db", () => ({ db: { ...tx, $transaction: async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx) } }));
+mock.module("../src/lib/db", () => ({ db: { ...tx, $transaction: async (callback: (client: typeof tx) => Promise<unknown>, options?: { isolationLevel?: string }) => { transactionIsolation = options?.isolationLevel; return callback(tx); } } }));
 const { POST: createRoom } = await import("../src/app/api/group-study/rooms/route");
 const { POST: joinRoom } = await import("../src/app/api/group-study/rooms/join/route");
 const { POST: roomAction } = await import("../src/app/api/group-study/rooms/[roomId]/actions/route");
-const { getRoomPrincipal, getRoomSnapshot, performRoomAction, revalidateRoomPrincipal } = await import("../src/lib/group-study/server");
+const { getRoomPrincipal, getRoomSnapshot, performRoomAction, revalidateRoomPrincipal, sanitizeQuiz, resolveFocus } = await import("../src/lib/group-study/server");
+const { GET: readRoom } = await import("../src/app/api/group-study/rooms/[roomId]/route");
 const request = (path: string, body: object) => new Request(`https://scholar.example/api/group-study/${path}`, { method: "POST", headers: { "Content-Type": "application/json", origin: "https://scholar.example" }, body: JSON.stringify(body) });
 
-beforeEach(() => { room = makeRoom(); members = []; user = host; allowed = true; cookies.clear(); nestedHost = false; versionSelected = false; });
+beforeEach(() => { room = makeRoom(); members = []; user = host; allowed = true; cookies.clear(); nestedHost = false; versionSelected = false; readLocks = snapshotReads = eventWrites = rateCount = 0; activities.clear(); messages.clear(); });
+
+test("V2 joining keeps the atomic room lock without a stale serializable snapshot", async () => {
+  user = null;
+  const response = await joinRoom(request("rooms/join", { displayName: "Concurrent join test", code: room.code }));
+  expect(response.status).toBe(201);
+  expect(transactionIsolation).toBe("ReadCommitted");
+  expect(readLocks).toBe(1);
+  expect(members[0].role).toBe("participant");
+  expect(members[0].status).toBe("pending");
+});
 
 test("creation returns the real code and atomically creates an approved host; refresh preserves it", async () => {
   const result = await createRoom(request("rooms", { name: "Physics Revision" }));
@@ -123,4 +149,59 @@ test("host actions retain version binding and ending a room returns success, not
   expect(room.announcement).toBe("Study page 4");
   const ended = await roomAction(request(`rooms/${room.id}/actions`, { action: "end" }), { params: Promise.resolve({ roomId: room.id }) });
   expect(ended.status).toBe(200); expect(await ended.json()).toEqual({ ok: true }); expect(room.status).toBe("ended");
+});
+
+test("V2 conditional reads are authorized, lock-free, and skip full snapshot queries", async () => {
+  await getRoomPrincipal(room.id);
+  readLocks = 0;
+  const initial = await getRoomSnapshot(room.id);
+  expect(readLocks).toBe(0); expect(snapshotReads).toBe(1);
+  const url = `https://scholar.example/api/group-study/rooms/${room.id}?version=${encodeURIComponent(initial.version!)}`;
+  const params = { params: Promise.resolve({ roomId: room.id }) };
+  const unchanged = await readRoom(new Request(url), params);
+  expect(await unchanged.json()).toEqual({ unchanged: true, version: initial.version });
+  expect(snapshotReads).toBe(1); expect(readLocks).toBe(0);
+  user = null;
+  expect((await readRoom(new Request(url), params)).status).toBe(401);
+});
+
+test("V2 presence acknowledgment does not increment revision or create events", async () => {
+  const principal = await getRoomPrincipal(room.id);
+  members[0].lastSeenAt = new Date(Date.now() - 31_000);
+  const result = await roomAction(request(`rooms/${room.id}/actions`, { action: "heartbeat" }), { params: Promise.resolve({ roomId: room.id }) });
+  expect(await result.json()).toEqual({ ok: true }); expect(room.revision).toBe(0); expect(eventWrites).toBe(0); expect(snapshotReads).toBe(0);
+  expect(Date.now() - principal.member.lastSeenAt.getTime()).toBeLessThan(1000);
+});
+
+test("V2 notes use an independent revision and preserve stale drafts through conflicts", async () => {
+  const principal = await getRoomPrincipal(room.id);
+  await performRoomAction(room.id, principal, { action: "announce", body: "Unrelated change" });
+  await performRoomAction(room.id, principal, { action: "notes", text: "First draft", revision: 0, notesRevision: 0 });
+  expect(room.notes).toBe("First draft"); expect((await getRoomSnapshot(room.id)).notesRevision).toBe(1);
+  await expect(performRoomAction(room.id, principal, { action: "notes", text: "Stale overwrite", revision: room.revision, notesRevision: 0 })).rejects.toThrow("Someone updated");
+  expect(room.notes).toBe("First draft");
+});
+
+test("V2 chat is idempotent, bounded, attributed to the authenticated sender and rate limited", async () => {
+  const principal = await getRoomPrincipal(room.id); room.status = "active";
+  const input = { action: "chat" as const, body: "Work has units of joules", clientMessageId: "491af25b-f6f9-40d7-8656-d15bdeff9330" };
+  await performRoomAction(room.id, principal, input); const revision = room.revision;
+  await performRoomAction(room.id, principal, input);
+  expect(messages.size).toBe(1); expect(room.revision).toBe(revision); expect(eventWrites).toBe(0);
+  expect((await getRoomSnapshot(room.id)).messages[0]).toMatchObject({ authorId: principal.id, authorRole: "host", body: input.body });
+  rateCount = 20;
+  await expect(performRoomAction(room.id, principal, { ...input, clientMessageId: "c6d8c9a2-b946-4449-8045-dbc7192e9f4c" })).rejects.toThrow("Please wait a moment");
+});
+
+test("V2 quizzes redact solutions before reveal and publish no individual answers afterward", () => {
+  const quiz = { id: "quiz", title: "Units", revealed: false, questions: [{ id: "q", question: "Unit of work?", options: ["Joule", "Watt"], correctAnswer: 0, explanation: "Work is measured in joules." }], answers: { a: { q: 0 }, b: { q: 1 } } };
+  const initial = sanitizeQuiz(quiz, "a", []);
+  expect(initial.questions[0].correctAnswer).toBeUndefined(); expect(initial.distribution).toBeUndefined(); expect(initial.myAnswers).toEqual({ q: 0 });
+  const revealed = sanitizeQuiz({ ...quiz, revealed: true }, "a", []);
+  expect(revealed.distribution).toEqual({ q: [1, 1] }); expect(revealed.correctPercent).toBe(50); expect(revealed.results).toBeUndefined();
+});
+
+test("V2 focus countdown is derived from end time without writes", () => {
+  expect(resolveFocus({ status: "running", durationSeconds: 600, remainingSeconds: 600, endsAt: new Date(100_000).toISOString() }, 85_000).remainingSeconds).toBe(15);
+  expect(resolveFocus({ status: "paused", durationSeconds: 600, remainingSeconds: 200, endsAt: null }, 999_999).remainingSeconds).toBe(200);
 });

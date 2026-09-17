@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-import { getRoomPrincipal, getRoomSnapshot, withRoomTransaction, groupStudyErrorResponse, GroupStudyError, assertRoomMutationRequest } from "@/lib/group-study/server";
+import { getRoomPrincipal, getRoomSnapshot, roomStateVersion, withRoomTransaction, groupStudyErrorResponse, GroupStudyError, assertRoomMutationRequest } from "@/lib/group-study/server";
 import { canPerformAction } from "@/lib/group-study/policy";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-export async function GET(_request: Request, { params }: { params: Promise<{ roomId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ roomId: string }> }) {
   try {
     const { roomId } = await params;
-    return NextResponse.json(await getRoomSnapshot(roomId), { headers: { "Cache-Control": "private, no-store" } });
+    // Check authorization even for an unchanged response.
+    const principal = await getRoomPrincipal(roomId, { allowPending: true });
+    const version = roomStateVersion(principal);
+    const value = new URL(request.url).searchParams.get("version") === version
+      ? { unchanged: true, version } : await getRoomSnapshot(roomId, principal);
+    return NextResponse.json(value, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return groupStudyErrorResponse(error);
   }

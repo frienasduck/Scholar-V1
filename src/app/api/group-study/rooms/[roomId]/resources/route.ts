@@ -33,7 +33,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
     });
     return Response.json({ ok: true, resource }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
-    if (error instanceof StudyUploadError) return Response.json({ message: error.message }, { status: 422 });
+    if (error instanceof StudyUploadError) return Response.json({ code: "INVALID_MATERIAL", message: error.message }, { status: 422 });
     return groupStudyErrorResponse(error);
   }
 }

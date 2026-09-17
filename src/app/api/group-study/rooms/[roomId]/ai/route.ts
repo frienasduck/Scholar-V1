@@ -6,9 +6,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
   try {
     assertRoomMutationRequest(request);
     const input = studyPromptSchema.safeParse(await request.json());
-    if (!input.success) return Response.json({ message: "Enter a study question up to 2,000 characters." }, { status: 400 });
+    if (!input.success) return Response.json({ code: "VALIDATION_ERROR", message: "Enter a study question up to 2,000 characters and valid material context." }, { status: 400 });
     const { roomId } = await params;
-    const result = await runRoomStudyTool(roomId, `${input.data.mode}: ${input.data.prompt}`, input.data.mode === "quiz-us" ? "quiz" : "text", request.signal);
+    const result = await runRoomStudyTool(roomId, `${input.data.mode}: ${input.data.prompt}`, input.data.mode === "quiz-us" ? "quiz" : "text", request.signal, input.data.resourceId, input.data.page);
     return Response.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return studyToolErrorResponse(error); }
 }

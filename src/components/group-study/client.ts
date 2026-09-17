@@ -12,11 +12,12 @@ export async function copyRoomCode(code: string) {
   await navigator.clipboard.writeText(formatRoomCode(code));
 }
 
-export async function groupRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
+export async function groupRequest<T>(url: string, init: RequestInit = {}, timeoutMs = 15_000): Promise<T> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 60_000);
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   const abort = () => controller.abort();
   init.signal?.addEventListener("abort", abort, { once: true });
+  if (init.signal?.aborted) controller.abort();
   try {
     const response = await fetch(url, {
       ...init, credentials: "same-origin", cache: "no-store", signal: controller.signal,
@@ -28,7 +29,7 @@ export async function groupRequest<T>(url: string, init: RequestInit = {}): Prom
         : response.status === 403 ? "You don't have permission to do that in this room."
         : response.status === 429 ? "Please wait a moment before trying again."
         : "Scholar couldn't complete that request. Please try again.";
-      throw new GroupStudyClientError(typeof value?.message === "string" ? value.message : fallback, response.status, value?.error);
+      throw new GroupStudyClientError(typeof value?.message === "string" ? value.message : fallback, response.status, value?.code ?? value?.error);
     }
     if (!value) throw new GroupStudyClientError("Scholar returned an incomplete response. Please try again.", 502);
     return value as T;

@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   // of the route's JS bundle. Preserve it explicitly for serverless deployment.
   serverExternalPackages: ["tesseract.js", "pdfjs-dist", "@napi-rs/canvas"],
   outputFileTracingIncludes: {
+    "/api/group-study/pdf-worker": ["./node_modules/pdfjs-dist/build/pdf.worker.min.mjs"],
     "/api/group-study/rooms/*/resources": [
       "./node_modules/pdfjs-dist/legacy/build/*.mjs",
       "./node_modules/@napi-rs/canvas*/**/*",
