@@ -75,43 +75,43 @@ afterAll(() => {
 const request = (path: string, data: unknown) => new NextRequest(`https://scholar.example${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
 
 describe("server-only private beta policy", () => {
-  test("defaults on and normalizes only email identity", () => {
+  test("defaults on and normalizes only email identity", async () => {
     expect(privateBetaEnabled()).toBe(true);
-    expect(isBetaAllowed({ id: "owner", email: " ScholarOfficialAcc123@GMAIL.com " })).toBe(true);
-    expect(isBetaAllowed({ id: "other", email: "other@example.test" })).toBe(false);
-    expect(isBetaAllowed(null)).toBe(false);
+    expect(await isBetaAllowed({ id: "owner", email: " ScholarOfficialAcc123@GMAIL.com " })).toBe(true);
+    expect(await isBetaAllowed({ id: "other", email: "other@example.test" })).toBe(false);
+    expect(await isBetaAllowed(null)).toBe(false);
   });
 
-  test("configured emails replace the default and empty configuration fails closed", () => {
+  test("configured emails replace the default and empty configuration fails closed", async () => {
     process.env.SCHOLAR_BETA_ALLOWED_EMAILS = " first@example.test, SECOND@example.test ";
-    expect(isBetaAllowed(betaUser)).toBe(false);
-    expect(isBetaAllowed({ id: "second", email: "second@example.test" })).toBe(true);
+    expect(await isBetaAllowed(betaUser)).toBe(false);
+    expect(await isBetaAllowed({ id: "second", email: "second@example.test" })).toBe(true);
     process.env.SCHOLAR_BETA_ALLOWED_EMAILS = "  ";
-    expect(isBetaAllowed(betaUser)).toBe(false);
+    expect(await isBetaAllowed(betaUser)).toBe(false);
   });
 
-  test("account ID configuration takes precedence over email and is exact", () => {
+  test("account ID configuration takes precedence over email and is exact", async () => {
     process.env.SCHOLAR_BETA_ALLOWED_EMAILS = betaUser.email;
     process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = " permitted-id ";
-    expect(isBetaAllowed(betaUser)).toBe(false);
-    expect(isBetaAllowed({ id: "permitted-id", email: "changed@example.test" })).toBe(true);
-    expect(isBetaAllowed({ id: "PERMITTED-ID", email: betaUser.email })).toBe(false);
+    expect(await isBetaAllowed(betaUser)).toBe(false);
+    expect(await isBetaAllowed({ id: "permitted-id", email: "changed@example.test" })).toBe(true);
+    expect(await isBetaAllowed({ id: "PERMITTED-ID", email: betaUser.email })).toBe(false);
     process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "";
-    expect(isBetaAllowed(betaUser)).toBe(false);
+    expect(await isBetaAllowed(betaUser)).toBe(false);
   });
 
-  test("explicitly disabling beta restores normal policy; invalid values stay closed", () => {
+  test("explicitly disabling beta restores normal policy; invalid values stay closed", async () => {
     for (const value of ["false", "0", "OFF", " no "]) {
       process.env.SCHOLAR_PRIVATE_BETA = value;
       expect(privateBetaEnabled()).toBe(false);
-      expect(isBetaAllowed({ id: "ordinary", email: "ordinary@example.test" })).toBe(true);
+      expect(await isBetaAllowed({ id: "ordinary", email: "ordinary@example.test" })).toBe(true);
       expect(publicBetaConfig().registrationEnabled).toBe(true);
     }
     process.env.SCHOLAR_PRIVATE_BETA = "typo";
     expect(privateBetaEnabled()).toBe(true);
   });
 
-  test("public config contains no configured allowlist or account identifiers", () => {
+  test("public config contains no configured allowlist or account identifiers", async () => {
     process.env.SCHOLAR_BETA_ALLOWED_EMAILS = "hidden@example.test";
     process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "internal-id";
     expect(publicBetaConfig()).toEqual({ privateBeta: true, registrationEnabled: false, contactEmail: "scholarofficialacc123@gmail.com" });

@@ -1,7 +1,6 @@
 import "server-only";
-import { normalizeEmail } from "@/lib/auth/identity";
-
-const BETA_CONTACT_EMAIL = "scholarofficialacc123@gmail.com";
+import { BETA_CONTACT_EMAIL, normalizeEmail } from "@/lib/auth/identity";
+import { hasDeveloperAccessSession } from "@/lib/auth/developer-access";
 
 /** Missing or invalid configuration keeps the private beta closed. */
 export function privateBetaEnabled(): boolean {
@@ -12,9 +11,16 @@ function entries(value: string): string[] {
   return value.split(/[,;\s]+/).map((entry) => entry.trim()).filter(Boolean);
 }
 
-/** Evaluate only a server-authenticated identity, never client profile data. */
-export function isBetaAllowed(user: { id: string; email: string } | null | undefined): boolean {
+/**
+ * Evaluate only a server-authenticated identity, never client profile data.
+ *
+ * A valid Developer Access session (verified server-side from its HttpOnly
+ * signed cookie) authorizes the signed-in account for the full beta
+ * experience, including Group Study hosting, without being listed below.
+ */
+export async function isBetaAllowed(user: { id: string; email: string; sessionVersion?: number } | null | undefined): Promise<boolean> {
   if (!user) return false;
+  if (await hasDeveloperAccessSession(user.id, user.sessionVersion)) return true;
   if (!privateBetaEnabled()) return true;
 
   // Account IDs take precedence when configured. An explicitly empty list

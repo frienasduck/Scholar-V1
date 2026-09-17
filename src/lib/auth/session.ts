@@ -3,6 +3,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { isBetaAllowed } from "@/lib/auth/beta";
+import { clearDeveloperAccessSession } from "@/lib/auth/developer-access";
 
 const AUTH_COOKIE = "scholar_session";
 const DEV_COOKIE = "scholar_developer_session";
@@ -79,6 +80,7 @@ export async function clearAuthSession() {
   } finally {
     store.set(AUTH_COOKIE, "", { ...cookieOptions(0), maxAge: 0 });
     store.set(DEV_COOKIE, "", { ...cookieOptions(0), maxAge: 0 });
+    await clearDeveloperAccessSession();
   }
 }
 
@@ -115,7 +117,9 @@ export async function getSessionUser() {
   }
   // Apply the current policy on every restore, including sessions issued
   // before beta was enabled. Keep the account and its data intact.
-  if (!isBetaAllowed(session.user)) return null;
+  // A valid Developer Access session (verified server-side from its cookie)
+  // authorizes the account here through isBetaAllowed.
+  if (!(await isBetaAllowed(session.user))) return null;
   return session.user;
 }
 
@@ -139,5 +143,5 @@ export async function hasDeveloperSession(userId?: string) {
   const payload = verifyDeveloperSession(store.get(DEV_COOKIE)?.value);
   if (!payload || (userId && payload.userId !== userId)) return false;
   const user = await db.user.findUnique({ where: { id: payload.userId }, select: { id: true, email: true, sessionVersion: true } });
-  return Boolean(user && isBetaAllowed(user) && user.sessionVersion === payload.version);
+  return Boolean(user && (await isBetaAllowed(user)) && user.sessionVersion === payload.version);
 }

@@ -40,7 +40,7 @@ async function createRoomForHost(hostUserId: string, input: z.infer<typeof creat
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (user && isBetaAllowed(user)) {
+    if (user && (await isBetaAllowed(user))) {
       const rooms = await db.groupStudyRoom.findMany({
         where: { hostUserId: user.id },
         orderBy: { createdAt: "desc" },
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   try {
     assertRoomMutationRequest(request);
     const user = await getSessionUser();
-    if (!user || !isBetaAllowed(user)) {
+    if (!user || !(await isBetaAllowed(user))) {
       throw new GroupStudyError("Only the authorized beta host can create study rooms right now.", 403, "HOST_REQUIRED");
     }
     const input = createRoomSchema.safeParse(await request.json().catch(() => null));

@@ -71,7 +71,7 @@ export async function getRoomPrincipal(roomId: string, options: { allowPending?:
   if (!room) throw new GroupStudyError("Study room not found.", 404, "ROOM_NOT_FOUND");
   assertRoomOpen(room);
   const user = await getSessionUser();
-  if (user && user.id === room.hostUserId && isBetaAllowed(user)) {
+  if (user && user.id === room.hostUserId && await isBetaAllowed(user)) {
     const member = await db.groupStudyParticipant.findFirst({ where: { roomId, role: "host" } });
     if (!member) throw new GroupStudyError("Host membership is unavailable.", 403, "ROOM_ACCESS_DENIED");
     memberStatus(member);
@@ -92,7 +92,7 @@ export async function revalidateRoomPrincipal(tx: RoomTransaction, room: GroupSt
   if (!member || member.role !== principal.role) throw new GroupStudyError("Your room session is invalid.", 403, "ROOM_ACCESS_DENIED");
   if (principal.role === "host") {
     const user = principal.userId ? await tx.user.findUnique({ where: { id: principal.userId }, select: { id: true, email: true } }) : null;
-    if (!user || user.id !== room.hostUserId || !isBetaAllowed(user)) throw new GroupStudyError("Only the authorized host can do this.", 403, "HOST_REQUIRED");
+    if (!user || user.id !== room.hostUserId || !(await isBetaAllowed(user))) throw new GroupStudyError("Only the authorized host can do this.", 403, "HOST_REQUIRED");
   } else if (!member.tokenHash || member.tokenHash !== principal.member.tokenHash) throw new GroupStudyError("Your room session was revoked.", 403, "ROOM_ACCESS_DENIED");
   memberStatus(member, options.allowPending);
   return { ...principal, room, member, displayName: member.displayName };

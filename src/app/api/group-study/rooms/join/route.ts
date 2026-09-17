@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     const user = await getSessionUser();
-    if (user && user.id === room.hostUserId && isBetaAllowed(user)) {
+    if (user && user.id === room.hostUserId && (await isBetaAllowed(user))) {
       // The authorized host opening their own room code re-enters as host.
       const hostMember = await db.groupStudyParticipant.findFirst({ where: { roomId: room.id, role: "host" } });
       if (hostMember) {

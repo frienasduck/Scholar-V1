@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     await enforceRateLimit(`login:${email}`, "login", 10, 15 * 60 * 1000);
     const user = await db.user.findUnique({ where: { email } });
     const passwordValid = await verifyPassword(input.data.password, user?.passwordHash || UNKNOWN_ACCOUNT_HASH);
-    if (!user || !passwordValid || !isBetaAllowed(user)) {
+    if (!user || !passwordValid || !(await isBetaAllowed(user))) {
       if (privateBetaEnabled()) {
         return NextResponse.json({ error: "PRIVATE_BETA_ACCESS_REQUIRED", message: privateBetaLoginMessage() }, { status: 401 });
       }
