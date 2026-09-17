@@ -1,0 +1,126 @@
+import { beforeEach, expect, mock, test } from "bun:test";
+mock.module("server-only", () => ({}));
+
+const host = { id: "host-owner", email: "owner@example.test", name: "Test Host", sessionVersion: 1 };
+let user: typeof host | null = host;
+let allowed = true;
+const cookies = new Map<string, string>();
+mock.module("../src/lib/auth/session", () => ({ getSessionUser: async () => user }));
+mock.module("../src/lib/auth/beta", () => ({ isBetaAllowed: async (value: typeof host | null) => Boolean(value && allowed) }));
+mock.module("next/headers", () => ({ cookies: async () => ({ get: (key: string) => cookies.has(key) ? { value: cookies.get(key)! } : undefined, set: (key: string, value: string) => cookies.set(key, value) }) }));
+
+const makeRoom = () => ({ id: "room-repair-123", code: "SCHABCDEFGH", hostUserId: host.id, name: "Physics Revision", subject: "Physics", topic: "Work", status: "waiting", locked: false, requireApproval: true, aiEnabled: true, chatEnabled: true, pdfEnabled: true, participantUploads: false, notesEditable: false, maxParticipants: 15, activeResourceId: null, page: 1, followHost: true, announcement: "", notes: "", revision: 0, createdAt: new Date(), updatedAt: new Date(), startedAt: null, endedAt: null, lastActivityAt: new Date(), expiresAt: new Date(Date.now() + 3_600_000) });
+let room = makeRoom();
+type Member = { id: string; roomId: string; role: string; status: string; displayName: string; tokenHash: string | null; expiresAt: Date; approvedAt: Date | null; joinedAt: Date; lastSeenAt: Date; handRaised: boolean; chatMuted: boolean; removedAt: Date | null };
+let members: Member[] = [];
+type Where = { id?: string; code?: string; roomId?: string; role?: string; tokenHash?: string; status?: string | { in: string[] } };
+const matches = (member: Member, where: Where) => (!where.id || member.id === where.id) && (!where.roomId || member.roomId === where.roomId) && (!where.role || member.role === where.role) && (!where.tokenHash || member.tokenHash === where.tokenHash) && (!where.status || (typeof where.status === "string" ? member.status === where.status : where.status.in.includes(member.status)));
+const createMember = (data: Partial<Member>) => {
+  const member: Member = { id: `member-${members.length}`, roomId: room.id, role: "participant", status: "pending", displayName: "Student", tokenHash: null, expiresAt: room.expiresAt, approvedAt: null, joinedAt: new Date(), lastSeenAt: new Date(), handRaised: false, chatMuted: false, removedAt: null, ...data };
+  members.push(member); return member;
+};
+let nestedHost = false;
+let versionSelected = false;
+const tx = {
+  $queryRaw: async () => [room],
+  user: { findUnique: async (args: { select?: { sessionVersion?: boolean } }) => { versionSelected = args.select?.sessionVersion === true; return host; } },
+  securityAttempt: { create: async () => ({}), count: async () => 0 },
+  groupStudyRoom: {
+    create: async ({ data }: { data: { code: string; participants?: { create: Partial<Member> } } }) => { room.code = data.code; nestedHost = Boolean(data.participants); if (data.participants) createMember(data.participants.create); return room; },
+    findUnique: async ({ where }: { where: Where }) => (where.id && where.id !== room.id) || (where.code && where.code !== room.code) ? null : room,
+    update: async ({ data }: { data: Partial<typeof room> & { revision?: unknown } }) => { const { revision, ...rest } = data; Object.assign(room, rest); if (revision) room.revision++; return room; },
+  },
+  groupStudyParticipant: {
+    findFirst: async ({ where }: { where: Where }) => members.find(member => matches(member, where)) ?? null,
+    findMany: async ({ where }: { where: Where }) => members.filter(member => matches(member, where)),
+    count: async ({ where }: { where: Where }) => members.filter(member => matches(member, where)).length,
+    create: async ({ data }: { data: Partial<Member> }) => createMember(data),
+    update: async ({ where, data }: { where: Where; data: Partial<Member> }) => { const member = members.find(value => matches(value, where))!; Object.assign(member, data); return member; },
+    updateMany: async () => ({ count: 0 }),
+  },
+  groupStudyMessage: { findMany: async () => [], create: async () => ({}) },
+  groupStudyResource: { findMany: async () => [], deleteMany: async () => ({ count: 0 }) },
+  groupStudyActivity: { findMany: async () => [] },
+  groupStudyEvent: { create: async () => ({}) },
+};
+mock.module("../src/lib/db", () => ({ db: { ...tx, $transaction: async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx) } }));
+const { POST: createRoom } = await import("../src/app/api/group-study/rooms/route");
+const { POST: joinRoom } = await import("../src/app/api/group-study/rooms/join/route");
+const { POST: roomAction } = await import("../src/app/api/group-study/rooms/[roomId]/actions/route");
+const { getRoomPrincipal, getRoomSnapshot, performRoomAction, revalidateRoomPrincipal } = await import("../src/lib/group-study/server");
+const request = (path: string, body: object) => new Request(`https://scholar.example/api/group-study/${path}`, { method: "POST", headers: { "Content-Type": "application/json", origin: "https://scholar.example" }, body: JSON.stringify(body) });
+
+beforeEach(() => { room = makeRoom(); members = []; user = host; allowed = true; cookies.clear(); nestedHost = false; versionSelected = false; });
+
+test("creation returns the real code and atomically creates an approved host; refresh preserves it", async () => {
+  const result = await createRoom(request("rooms", { name: "Physics Revision" }));
+  expect(result.status).toBe(201);
+  expect(await result.json()).toMatchObject({ ok: true, roomId: room.id, code: room.code });
+  expect(nestedHost).toBe(true);
+  expect(members[0]).toMatchObject({ role: "host", status: "approved", tokenHash: null });
+  expect((await getRoomSnapshot(room.id)).room.code).toBe(`SCH-${room.code.slice(3)}`);
+  expect((await getRoomSnapshot(room.id)).me.role).toBe("host");
+});
+test("existing orphaned room is repaired only for its authenticated authorized owner", async () => {
+  expect((await getRoomPrincipal(room.id)).role).toBe("host");
+  await getRoomPrincipal(room.id);
+  expect(members).toHaveLength(1);
+  members = []; user = { ...host, id: "another-account" };
+  await expect(getRoomPrincipal(room.id)).rejects.toThrow("invite code");
+  expect(members).toHaveLength(0);
+});
+test("unauthenticated and blocked accounts cannot create rooms", async () => {
+  user = null;
+  expect((await createRoom(request("rooms", { name: "Room" }))).status).toBe(403);
+  user = host; allowed = false;
+  expect((await createRoom(request("rooms", { name: "Room" }))).status).toBe(403);
+  expect(members).toHaveLength(0);
+});
+test("accountless join waits for approval, receives no code, and cannot escalate or cross rooms", async () => {
+  await getRoomPrincipal(room.id); user = null;
+  const result = await joinRoom(request("rooms/join", { displayName: "Student", code: "sch-abcdefgh" }));
+  expect(result.status).toBe(201);
+  expect(await result.json()).toMatchObject({ role: "participant", status: "pending" });
+  const pending = await getRoomSnapshot(room.id);
+  expect(pending.room.code).toBeUndefined(); expect(pending.room.name).toBe("");
+  const principal = await getRoomPrincipal(room.id, { allowPending: true });
+  user = host;
+  await performRoomAction(room.id, await getRoomPrincipal(room.id), { action: "approve", participantId: principal.id });
+  user = null;
+  expect((await getRoomSnapshot(room.id)).me.status).toBe("approved");
+  const approved = await getRoomPrincipal(room.id);
+  await expect(performRoomAction(room.id, approved, { action: "end" })).rejects.toThrow("Only the host");
+  await expect(revalidateRoomPrincipal(tx as unknown as Parameters<typeof revalidateRoomPrincipal>[0], { ...room, id: "another-room" }, approved)).rejects.toThrow("not valid here");
+  user = host;
+  await performRoomAction(room.id, await getRoomPrincipal(room.id), { action: "remove", participantId: approved.id });
+  user = null;
+  await expect(getRoomPrincipal(room.id)).rejects.toThrow("removed");
+});
+test("pending participant can leave successfully without reading a revoked snapshot", async () => {
+  user = null;
+  await joinRoom(request("rooms/join", { displayName: "Student", code: room.code }));
+  const left = await roomAction(request(`rooms/${room.id}/actions`, { action: "leave" }), { params: Promise.resolve({ roomId: room.id }) });
+  expect(left.status).toBe(200);
+  expect(await left.json()).toEqual({ ok: true });
+  expect(members[0].status).toBe("left");
+});
+test("locked/full rooms reject new joins and invalid code yields a controlled response", async () => {
+  user = null; room.locked = true;
+  expect((await joinRoom(request("rooms/join", { displayName: "Student", code: room.code }))).status).toBe(404);
+  expect(members).toHaveLength(0);
+  room.locked = false; room.maxParticipants = 1; createMember({ status: "approved" });
+  expect((await joinRoom(request("rooms/join", { displayName: "Student", code: room.code }))).status).toBe(409);
+  const wrong = await joinRoom(request("rooms/join", { displayName: "Student", code: "SCHZZZZZZZZ" }));
+  expect(wrong.status).toBe(404); expect((await wrong.json()).message).toContain("couldn't be found");
+});
+test("host actions retain version binding and ending a room returns success, not a revoked snapshot error", async () => {
+  const principal = await getRoomPrincipal(room.id);
+  await performRoomAction(room.id, principal, { action: "lock", locked: true });
+  expect(room.locked).toBe(true); expect(versionSelected).toBe(true);
+  await performRoomAction(room.id, principal, { action: "lock", locked: false });
+  expect(room.locked).toBe(false);
+  await performRoomAction(room.id, principal, { action: "announce", body: "Study page 4" });
+  expect(room.announcement).toBe("Study page 4");
+  const ended = await roomAction(request(`rooms/${room.id}/actions`, { action: "end" }), { params: Promise.resolve({ roomId: room.id }) });
+  expect(ended.status).toBe(200); expect(await ended.json()).toEqual({ ok: true }); expect(room.status).toBe("ended");
+});

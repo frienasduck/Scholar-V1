@@ -13,20 +13,25 @@ export const maxDuration = 30;
 const SAFE_RECENT_STATUSES: RoomStatus[] = ["waiting", "active", "paused", "ended"];
 
 /** Retry the unique code insert on the (astronomically unlikely) collision. */
-async function createRoomForHost(hostUserId: string, input: z.infer<typeof createRoomSchema>) {
+async function createRoomForHost(host: { id: string; name: string | null }, input: z.infer<typeof createRoomSchema>) {
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + ROOM_LIFETIME_MS);
       return await db.groupStudyRoom.create({
         data: {
           code: generateRoomCode(),
-          hostUserId,
+          hostUserId: host.id,
           name: input.name,
           subject: input.subject,
           topic: input.topic,
           maxParticipants: input.maxParticipants,
-          expiresAt: new Date(Date.now() + ROOM_LIFETIME_MS),
-          lastActivityAt: new Date(),
-          updatedAt: new Date(),
+          expiresAt,
+          lastActivityAt: now,
+          updatedAt: now,
+          // Atomic nested writes: every successful room has its host identity.
+          participants: { create: { displayName: (host.name || "Scholar Host").slice(0, 40), role: "host", status: "approved", expiresAt, approvedAt: now } },
+          events: { create: { type: "room_created" } },
         },
       });
     } catch (error) {
@@ -79,7 +84,7 @@ export async function POST(request: Request) {
     const input = createRoomSchema.safeParse(await request.json().catch(() => null));
     if (!input.success) throw new GroupStudyError("Enter a room name of 2–80 characters.", 400, "VALIDATION_ERROR");
     await db.securityAttempt.create({ data: { key: `group-create:${user.id}`, action: "group-create" } });
-    const room = await createRoomForHost(user.id, input.data);
+    const room = await createRoomForHost(user, input.data);
     return NextResponse.json({ ok: true, roomId: room.id, name: room.name, code: room.code }, { status: 201, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return groupStudyErrorResponse(error);

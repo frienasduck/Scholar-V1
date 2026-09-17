@@ -1,5 +1,13 @@
 # Neha's Scholar — Worklog
 
+## 17 September 2026 — Targeted Group Study host-entry and code repair
+
+- Reused the existing public liquid-glass landing for the sidebar/developer entry; authorized hosts can create without another login. Creation now preserves the real API code in an obvious room-created panel with clipboard confirmation and an explicit Enter Study Room action.
+- Created approved host membership atomically with each room; safely recover orphaned rooms only for their authenticated, server-authorized owner. Host mutation checks retain session-version binding for Developer Access. Participant identity, room boundaries, approval and host-only controls remain enforced on the server.
+- Loaded room-shell styling directly, fixed duplicate code hyphens, kept code/copy/count visible, and repaired terminal room errors and end/leave responses. Locked/full rooms now reject new joins under the existing transaction lock; pending Leave revokes the request.
+- Validation: TypeScript passed; 32 targeted backend/developer/policy tests and 3 Chrome browser tests passed (35 total); scoped ESLint passed after documenting the async access-check effect. Production build passed, invoked once. Browser checks cover create/code/clipboard/enter/refresh, lock/end, invalid-code/pending/approval, and 320/390/1440px layouts.
+- Automated tests use synthetic database/API responses; the public landing was also checked against the local server. A real developer account plus a separate incognito participant still needs live database verification. No schema, Android, password/Privacy, dashboard or unrelated AI changes; no deployment performed in this targeted pass.
+
 ## 17 September 2026 — Developer Access added to the private-beta gate (privacy page)
 
 - New flow: beta gate footer → Privacy → Privacy Notice → bottom "Access website for developers" → Scholar-styled dialog → server-verified password → full Scholar. The privacy page (`src/app/privacy/page.tsx`) was expanded into a fuller notice (information processed, account, Guest Mode, Group Study, materials, AI, cookies, security, retention, contact) using the existing `InformationPage` design.

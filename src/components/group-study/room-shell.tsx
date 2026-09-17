@@ -7,7 +7,8 @@ import {
   Plus, RotateCcw, Eye, CircleStop, ChevronLeft, ChevronRight, BookOpen, ShieldCheck,
 } from "lucide-react";
 import { useGroupRoom, type GroupRoomController } from "@/components/group-study/use-room";
-import { groupRequest, errorMessage } from "@/components/group-study/client";
+import { groupRequest, errorMessage, formatRoomCode, copyRoomCode } from "@/components/group-study/client";
+import "./group-study.css";
 import type { RoomSnapshot } from "@/lib/group-study/types";
 
 const ROOM_TABS = [
@@ -34,7 +35,7 @@ export function rememberRoomId(roomId: string | null) {
   } catch { /* storage unavailable */ }
 }
 function initials(name: string) { return name.trim().slice(0, 2).toUpperCase() || "?"; }
-function formatCode(code: string) { return code.startsWith("SCH") && code.length > 3 ? `SCH-${code.slice(3)}` : code; }
+const formatCode = formatRoomCode;
 
 function useNow(intervalMs = 1000) {
   const [now, setNow] = useState(() => Date.now());
@@ -49,13 +50,16 @@ function useNow(intervalMs = 1000) {
 
 function ShareRow({ code }: { code: string }) {
   const [copied, setCopied] = useState<"code" | "message" | null>(null);
+  const [copyError, setCopyError] = useState("");
   const shareText = `Join my Scholar Group Study room.\n\nCode: ${formatCode(code)}`;
   const copy = async (kind: "code" | "message") => {
     try {
-      await navigator.clipboard.writeText(kind === "code" ? formatCode(code) : shareText);
+      setCopyError("");
+      if (kind === "code") await copyRoomCode(code);
+      else await navigator.clipboard.writeText(shareText);
       setCopied(kind);
       window.setTimeout(() => setCopied(null), 1600);
-    } catch { setCopied(null); }
+    } catch { setCopied(null); setCopyError("Copy unavailable. Select the room code and copy it manually."); }
   };
   const share = async () => {
     const navigatorWithShare = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
@@ -71,6 +75,7 @@ function ShareRow({ code }: { code: string }) {
         {copied === "code" ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
       </button>
       <button className="gs-button" onClick={() => void share()}><Share2 aria-hidden="true" /> Share</button>
+      {copyError ? <span role="status" className="gs-fineprint">{copyError}</span> : null}
     </div>
   );
 }
@@ -557,7 +562,7 @@ function PeoplePanel({ controller }: { controller: GroupRoomController }) {
 }
 
 function HostControlsPanel({ controller }: { controller: GroupRoomController }) {
-  const { snapshot, action, busy, refresh } = controller;
+  const { snapshot, action, busy } = controller;
   const [confirmEnd, setConfirmEnd] = useState(false);
   if (!snapshot) return null;
   const settings = snapshot.room;
@@ -605,7 +610,7 @@ function HostControlsPanel({ controller }: { controller: GroupRoomController }) 
           <div className="gs-note gs-error" role="alertdialog" aria-label="Confirm end room">
             <span>End this study session for everyone?</span>
             <span className="gs-actions">
-              <button className="gs-button gs-button-danger" disabled={busy} onClick={async () => { setConfirmEnd(false); const ok = await action("end"); if (ok) await refresh().catch(() => undefined); }}><CircleStop aria-hidden="true" /> End for everyone</button>
+              <button className="gs-button gs-button-danger" disabled={busy} onClick={() => { setConfirmEnd(false); void action("end"); }}><CircleStop aria-hidden="true" /> End for everyone</button>
               <button className="gs-button" onClick={() => setConfirmEnd(false)}>Cancel</button>
             </span>
           </div>
@@ -687,6 +692,9 @@ export function RoomShell({ roomId, onExit }: { roomId: string; onExit: () => vo
     return () => rememberRoomId(null);
   }, [roomId]);
 
+  if (connection === "ended") {
+    return <div className="group-study"><div className="gs-shade" /><div className="gs-wrap"><EndedView message={error || "This study room has ended."} onBack={onExit} /></div></div>;
+  }
   if (!snapshot) {
     return (
       <div className="group-study">
@@ -722,7 +730,7 @@ export function RoomShell({ roomId, onExit }: { roomId: string; onExit: () => vo
             <button className="gs-brand" onClick={onExit} style={{ background: "none", border: 0 }}><ArrowLeft aria-hidden="true" /> Group Study</button>
             <span className="gs-top-note">GROUP STUDY · <strong>BETA</strong></span>
           </header>
-          <PendingView snapshot={snapshot} onLeave={onExit} />
+          <PendingView snapshot={snapshot} onLeave={() => { void controller.action("leave").then(ok => { if (ok) onExit(); }); }} />
         </div>
       </div>
     );
@@ -730,8 +738,8 @@ export function RoomShell({ roomId, onExit }: { roomId: string; onExit: () => vo
 
   const isHost = snapshot.me.role === "host";
   const tabs: RoomTabId[] = isHost ? [...ROOM_TABS.map((t) => t.id), "host"] : ROOM_TABS.map((t) => t.id);
-  const statusLabel = snapshot.room.status === "active" ? `LIVE · ${snapshot.participants.filter((p) => p.status === "approved").length} studying`
-    : snapshot.room.status === "paused" ? "PAUSED" : "WAITING";
+  const statusLabel = snapshot.room.status === "active" ? "LIVE" : snapshot.room.status === "paused" ? "PAUSED" : "WAITING";
+  const participantCount = snapshot.participants.filter((p) => p.status === "approved").length;
 
   return (
     <div className="group-study">
@@ -744,8 +752,11 @@ export function RoomShell({ roomId, onExit }: { roomId: string; onExit: () => vo
             <p className="gs-muted">{[snapshot.room.subject, snapshot.room.topic].filter(Boolean).join(" · ") || "Study room"}</p>
           </div>
           <div>
-            <div className="gs-status" data-state={connection === "live" ? snapshot.room.status : "reconnecting"}>
-              <span className="gs-status-dot" /> {connection === "live" ? statusLabel : "Reconnecting…"}
+            <div className="gs-actions">
+              <div className="gs-status" data-state={connection === "live" ? snapshot.room.status : "reconnecting"}>
+                <span className="gs-status-dot" /> {connection === "live" ? statusLabel : "Reconnecting…"}
+              </div>
+              <span className="gs-top-note" aria-label="Participant count">{participantCount} studying</span>
             </div>
             {isHost && snapshot.room.code ? <div className="gs-actions"><ShareRow code={snapshot.room.code} /></div> : null}
           </div>

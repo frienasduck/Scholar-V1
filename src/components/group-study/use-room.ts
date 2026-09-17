@@ -6,7 +6,7 @@ import { errorMessage, groupRequest, GroupStudyClientError } from "./client";
 
 export function useGroupRoom(roomId: string | null) {
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null);
-  const [connection, setConnection] = useState<"connecting" | "live" | "reconnecting">("connecting");
+  const [connection, setConnection] = useState<"connecting" | "live" | "reconnecting" | "ended">("connecting");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const actionBusy = useRef(false);
@@ -15,7 +15,8 @@ export function useGroupRoom(roomId: string | null) {
 
   const acceptSnapshot = useCallback((value: RoomSnapshot) => {
     if (value.room?.id !== currentRoom.current) return;
-    setSnapshot(previous => previous?.room.id === value.room.id && previous.revision > value.revision ? previous : value);
+    setSnapshot(previous => previous?.room.id === value.room.id &&
+      (previous.revision > value.revision || previous.room.status === "ended" || previous.me.status === "left") ? previous : value);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -72,7 +73,7 @@ export function useGroupRoom(roomId: string | null) {
       } catch (cause) {
         if (closed) return;
         setError(errorMessage(cause));
-        if (cause instanceof GroupStudyClientError && [401, 403, 404, 410].includes(cause.status)) { setConnection("reconnecting"); return; }
+        if (cause instanceof GroupStudyClientError && [401, 403, 404, 410].includes(cause.status)) { setConnection("ended"); return; }
         scheduleReconnect();
       }
     };
@@ -96,6 +97,9 @@ export function useGroupRoom(roomId: string | null) {
         method: "POST", body: JSON.stringify({ action: actionName, ...parameters }),
       });
       if (result.snapshot) acceptSnapshot(result.snapshot);
+      else if (actionName === "end" || actionName === "leave") {
+        setSnapshot(previous => previous ? { ...previous, room: actionName === "end" ? { ...previous.room, status: "ended" } : previous.room, me: actionName === "leave" ? { ...previous.me, status: "left" } : previous.me } : previous);
+      }
       else if (!["leave", "end"].includes(actionName)) await refresh();
       return true;
     } catch (cause) {

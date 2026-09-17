@@ -2,6 +2,16 @@ export class GroupStudyClientError extends Error {
   constructor(message: string, public status: number, public code?: string) { super(message); }
 }
 
+export type CreatedStudyRoom = { ok: true; roomId: string; name: string; code: string };
+export function formatRoomCode(code: string) {
+  const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return normalized.startsWith("SCH") ? `SCH-${normalized.slice(3)}` : code;
+}
+export async function copyRoomCode(code: string) {
+  if (!navigator.clipboard?.writeText) throw new Error("Copy unavailable. Select the room code and copy it manually.");
+  await navigator.clipboard.writeText(formatRoomCode(code));
+}
+
 export async function groupRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 60_000);

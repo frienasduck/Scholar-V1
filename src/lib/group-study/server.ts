@@ -72,8 +72,18 @@ export async function getRoomPrincipal(roomId: string, options: { allowPending?:
   assertRoomOpen(room);
   const user = await getSessionUser();
   if (user && user.id === room.hostUserId && await isBetaAllowed(user)) {
-    const member = await db.groupStudyParticipant.findFirst({ where: { roomId, role: "host" } });
-    if (!member) throw new GroupStudyError("Host membership is unavailable.", 403, "ROOM_ACCESS_DENIED");
+    let member = await db.groupStudyParticipant.findFirst({ where: { roomId, role: "host" } });
+    if (!member) {
+      // Repair previously orphaned rooms for their authorized owner only.
+      // Locking the room prevents duplicate hosts on simultaneous refreshes.
+      member = await withLockedRoom(roomId, async (tx, freshRoom) => {
+        assertRoomOpen(freshRoom);
+        if (freshRoom.hostUserId !== user.id) throw new GroupStudyError("Only the authorized host can do this.", 403, "HOST_REQUIRED");
+        const owner = await tx.user.findUnique({ where: { id: user.id }, select: { id: true, email: true, sessionVersion: true } });
+        if (!owner || !(await isBetaAllowed(owner))) throw new GroupStudyError("Only the authorized host can do this.", 403, "HOST_REQUIRED");
+        return await tx.groupStudyParticipant.findFirst({ where: { roomId, role: "host" } }) ?? tx.groupStudyParticipant.create({ data: { roomId, displayName: (user.name || "Scholar Host").slice(0, 40), role: "host", status: "approved", expiresAt: freshRoom.expiresAt, approvedAt: new Date() } });
+      });
+    }
     memberStatus(member);
     return { room, member, role: "host", displayName: member.displayName, id: member.id, userId: user.id };
   }
@@ -91,7 +101,7 @@ export async function revalidateRoomPrincipal(tx: RoomTransaction, room: GroupSt
   const member = await tx.groupStudyParticipant.findFirst({ where: { id: principal.id, roomId: room.id } });
   if (!member || member.role !== principal.role) throw new GroupStudyError("Your room session is invalid.", 403, "ROOM_ACCESS_DENIED");
   if (principal.role === "host") {
-    const user = principal.userId ? await tx.user.findUnique({ where: { id: principal.userId }, select: { id: true, email: true } }) : null;
+    const user = principal.userId ? await tx.user.findUnique({ where: { id: principal.userId }, select: { id: true, email: true, sessionVersion: true } }) : null;
     if (!user || user.id !== room.hostUserId || !(await isBetaAllowed(user))) throw new GroupStudyError("Only the authorized host can do this.", 403, "HOST_REQUIRED");
   } else if (!member.tokenHash || member.tokenHash !== principal.member.tokenHash) throw new GroupStudyError("Your room session was revoked.", 403, "ROOM_ACCESS_DENIED");
   memberStatus(member, options.allowPending);
