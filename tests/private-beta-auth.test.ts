@@ -6,7 +6,7 @@ mock.module("server-only", () => ({}));
 const configKeys = ["SCHOLAR_PRIVATE_BETA", "SCHOLAR_BETA_ALLOWED_EMAILS", "SCHOLAR_BETA_ALLOWED_USER_IDS", "DEV_MODE_ENABLED"] as const;
 const originalConfig = Object.fromEntries(configKeys.map((key) => [key, process.env[key]]));
 const now = new Date();
-const betaUser = { id: "beta-owner", email: "scholarofficialacc@gmail.com", name: "Beta owner", role: "USER", sessionVersion: 1, timezone: "UTC", coins: 0, plusBonusGrantedAt: null, currentScholarClass: 11, createdAt: now, updatedAt: now, passwordHash: "" };
+const betaUser = { id: "beta-owner", email: "scholarofficialacc123@gmail.com", name: "Beta owner", role: "USER", sessionVersion: 1, timezone: "UTC", coins: 0, plusBonusGrantedAt: null, currentScholarClass: 11, createdAt: now, updatedAt: now, passwordHash: "" };
 type FixtureUser = typeof betaUser;
 let users: FixtureUser[] = [];
 let restoredUser: FixtureUser | null = null;
@@ -77,7 +77,7 @@ const request = (path: string, data: unknown) => new NextRequest(`https://schola
 describe("server-only private beta policy", () => {
   test("defaults on and normalizes only email identity", () => {
     expect(privateBetaEnabled()).toBe(true);
-    expect(isBetaAllowed({ id: "owner", email: " ScholarOfficialAcc@GMAIL.com " })).toBe(true);
+    expect(isBetaAllowed({ id: "owner", email: " ScholarOfficialAcc123@GMAIL.com " })).toBe(true);
     expect(isBetaAllowed({ id: "other", email: "other@example.test" })).toBe(false);
     expect(isBetaAllowed(null)).toBe(false);
   });
@@ -114,7 +114,7 @@ describe("server-only private beta policy", () => {
   test("public config contains no configured allowlist or account identifiers", () => {
     process.env.SCHOLAR_BETA_ALLOWED_EMAILS = "hidden@example.test";
     process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "internal-id";
-    expect(publicBetaConfig()).toEqual({ privateBeta: true, registrationEnabled: false, contactEmail: "scholarofficialacc@gmail.com" });
+    expect(publicBetaConfig()).toEqual({ privateBeta: true, registrationEnabled: false, contactEmail: "scholarofficialacc123@gmail.com" });
   });
 });
 

@@ -1,7 +1,7 @@
 import "server-only";
 import { normalizeEmail } from "@/lib/auth/identity";
 
-const BETA_CONTACT_EMAIL = "scholarofficialacc@gmail.com";
+const BETA_CONTACT_EMAIL = "scholarofficialacc123@gmail.com";
 
 /** Missing or invalid configuration keeps the private beta closed. */
 export function privateBetaEnabled(): boolean {

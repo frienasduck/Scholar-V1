@@ -2,7 +2,7 @@
 
 ## 16 September 2026 — Beta allowlist transfer to scholarofficialacc@gmail.com
 
-- Changed the single server-side beta allowlist identity to `scholarofficialacc@gmail.com` (`src/lib/auth/beta.ts` default when `SCHOLAR_BETA_ALLOWED_EMAILS`/`SCHOLAR_BETA_ALLOWED_USER_IDS` are unset). The previous address is no longer authorized anywhere; environment overrides still take precedence and ID-based allowlists still win over emails. Deployment note: if production sets `SCHOLAR_BETA_ALLOWED_EMAILS`, that variable must be updated too, or it will keep overriding this default.
+- Changed the single server-side beta allowlist identity to `scholarofficialacc123@gmail.com` (`src/lib/auth/beta.ts` default when `SCHOLAR_BETA_ALLOWED_EMAILS`/`SCHOLAR_BETA_ALLOWED_USER_IDS` are unset). The previous address is no longer authorized anywhere; environment overrides still take precedence and ID-based allowlists still win over emails. Deployment note: if production sets `SCHOLAR_BETA_ALLOWED_EMAILS`, that variable must be updated too, or it will keep overriding this default.
 - Password verification unchanged (scrypt, existing session system); no plaintext password anywhere. Registration remains closed; the generic negative login response is unchanged; Guest Mode and accountless Group Study joining unaffected. `.env.example` documents the new default; tests updated to the new identity (22 beta/policy tests, 213 total, 0 fail); typecheck clean.
 
 ## 16 September 2026 — Group Study Beta (private beta access + collaborative rooms)
