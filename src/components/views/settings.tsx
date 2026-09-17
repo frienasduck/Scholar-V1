@@ -79,6 +79,20 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Group Study Beta",
+    date: "16 Sep 2026",
+    title: "Scholar Group Study — study together, live",
+    items: [
+      "Group Study is here in private beta: a hosted study room with a shareable code — learn together, think together.",
+      "Hosts create rooms and admit participants themselves; participants join with just a name and a study code, no account needed.",
+      "Shared PDF materials with a synced active page, so everyone studies the same document together.",
+      "Group LAM: ask questions grounded in the room topic and shared materials, with summaries, flashcards and a shared five-question quiz builder.",
+      "Live study chat with host announcements, plus synchronized focus timers, quizzes with host-controlled answer reveal, and polls.",
+      "Shared room notes with host-controlled editing, raise hand, host mute/remove controls, room lock, pause and end for everyone.",
+      "Scholar is in private beta: public registration is closed, authorized accounts sign in as usual, and everyone can use Guest Mode or join Group Study rooms.",
+    ],
+  },
+  {
     version: "Website reliability pass",
     date: "10 Sep 2026",
     title: "Faster answers, safer saved work",

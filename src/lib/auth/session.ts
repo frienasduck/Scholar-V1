@@ -2,6 +2,7 @@ import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { isBetaAllowed } from "@/lib/auth/beta";
 
 const AUTH_COOKIE = "scholar_session";
 const DEV_COOKIE = "scholar_developer_session";
@@ -112,6 +113,9 @@ export async function getSessionUser() {
     await db.session.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
+  // Apply the current policy on every restore, including sessions issued
+  // before beta was enabled. Keep the account and its data intact.
+  if (!isBetaAllowed(session.user)) return null;
   return session.user;
 }
 
@@ -134,6 +138,6 @@ export async function hasDeveloperSession(userId?: string) {
   const store = await cookies();
   const payload = verifyDeveloperSession(store.get(DEV_COOKIE)?.value);
   if (!payload || (userId && payload.userId !== userId)) return false;
-  const user = await db.user.findUnique({ where: { id: payload.userId }, select: { sessionVersion: true } });
-  return Boolean(user && user.sessionVersion === payload.version);
+  const user = await db.user.findUnique({ where: { id: payload.userId }, select: { id: true, email: true, sessionVersion: true } });
+  return Boolean(user && isBetaAllowed(user) && user.sessionVersion === payload.version);
 }

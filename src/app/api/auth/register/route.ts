@@ -7,6 +7,7 @@ import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { accountError, databaseUnavailableError, isUniqueConstraintError } from "@/lib/auth/errors";
 import { normalizeEmail } from "@/lib/auth/identity";
 import { UserRole } from "@prisma/client";
+import { privateBetaEnabled, privateBetaRegistrationMessage } from "@/lib/auth/beta";
 
 const schema = z.object({
   email: z.string().trim().email().max(254),
@@ -15,8 +16,13 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Public possession of an allowlisted email is not proof of ownership.
+  // Existing authorized accounts sign in through the normal password flow.
+  if (privateBetaEnabled()) {
+    return NextResponse.json({ error: "PRIVATE_BETA_REGISTRATION_CLOSED", message: privateBetaRegistrationMessage() }, { status: 403 });
+  }
   try {
-    const input = schema.safeParse(await request.json());
+    const input = schema.safeParse(await request.json().catch(() => null));
     if (!input.success) return accountError("VALIDATION_ERROR", "Enter a valid name, email, and password of at least 8 characters.", 400);
     const email = normalizeEmail(input.data.email);
     await enforceRateLimit(`register:${email}`, "register", 5, 60 * 60 * 1000);

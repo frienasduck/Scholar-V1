@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { activateAccountWorkspace, useStore } from "@/lib/store";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
@@ -63,8 +64,17 @@ export function AuthScreen() {
   const [authError, setAuthError] = useState("");
   const [accountUnavailable, setAccountUnavailable] = useState(false);
   const [selectedClass, setSelectedClass] = useState<9 | 11>(11);
+  const [beta, setBeta] = useState({ privateBeta: true, registrationEnabled: false });
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/auth/session", { cache: "no-store", signal: controller.signal })
+      .then((response) => response.json())
+      .then((value) => { if (value.beta && !controller.signal.aborted) setBeta(value.beta); })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
   const openSignup = () => {
-    setMode("signup");
+    setMode(beta.registrationEnabled ? "signup" : "login");
     document.getElementById("scholar-auth-form")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
   };
 
@@ -243,13 +253,13 @@ export function AuthScreen() {
             initial={{ filter: "blur(10px)", opacity: 0, y: 20 }}
             animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.1, ease: "easeOut" }}
-            className="flex items-center gap-6 mt-10"
+            className="flex flex-wrap justify-center items-center gap-4 mt-10"
           >
             <button
               onClick={openSignup}
               className="lg-glass-strong rounded-full px-6 py-3 text-sm font-medium text-white flex items-center gap-2 lg-body hover:scale-105 transition-transform"
             >
-              Start Your Journey <ArrowUpRight className="h-5 w-5" />
+              {beta.registrationEnabled ? "Start Your Journey" : "Sign In"} <ArrowUpRight className="h-5 w-5" />
             </button>
             <button
               onClick={startGuestSession}
@@ -257,6 +267,9 @@ export function AuthScreen() {
             >
               Explore as Guest <Play className="h-4 w-4 fill-white" />
             </button>
+            <Link href="/group-study" className="lg-glass-strong rounded-full px-6 py-3 text-sm font-medium text-white flex items-center gap-2 lg-body">
+              Group Study <span className="rounded-full border border-white/20 px-2 py-0.5 text-[9px] tracking-widest">BETA</span>
+            </Link>
           </motion.div>
         </div>
 
@@ -310,7 +323,7 @@ export function AuthScreen() {
                 {mode === "login" ? "Welcome back" : "Begin your journey"}
               </h2>
               <p className="text-sm text-white/60 lg-body">
-                {mode === "login" ? "Sign in to continue learning" : "Create your study account"}
+                {beta.privateBeta ? "Private beta · Sign in with your authorized account" : mode === "login" ? "Sign in to continue learning" : "Create your study account"}
               </p>
             </div>
 
@@ -415,16 +428,19 @@ export function AuthScreen() {
               >
                 Continue as Guest
               </button>
+              <Link href="/group-study" className="w-full rounded-full border border-white/20 bg-white/[0.06] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-white/[0.12] flex items-center justify-center gap-3">
+                Group Study <span className="text-[9px] tracking-[0.16em] rounded-full border border-white/20 px-2 py-0.5">BETA</span>
+              </Link>
             </form>
 
-            <div className="mt-6 text-center">
+            {beta.registrationEnabled ? <div className="mt-6 text-center">
               <button
                 onClick={() => setMode(mode === "login" ? "signup" : "login")}
                 className="text-sm text-white/60 hover:text-white lg-body transition-colors"
               >
                 {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
               </button>
-            </div>
+            </div> : <p className="mt-6 text-center text-xs leading-5 text-white/60">New accounts are currently invite-only. Explore as Guest or join a Group Study room with a study code.</p>}
 
             <div className="mt-4 text-center text-xs text-white/40 lg-body">
               <p>{guestMode ? "Guest preferences remain local until account conversion succeeds." : "Your Scholar account is protected by a secure server session."}</p>

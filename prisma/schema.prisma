@@ -52,6 +52,7 @@ model User {
   practiceAttempts      PracticeAttempt[]
   mistakeRecords        MistakeRecord[]
   revisionItems         RevisionItem[]
+  hostedStudyRooms      GroupStudyRoom[]
 }
 
 model Session {
@@ -456,3 +457,111 @@ model RevisionItem {
   @@index([userId, dueAt, state])
 }
 
+// Temporary collaborative identities are separate from Scholar accounts.
+model GroupStudyRoom {
+  id                 String   @id @default(cuid())
+  code               String   @unique
+  hostUserId         String
+  name               String
+  subject            String   @default("")
+  topic              String   @default("")
+  status             String   @default("waiting")
+  requireApproval    Boolean  @default(true)
+  locked             Boolean  @default(false)
+  aiEnabled          Boolean  @default(true)
+  chatEnabled        Boolean  @default(true)
+  pdfEnabled         Boolean  @default(true)
+  participantUploads Boolean  @default(false)
+  notesEditable      Boolean  @default(false)
+  maxParticipants    Int      @default(15)
+  activeResourceId   String?
+  page               Int      @default(1)
+  followHost         Boolean  @default(true)
+  announcement       String   @default("")
+  notes              String   @default("")
+  revision           Int      @default(0)
+  createdAt          DateTime @default(now())
+  startedAt          DateTime?
+  endedAt            DateTime?
+  expiresAt          DateTime
+  lastActivityAt     DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  host               User @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+  participants       GroupStudyParticipant[]
+  messages           GroupStudyMessage[]
+  resources          GroupStudyResource[]
+  activities         GroupStudyActivity[]
+  events             GroupStudyEvent[]
+  @@index([hostUserId, status])
+  @@index([expiresAt])
+}
+
+model GroupStudyParticipant {
+  id          String @id @default(cuid())
+  roomId      String
+  displayName String
+  role        String @default("participant")
+  status      String @default("pending")
+  tokenHash   String? @unique
+  expiresAt   DateTime
+  handRaised  Boolean @default(false)
+  chatMuted   Boolean @default(false)
+  joinedAt    DateTime @default(now())
+  approvedAt  DateTime?
+  lastSeenAt  DateTime @default(now())
+  removedAt   DateTime?
+  room        GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  messages    GroupStudyMessage[]
+  resources   GroupStudyResource[]
+  @@index([roomId, status])
+}
+
+model GroupStudyMessage {
+  id            String @id @default(cuid())
+  roomId        String
+  participantId String?
+  kind          String @default("chat")
+  body          String
+  createdAt     DateTime @default(now())
+  room          GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  participant   GroupStudyParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+  @@index([roomId, createdAt])
+}
+
+model GroupStudyResource {
+  id           String @id @default(cuid())
+  roomId       String
+  uploadedById String
+  name         String
+  mimeType     String
+  sizeBytes    Int
+  pageCount    Int @default(1)
+  bytes        Bytes
+  text         String @default("")
+  pageTexts    Json @default("[]")
+  createdAt    DateTime @default(now())
+  room         GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  uploadedBy   GroupStudyParticipant @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  @@index([roomId, createdAt])
+}
+
+model GroupStudyActivity {
+  id        String @id @default(cuid())
+  roomId    String
+  kind      String
+  state     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  room      GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@unique([roomId, kind])
+}
+
+model GroupStudyEvent {
+  id            String @id @default(cuid())
+  roomId        String
+  participantId String?
+  type          String
+  createdAt     DateTime @default(now())
+  room          GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@index([roomId, createdAt])
+}

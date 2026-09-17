@@ -24,6 +24,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Learn" },
+  { id: "group-study", label: "Group Study", icon: Users, group: "Learn", badge: "BETA" },
   { id: "intelligence", label: "Scholar Intelligence", icon: BrainCircuit, group: "Learn" },
   { id: "chapter-command", label: "Chapter Command Center", icon: LayoutGrid, group: "Learn" },
   { id: "nigtube", label: "NIGTUBE", icon: PlayCircle, group: "Learn" },

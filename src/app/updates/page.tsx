@@ -2,6 +2,7 @@ import { InformationPage } from "@/components/information-page";
 export const metadata = { title: "What's new | Scholar" };
 export default function UpdatesPage() {
   return <InformationPage title="What's new" intro="A more dependable study workspace, built on the Scholar you already know.">
+    <section><h2>September 2026 · Group Study (Beta)</h2><p>Group Study is here: create or join a hosted study room with a shareable code. Hosts control the room, participants join with just a name — no account needed. Shared PDF materials, Group LAM study help, live chat with announcements, quizzes, polls, shared notes and synchronized focus sessions. Scholar remains in private beta: public registration is closed, and Guest Mode continues to work for everyone.</p></section>
     <section><h2>September 2026 · Reliability improvements</h2><p>AI response handling now distinguishes completed answers from interrupted output. Feature screens load as you open them, and session connection failures have a recovery path. Navigation, support information, mobile spacing, and background playback are being refined throughout the existing website.</p></section>
     <section><h2>Your work stays yours</h2><p>This update keeps the existing accounts, subscriptions, curriculum, and saved work. No database reset is part of the website overhaul. The technical worklog in the <a href="https://github.com/frienasduck/Scholar-V1/blob/main/worklog.md">project repository</a> records tested changes and remaining limitations.</p></section>
   </InformationPage>;

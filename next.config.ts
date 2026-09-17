@@ -5,8 +5,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   // OCR launches a native Node worker; its runtime require() tree is not part
   // of the route's JS bundle. Preserve it explicitly for serverless deployment.
-  serverExternalPackages: ["tesseract.js"],
+  serverExternalPackages: ["tesseract.js", "pdfjs-dist", "@napi-rs/canvas"],
   outputFileTracingIncludes: {
+    "/api/group-study/rooms/*/resources": [
+      "./node_modules/pdfjs-dist/legacy/build/*.mjs",
+      "./node_modules/@napi-rs/canvas*/**/*",
+    ],
     "/api/ocr": [
       "./node_modules/tesseract.js/src/**/*",
       "./node_modules/tesseract.js/package.json",

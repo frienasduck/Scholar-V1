@@ -5,11 +5,12 @@ import { getUsage } from "@/lib/subscriptions/usage";
 import { db } from "@/lib/db";
 import { publicSubscriptionConfig } from "@/lib/subscriptions/config";
 import { databaseUnavailableError } from "@/lib/auth/errors";
+import { publicBetaConfig } from "@/lib/auth/beta";
 
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (!user) return NextResponse.json({ authenticated: false, config: publicSubscriptionConfig() });
+    if (!user) return NextResponse.json({ authenticated: false, config: publicSubscriptionConfig(), beta: publicBetaConfig() });
     const access = await resolveUserEntitlements(user.id);
     const [usage, storage, pendingPayment] = await Promise.all([
       getUsage(user.id, access),
@@ -26,6 +27,7 @@ export async function GET() {
     }
     return NextResponse.json({
       authenticated: true,
+      beta: publicBetaConfig(),
       user: { id: user.id, email: user.email, name: user.name, role: user.role, coins: user.coins, currentScholarClass },
       plan: access.plan,
       entitlements: access.entitlements,
