@@ -402,10 +402,18 @@ export async function withLockedRoom<T>(
     try {
       return await db.$transaction(
         async (tx) => {
-          const rows = await tx.$queryRaw<
-            GroupStudyRoom[]
-          >`SELECT * FROM "GroupStudyRoom" WHERE "id" = ${roomId} FOR UPDATE`;
-          const room = rows[0];
+          const locked = await tx.$queryRaw<
+            Array<{ id: string }>
+          >`SELECT "id" FROM "GroupStudyRoom" WHERE "id" = ${roomId} FOR UPDATE`;
+          if (!locked[0])
+            throw new GroupStudyError(
+              "Study room not found.",
+              404,
+              "ROOM_NOT_FOUND",
+            );
+          const room = await tx.groupStudyRoom.findUnique({
+            where: { id: roomId },
+          });
           if (!room)
             throw new GroupStudyError(
               "Study room not found.",
