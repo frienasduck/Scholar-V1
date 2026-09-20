@@ -60,8 +60,16 @@ export function PdfPageViewer({
       .then(async (pdfPage) => {
         if (disposed) return;
         const original = pdfPage.getViewport({ scale: 1 });
-        const availableHeight = Math.min(740, Math.max(220, window.innerHeight * .64));
-        const viewport = pdfPage.getViewport({ scale: Math.max(0.1, Math.min(width / original.width, availableHeight / original.height)) });
+        const availableHeight = Math.min(
+          740,
+          Math.max(220, window.innerHeight * 0.64),
+        );
+        const viewport = pdfPage.getViewport({
+          scale: Math.max(
+            0.1,
+            Math.min(width / original.width, availableHeight / original.height),
+          ),
+        });
         const ratio = Math.min(devicePixelRatio || 1, 2);
         element.width = Math.floor(viewport.width * ratio);
         element.height = Math.floor(viewport.height * ratio);

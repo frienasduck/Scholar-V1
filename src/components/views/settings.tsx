@@ -79,6 +79,20 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Group Study 3.0",
+    date: "20 Sep 2026",
+    title: "Multiplayer Scholar — one shared study workspace",
+    items: [
+      "A persistent Group Session now keeps room identity, participants, chat, current activity and optional live media together while the group moves through Scholar.",
+      "Hosts can use Follow Host, Guided Freedom or Open Session, take the group to a feature, choose which room features are available and build a shared study path.",
+      "Materials and synchronized PDF pages, Group LAM, quizzes, shared notes and focus sessions now participate in the same guided room context.",
+      "Fast incremental chat, reactions, raise hand and participant presence stay available throughout the session.",
+      "Optional WebRTC voice and camera use explicit participant controls. Hosts can allow or disable access but cannot remotely activate anyone's microphone or camera.",
+      "Room authorization and feature permissions are enforced on the server, with room-scoped signaling and bounded media capacity.",
+      "Mobile navigation, compact controls, safe-area spacing and the live-friends dock remain responsive across Group Study features.",
+    ],
+  },
+  {
     version: "Group Study Beta",
     date: "16 Sep 2026",
     title: "Scholar Group Study — study together, live",

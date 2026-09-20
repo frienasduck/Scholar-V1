@@ -477,6 +477,15 @@ model GroupStudyRoom {
   activeResourceId   String?
   page               Int      @default(1)
   followHost         Boolean  @default(true)
+  navigationMode     String   @default("follow")
+  activeFeature      String   @default("overview")
+  activeContext      Json     @default("{}")
+  featurePolicy      Json     @default("{}")
+  sessionPath        Json     @default("[]")
+  navigationRevision Int      @default(0)
+  voiceEnabled       Boolean  @default(true)
+  cameraEnabled      Boolean  @default(true)
+  reactionsEnabled   Boolean  @default(true)
   announcement       String   @default("")
   notes              String   @default("")
   revision           Int      @default(0)
@@ -492,6 +501,7 @@ model GroupStudyRoom {
   resources          GroupStudyResource[]
   activities         GroupStudyActivity[]
   events             GroupStudyEvent[]
+  signals            GroupStudySignal[]
   @@index([hostUserId, status])
   @@index([expiresAt])
 }
@@ -506,6 +516,12 @@ model GroupStudyParticipant {
   expiresAt   DateTime
   handRaised  Boolean @default(false)
   chatMuted   Boolean @default(false)
+  followHost  Boolean @default(true)
+  currentFeature String @default("overview")
+  voiceJoined Boolean @default(false)
+  cameraActive Boolean @default(false)
+  voiceAllowed Boolean @default(true)
+  cameraAllowed Boolean @default(true)
   joinedAt    DateTime @default(now())
   approvedAt  DateTime?
   lastSeenAt  DateTime @default(now())
@@ -513,7 +529,25 @@ model GroupStudyParticipant {
   room        GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   messages    GroupStudyMessage[]
   resources   GroupStudyResource[]
+  outgoingSignals GroupStudySignal[] @relation("SignalSender")
+  incomingSignals GroupStudySignal[] @relation("SignalTarget")
   @@index([roomId, status])
+}
+
+model GroupStudySignal {
+  id        String   @id @default(cuid())
+  roomId    String
+  senderId  String
+  targetId  String
+  kind      String
+  payload   Json
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  room      GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    GroupStudyParticipant @relation("SignalSender", fields: [senderId], references: [id], onDelete: Cascade)
+  target    GroupStudyParticipant @relation("SignalTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  @@index([targetId, createdAt])
+  @@index([expiresAt])
 }
 
 model GroupStudyMessage {

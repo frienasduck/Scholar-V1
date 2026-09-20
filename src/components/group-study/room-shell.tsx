@@ -1,20 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  BookOpen,
-  FileText,
-  Sparkles,
-  MessageSquare,
-  ListChecks,
-  Timer,
-  StickyNote,
-  Users,
-  ShieldCheck,
-  Menu,
-  PanelRight,
-  Hand,
-} from "lucide-react";
+import { ArrowLeft, ShieldCheck, Menu, PanelRight, Hand } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +8,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
-import { useGroupRoom } from "./use-room";
+import {
+  GroupSessionProvider,
+  useGroupSession,
+} from "./group-session-provider";
 import {
   CodeChip,
   InviteDialog,
@@ -38,20 +27,20 @@ import { QuizWorkspace } from "./quiz-workspace";
 import { FocusWorkspace } from "./focus-workspace";
 import { NotesWorkspace } from "./notes-workspace";
 import { PeopleWorkspace, HostWorkspace } from "./people-workspace";
+import {
+  GROUP_FEATURES,
+  canAccessFeature,
+  groupHref,
+  type GroupFeatureId,
+} from "@/lib/group-study/features";
+import { MediaDock } from "./media-dock";
 import "./group-study.css";
 import "./room-v2.css";
 
 const sections = [
-  { id: "overview", label: "Overview", icon: BookOpen },
-  { id: "materials", label: "Materials", icon: FileText },
-  { id: "lam", label: "Group LAM", icon: Sparkles },
-  { id: "chat", label: "Chat", icon: MessageSquare },
-  { id: "quiz", label: "Quiz", icon: ListChecks },
-  { id: "notes", label: "Notes", icon: StickyNote },
-  { id: "focus", label: "Focus", icon: Timer },
-  { id: "participants", label: "Participants", icon: Users },
-  { id: "host", label: "Host controls", icon: ShieldCheck },
-] as const;
+  ...GROUP_FEATURES,
+  { id: "host" as const, label: "Host controls", icon: ShieldCheck },
+];
 const STORAGE_KEY = "scholar.group-study.room";
 export function storedRoomId() {
   try {
@@ -69,30 +58,59 @@ export function rememberRoomId(id: string | null) {
   }
 }
 
-export function RoomShell({
-  roomId,
-  onExit,
-}: {
+type GroupSessionShellProps = {
   roomId: string;
+  initialFeature?: GroupFeatureId;
   onExit: () => void;
-}) {
-  const controller = useGroupRoom(roomId);
+};
+
+export function GroupSessionShell(props: GroupSessionShellProps) {
+  return (
+    <GroupSessionProvider roomId={props.roomId}>
+      <GroupSessionView {...props} />
+    </GroupSessionProvider>
+  );
+}
+
+function GroupSessionView({
+  roomId,
+  initialFeature = "overview",
+  onExit,
+}: GroupSessionShellProps) {
+  const controller = useGroupSession();
   const { snapshot: s, connection, error } = controller;
-  const [tab, setTab] = useState<Workspace>("overview");
-  const [visited, setVisited] = useState<Workspace[]>(["overview"]);
+  const [tab, setTab] = useState<Workspace>(initialFeature);
+  const [visited, setVisited] = useState<Workspace[]>([initialFeature]);
   const [drawer, setDrawer] = useState(false);
   const [contextPanel, setContextPanel] = useState(false);
   const [invite, setInvite] = useState(false);
   const [materialContext, setMaterialContext] = useState<MaterialContext>(null);
   const [unread, setUnread] = useState(0);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [sectionNotice, setSectionNotice] = useState("");
   const lastRead = useRef("");
   const lastSeen = useRef("");
   const heading = useRef<HTMLHeadingElement>(null);
-  const navigate = useCallback((id: Workspace) => {
-    setTab(id);
-    setVisited((items) => (items.includes(id) ? items : [...items, id]));
-    setDrawer(false);
-  }, []);
+  const navigate = useCallback(
+    (id: Workspace, takeGroup = false) => {
+      setTab(id);
+      setVisited((items) => (items.includes(id) ? items : [...items, id]));
+      setDrawer(false);
+      if (id !== "host") {
+        window.history.replaceState(
+          window.history.state,
+          "",
+          groupHref(roomId, id),
+        );
+        void controller.action("navigate", {
+          feature: id,
+          ...(takeGroup ? { takeGroup: true } : {}),
+        });
+      }
+    },
+    [controller.action, roomId],
+  );
   const askLam = useCallback(
     (context: MaterialContext) => {
       setMaterialContext(context);
@@ -103,6 +121,33 @@ export function RoomShell({
   useEffect(() => {
     rememberRoomId(roomId);
   }, [roomId]);
+  useEffect(() => {
+    if (!s || s.me.role === "host") return;
+    const allowed = canAccessFeature(
+      s.room.featurePolicy,
+      tab === "host" ? "overview" : tab,
+      s.me.role,
+    );
+    if (!allowed) {
+      const timer = window.setTimeout(() => {
+        setSectionNotice("The host has closed this section.");
+        navigate("overview");
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+    if (s.me.followHost && s.room.activeFeature !== tab) {
+      const timer = window.setTimeout(() => navigate(s.room.activeFeature), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [
+    s?.room.navigationRevision,
+    s?.room.featurePolicy,
+    s?.room.activeFeature,
+    s?.me.followHost,
+    s?.me.role,
+    tab,
+    navigate,
+  ]);
   useEffect(() => {
     const messages = controller.messages,
       id = messages.at(-1)?.id ?? "";
@@ -149,7 +194,10 @@ export function RoomShell({
       <div className="group-study gs-v2">
         {background}
         <div className="gs-wrap">
-          <button className="gs-brand gs-plain-button" onClick={back}>
+          <button
+            className="gs-brand gs-plain-button"
+            onClick={() => setLeaveOpen(true)}
+          >
             <ArrowLeft /> Group Study
           </button>
           <section className="gs-wait gs-glass">
@@ -191,16 +239,26 @@ export function RoomShell({
     );
   const host = s.me.role === "host",
     approved = s.participants.filter((p) => p.status === "approved");
+  const featureAllowed = (id: Workspace) =>
+    id === "host"
+      ? host
+      : canAccessFeature(s.room.featurePolicy, id, s.me.role);
   const nav = (
     <nav className="gs-v2-nav" role="tablist" aria-label="Room sections">
       {sections
-        .filter((item) => host || item.id !== "host")
+        .filter(
+          (item) => (host || item.id !== "host") && featureAllowed(item.id),
+        )
         .map((item) => (
           <button
             key={item.id}
             role="tab"
             aria-label={item.label}
-            aria-description={item.id === "chat" && unread > 0 ? `${unread} unread messages` : undefined}
+            aria-description={
+              item.id === "chat" && unread > 0
+                ? `${unread} unread messages`
+                : undefined
+            }
             aria-selected={tab === item.id}
             aria-controls={`gs-workspace-${item.id}`}
             className="gs-v2-nav-item"
@@ -229,7 +287,10 @@ export function RoomShell({
       {background}
       <div className="gs-v2-layout">
         <aside className="gs-v2-left gs-glass">
-          <button className="gs-brand gs-plain-button" onClick={back}>
+          <button
+            className="gs-brand gs-plain-button"
+            onClick={() => setLeaveOpen(true)}
+          >
             <ArrowLeft /> SCHOLAR
           </button>
           <div className="gs-v2-room-identity">
@@ -237,7 +298,10 @@ export function RoomShell({
             <strong>{s.room.name}</strong>
             <p className="gs-muted">{s.room.subject || "Your study space"}</p>
             {s.room.code && <CodeChip code={s.room.code} />}
-            <p className="gs-fineprint">{approved.length} studying · {approved.filter(p => p.online).length} online</p>
+            <p className="gs-fineprint">
+              {approved.length} studying ·{" "}
+              {approved.filter((p) => p.online).length} online
+            </p>
           </div>
           {nav}
           <div className="gs-v2-self">
@@ -246,7 +310,13 @@ export function RoomShell({
             </div>
             <div>
               <strong>{s.me.displayName}</strong>
-              <small>{host ? "Room host" : "Study partner"}</small>
+              <small>
+                {host
+                  ? "Room host"
+                  : s.me.followHost
+                    ? "Following host"
+                    : "Exploring"}
+              </small>
             </div>
           </div>
         </aside>
@@ -314,6 +384,92 @@ export function RoomShell({
               {connectionText}
             </p>
           )}
+          {sectionNotice && (
+            <div className="gs-note" role="status">
+              {sectionNotice}
+              <button
+                className="gs-button"
+                onClick={() => setSectionNotice("")}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+          {!host && !s.me.followHost && s.room.activeFeature !== tab && (
+            <div className="gs-follow-prompt gs-glass">
+              Host moved to{" "}
+              {
+                GROUP_FEATURES.find((item) => item.id === s.room.activeFeature)
+                  ?.label
+              }
+              .
+              <button
+                className="gs-button"
+                onClick={async () => {
+                  if (
+                    await controller.action("follow-host", { following: true })
+                  )
+                    navigate(s.room.activeFeature);
+                }}
+              >
+                Follow
+              </button>
+            </div>
+          )}
+          <div className="gs-session-toolbar">
+            {!host && (
+              <button
+                className="gs-button"
+                aria-pressed={s.me.followHost}
+                onClick={() =>
+                  void controller.action("follow-host", {
+                    following: !s.me.followHost,
+                  })
+                }
+              >
+                {s.me.followHost ? "Following host ✓" : "Explore independently"}
+              </button>
+            )}
+            {host && tab !== "host" && (
+              <button
+                className="gs-button gs-button-primary"
+                onClick={() => navigate(tab, true)}
+              >
+                Take group here
+              </button>
+            )}
+            {s.room.reactionsEnabled && (
+              <div className="gs-reactions" aria-label="Study reactions">
+                {["👍", "✅", "❓", "👏"].map((emoji) => (
+                  <button
+                    key={emoji}
+                    aria-label={`React ${emoji}`}
+                    onClick={() =>
+                      void controller.action("reaction", { emoji })
+                    }
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <MediaDock
+            roomId={roomId}
+            controller={controller}
+            expanded={mediaOpen}
+            onExpanded={setMediaOpen}
+          />
+          {s.reactions?.map((reaction, index) => (
+            <span
+              key={`${reaction.participantId}-${reaction.createdAt}`}
+              className="gs-floating-reaction"
+              style={{ "--reaction-index": index } as React.CSSProperties}
+            >
+              {reaction.emoji}
+              <small>{reaction.displayName}</small>
+            </span>
+          ))}
           <JoinRequests controller={controller} />
           {error && (
             <div className="gs-note gs-error" role="alert">
@@ -327,7 +483,7 @@ export function RoomShell({
             </div>
           )}
           <main className="gs-v2-main">
-            {visited.map((id) => (
+            {visited.filter(featureAllowed).map((id) => (
               <div
                 key={id}
                 id={`gs-workspace-${id}`}
@@ -459,6 +615,29 @@ export function RoomShell({
           {nav}
         </DialogContent>
       </Dialog>
+      <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
+        <DialogContent className="gs-dialog">
+          <DialogTitle>Leave Group Study?</DialogTitle>
+          <DialogDescription>
+            You will exit the shared Scholar workspace. Your microphone and
+            camera stop immediately.
+          </DialogDescription>
+          <div className="gs-actions">
+            <button
+              className="gs-button gs-button-danger"
+              onClick={async () => {
+                if (!host) await controller.action("leave");
+                back();
+              }}
+            >
+              Leave Group Study
+            </button>
+            <button className="gs-button" onClick={() => setLeaveOpen(false)}>
+              Stay
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {s.room.code && (
         <InviteDialog
           code={s.room.code}
@@ -469,3 +648,5 @@ export function RoomShell({
     </div>
   );
 }
+
+export const RoomShell = GroupSessionShell;

@@ -2661,3 +2661,37 @@ Stage Summary:
 
 ## Deliberately not introduced
 - No fake whiteboard, unsafe host promotion, CRDT editor, OCR service, or unsupported quiz timer. Existing permissions and private-beta access are preserved.
+
+---
+
+# GROUP STUDY 3.0 — MULTIPLAYER SCHOLAR — 2026-09-20
+
+## Group Session architecture
+- Replaced the room's tab-only coordination model with a persistent `GroupSessionShell` and `GroupSessionProvider`. Room identity, membership, connection state, incremental chat, shared activity, session path, navigation state and live media now persist while members move between Group Study features.
+- Added canonical nested room routes (`/group-study/[roomId]/[feature]`) and a central feature registry for Overview, Materials, Group LAM, Quiz, Notes, Focus, Chat and Participants. Existing invite-code entry and resume behavior remain compatible.
+- Kept accountless participants room-scoped. Normal Scholar account pages, Developer Access, private-beta gates, Guest Mode, Settings, the dashboard and the Android shell were not changed by the Group Study runtime.
+
+## Guided collaboration and host control
+- Added server-authoritative feature policy (`Off`, `Host only`, `Group available`), navigation modes (`Follow Host`, `Guided Freedom`, `Open Session`), participant follow/independent state and explicit `Take group here` actions.
+- Added synchronized current activity/context and a host-managed study path with ordered, completable steps. Disabled features are removed from participant navigation and rejected again by direct APIs.
+- Preserved shared materials/PDF page sync, contextual Group LAM, quizzes and polls, conflict-safe shared notes, synchronized focus, announcements, raise hand and moderation inside the persistent shell.
+
+## Persistent communication and live media
+- Split chat into a bounded incremental message channel so full room snapshots no longer carry or repeatedly transfer message history. Client message IDs remain idempotent and optimistic messages become locally delivered without flicker.
+- Added explicit-action WebRTC voice and camera with a persistent compact media dock. Signaling is authenticated, room-scoped, same-room/approved-peer checked, size/rate bounded and short-lived. Public STUN is the default; production TURN can be provided through `GROUP_STUDY_ICE_SERVERS_JSON`.
+- Hosts may enable/disable room media or a participant's access, but no host API can activate another person's devices. Tracks stop on leave, removal, room end or component teardown. Server limits are six live media members and four active cameras.
+
+## Authorization, performance and mobile
+- Feature permission checks now guard room actions, chat, Group LAM and material/resource endpoints server-side. Snapshot data is feature-redacted, navigation mutations are revisioned, and media policy changes immediately clear disallowed participant state.
+- Kept the stable visibility-aware single-flight room polling model and added a lightweight 1.5-second foreground incremental chat poll plus one-second signaling poll only while voice is joined. No duplicate full-room stream was introduced.
+- Added responsive session controls, follow notifications, reactions and media tiles while preserving the existing dark liquid-glass design, live background, reduced-motion behavior and safe-area support.
+
+## Verification
+- Additive Prisma migration: `20260920010000_group_study_multiplayer`; schema validation and migration coverage passed. No reset or destructive migration was run.
+- TypeScript, targeted Group Study ESLint, 34 backend/policy/synchronization/migration tests, three-context host/follower/independent browser tests and the retained two-context PDF/LAM/chat/quiz/notes/focus/moderation regression passed.
+- The final optimized Next.js production build passed, and the three selected browser flows passed again against `next start`.
+- Repository-wide lint still reports two pre-existing `require()` imports in `tests/developer-access.test.ts`; Group Study files have no lint errors.
+
+## Intentionally deferred
+- Nigtube, Study Music and personal flashcards were not registered as Group features because their current components are personal/store-scoped and do not yet have safe room-scoped state or authorization adapters. Exposing them now would leak personal state or provide misleading synchronization.
+- Production-grade TURN service credentials/infrastructure are environment-specific and were not invented or committed. Voice/video works with configured ICE servers; TURN should be supplied before claiming reliable connectivity across restrictive networks.

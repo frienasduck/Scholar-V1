@@ -10,17 +10,9 @@ import {
 import { copyRoomCode, formatRoomCode } from "./client";
 import type { RoomSnapshot } from "@/lib/group-study/types";
 import type { GroupRoomController } from "./use-room";
+import type { GroupFeatureId } from "@/lib/group-study/features";
 
-export type Workspace =
-  | "overview"
-  | "materials"
-  | "lam"
-  | "chat"
-  | "quiz"
-  | "focus"
-  | "notes"
-  | "participants"
-  | "host";
+export type Workspace = GroupFeatureId | "host";
 export function EmptyState({
   title,
   children,

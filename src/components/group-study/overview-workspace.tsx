@@ -9,6 +9,11 @@ import {
 } from "lucide-react";
 import type { GroupRoomController } from "./use-room";
 import { EmptyState, Person, type Workspace } from "./room-ui";
+import { GROUP_FEATURES } from "@/lib/group-study/features";
+
+const GROUP_FEATURE_LABELS = Object.fromEntries(
+  GROUP_FEATURES.map((feature) => [feature.id, feature.label]),
+);
 
 const eventNames: Record<string, string> = {
   room_created: "The study room opened",
@@ -44,13 +49,15 @@ export function OverviewWorkspace({
   navigate,
 }: {
   controller: GroupRoomController;
-  navigate: (id: Workspace) => void;
+  navigate: (id: Workspace, takeGroup?: boolean) => void;
 }) {
   const s = controller.snapshot;
   if (!s) return null;
   const host = s.me.role === "host",
     participants = s.participants.filter((p) => p.status === "approved"),
     material = s.resources.find((r) => r.id === s.room.activeResourceId);
+  const followers = participants.filter((p) => p.followHost).length;
+  const activeLabel = GROUP_FEATURE_LABELS[s.room.activeFeature] ?? "Overview";
   const quick: Array<{
     id: Workspace;
     icon: typeof Sparkles;
@@ -97,6 +104,49 @@ export function OverviewWorkspace({
   ];
   return (
     <div className="gs-workspace-stack">
+      <section className="gs-glass gs-card gs-current-activity">
+        <div>
+          <p className="gs-kicker">
+            CURRENT ACTIVITY · {activeLabel.toUpperCase()}
+          </p>
+          <h2>
+            {s.quiz && !s.quiz.revealed
+              ? "Quiz in progress"
+              : s.focus?.status === "running"
+                ? "Focus together"
+                : material
+                  ? "Reading together"
+                  : `Studying ${s.room.topic || s.room.subject || "together"}`}
+          </h2>
+          <p className="gs-muted">
+            {s.quiz && !s.quiz.revealed
+              ? `${s.quiz.title} · ${s.quiz.responseCount} responded`
+              : s.focus?.status === "running"
+                ? `${Math.ceil(s.focus.remainingSeconds / 60)} minutes remaining`
+                : material
+                  ? `${material.name} · Host page ${s.room.page}`
+                  : `Host: ${participants.find((person) => person.role === "host")?.displayName ?? "Room host"}`}
+          </p>
+        </div>
+        <div className="gs-actions">
+          {!host && (
+            <button
+              className="gs-button gs-button-primary"
+              onClick={() =>
+                void controller.action("follow-host", { following: true })
+              }
+            >
+              {s.me.followHost ? "Following Host ✓" : "Follow Host"}
+            </button>
+          )}
+          <button
+            className="gs-button"
+            onClick={() => navigate(s.room.activeFeature)}
+          >
+            Open activity
+          </button>
+        </div>
+      </section>
       <section className="gs-glass gs-card gs-overview-hero">
         <p className="gs-kicker">
           <BookOpen /> A SPACE TO MAKE PROGRESS
@@ -113,6 +163,22 @@ export function OverviewWorkspace({
           <div className="gs-stat">
             <strong>{participants.filter((p) => p.online).length}</strong>
             <span>Online now</span>
+          </div>
+          <div className="gs-stat">
+            <strong>{followers}</strong>
+            <span>Following host</span>
+          </div>
+          <div className="gs-stat">
+            <strong>
+              {participants.filter((person) => person.voiceJoined).length}
+            </strong>
+            <span>In voice</span>
+          </div>
+          <div className="gs-stat">
+            <strong>
+              {participants.filter((person) => person.cameraActive).length}
+            </strong>
+            <span>Cameras active</span>
           </div>
           <div className="gs-stat">
             <strong>{s.resources.length}</strong>
@@ -146,6 +212,42 @@ export function OverviewWorkspace({
           </p>
         )}
       </section>
+      {s.room.sessionPath.length > 0 && (
+        <section className="gs-glass gs-card">
+          <div className="gs-section-head">
+            <div>
+              <p className="gs-kicker">TODAY&apos;S STUDY PATH</p>
+              <h2>Know what&apos;s now—and what comes next.</h2>
+            </div>
+          </div>
+          <ol className="gs-session-path">
+            {s.room.sessionPath.map((step, index) => (
+              <li
+                key={step.id}
+                data-done={step.done}
+                data-current={
+                  !step.done &&
+                  !s.room.sessionPath.slice(0, index).some((item) => !item.done)
+                }
+              >
+                <span>{step.done ? "✓" : index + 1}</span>
+                <div>
+                  <strong>{step.label}</strong>
+                  <small>{GROUP_FEATURE_LABELS[step.feature]}</small>
+                </div>
+                {host && !step.done && (
+                  <button
+                    className="gs-button"
+                    onClick={() => navigate(step.feature, true)}
+                  >
+                    Take group here
+                  </button>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       <section className="gs-quick-grid" aria-label="Quick actions">
         {quick.map((a) => (
           <button

@@ -44,6 +44,24 @@ function initial(): RoomSnapshot {
       activeResourceId: null,
       page: 1,
       followHost: true,
+      navigationMode: "follow",
+      activeFeature: "overview",
+      activeContext: {},
+      featurePolicy: {
+        overview: "group",
+        materials: "group",
+        lam: "group",
+        chat: "group",
+        quiz: "group",
+        notes: "group",
+        focus: "group",
+        participants: "group",
+      },
+      sessionPath: [],
+      navigationRevision: 0,
+      voiceEnabled: true,
+      cameraEnabled: true,
+      reactionsEnabled: true,
       announcement: "",
       createdAt: new Date().toISOString(),
       startedAt: null,
@@ -199,6 +217,18 @@ async function fixture(host: Page, participant: Page) {
       }
       if (path.endsWith("/events"))
         return route.fulfill({ json: { ok: true } });
+      if (path.endsWith("/messages"))
+        return route.fulfill({
+          json: {
+            messages:
+              state.participants.find(
+                (p) => p.role === (isHost ? "host" : "participant"),
+              )?.status === "pending"
+                ? []
+                : state.messages,
+            hasMore: false,
+          },
+        });
       if (state.room.status === "ended")
         return route.fulfill({
           status: 410,
@@ -426,39 +456,74 @@ async function capture(page: Page, name: string) {
   });
 }
 
-test("V2 three-minute single-flight polling soak and offline recovery", async ({ page: host, browser }) => {
+test("V2 three-minute single-flight polling soak and offline recovery", async ({
+  page: host,
+  browser,
+}) => {
   test.setTimeout(300_000);
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+  });
   const participant = await context.newPage();
   const f = await fixture(host, participant);
   await host.goto(`/group-study?room=${roomId}`);
   await participant.goto("/group-study");
-  await participant.getByLabel("Your name", { exact: true }).fill("Study Partner");
+  await participant
+    .getByLabel("Your name", { exact: true })
+    .fill("Study Partner");
   await participant.getByLabel("Study code", { exact: true }).fill(code);
-  await participant.getByRole("button", { name: "Join Study Room", exact: true }).click();
+  await participant
+    .getByRole("button", { name: "Join Study Room", exact: true })
+    .click();
   await host.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(participant.getByRole("heading", { name: "Physics Revision", exact: true })).toBeVisible({ timeout: 10_000 });
+  await expect(
+    participant.getByRole("heading", { name: "Physics Revision", exact: true }),
+  ).toBeVisible({ timeout: 10_000 });
   const started = Date.now();
   await host.waitForTimeout(180_000);
-  const reads = f.requests.filter(r => r.at >= started && r.path === `/api/group-study/rooms/${roomId}`);
+  const reads = f.requests.filter(
+    (r) => r.at >= started && r.path === `/api/group-study/rooms/${roomId}`,
+  );
   expect(reads.length).toBeGreaterThan(50);
   expect(reads.length).toBeLessThan(135);
-  expect(reads.filter(r => r.unchanged).length).toBeGreaterThan(reads.length * .8);
-  expect(f.requests.filter(r => r.path.endsWith("/events") && r.method === "GET")).toHaveLength(0);
+  expect(reads.filter((r) => r.unchanged).length).toBeGreaterThan(
+    reads.length * 0.8,
+  );
+  expect(
+    f.requests.filter((r) => r.path.endsWith("/events") && r.method === "GET"),
+  ).toHaveLength(0);
   for (const p of [host, participant]) {
-    await expect(p.getByText(/Reconnecting|Connection lost|Connecting…/)).toHaveCount(0);
-    await expect(p.getByRole("heading", { name: "Physics Revision", exact: true })).toBeVisible();
+    await expect(
+      p.getByText(/Reconnecting|Connection lost|Connecting…/),
+    ).toHaveCount(0);
+    await expect(
+      p.getByRole("heading", { name: "Physics Revision", exact: true }),
+    ).toBeVisible();
   }
   f.fail(true);
-  await expect(host.getByText("Connection lost — retrying.", { exact: true })).toBeVisible({ timeout: 50_000 });
+  await expect(
+    host.getByText("Connection lost — retrying.", { exact: true }),
+  ).toBeVisible({ timeout: 50_000 });
   await context.setOffline(true);
-  await expect(participant.getByText("Offline — updates resume when you reconnect.", { exact: true })).toBeVisible();
+  await expect(
+    participant.getByText("Offline — updates resume when you reconnect.", {
+      exact: true,
+    }),
+  ).toBeVisible();
   f.fail(false);
   await context.setOffline(false);
-  await expect(participant.getByText("Offline — updates resume when you reconnect.", { exact: true })).toHaveCount(0, { timeout: 10_000 });
-  await expect(host.getByText("Connection lost — retrying.", { exact: true })).toHaveCount(0, { timeout: 35_000 });
+  await expect(
+    participant.getByText("Offline — updates resume when you reconnect.", {
+      exact: true,
+    }),
+  ).toHaveCount(0, { timeout: 10_000 });
+  await expect(
+    host.getByText("Connection lost — retrying.", { exact: true }),
+  ).toHaveCount(0, { timeout: 35_000 });
   await host.reload();
-  await expect(host.getByRole("heading", { name: "Physics Revision", exact: true })).toBeVisible();
+  await expect(
+    host.getByRole("heading", { name: "Physics Revision", exact: true }),
+  ).toBeVisible();
   await context.close();
 });
 
@@ -597,13 +662,11 @@ test("V2 two-context collaboration, study tools, preserved drafts and responsive
     host.getByRole("button", { name: "1 Yes 1 votes", exact: true }),
   ).toBeVisible({ timeout: 10_000 });
   await nav(host, "Materials");
-  await host
-    .locator('input[type="file"]')
-    .setInputFiles({
-      name: "Energy.pdf",
-      mimeType: "application/pdf",
-      buffer: twoPagePdf(),
-    });
+  await host.locator('input[type="file"]').setInputFiles({
+    name: "Energy.pdf",
+    mimeType: "application/pdf",
+    buffer: twoPagePdf(),
+  });
   await expect(
     host.getByRole("heading", { name: "Energy.pdf", exact: true }),
   ).toBeVisible();
