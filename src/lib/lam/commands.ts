@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ReminderLamAction } from "@/lib/reminders/lam-actions";
 
-const allowedViews = ["dashboard", "study", "ebook", "quiz", "flashcards", "notes", "planner", "focus", "exam-prep", "mock-exam", "answer-lab", "lab", "files", "assignments", "downloads", "toolbox", "settings", "python", "analytics", "reminders", "chapter-command"] as const;
+const allowedViews = ["dashboard", "study", "ebook", "quiz", "flashcards", "notes", "planner", "focus", "exam-prep", "mock-exam", "answer-lab", "lab", "files", "assignments", "downloads", "toolbox", "settings", "python", "analytics", "reminders", "chapter-command", "live-tutor"] as const;
 
 const recurrenceRuleSchema = z.object({
   frequency: z.enum(["daily", "weekdays", "weekly", "monthly", "custom"]),
@@ -95,6 +95,7 @@ export function parseLocalCommand(input: string): LamAction | null {
     [/^\s*(open|show|go to) (the )?(smart )?reminders?\b/, "reminders"],
     [/^\s*(open|show|go to) (the )?(chapter )?(command (center|centre)|command center|command centre)\b/, "chapter-command"],
     [/^\s*(open|show|go to) (the )?(focus|timer)\b/, "focus"],
+    [/^\s*(open|show|go to) (the )?(live tutor|lam live)\b/, "live-tutor"],
   ];
   for (const [pattern, view] of routes) if (pattern.test(value)) return { type: "navigate", view };
   const timer = value.match(/\bstart (?:a )?(\d{1,3})[ -]?minute (?:focus )?(?:timer|session)\b/);

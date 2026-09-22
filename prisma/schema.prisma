@@ -35,13 +35,13 @@ model User {
 
   subscriptions         ScholarSubscription[]
   paymentRequests       ScholarPaymentRequest[]
-  reviewedPayments      ScholarPaymentRequest[] @relation("PaymentReviewer")
-  approvedSubscriptions ScholarSubscription[]   @relation("SubscriptionApprover")
+  reviewedPayments      ScholarPaymentRequest[]  @relation("PaymentReviewer")
+  approvedSubscriptions ScholarSubscription[]    @relation("SubscriptionApprover")
   usageCounters         UsageCounter[]
   storedFiles           StoredFile[]
   coinLedger            CoinLedger[]
-  auditEvents           AuditEvent[]            @relation("AuditActor")
-  targetedAuditEvents   AuditEvent[]            @relation("AuditTarget")
+  auditEvents           AuditEvent[]             @relation("AuditActor")
+  targetedAuditEvents   AuditEvent[]             @relation("AuditTarget")
   sessions              Session[]
   entitlements          Entitlement[]
   usageEvents           UsageEvent[]
@@ -53,6 +53,8 @@ model User {
   mistakeRecords        MistakeRecord[]
   revisionItems         RevisionItem[]
   hostedStudyRooms      GroupStudyRoom[]
+  liveTutorSessions     LiveTutorSession[]
+  liveTutorMemories     LiveTutorMemory[]
 }
 
 model Session {
@@ -213,16 +215,16 @@ model SecurityAttempt {
 // ============================================================================
 
 model Entitlement {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   key       String
   source    String // billing | iap | promotion | manual | legacy
-  status    String   @default("active") // active | grace | expired | revoked
-  startsAt  DateTime @default(now())
+  status    String    @default("active") // active | grace | expired | revoked
+  startsAt  DateTime  @default(now())
   endsAt    DateTime?
   metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -248,19 +250,19 @@ model UsageEvent {
 }
 
 model AdCampaign {
-  id                   String   @id @default(cuid())
-  key                  String
-  placement            String
-  provider             String   @default("scholar_house") // scholar_house | external
-  enabled              Boolean  @default(true)
-  skipAfterSeconds     Int?
-  maxImpressionsPerUser Int?    @default(3)
-  cooldownMinutes      Int?     @default(20)
-  startsAt             DateTime?
-  endsAt               DateTime?
-  targetingRules       Json?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  key                   String
+  placement             String
+  provider              String    @default("scholar_house") // scholar_house | external
+  enabled               Boolean   @default(true)
+  skipAfterSeconds      Int?
+  maxImpressionsPerUser Int?      @default(3)
+  cooldownMinutes       Int?      @default(20)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  targetingRules        Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   impressions AdImpression[]
 
@@ -285,18 +287,18 @@ model AdImpression {
 }
 
 model AutomationWorkflow {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   type        String
-  state       String   @default("queued") // queued | running | awaiting_confirmation | completed | failed | cancelled | expired
-  source      String   @default("lam")
+  state       String    @default("queued") // queued | running | awaiting_confirmation | completed | failed | cancelled | expired
+  source      String    @default("lam")
   input       Json?
   currentStep String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime?
 
-  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   actions AutomationAction[]
 
   @@index([userId, state])
@@ -304,15 +306,15 @@ model AutomationWorkflow {
 }
 
 model AutomationAction {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   workflowId           String
   actionType           String
   parameters           Json?
-  status               String   @default("proposed") // proposed | confirmed | running | completed | failed | cancelled
-  confirmationRequired Boolean  @default(false)
+  status               String    @default("proposed") // proposed | confirmed | running | completed | failed | cancelled
+  confirmationRequired Boolean   @default(false)
   confirmedAt          DateTime?
-  idempotencyKey       String   @unique
-  createdAt            DateTime @default(now())
+  idempotencyKey       String    @unique
+  createdAt            DateTime  @default(now())
 
   workflow AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
@@ -345,10 +347,10 @@ model AnalyticsEvent {
 }
 
 model FeatureFlag {
-  key       String   @id
-  enabled   Boolean  @default(false)
-  rolloutPct Int     @default(100)
-  updatedAt DateTime @updatedAt
+  key        String   @id
+  enabled    Boolean  @default(false)
+  rolloutPct Int      @default(100)
+  updatedAt  DateTime @updatedAt
 }
 
 // ============================================================================
@@ -382,7 +384,7 @@ model MasteryRecord {
 }
 
 model PracticeAttempt {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        String
   kind          String // quiz | practice | exam-sim | tutor | flashcard | confidence
   subject       String
@@ -398,9 +400,9 @@ model PracticeAttempt {
   userAnswer    String?
   correctAnswer String?
   explanation   String?
-  source        String    @default("quiz")
-  occurredAt    DateTime  @default(now())
-  createdAt     DateTime  @default(now())
+  source        String   @default("quiz")
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -457,145 +459,212 @@ model RevisionItem {
   @@index([userId, dueAt, state])
 }
 
+model LiveTutorSession {
+  id             String   @id
+  userId         String
+  profileId      String
+  title          String   @default("Live Tutor session")
+  personality    String   @default("calm")
+  provider       String   @default("auto")
+  mode           String   @default("tutor")
+  status         String   @default("active")
+  summary        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
+
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages LiveTutorMessage[]
+
+  @@index([userId, lastActivityAt])
+}
+
+model LiveTutorMessage {
+  id        String   @id
+  sessionId String
+  role      String
+  content   String
+  inputMode String   @default("text")
+  provider  String?
+  model     String?
+  createdAt DateTime @default(now())
+
+  session LiveTutorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model LiveTutorMemory {
+  id          String    @id @default(cuid())
+  userId      String
+  fingerprint String
+  kind        String
+  content     String
+  subject     String?
+  topic       String?
+  sourceType  String    @default("explicit")
+  sourceId    String?
+  confidence  Float     @default(1)
+  importance  Int       @default(70)
+  enabled     Boolean   @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprint])
+  @@index([userId, enabled, updatedAt])
+  @@index([userId, kind, subject])
+}
+
 // Temporary collaborative identities are separate from Scholar accounts.
 model GroupStudyRoom {
-  id                 String   @id @default(cuid())
-  code               String   @unique
+  id                 String                  @id @default(cuid())
+  code               String                  @unique
   hostUserId         String
   name               String
-  subject            String   @default("")
-  topic              String   @default("")
-  status             String   @default("waiting")
-  requireApproval    Boolean  @default(true)
-  locked             Boolean  @default(false)
-  aiEnabled          Boolean  @default(true)
-  chatEnabled        Boolean  @default(true)
-  pdfEnabled         Boolean  @default(true)
-  participantUploads Boolean  @default(false)
-  notesEditable      Boolean  @default(false)
-  maxParticipants    Int      @default(15)
+  subject            String                  @default("")
+  topic              String                  @default("")
+  status             String                  @default("waiting")
+  requireApproval    Boolean                 @default(true)
+  locked             Boolean                 @default(false)
+  aiEnabled          Boolean                 @default(true)
+  chatEnabled        Boolean                 @default(true)
+  pdfEnabled         Boolean                 @default(true)
+  participantUploads Boolean                 @default(false)
+  notesEditable      Boolean                 @default(false)
+  maxParticipants    Int                     @default(15)
   activeResourceId   String?
-  page               Int      @default(1)
-  followHost         Boolean  @default(true)
-  navigationMode     String   @default("follow")
-  activeFeature      String   @default("overview")
-  activeContext      Json     @default("{}")
-  featurePolicy      Json     @default("{}")
-  sessionPath        Json     @default("[]")
-  navigationRevision Int      @default(0)
-  voiceEnabled       Boolean  @default(true)
-  cameraEnabled      Boolean  @default(true)
-  reactionsEnabled   Boolean  @default(true)
-  announcement       String   @default("")
-  notes              String   @default("")
-  revision           Int      @default(0)
-  createdAt          DateTime @default(now())
+  page               Int                     @default(1)
+  followHost         Boolean                 @default(true)
+  navigationMode     String                  @default("follow")
+  activeFeature      String                  @default("overview")
+  activeContext      Json                    @default("{}")
+  featurePolicy      Json                    @default("{}")
+  sessionPath        Json                    @default("[]")
+  navigationRevision Int                     @default(0)
+  voiceEnabled       Boolean                 @default(true)
+  cameraEnabled      Boolean                 @default(true)
+  reactionsEnabled   Boolean                 @default(true)
+  announcement       String                  @default("")
+  notes              String                  @default("")
+  revision           Int                     @default(0)
+  createdAt          DateTime                @default(now())
   startedAt          DateTime?
   endedAt            DateTime?
   expiresAt          DateTime
-  lastActivityAt     DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  host               User @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+  lastActivityAt     DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  host               User                    @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
   participants       GroupStudyParticipant[]
   messages           GroupStudyMessage[]
   resources          GroupStudyResource[]
   activities         GroupStudyActivity[]
   events             GroupStudyEvent[]
   signals            GroupStudySignal[]
+
   @@index([hostUserId, status])
   @@index([expiresAt])
 }
 
 model GroupStudyParticipant {
-  id          String @id @default(cuid())
-  roomId      String
-  displayName String
-  role        String @default("participant")
-  status      String @default("pending")
-  tokenHash   String? @unique
-  expiresAt   DateTime
-  handRaised  Boolean @default(false)
-  chatMuted   Boolean @default(false)
-  followHost  Boolean @default(true)
-  currentFeature String @default("overview")
-  voiceJoined Boolean @default(false)
-  cameraActive Boolean @default(false)
-  voiceAllowed Boolean @default(true)
-  cameraAllowed Boolean @default(true)
-  joinedAt    DateTime @default(now())
-  approvedAt  DateTime?
-  lastSeenAt  DateTime @default(now())
-  removedAt   DateTime?
-  room        GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  messages    GroupStudyMessage[]
-  resources   GroupStudyResource[]
-  outgoingSignals GroupStudySignal[] @relation("SignalSender")
-  incomingSignals GroupStudySignal[] @relation("SignalTarget")
+  id              String               @id @default(cuid())
+  roomId          String
+  displayName     String
+  role            String               @default("participant")
+  status          String               @default("pending")
+  tokenHash       String?              @unique
+  expiresAt       DateTime
+  handRaised      Boolean              @default(false)
+  chatMuted       Boolean              @default(false)
+  followHost      Boolean              @default(true)
+  currentFeature  String               @default("overview")
+  voiceJoined     Boolean              @default(false)
+  cameraActive    Boolean              @default(false)
+  voiceAllowed    Boolean              @default(true)
+  cameraAllowed   Boolean              @default(true)
+  joinedAt        DateTime             @default(now())
+  approvedAt      DateTime?
+  lastSeenAt      DateTime             @default(now())
+  removedAt       DateTime?
+  room            GroupStudyRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  messages        GroupStudyMessage[]
+  resources       GroupStudyResource[]
+  outgoingSignals GroupStudySignal[]   @relation("SignalSender")
+  incomingSignals GroupStudySignal[]   @relation("SignalTarget")
+
   @@index([roomId, status])
 }
 
 model GroupStudySignal {
-  id        String   @id @default(cuid())
+  id        String                @id @default(cuid())
   roomId    String
   senderId  String
   targetId  String
   kind      String
   payload   Json
-  createdAt DateTime @default(now())
+  createdAt DateTime              @default(now())
   expiresAt DateTime
-  room      GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  room      GroupStudyRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
   sender    GroupStudyParticipant @relation("SignalSender", fields: [senderId], references: [id], onDelete: Cascade)
   target    GroupStudyParticipant @relation("SignalTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
   @@index([targetId, createdAt])
   @@index([expiresAt])
 }
 
 model GroupStudyMessage {
-  id            String @id @default(cuid())
+  id            String                 @id @default(cuid())
   roomId        String
   participantId String?
-  kind          String @default("chat")
+  kind          String                 @default("chat")
   body          String
-  createdAt     DateTime @default(now())
-  room          GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt     DateTime               @default(now())
+  room          GroupStudyRoom         @relation(fields: [roomId], references: [id], onDelete: Cascade)
   participant   GroupStudyParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
   @@index([roomId, createdAt])
 }
 
 model GroupStudyResource {
-  id           String @id @default(cuid())
+  id           String                @id @default(cuid())
   roomId       String
   uploadedById String
   name         String
   mimeType     String
   sizeBytes    Int
-  pageCount    Int @default(1)
+  pageCount    Int                   @default(1)
   bytes        Bytes
-  text         String @default("")
-  pageTexts    Json @default("[]")
-  createdAt    DateTime @default(now())
-  room         GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  text         String                @default("")
+  pageTexts    Json                  @default("[]")
+  createdAt    DateTime              @default(now())
+  room         GroupStudyRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
   uploadedBy   GroupStudyParticipant @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
   @@index([roomId, createdAt])
 }
 
 model GroupStudyActivity {
-  id        String @id @default(cuid())
+  id        String         @id @default(cuid())
   roomId    String
   kind      String
   state     Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
   room      GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
   @@unique([roomId, kind])
 }
 
 model GroupStudyEvent {
-  id            String @id @default(cuid())
+  id            String         @id @default(cuid())
   roomId        String
   participantId String?
   type          String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime       @default(now())
   room          GroupStudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
   @@index([roomId, createdAt])
 }

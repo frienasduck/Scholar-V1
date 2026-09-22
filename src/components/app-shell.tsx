@@ -32,6 +32,7 @@ const GroupStudyView = dynamic(() => import("@/components/views/group-study").th
 const IntelligenceView = dynamic(() => import("@/components/views/intelligence").then((module) => module.IntelligenceView), { loading: ViewLoading });
 const ChapterCommandCenter = dynamic(() => import("@/components/views/chapter-command").then((module) => module.ChapterCommandCenter), { loading: ViewLoading });
 const AITutorView = dynamic(() => import("@/components/views/ai-tutor").then((module) => module.AITutorView), { loading: ViewLoading });
+const LiveTutorView = dynamic(() => import("@/components/views/live-tutor").then((module) => module.LiveTutorView), { loading: ViewLoading });
 const AIToolsView = dynamic(() => import("@/components/views/ai-tools").then((module) => module.AIToolsView), { loading: ViewLoading });
 const NotesView = dynamic(() => import("@/components/views/notes").then((module) => module.NotesView), { loading: ViewLoading });
 const FlashcardsView = dynamic(() => import("@/components/views/flashcards").then((module) => module.FlashcardsView), { loading: ViewLoading });
@@ -96,6 +97,7 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   intelligence: IntelligenceView,
   "chapter-command": ChapterCommandCenter,
   "ai-tutor": AITutorView,
+  "live-tutor": LiveTutorView,
   "ai-tools": AIToolsView,
   notes: NotesView,
   flashcards: FlashcardsView,
@@ -149,7 +151,7 @@ const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title
   formulas: { entitlement: "formula_explorer", title: "Formula Explorer", description: "Explore formulas visually, understand each symbol, and generate guided practice." },
   python: { entitlement: "python_workspace", title: "Python Workspace", description: "Write, run, and learn Python in browser with an interactive CPython environment and AI code assistance." },
 };
-const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment"]);
+const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment", "live-tutor"]);
 
 function useNavBadges() {
   const flashcards = useStore((s) => s.flashcards);
@@ -411,6 +413,7 @@ function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpen
 }
 
 function Footer({ active }: { active: string }) {
+  if (active === "live-tutor") return null;
   return <ScholarFooter compact={["ebook", "mock-exam", "subscription-payment", "ai-tutor"].includes(active)} />;
 }
 
@@ -737,7 +740,7 @@ export function AppShell() {
           </section>
         ) : null}
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 transition-colors duration-500 sm:p-4 lg:p-6 ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden transition-colors duration-500 ${active === "live-tutor" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}
@@ -766,7 +769,7 @@ export function AppShell() {
         </main>
       </div>
 
-      {startupReady && !guestMode ? <LamWidget currentView={active} /> : null}
+      {startupReady && !guestMode && active !== "live-tutor" ? <LamWidget currentView={active} /> : null}
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 

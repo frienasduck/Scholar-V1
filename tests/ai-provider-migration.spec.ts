@@ -31,6 +31,7 @@ test("all eligible Scholar text generation uses the dedicated Groq route", () =>
     .filter(
       (file) =>
         !file.startsWith("src/app/api/lam/") &&
+        !file.startsWith("src/lib/live-tutor/") &&
         file !== "src/app/api/ai-image/route.ts" &&
         file !== "src/lib/ai/nvidia-image.ts" &&
         file !== "src/lib/ai/gemini-image.ts",
@@ -52,22 +53,22 @@ test("structured output, formatting, cancellation, and streaming remain enabled"
   const client = read("src/lib/ai/scholar-groq.ts");
   const personas = read("src/lib/ai/personas.ts");
   expect(route).toContain("schemaForMode");
-  expect(route).toContain("schema.safeParse");
+  expect(route).toMatch(/schema\??\.safeParse/);
   expect(route).toContain("request.signal");
-  expect(client).toContain('response_format: { type: "json_object" }');
+  expect(client).toMatch(/response_format:\s*\{\s*type:\s*"json_object"(?:\s+as const)?\s*\}/);
   expect(client).toContain("GROQ_INVALID_JSON");
   expect(client).toContain("stream: true");
   expect(client).toContain("for await (const chunk of stream)");
   expect(personas).toContain("SCHOLAR_AI_FORMATTING_RULES");
 });
 
-test("Groq configuration is server-only and requires both configured variables", () => {
+test("Groq configuration is server-only and has an explicit safe model default", () => {
   const client = read("src/lib/ai/scholar-groq.ts");
   expect(client).toContain('import "server-only"');
   expect(client).toContain("process.env.GROQ_API_KEY");
   expect(client).toContain("process.env.GROQ_MODEL");
   expect(client).toContain("GROQ_NOT_CONFIGURED");
-  expect(client).toContain("GROQ_MODEL_NOT_CONFIGURED");
+  expect(client).toContain('"openai/gpt-oss-20b"');
 
   const clientVisibleSources = execFileSync(
     "git",
@@ -82,21 +83,18 @@ test("Groq configuration is server-only and requires both configured variables",
   expect(clientVisibleSources).not.toContain("NEXT_PUBLIC_GROQ");
 });
 
-test("LAM remains on its existing isolated implementation", () => {
+test("normal LAM remains on Groq while Live Tutor is an explicit isolated extension", () => {
   const lamRoute = read("src/app/api/lam/chat/route.ts");
   expect(lamRoute).toContain('from "@/lib/ai/groq"');
   expect(lamRoute).toContain("streamGroqText");
   expect(lamRoute).not.toContain("scholar-groq");
 
-  const changedLAMFiles = execFileSync("git", ["diff", "--name-only"], {
-    cwd: root,
-    encoding: "utf8",
-  })
-    .split(/\r?\n/)
-    .filter((file) =>
-      /(?:^|\/)(?:lam(?:-widget)?|lam\/|api\/lam\/)/i.test(file),
-    );
-  expect(changedLAMFiles).toEqual([]);
+  expect(lamRoute).toContain("if (input.liveTutor)");
+  expect(lamRoute).toContain("streamLiveTutorText");
+  const providers = read("src/lib/live-tutor/providers.ts");
+  expect(providers).toContain('import "server-only"');
+  expect(providers).toContain("resolveProvider");
+  expect(providers).not.toContain("AISIG_NVIDIA_API_KEY");
 });
 
 test("AISIG enhancement uses Groq while image generation stays unchanged", () => {
@@ -105,7 +103,7 @@ test("AISIG enhancement uses Groq while image generation stays unchanged", () =>
     aiTools.indexOf("function AISIG()"),
     aiTools.indexOf("const generateImage", aiTools.indexOf("function AISIG()")),
   );
-  expect(aisig).toContain('await askAI(prompt, "default")');
+  expect(aisig).toContain('await askAI(prompt, "default", { feature: "aisig" })');
   expect(read("src/lib/ai.ts")).toContain('from "@/lib/ai/client"');
   expect(read("src/lib/ai/client.ts")).toContain('fetch("/api/ai"');
 
@@ -134,6 +132,7 @@ test("AISIG enhancement uses Groq while image generation stays unchanged", () =>
 test("provider policy and inventory encode the migration explicitly", () => {
   expect(SCHOLAR_AI_PROVIDER_POLICY).toEqual({
     lam: "unchanged",
+    lamLiveTutor: "configured-provider-selection",
     aisigImageGeneration: "unchanged",
     aisigPromptEnhancement: "groq",
     allOtherTextGeneration: "groq",
@@ -147,6 +146,10 @@ test("provider policy and inventory encode the migration explicitly", () => {
     AI_PROVIDER_INVENTORY.find((item) => item.feature === "LAM")
       ?.exclusionReason,
   ).toBe("LAM");
+  expect(
+    AI_PROVIDER_INVENTORY.find((item) => item.feature === "LAM Live Tutor")
+      ?.exclusionReason,
+  ).toBe("LAM_LIVE_TUTOR");
   expect(
     AI_PROVIDER_INVENTORY.find(
       (item) => item.feature === "AISIG image generation",

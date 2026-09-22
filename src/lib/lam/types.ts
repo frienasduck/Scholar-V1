@@ -72,6 +72,11 @@ export interface LamPreferences {
   responseDetail: "quick" | "balanced" | "detailed" | "step-by-step";
   keyboardShortcut: "ctrl-space" | "alt-space" | "ctrl-shift-l";
   voiceLanguage: "en-IN" | "en-US" | "en-GB";
+  liveTutorPersonality: "calm" | "exam" | "curious";
+  liveTutorProvider: "auto" | "groq" | "gemini" | "nvidia";
+  liveTutorMode: "tutor" | "examiner" | "rapid-revision" | "mission";
+  liveTutorAutoSpeak: boolean;
+  liveTutorCaptions: boolean;
 }
 
 export interface LamProfileState {
@@ -108,5 +113,10 @@ export const DEFAULT_LAM_PREFERENCES: LamPreferences = {
   animationIntensity: "balanced",
   responseDetail: "balanced",
   keyboardShortcut: "ctrl-space",
-  voiceLanguage: "en-IN",
+  voiceLanguage: "en-GB",
+  liveTutorPersonality: "calm",
+  liveTutorProvider: "auto",
+  liveTutorMode: "tutor",
+  liveTutorAutoSpeak: true,
+  liveTutorCaptions: true,
 };

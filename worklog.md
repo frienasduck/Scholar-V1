@@ -1,5 +1,15 @@
 # Neha's Scholar — Worklog
 
+## 21 September 2026 — LAM Live Tutor (Beta)
+
+- Added the Scholar-native Live Tutor workspace at `/live-tutor`, linked under Learn beside AI Tutor. It reuses the existing LAM profile conversation store, academic page context, safe Markdown/math renderer, microphone utilities and allowlisted Scholar navigation instead of creating a second assistant architecture.
+- Added three presentation/teaching personalities — Calm Tutor, Exam Coach and Curious Scientist — with the provided cinematic video sources, two-layer 650ms crossfades, responsive glass controls and reduced-motion handling. Personality changes preserve the active transcript, provider, context and mission.
+- Added explicit-action English (UK) voice input with browser speech recognition plus the existing Groq transcription fallback, interruptible browser speech replies, visible assistant states, transcript captions, a stop control, and no microphone request on load.
+- Added a server-side Live Tutor provider adapter. Auto/Groq/Gemini/NVIDIA selectors expose only real environment-backed availability; unavailable text providers are visibly disabled and are never simulated. Normal LAM continues to use its established Groq path.
+- Added user-scoped durable sessions/messages and transparent learning memory (`LiveTutorSession`, `LiveTutorMessage`, `LiveTutorMemory`) through the additive `20260921170000_live_tutor_beta` Prisma migration. Retrieval combines relevant explicit memory with actual Scholar mastery, unresolved mistake and due-revision data. Users can explicitly save and delete memories.
+- Added confirmed Scholar actions and a guided mission foundation. Local navigation/focus commands require confirmation before execution; “I have an hour, take over” creates a visible plan based on real available learning signals without claiming unfinished tools ran.
+- Verification: Prisma client generation passed; TypeScript and the optimized production build passed. Three focused Chrome tests cover streamed responses and session continuity across personality switches, explicit microphone use plus 390px overflow, and confirmed navigation actions. Guest access is blocked by the central shell guard. No deployment or database reset was run.
+
 ## 17 September 2026 — Targeted Group Study host-entry and code repair
 
 - Reused the existing public liquid-glass landing for the sidebar/developer entry; authorized hosts can create without another login. Creation now preserves the real API code in an obvious room-created panel with clipboard confirmation and an explicit Enter Study Room action.

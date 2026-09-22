@@ -1,6 +1,6 @@
 // Client and server agree on the existing single-segment workspace routes.
 export const SCHOLAR_ROUTES = [
-  "dashboard", "intelligence", "chapter-command", "ai-tutor", "ai-tools", "notes",
+  "dashboard", "intelligence", "chapter-command", "ai-tutor", "live-tutor", "ai-tools", "notes",
   "flashcards", "quiz", "planner", "focus", "resources", "analytics", "achievements",
   "community", "group-study", "files", "store", "exam-prep", "mindmap", "galaxy", "formulas", "study",
   "ebook", "practice", "settings", "friends", "nigtube", "lab", "levels", "past-papers",

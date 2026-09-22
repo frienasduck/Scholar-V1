@@ -4,11 +4,12 @@ export type AIProviderInventoryItem = {
   currentProvider: "groq" | "nvidia" | "gemini" | "other";
   currentModel?: string;
   targetProvider: "groq" | "unchanged";
-  exclusionReason?: "LAM" | "AISIG_IMAGE_GENERATION";
+  exclusionReason?: "LAM" | "LAM_LIVE_TUTOR" | "AISIG_IMAGE_GENERATION";
 };
 
 export type ScholarAIProviderPolicy = {
   lam: "unchanged";
+  lamLiveTutor: "configured-provider-selection";
   aisigImageGeneration: "unchanged";
   aisigPromptEnhancement: "groq";
   allOtherTextGeneration: "groq";
@@ -16,6 +17,7 @@ export type ScholarAIProviderPolicy = {
 
 export const SCHOLAR_AI_PROVIDER_POLICY: ScholarAIProviderPolicy = {
   lam: "unchanged",
+  lamLiveTutor: "configured-provider-selection",
   aisigImageGeneration: "unchanged",
   aisigPromptEnhancement: "groq",
   allOtherTextGeneration: "groq",
@@ -65,6 +67,14 @@ export const AI_PROVIDER_INVENTORY: readonly AIProviderInventoryItem[] = [
     exclusionReason: "LAM",
   },
   {
+    feature: "LAM Live Tutor",
+    routeOrModule: "src/lib/live-tutor/providers.ts",
+    currentProvider: "other",
+    currentModel: "Auto, Groq, Gemini, or NVIDIA when configured",
+    targetProvider: "unchanged",
+    exclusionReason: "LAM_LIVE_TUTOR",
+  },
+  {
     feature: "AISIG image generation",
     routeOrModule: "src/app/api/ai-image/route.ts",
     currentProvider: "nvidia",
@@ -86,5 +96,6 @@ export function getDevelopmentProviderDiagnostics(
     "AISIG Prompt Enhancer": "Groq",
     "AISIG Image Generator": "Unchanged",
     LAM: "Unchanged",
+    "LAM Live Tutor": "Configured provider selection",
   };
 }

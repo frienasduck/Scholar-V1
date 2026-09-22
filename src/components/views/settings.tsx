@@ -79,6 +79,18 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "LAM Live Tutor Beta",
+    date: "21 Sep 2026",
+    title: "A voice-first tutor that stays in your Scholar",
+    items: [
+      "Live Tutor is available under Learn with Calm Tutor, Exam Coach and Curious Scientist personalities; switching style keeps the same session and transcript.",
+      "Talk after an explicit microphone tap, interrupt a spoken reply at any time, or continue by text in the same conversation. English (UK) is the launch voice.",
+      "Auto, Groq, Gemini and NVIDIA controls reflect the providers actually configured on the Scholar server; unavailable models are never simulated.",
+      "LAM can prepare guided study missions, use relevant mastery and revision signals, and propose allowlisted Scholar actions that require your confirmation.",
+      "Live Tutor memory is account-scoped and transparent: explicitly saved memories can be inspected and deleted from the tutor workspace.",
+    ],
+  },
+  {
     version: "Group Study 3.0",
     date: "20 Sep 2026",
     title: "Multiplayer Scholar — one shared study workspace",

@@ -10,23 +10,25 @@ Scholar routes AI by feature responsibility, not by a generic fallback chain.
 | `GROQ_STT_MODEL` | Existing LAM speech transcription configuration; unchanged. |
 | `AISIG_NVIDIA_API_KEY` | AISIG image generation only. |
 | `AISIG_NVIDIA_ENDPOINT` | Existing AISIG image-generation endpoint only. |
-| `GEMINI_API_KEY` | Existing Gemini image module only, where enabled. |
+| `GEMINI_API_KEY` | Gemini image module and optional LAM Live Tutor text provider. |
 | `GEMINI_IMAGE_MODEL` | Existing Gemini image model only, where enabled. |
+| `GEMINI_TEXT_MODEL` | Optional LAM Live Tutor Gemini model; defaults to `gemini-2.5-flash`. |
+| `NVIDIA_TEXT_API_KEY` | Optional LAM Live Tutor NVIDIA text provider. Never reused for AISIG images. |
+| `NVIDIA_TEXT_BASE_URL` | Optional NVIDIA OpenAI-compatible chat endpoint for Live Tutor. |
+| `NVIDIA_TEXT_MODEL` | Optional NVIDIA Live Tutor text model. |
 
 ## Provider policy
 
-- LAM: unchanged.
+- Normal LAM: unchanged on its existing Groq implementation.
+- LAM Live Tutor: user-selectable Auto/Groq/Gemini/NVIDIA text routing. Auto chooses only a server-configured provider; an unavailable explicit provider fails visibly and is never simulated.
 - AISIG image generation: unchanged.
 - AISIG prompt enhancement: Groq through `/api/ai`.
 - Every other Scholar text-generation feature: Groq through `/api/ai`.
 
-The retired NVIDIA text variables are no longer read by the application:
+These legacy NVIDIA variables remain retired and are not read by the application:
 
 - `NVIDIA_API_KEY`
 - `NVIDIA_MODEL`
-- `NVIDIA_TEXT_API_KEY`
-- `NVIDIA_TEXT_BASE_URL`
-- `NVIDIA_TEXT_MODEL`
 - `NVIDIA_TEXT_TOP_P`
 - `NVIDIA_TEXT_REASONING_BUDGET`
 
@@ -35,7 +37,7 @@ not remove `AISIG_NVIDIA_API_KEY` or `AISIG_NVIDIA_ENDPOINT`.
 
 ## Protected implementation boundaries
 
-- `src/app/api/lam/**`
+- `src/app/api/lam/**` (normal LAM and the additive Live Tutor surface)
 - `src/components/lam-widget.tsx`
 - `src/components/lam/**`
 - `src/lib/lam/**`
