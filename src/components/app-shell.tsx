@@ -491,11 +491,29 @@ export function AppShell() {
 
   useEffect(() => {
     const viewport = window.visualViewport;
-    if (!viewport) return;
-    const sync = () => document.documentElement.dataset.scholarKeyboardOpen = String(window.innerHeight - viewport.height > 160);
+    const root = document.documentElement;
+    if (!viewport) {
+      const syncFallback = () => root.style.setProperty("--scholar-vvh", `${window.innerHeight}px`);
+      syncFallback();
+      window.addEventListener("resize", syncFallback, { passive: true });
+      return () => {
+        window.removeEventListener("resize", syncFallback);
+        root.style.removeProperty("--scholar-vvh");
+      };
+    }
+    const sync = () => {
+      root.style.setProperty("--scholar-vvh", `${Math.round(viewport.height)}px`);
+      root.dataset.scholarKeyboardOpen = String(window.innerHeight - viewport.height > 160);
+    };
     sync();
-    viewport.addEventListener("resize", sync);
-    return () => { viewport.removeEventListener("resize", sync); delete document.documentElement.dataset.scholarKeyboardOpen; };
+    viewport.addEventListener("resize", sync, { passive: true });
+    viewport.addEventListener("scroll", sync, { passive: true });
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      delete root.dataset.scholarKeyboardOpen;
+      root.style.removeProperty("--scholar-vvh");
+    };
   }, []);
 
   useEffect(() => {
@@ -724,7 +742,7 @@ export function AppShell() {
             </div>
             <SheetTitle className="text-left">{guestMode ? "Guest workspace" : `${user.name.split(" ")[0] || "Your"}’s Scholar`}</SheetTitle>
           </SheetHeader>
-          <div className="overflow-y-auto h-[calc(100vh-4rem)] no-scrollbar">
+          <div className="scholar-mobile-drawer-body overflow-y-auto no-scrollbar">
             <NavList active={active} onNavigate={navigate} badges={badges} />
           </div>
         </SheetContent>
@@ -740,7 +758,7 @@ export function AppShell() {
           </section>
         ) : null}
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" tabIndex={-1} className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden transition-colors duration-500 ${active === "live-tutor" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}

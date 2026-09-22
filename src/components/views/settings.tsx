@@ -79,6 +79,17 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Responsive foundation",
+    date: "22 Sep 2026",
+    title: "Scholar now fits the screen you study on",
+    items: [
+      "The shared mobile shell now reserves safe space for bottom navigation and responds to the software keyboard instead of covering active controls.",
+      "Dialogs, drawers, toolbars and dense tab rows stay reachable on small phones and tablets without creating page-wide horizontal scrolling.",
+      "Dashboard, Files, E-Book, Quiz, Flashcards, Notes, Focus, Nigtube, Music, Settings, LAM Live Tutor and Group Study received targeted responsive repairs.",
+      "The existing desktop interface, private-beta rules, Guest Mode, Group Study permissions, Follow Host and explicit microphone/camera consent remain unchanged.",
+    ],
+  },
+  {
     version: "LAM Live Tutor Beta",
     date: "21 Sep 2026",
     title: "A voice-first tutor that stays in your Scholar",
@@ -520,7 +531,7 @@ export function SettingsView() {
   }
 
   return (
-    <div className="scholar-settings relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-settings scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       {/* Liquid glass + cinematic CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
@@ -618,7 +629,7 @@ export function SettingsView() {
         {/* Hero heading */}
         <div className="relative z-10 flex flex-col items-center justify-center px-6 pt-4 pb-8 text-center">
           <h1
-            className="asme-serif text-5xl md:text-6xl lg:text-7xl text-white mb-3 tracking-tight whitespace-nowrap"
+            className="asme-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white mb-3 tracking-tight text-balance"
             style={{ fontFamily: "'Instrument Serif', serif" }}
           >
             Built for the curious

@@ -188,7 +188,7 @@ export function NotesView() {
   ];
 
   return (
-    <div className="scholar-notes relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-notes scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       <style dangerouslySetInnerHTML={{ __html: MINDLOOP_STYLES }} />
 
       {/* Background video */}

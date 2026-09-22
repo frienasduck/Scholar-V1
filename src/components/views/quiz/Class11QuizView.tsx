@@ -582,7 +582,7 @@ export function Class11QuizView() {
     : 0;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
         .cinema-glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 80px -12px rgba(0,0,0,0.3); color: white; }
@@ -808,7 +808,7 @@ function QuizTakingMode({
   const progress = (current / questions.length) * 100;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       {videoOn && (
         <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
           <source src={VIDEO_URL} type="video/mp4" />
@@ -932,7 +932,7 @@ function ResultsScreen({
   const skipped = attempt.total - correctCount - wrongCount;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-950 via-black to-zinc-900" />
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-6">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4">
@@ -1064,7 +1064,7 @@ function AIReviewScreen({
   const validCount = drafts.filter((d) => d.valid).length;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-950 via-black to-zinc-900" />
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-6">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4">

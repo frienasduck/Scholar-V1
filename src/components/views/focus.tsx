@@ -246,7 +246,7 @@ export function FocusView() {
 
   // ===== Render =====
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-focus scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
         .cinema-glass {
@@ -324,7 +324,7 @@ export function FocusView() {
           {/* Ring */}
           <div className="grid place-items-center mb-8">
             <div className="relative">
-              <svg width={focusMode ? 340 : 280} height={focusMode ? 340 : 280} viewBox="0 0 280 280" className="-rotate-90">
+              <svg width={focusMode ? 340 : 280} height={focusMode ? 340 : 280} viewBox="0 0 280 280" className="scholar-focus-ring -rotate-90">
                 <defs>
                   <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#6366f1" />

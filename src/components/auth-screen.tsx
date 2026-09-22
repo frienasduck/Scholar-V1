@@ -129,7 +129,7 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-black overflow-hidden relative" style={{ borderRadius: 0 }}>
+    <div className="scholar-auth min-h-dvh bg-black overflow-x-clip relative" style={{ borderRadius: 0 }}>
       {/* Liquid glass CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Barlow:wght@300;400;500;600&display=swap');
@@ -188,7 +188,7 @@ export function AuthScreen() {
       `}</style>
 
       {/* ===== Section 1: Hero (full viewport) ===== */}
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="scholar-auth-hero relative min-h-[100svh] w-full overflow-hidden">
         {/* Background video — 120% width/height, top-aligned */}
         <FadingVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4"
@@ -197,7 +197,7 @@ export function AuthScreen() {
         />
 
         {/* Navbar */}
-        <nav className="fixed top-4 left-0 right-0 px-8 lg:px-16 z-50">
+        <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-8 lg:px-16 z-50">
           <div className="flex items-center justify-between">
             <div className="lg-glass grid place-items-center h-12 w-12 rounded-full">
               <span className="lg-serif text-white text-2xl">n</span>
@@ -220,7 +220,7 @@ export function AuthScreen() {
         </nav>
 
         {/* Hero content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-20 pb-24 px-4 text-center">
+        <div className="scholar-auth-content relative z-10 flex min-h-[100svh] flex-col items-center justify-center pt-20 pb-24 px-4 text-center">
           {/* Badge */}
           <motion.div
             initial={{ filter: "blur(10px)", opacity: 0, y: 20 }}
@@ -253,7 +253,7 @@ export function AuthScreen() {
             initial={{ filter: "blur(10px)", opacity: 0, y: 20 }}
             animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.1, ease: "easeOut" }}
-            className="flex flex-wrap justify-center items-center gap-4 mt-10"
+            className="scholar-auth-cta flex flex-wrap justify-center items-center gap-4 mt-10"
           >
             <button
               onClick={openSignup}
@@ -278,7 +278,7 @@ export function AuthScreen() {
           initial={{ filter: "blur(10px)", opacity: 0, y: 20 }}
           animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.4, ease: "easeOut" }}
-          className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-4 pb-8 z-10"
+          className="scholar-auth-partners absolute bottom-0 left-0 right-0 flex flex-col items-center gap-4 pb-8 z-10"
         >
           <div className="lg-glass rounded-full px-3.5 py-1 text-xs font-medium text-white lg-body">
             Powered by advanced AI · Crafted for CBSE excellence

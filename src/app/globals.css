@@ -485,9 +485,12 @@ html[data-scholar-theme="theme-paper"] {
   }
 }
 
-/* ===== Global dialog centering fix ===== */
-[data-radix-dialog-overlay] { position: fixed !important; inset: 0 !important; }
-[data-radix-dialog-content] {
+/* Radix content must stay viewport-bound even when a feature passes a
+   conflicting positioning utility. This prevents off-screen mobile dialogs. */
+[data-slot="dialog-overlay"],
+[data-slot="alert-dialog-overlay"] { position: fixed !important; inset: 0 !important; }
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"] {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -516,34 +519,18 @@ html[data-scholar-theme="theme-paper"] {
    MOBILE ENHANCEMENT SYSTEM — affects only ≤1023px, desktop unchanged
    ======================================================================== */
 
-/* --- Global: prevent horizontal scroll --- */
-html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
 /* --- Safe area insets for notch devices --- */
 :root {
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
-}
-
-/* --- Mobile typography scale --- */
-@media (max-width: 640px) {
-  h1 { font-size: 1.5rem; line-height: 2rem; }
-  h2 { font-size: 1.25rem; line-height: 1.75rem; }
-  h3 { font-size: 1.1rem; line-height: 1.5rem; }
-  .text-2xl { font-size: 1.375rem; }
-  .text-xl { font-size: 1.125rem; }
-  .text-3xl { font-size: 1.5rem; }
-  .text-4xl { font-size: 1.75rem; }
-  .text-5xl { font-size: 2rem; }
+  --scholar-topbar-height: calc(4rem + var(--safe-area-top));
+  --scholar-bottom-nav-height: calc(4rem + var(--safe-area-bottom));
 }
 
 /* --- Mobile tap feedback --- */
-@media (max-width: 1023px) {
+@media (max-width: 1023px) and (pointer: coarse) {
   button:active:not(:disabled),
   a:active,
   [role="button"]:active {
@@ -570,8 +557,9 @@ html, body {
 
 /* --- Mobile table fixes --- */
 @media (max-width: 1023px) {
-  table {
+  main table {
     display: block;
+    max-width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
@@ -595,12 +583,13 @@ html, body {
 }
 @media (max-width: 1023px) {
   .scholar-bottom-nav {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(60px + var(--safe-area-bottom));
+    height: var(--scholar-bottom-nav-height);
     padding-bottom: var(--safe-area-bottom);
     background: rgba(10, 10, 11, 0.88);
     backdrop-filter: blur(20px);
@@ -608,7 +597,6 @@ html, body {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 30;
     align-items: center;
-    justify-content: space-around;
     padding-top: 6px;
   }
   .scholar-bottom-nav button {
@@ -616,7 +604,7 @@ html, body {
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    min-width: 52px;
+    min-width: 0;
     min-height: 48px;
     background: none;
     border: none;
@@ -640,7 +628,17 @@ html, body {
 /* --- Mobile compact top bar --- */
 @media (max-width: 1023px) {
   .scholar-mobile-topbar {
+    height: var(--scholar-topbar-height) !important;
+    flex: 0 0 var(--scholar-topbar-height);
     padding-top: var(--safe-area-top) !important;
+  }
+  .scholar-main-scroll:not([data-active-view="live-tutor"]) {
+    padding-bottom: calc(4.75rem + var(--safe-area-bottom));
+    scroll-padding-bottom: calc(5.5rem + var(--safe-area-bottom));
+  }
+  .scholar-mobile-drawer-body {
+    height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height));
+    padding-bottom: max(1rem, var(--safe-area-bottom));
   }
 }
 
@@ -692,6 +690,47 @@ html, body {
 body.immersive-mode .scholar-bottom-nav {
     display: none !important;
   }
+  html[data-scholar-keyboard-open="true"] .scholar-bottom-nav,
+  html[data-scholar-keyboard-open="true"] .pwa-install-prompt {
+    display: none !important;
+  }
+  html[data-scholar-keyboard-open="true"] .scholar-main-scroll:not([data-active-view="live-tutor"]) {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Shared page sizing. Feature roots opt in so desktop composition is preserved
+   while mobile and WebView layouts use the visual viewport and safe areas. */
+.scholar-responsive-page {
+  min-width: 0;
+  min-height: calc(100dvh - 4rem);
+  min-height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height));
+}
+
+@media (max-width: 640px) {
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"] {
+    width: calc(100% - 1rem) !important;
+    max-height: calc(var(--scholar-vvh, 100dvh) - 1rem) !important;
+    padding-bottom: max(1rem, var(--safe-area-bottom));
+  }
+
+  .scholar-page-gutter { padding-inline: .75rem !important; }
+  .scholar-scroll-rail {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scholar-scroll-rail::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  :root { --scholar-bottom-nav-height: calc(3.5rem + var(--safe-area-bottom)); }
+  .scholar-bottom-nav button { min-height: 42px; }
+  .scholar-bottom-nav button svg { width: 19px; height: 19px; }
 }
 
 /* LAM system material: layered neutral glass, specular reflection and state light. */
@@ -1002,4 +1041,178 @@ body.immersive-mode .scholar-bottom-nav {
   html[data-scholar-keyboard-open="true"] .scholar-info-footer {
     display: none;
   }
+}
+
+/* ===== Product-wide responsive route repairs ===== */
+@media (max-width: 767px) {
+  .scholar-auth-hero {
+    min-height: var(--scholar-vvh, 100svh);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  .scholar-auth-nav {
+    top: max(.75rem, var(--safe-area-top));
+    padding-inline: max(.75rem, var(--safe-area-left));
+  }
+  .scholar-auth-content {
+    min-height: var(--scholar-vvh, 100svh);
+    padding: calc(5rem + var(--safe-area-top)) .875rem 8.5rem;
+  }
+  .scholar-auth-content .lg-serif {
+    letter-spacing: -.06em;
+    line-height: .92;
+  }
+  .scholar-auth-cta {
+    width: min(100%, 24rem);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scholar-auth-cta > * {
+    min-height: 44px;
+    justify-content: center;
+  }
+  .scholar-auth-partners {
+    padding: 0 .75rem calc(.75rem + var(--safe-area-bottom));
+    gap: .65rem;
+  }
+  .scholar-auth-partners > div:last-child {
+    max-width: 100%;
+    gap: clamp(.85rem, 5vw, 2rem);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .scholar-dashboard nav,
+  .scholar-settings nav {
+    padding: 1rem .875rem;
+  }
+  .scholar-dashboard-hero {
+    padding-inline: .875rem;
+  }
+  .scholar-dashboard-hero h1 {
+    max-width: 18ch;
+    font-size: clamp(2.25rem, 12vw, 3.75rem);
+    overflow-wrap: anywhere;
+  }
+  .scholar-dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    max-width: 32rem;
+    gap: .5rem;
+  }
+  .scholar-dashboard-metrics > div {
+    min-width: 0;
+    justify-content: center;
+    padding-inline: .55rem;
+  }
+  .scholar-dashboard-metrics span { font-size: .72rem; }
+
+  .scholar-settings > .relative.z-10 > nav > div {
+    padding: .6rem .75rem;
+    gap: .5rem;
+  }
+  .scholar-settings > .relative.z-10 > nav > div > div:last-child {
+    gap: .4rem;
+  }
+  .scholar-settings > .relative.z-10 > nav button {
+    min-height: 44px;
+    padding-inline: .8rem;
+  }
+  .scholar-settings-tabs {
+    max-height: min(15rem, 34vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .scholar-settings [data-slot="tabs-content"] > .asme-glass {
+    padding: 1rem;
+  }
+
+  .scholar-notes nav,
+  .scholar-notes section,
+  .scholar-notes-tabs,
+  .scholar-notes > .relative.z-10 > div.flex-1 {
+    padding-inline: .75rem;
+  }
+  .scholar-notes section { padding-bottom: 1.25rem; }
+  .scholar-notes-tabs [data-slot="tabs-list"] { min-height: 44px; }
+
+  .scholar-nigtube-nav {
+    flex-wrap: wrap;
+    gap: .75rem;
+  }
+  .scholar-nigtube-search {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  .scholar-music-nav {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: .75rem;
+  }
+  .scholar-music-tabs {
+    width: 100%;
+    border-radius: 1rem;
+  }
+  .scholar-music-tabs button {
+    min-height: 44px;
+    flex: 1 0 auto;
+  }
+
+  .scholar-focus > .relative.z-10 { padding: 1rem; }
+  .scholar-focus-ring {
+    width: min(72vw, 280px);
+    height: min(72vw, 280px);
+  }
+
+  .scholar-files .premium-card-hover [class*="opacity-0"] {
+    opacity: .75;
+  }
+  .scholar-file-preview {
+    height: var(--scholar-vvh, 100dvh);
+    padding-bottom: var(--safe-area-bottom);
+  }
+  .scholar-file-preview-header,
+  .scholar-file-preview-tools {
+    justify-content: flex-start;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+  .scholar-file-preview-header::-webkit-scrollbar,
+  .scholar-file-preview-tools::-webkit-scrollbar { display: none; }
+  .scholar-file-preview-header button,
+  .scholar-file-preview-tools button { flex: 0 0 auto; min-height: 44px; }
+
+  .scholar-ebook [class*="grid-cols-5"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .scholar-quiz button,
+  .scholar-flashcards button { min-height: 44px; }
+}
+
+@media (max-width: 359px) {
+  .scholar-bottom-nav button { font-size: 9px; }
+  .scholar-bottom-nav button svg { width: 20px; height: 20px; }
+  .scholar-dashboard-metrics { grid-template-columns: 1fr; max-width: 13rem; }
+  .scholar-dashboard-metrics > div { justify-content: flex-start; }
+  .scholar-settings-tabs { grid-template-columns: 1fr 1fr !important; }
+  .scholar-auth-partners > div:first-child { font-size: .65rem; }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .scholar-settings > .relative.z-10 > nav,
+  .scholar-dashboard nav { padding-inline: 1.5rem; }
+  .scholar-settings-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .scholar-auth-content {
+    justify-content: flex-start;
+    padding-top: calc(4.75rem + var(--safe-area-top));
+    padding-bottom: 2rem;
+  }
+  .scholar-auth-partners { position: static; margin-top: -4rem; }
+  .scholar-dashboard-hero h1 { font-size: clamp(2rem, 8vw, 3.25rem); }
+  .scholar-dashboard-hero { padding-top: .25rem; padding-bottom: .75rem; }
+  .scholar-dashboard-metrics { margin-bottom: .75rem; }
 }

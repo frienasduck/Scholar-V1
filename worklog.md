@@ -1,5 +1,14 @@
 # Neha's Scholar — Worklog
 
+## 22 September 2026 — Product-wide responsive foundation
+
+- Audited the shared shell, mobile navigation, visual-viewport handling, dialogs, Android WebView markers, and the critical responsive routes before editing. The existing mobile implementation already had a drawer, bottom navigation and several route-specific media queries, but broad global heading/table/overflow overrides and `100vh` assumptions caused collisions and made individual defects difficult to reason about.
+- Centralized safe-area and software-keyboard behavior in `AppShell`: the current visual viewport is exposed as `--scholar-vvh`, bottom navigation space is reserved by the main scroll container, fixed navigation is hidden while the keyboard is open, and the drawer height follows the actual visible viewport.
+- Made shared Dialog, AlertDialog and Sheet primitives viewport-bounded, internally scrollable and touch-safe. Added an opt-in `.scholar-responsive-page` foundation instead of globally clipping the document or globally resizing every heading.
+- Added targeted phone/tablet repairs for landing/auth, dashboard metrics, Settings tabs and long headings, Notes panes, Files and full-screen preview controls, PDF/E-Book surfaces, Quiz/Flashcards, Focus timer geometry, Nigtube search/filter rails, Study Music controls, LAM Live Tutor drawers/composer, and Group Study landing/room controls. Desktop composition and all server/auth/media behavior remain unchanged.
+- Added `docs/responsive-architecture.md` covering breakpoints, mobile shell ownership, safe areas, dialogs, Android markers and immersive feature responsibilities. Updated the public What's New page and in-app update log.
+- No database migration, Android native change, APK rebuild, push, or deployment is part of this web-only pass.
+
 ## 21 September 2026 — LAM Live Tutor (Beta)
 
 - Added the Scholar-native Live Tutor workspace at `/live-tutor`, linked under Learn beside AI Tutor. It reuses the existing LAM profile conversation store, academic page context, safe Markdown/math renderer, microphone utilities and allowlisted Scholar navigation instead of creating a second assistant architecture.

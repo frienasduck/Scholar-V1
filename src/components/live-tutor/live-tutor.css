@@ -9,8 +9,8 @@
   --lt-accent-ink: #08111f;
   position: relative;
   isolation: isolate;
-  height: calc(100dvh - 4rem);
-  min-height: calc(100dvh - 4rem);
+  height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height, 4rem));
+  min-height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height, 4rem));
   overflow: hidden;
   color: var(--lt-text);
   background: #070c18;
@@ -140,7 +140,7 @@
 }
 
 @media (max-width: 640px) {
-  .liveTutorTopbar { top:10px; width:calc(100% - 20px); border-radius:16px; }
+  .liveTutorTopbar { top:max(10px,var(--safe-area-top)); width:calc(100% - 20px); border-radius:16px; }
   .liveTutorBrandText { display:none; }
   .liveTutorStage { width:calc(100% - 20px); padding:100px 0 96px; }
   .liveTutorTitle { font-size:clamp(38px,13vw,58px); }
@@ -152,6 +152,30 @@
   .liveTutorControlButton span.optional { display:none; }
   .liveTutorTranscript { max-height:230px; }
   .liveTutorDrawer { top:68px; right:10px; bottom:10px; width:calc(100% - 20px); }
+  .liveTutorTopActions { margin-left:auto; gap:5px; }
+  .liveTutorTopActions .liveTutorPill { display:none; }
+  .liveTutorIconButton { width:44px; height:44px; }
+  .liveTutorComposerFooter { align-items:flex-end; }
+  .liveTutorControlRow { flex-wrap:wrap; }
+  .liveTutorControlButton { min-height:44px; }
+  .liveTutorChoiceGrid { grid-template-columns:1fr; }
+}
+
+@media (max-width: 360px) {
+  .liveTutorStage { width:calc(100% - 14px); padding-top:88px; }
+  .liveTutorTopbar { width:calc(100% - 14px); padding:7px; }
+  .liveTutorTitle { font-size:clamp(34px,12vw,44px); }
+  .liveTutorComposer { padding:9px; }
+  .liveTutorControlRow { gap:5px; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .liveTutorStage { align-content:start; padding-top:78px; padding-bottom:20px; }
+  .liveTutorCenter { text-align:left; }
+  .liveTutorTitle { margin-top:10px; font-size:clamp(30px,7vw,50px); }
+  .liveTutorSubtitle { margin-top:8px; }
+  .liveTutorOrb { position:absolute; right:4px; top:76px; width:58px; height:58px; margin:0; }
+  .liveTutorComposer { margin-top:12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

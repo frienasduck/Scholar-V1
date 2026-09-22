@@ -402,9 +402,9 @@ export function FilePreviewModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Preview ${file.name}`}
-      className="fixed inset-0 z-[9999] flex flex-col bg-background/98 text-foreground backdrop-blur-xl"
+      className="scholar-file-preview fixed inset-0 z-[9999] flex flex-col bg-background/98 text-foreground backdrop-blur-xl"
     >
-      <header className="sticky top-0 z-50 flex min-h-14 shrink-0 items-center gap-1 border-b border-border/70 bg-background px-2 shadow-sm sm:px-4">
+      <header className="scholar-file-preview-header sticky top-0 z-50 flex min-h-14 shrink-0 items-center gap-1 overflow-x-auto border-b border-border/70 bg-background px-2 shadow-sm sm:px-4">
         <Button
           variant="secondary"
           size="sm"
@@ -414,7 +414,7 @@ export function FilePreviewModal({
         >
           <X className="mr-1.5 h-4 w-4" /> Close
         </Button>
-        <div className="min-w-0 flex-1 px-1">
+        <div className="min-w-[8rem] flex-1 px-1">
           <p className="truncate text-sm font-semibold">{file.name}</p>
           <p className="text-[11px] text-muted-foreground">
             {currentIndex + 1} of {files.length} · {formatFileSize(file.size)}
@@ -513,7 +513,7 @@ export function FilePreviewModal({
       </header>
 
       {(type === "image" || type === "pdf") && (
-        <div className="flex min-h-12 shrink-0 items-center justify-center gap-1 border-b border-border/60 px-2">
+        <div className="scholar-file-preview-tools flex min-h-12 shrink-0 items-center justify-center gap-1 overflow-x-auto border-b border-border/60 px-2">
           {type === "pdf" && (
             <>
               <Button

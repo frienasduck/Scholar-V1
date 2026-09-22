@@ -319,7 +319,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
   }
 
   return (
-    <div className="scholar-dashboard relative min-h-[calc(100vh-4rem)] bg-[#010101] overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-dashboard scholar-responsive-page relative bg-[#010101] overflow-hidden -m-4 lg:-m-6">
       <style>{`
         @import url('https://db.onlinewebfonts.com/c/2bf40ab72ea4897a3fd9b6e48b233a19?family=Garamond');
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap');

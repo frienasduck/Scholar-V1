@@ -213,7 +213,7 @@ export function MusicView() {
   };
 
   return (
-    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
+    <div className="scholar-music scholar-responsive-page relative -m-3 overflow-hidden sm:-m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .mu-glass {
@@ -253,7 +253,7 @@ export function MusicView() {
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
         {/* Navbar */}
-        <nav className="flex items-center justify-between px-4 md:px-8 py-4 mu-font">
+        <nav className="scholar-music-nav flex items-center justify-between px-4 md:px-8 py-4 mu-font">
           <div className="flex items-center gap-3">
             <div className="grid place-items-center h-10 w-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg">
               <Headphones className="h-5 w-5 text-white" />
@@ -265,7 +265,7 @@ export function MusicView() {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 mu-glass rounded-full p-1">
+          <div className="scholar-music-tabs scholar-scroll-rail flex items-center gap-1 mu-glass rounded-full p-1">
             {[
               { id: "all", label: "All Music", icon: MusicIcon },
               { id: "playlists", label: "My Playlists", icon: ListMusic },

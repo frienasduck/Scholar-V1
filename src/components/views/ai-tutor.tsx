@@ -383,7 +383,7 @@ export function AITutorView() {
     <>
       <style dangerouslySetInnerHTML={{ __html: GLASS_STYLES }} />
 
-      <div className="view-enter relative -m-3 min-h-[calc(100vh-4rem)] w-auto overflow-hidden sm:-m-4 lg:-m-6">
+      <div className="scholar-ai-tutor scholar-responsive-page view-enter relative -m-3 w-auto overflow-hidden sm:-m-4 lg:-m-6">
         {/* Cinematic video background */}
         <video
           autoPlay
@@ -408,7 +408,7 @@ export function AITutorView() {
         />
 
         {/* Content layer */}
-        <div className="relative z-10 flex min-h-[calc(100vh-4rem)] flex-col p-4 text-white md:p-6">
+        <div className="relative z-10 flex min-h-[calc(100dvh-4rem)] flex-col p-4 text-white md:p-6">
           {/* Top bar */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -713,7 +713,7 @@ export function AITutorView() {
               </div>
 
               {/* RIGHT — chat */}
-              <div className="liquid-glass rounded-3xl flex flex-col h-[calc(100vh-12rem)] min-h-[560px] overflow-hidden">
+              <div className="liquid-glass rounded-3xl flex flex-col h-[calc(100dvh-12rem)] min-h-[32rem] overflow-hidden">
                 {/* Chat header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
                   <div className="flex items-center gap-3 min-w-0">

@@ -345,7 +345,7 @@ export function Class9QuizView() {
   const avgScore = quizAttempts.length ? Math.round((quizAttempts.reduce((a, b) => a + b.score / b.total, 0) / quizAttempts.length) * 100) : 0;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
       <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4" type="video/mp4" />
       </video>

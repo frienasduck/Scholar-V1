@@ -960,6 +960,9 @@
     min-height: calc(100dvh - 105px);
   }
 }
+@media (max-width: 900px) {
+  html[data-scholar-keyboard-open="true"] .gs-v2-bottom-nav { display: none; }
+}
 @media (max-width: 600px) {
   .gs-v2-layout {
     padding: 10px;
@@ -988,8 +991,9 @@
     font-size: 10px !important;
   }
   .gs-v2-header-tools .gs-button-icon {
-    width: 34px;
-    padding: 7px;
+    width: 44px;
+    min-height: 44px;
+    padding: 10px;
   }
   .gs-v2-header-tools .gs-status {
     padding: 7px 9px;
@@ -1086,6 +1090,7 @@
   }
   .gs-v2 .gs-composer textarea {
     max-height: 90px;
+    font-size: 16px;
   }
   .gs-setting {
     gap: 12px;

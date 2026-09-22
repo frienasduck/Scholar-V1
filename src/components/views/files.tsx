@@ -151,7 +151,7 @@ export function FilesView() {
   }
 
   return (
-    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
+    <div className="scholar-files scholar-responsive-page relative -m-3 overflow-hidden bg-black sm:-m-4 lg:-m-6">
       <ReadyBackgroundVideo
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4"
         readinessId="files"

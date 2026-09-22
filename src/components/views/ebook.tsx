@@ -535,7 +535,7 @@ export function EBookView() {
   // ===== HOME VIEW =====
   if (view === "home") {
     return (
-      <div className="relative min-h-[calc(100vh-4rem)] bg-[#0a0a0f] overflow-hidden -m-4 lg:-m-6 text-white eb-font">
+      <div className="scholar-ebook scholar-responsive-page relative bg-[#0a0a0f] overflow-hidden -m-4 lg:-m-6 text-white eb-font">
         <style>{EB_STYLE}</style>
         <ReadyBackgroundVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
@@ -868,13 +868,13 @@ export function EBookView() {
 
   return (
     <div
-      className={`relative ${fullscreen ? "fixed inset-0 z-50" : "min-h-[calc(100vh-4rem)]"} bg-[#0a0a0f] overflow-hidden ${fullscreen ? "" : "-m-4 lg:-m-6"} text-white eb-font flex`}
+      className={`scholar-ebook scholar-responsive-page relative ${fullscreen ? "fixed inset-0 z-50" : ""} bg-[#0a0a0f] overflow-hidden ${fullscreen ? "" : "-m-4 lg:-m-6"} text-white eb-font flex`}
     >
       <style>{EB_STYLE}</style>
 
       {/* Left Sidebar */}
       {showSidebar && !fullscreen && (
-        <aside className="hidden lg:flex flex-col w-64 border-r border-white/10 bg-black/40 backdrop-blur-xl shrink-0 h-[calc(100vh-4rem)] sticky top-0">
+        <aside className="hidden lg:flex flex-col w-64 border-r border-white/10 bg-black/40 backdrop-blur-xl shrink-0 h-[calc(100dvh-4rem)] sticky top-0">
           <div className="p-4 border-b border-white/10">
             <button
               onClick={() => setView("home")}

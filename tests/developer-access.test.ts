@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { NextRequest } from "next/server";
 
 mock.module("server-only", () => ({}));
@@ -154,7 +155,6 @@ describe("developer access password verification (server-side)", () => {
   });
 
   test("the plain expected password never appears in shippable client sources", () => {
-    const { readFileSync } = require("node:fs");
     const sources = [
       "src/components/developer-access-section.tsx",
       "src/app/privacy/page.tsx",
@@ -202,7 +202,6 @@ describe("developer access API", () => {
   });
 
   test("the session cookie is HttpOnly, Secure in production, and server-validated", () => {
-    const { readFileSync } = require("node:fs");
     const moduleSource = readFileSync("src/lib/auth/developer-access.ts", "utf8");
     expect(moduleSource).toContain("httpOnly: true");
     expect(moduleSource).toContain('secure: process.env.NODE_ENV === "production"');
