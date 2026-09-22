@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { activateAccountWorkspace, useStore } from "@/lib/store";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,24 @@ export function DeveloperAccessSection() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      dialogRef.current?.style.setProperty("--developer-access-dialog-top", `${window.innerHeight / 2}px`);
+      return;
+    }
+    const sync = () => dialogRef.current?.style.setProperty("--developer-access-dialog-top", `${Math.round(viewport.offsetTop + viewport.height / 2)}px`);
+    sync();
+    viewport.addEventListener("resize", sync, { passive: true });
+    viewport.addEventListener("scroll", sync, { passive: true });
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+    };
+  }, [open]);
 
   const close = () => {
     setOpen(false);
@@ -74,7 +92,10 @@ export function DeveloperAccessSection() {
         Access website for developers
       </button>
       <Dialog open={open} onOpenChange={(value) => { if (!value) close(); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          ref={dialogRef}
+          className="developer-access-dialog sm:max-w-md"
+        >
           <DialogHeader>
             <DialogTitle className="font-mono text-sm font-semibold tracking-[0.22em]">DEVELOPER ACCESS</DialogTitle>
             <DialogDescription>This area is restricted to authorized Scholar beta developers.</DialogDescription>
@@ -88,7 +109,6 @@ export function DeveloperAccessSection() {
                 id="scholar-developer-access-password"
                 type="password"
                 autoComplete="off"
-                autoFocus
                 required
                 value={password}
                 onChange={(event) => { setPassword(event.target.value); setError(""); }}

@@ -18,17 +18,17 @@ const session = {
   config: { subscriptionsEnabled: true, checkoutConfigured: false },
 };
 
-async function prepareAuthenticated(page: Page, mobileLamMode: "off" | "compact" | "full" = "off") {
+async function prepareAuthenticated(page: Page, mobileLamMode: "off" | "compact" | "full" = "compact") {
   await page.route("**/api/auth/session", (route) => route.fulfill({ json: session }));
   await page.route(/\.mp4(?:\?.*)?$/, (route) => route.abort());
   await page.addInitScript(({ email, mobileLamMode }) => {
     localStorage.setItem("scholar-workspace-owner-v1", email);
-    localStorage.setItem("neha-scholar-v5", JSON.stringify({ schema: 5, state: {
+    localStorage.setItem("neha-scholar-v5", JSON.stringify({ schema: 6, state: {
       authed: true,
       guestMode: false,
       onboarded: true,
       user: { email, name: "Responsive Learner", username: "responsive", bio: "", school: "", class: "11 - CBSE", avatar: "R", scholarClass: 11, jeeMode: false },
-      settings: { mobileLamMode },
+      settings: { mobileLamMode, elamEnabled: false },
     } }));
   }, { email, mobileLamMode });
 }
@@ -87,9 +87,13 @@ test("shell, drawer and fixed navigation adapt across tablet, compact laptop and
     await expectNoPageOverflow(page);
     if (viewport.width < 1024) {
       const nav = page.locator(".scholar-bottom-nav");
+      await expect(nav).toBeHidden();
+      await page.getByRole("button", { name: "Open bottom menu" }).click();
       await expect(nav).toBeVisible();
       const box = await nav.boundingBox();
       expect(box?.width).toBeLessThanOrEqual(viewport.width + 1);
+      await page.getByRole("button", { name: "Collapse bottom menu" }).click();
+      await expect(nav).toBeHidden();
       await page.getByRole("button", { name: "Open navigation menu" }).click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");
@@ -115,6 +119,43 @@ test("mobile LAM opens as a keyboard-safe panel without page overflow", async ({
   await expect(input).toBeVisible();
   await input.focus();
   await expectNoPageOverflow(page);
+});
+
+test("mobile E-Book uses the compact reader and routes page help through LAM", async ({ page }) => {
+  await prepareAuthenticated(page, "compact");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/ebook", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Physics E-Book" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".eb-book-grid")).toHaveCSS("grid-template-columns", "358px");
+  await page.getByText("Continue Reading", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Return to e-book library" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ask LAM", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /ELAM/i })).toHaveCount(0);
+  await page.getByRole("button", { name: "Ask LAM", exact: true }).click();
+  await expect(page.getByLabel("LAM personal assistant")).toBeVisible();
+  await expectNoPageOverflow(page);
+  await page.getByRole("button", { name: "Close LAM" }).click();
+  await page.getByRole("button", { name: "Return to e-book library" }).click();
+  await page.getByRole("button", { name: /Mathematics Part 1/ }).click();
+  await page.getByText("Sets", { exact: true }).last().click();
+  await expect(page.getByText("Mathematics Part 1", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: /ELAM/i })).toHaveCount(0);
+  await expectNoPageOverflow(page);
+});
+
+test("mobile privacy developer dialog stays centered in the visual viewport", async ({ page }) => {
+  await page.route(/\.mp4(?:\?.*)?$/, (route) => route.abort());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/privacy", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Access website for developers" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const metrics = await dialog.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { centerX: rect.left + rect.width / 2, centerY: rect.top + rect.height / 2, viewportX: innerWidth / 2, viewportY: innerHeight / 2 };
+  });
+  expect(Math.abs(metrics.centerX - metrics.viewportX)).toBeLessThan(2);
+  expect(Math.abs(metrics.centerY - metrics.viewportY)).toBeLessThan(2);
 });
 
 test("Group Study entry and public What's New stay responsive", async ({ page }) => {

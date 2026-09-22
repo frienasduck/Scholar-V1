@@ -1102,19 +1102,11 @@ export function SettingsView() {
             <TabsContent value="lam" className="mt-2 space-y-4">
               <div className="asme-glass rounded-3xl p-6">
                 <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Mobile LAM" desc="Choose whether LAM is absent, compact, or fully available on mobile. Off stops wake listening and idle effects.">
-                  <Select value={settings.mobileLamMode ?? "off"} onValueChange={(value) => updateSettings({ mobileLamMode: value as "off" | "compact" | "full" })}><SelectTrigger aria-label="Mobile LAM mode" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent></Select>
+                  <Select value={settings.mobileLamMode ?? "compact"} onValueChange={(value) => updateSettings({ mobileLamMode: value as "off" | "compact" | "full" })}><SelectTrigger aria-label="Mobile LAM mode" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent></Select>
                 </GlassSettingRow>
               </div>
-              <div className="asme-glass rounded-3xl p-6">
-                <div className="mb-2"><h3 className="flex items-center gap-2 font-semibold text-white"><BookOpen className="h-4 w-4 text-violet-300" />E-Book ELAM</h3><p className="mt-1 text-sm text-white/50">Control the page-specific assistant shown only inside the immersive e-book reader.</p></div>
-                <div className="divide-y divide-white/10">
-                  <GlassSettingRow icon={<Bot className="h-4 w-4 text-white/70" />} title="Enable ELAM" desc="Show the glowing ELAM page assistant in e-books.">
-                    <Switch aria-label="Enable ELAM" checked={settings.elamEnabled !== false} onCheckedChange={(value) => { updateSettings({ elamEnabled: value }); toast.success(value ? "ELAM enabled" : "ELAM disabled"); }} />
-                  </GlassSettingRow>
-                  <GlassSettingRow icon={<Sparkles className="h-4 w-4 text-white/70" />} title="Compact ELAM" desc="Use a smaller orb and a more compact page-chat panel.">
-                    <Switch aria-label="Compact ELAM" disabled={settings.elamEnabled === false} checked={settings.elamCompact === true} onCheckedChange={(value) => updateSettings({ elamCompact: value })} />
-                  </GlassSettingRow>
-                </div>
+              <div className="asme-glass rounded-3xl p-6 text-sm leading-6 text-white/58">
+                E-Books now use the same LAM assistant as the rest of Scholar. LAM automatically receives the active book, chapter, page number, and available page text—there is no separate E-Book assistant to configure.
               </div>
 
               <div className="asme-glass rounded-3xl p-6">

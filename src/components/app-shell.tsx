@@ -25,6 +25,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   GraduationCap, Sparkles, Flame, Coins, Zap, Menu, Search, Command as CmdIcon, Bot, X,
   PanelLeftClose, AlertCircle, Home, BookOpen, ListChecks, Lightbulb, LayoutGrid,
+  ChevronUp, ChevronDown,
 } from "lucide-react";
 
 const DashboardView = dynamic(() => import("@/components/views/dashboard").then((module) => module.DashboardView), { loading: ViewLoading });
@@ -459,6 +460,8 @@ export function AppShell() {
   });
   const [cmdOpen, setCmdOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [guestBannerVisible, setGuestBannerVisible] = useState(guestMode);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     // Persist sidebar open/closed state across reloads. Default to open on desktop.
     if (typeof window === "undefined") return false;
@@ -482,6 +485,16 @@ export function AppShell() {
   useEffect(() => {
     migrateLegacyStorage();
   }, []);
+
+  useEffect(() => {
+    if (!guestMode) {
+      setGuestBannerVisible(false);
+      return;
+    }
+    setGuestBannerVisible(true);
+    const timer = window.setTimeout(() => setGuestBannerVisible(false), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [guestMode]);
 
   // Cross-tab synchronisation for Smart Reminders (re-hydrate on storage events).
   useEffect(() => {
@@ -623,6 +636,7 @@ export function AppShell() {
   const navigate = useCallback((id: string, updateHistory = true) => {
     setActive(id);
     setMobileOpen(false);
+    setMobileNavOpen(false);
     if (updateHistory) {
       const nextPath = id === "dashboard" ? "/" : `/${id}`;
       if (window.location.pathname !== nextPath) window.history.pushState({ viewId: id }, "", nextPath);
@@ -702,7 +716,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="scholar-shell flex h-dvh w-full overflow-hidden bg-background">
+    <div className="scholar-shell flex h-dvh w-full overflow-hidden bg-background" data-mobile-nav-open={mobileNavOpen ? "true" : "false"}>
       <a href="#main-scroll" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[11000] focus:rounded-xl focus:bg-background focus:p-3">Skip to study content</a>
       {/* Desktop sidebar */}
       <AnimatePresence>
@@ -751,12 +765,24 @@ export function AppShell() {
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full">
         <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
-        {guestMode ? (
-          <section className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-300/15 bg-cyan-300/[0.07] px-3 py-2 text-xs text-cyan-50 sm:px-5" aria-label="Guest session information">
-            <p><strong>Guest session</strong><span className="ml-2 text-white/55">Your progress is saved only on this device until you create an account.</span></p>
-            <button type="button" onClick={() => setAuthed(false)} className="rounded-full border border-cyan-200/20 bg-white/[0.06] px-3 py-1.5 font-semibold hover:bg-white/[0.1]">Create account or Sign in</button>
-          </section>
-        ) : null}
+        <AnimatePresence initial={false}>
+          {guestMode && guestBannerVisible ? (
+            <motion.section
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12, height: 0, paddingTop: 0, paddingBottom: 0, borderWidth: 0 }}
+              transition={{ duration: settings.reduceMotion ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="scholar-guest-banner"
+              aria-label="Guest session information"
+            >
+              <p className="scholar-guest-copy"><strong>Guest session</strong><span>Your progress is saved only on this device until you create an account.</span></p>
+              <div className="scholar-guest-actions">
+                <button type="button" onClick={() => setAuthed(false)} className="scholar-guest-action">Create account or Sign in</button>
+                <button type="button" onClick={() => setGuestBannerVisible(false)} className="scholar-guest-dismiss" aria-label="Dismiss guest session banner"><X className="h-4 w-4" /></button>
+              </div>
+            </motion.section>
+          ) : null}
+        </AnimatePresence>
         <BackgroundTaskNotifications onNavigate={navigate} />
         <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
@@ -787,7 +813,7 @@ export function AppShell() {
         </main>
       </div>
 
-      {startupReady && !guestMode && active !== "live-tutor" ? <LamWidget currentView={active} /> : null}
+      {startupReady && active !== "live-tutor" ? <LamWidget currentView={active} /> : null}
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 
@@ -820,24 +846,51 @@ export function AppShell() {
         </motion.div>
       )}
 
-      {/* Mobile bottom navigation — hidden on desktop (lg+) */}
-      {active !== "subscription-payment" && <nav className="scholar-bottom-nav lg:hidden">
-        <button onClick={() => navigate("dashboard")} className={cn(active === "dashboard" && "active")} aria-label="Home">
-          <Home /> Home
-        </button>
-        <button onClick={() => navigate("study")} className={cn(active === "study" && "active")} aria-label="Study">
-          <BookOpen /> Study
-        </button>
-        <button onClick={() => navigate("practice")} className={cn(active === "practice" && "active")} aria-label="Practice">
-          <ListChecks /> Practice
-        </button>
-        <button onClick={() => navigate("ai-tools")} className={cn(active === "ai-tools" && "active")} aria-label="AI Tools">
-          <Lightbulb /> AI
-        </button>
-        <button onClick={() => setMobileOpen(true)} aria-label="More sections">
-          <Menu /> More
-        </button>
-      </nav>}
+      {/* Mobile bottom navigation — collapsed by default to keep study content clear. */}
+      {active !== "subscription-payment" && (
+        <div className={cn("scholar-mobile-nav-shell lg:hidden", mobileNavOpen && "is-open")}>
+          <AnimatePresence initial={false}>
+            {mobileNavOpen ? (
+              <motion.nav
+                id="scholar-mobile-bottom-navigation"
+                className="scholar-bottom-nav"
+                initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                transition={{ duration: settings.reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
+                aria-label="Primary mobile navigation"
+              >
+                <button onClick={() => navigate("dashboard")} className={cn(active === "dashboard" && "active")} aria-label="Home">
+                  <Home /> Home
+                </button>
+                <button onClick={() => navigate("study")} className={cn(active === "study" && "active")} aria-label="Study">
+                  <BookOpen /> Study
+                </button>
+                <button onClick={() => navigate("practice")} className={cn(active === "practice" && "active")} aria-label="Practice">
+                  <ListChecks /> Practice
+                </button>
+                <button onClick={() => navigate("ai-tools")} className={cn(active === "ai-tools" && "active")} aria-label="AI Tools">
+                  <Lightbulb /> AI
+                </button>
+                <button onClick={() => { setMobileNavOpen(false); setMobileOpen(true); }} aria-label="More sections">
+                  <Menu /> More
+                </button>
+              </motion.nav>
+            ) : null}
+          </AnimatePresence>
+          <button
+            type="button"
+            className="scholar-mobile-nav-toggle"
+            onClick={() => setMobileNavOpen((open) => !open)}
+            aria-expanded={mobileNavOpen}
+            aria-controls="scholar-mobile-bottom-navigation"
+            aria-label={mobileNavOpen ? "Collapse bottom menu" : "Open bottom menu"}
+          >
+            {mobileNavOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            <span>{mobileNavOpen ? "Hide" : "Menu"}</span>
+          </button>
+        </div>
+      )}
 
       {/* Smart Reminders 2.0 — global due-check scheduler (in-app + browser notifications + Talk Reminders) */}
       <ReminderScheduler scholarClass={user.scholarClass} />

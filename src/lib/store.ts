@@ -805,9 +805,9 @@ function legacyDefaults() {
       theme: "dark" as const,
       startupLoadingMode: "long" as const,
       reduceMotion: false,
-      elamEnabled: true,
+      elamEnabled: false,
       elamCompact: false,
-      mobileLamMode: "off" as const,
+      mobileLamMode: "compact" as const,
       sound: true,
       transitionMusic: true,
       transitionVolume: 65,
@@ -885,7 +885,7 @@ function seed() {
 // ===== Manual persistence (safer than persist middleware — guarantees arrays exist) =====
 const STORAGE_KEY = "neha-scholar-v5";
 const GUEST_STORAGE_KEY = "scholar-guest-session-v1";
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 function loadPersistedState(): Partial<AppState> | null {
   if (typeof window === "undefined") return null;
@@ -895,7 +895,7 @@ function loadPersistedState(): Partial<AppState> | null {
 
     const guestRaw = localStorage.getItem(GUEST_STORAGE_KEY);
     if (guestRaw) {
-      const guest = JSON.parse(guestRaw) as { state?: Partial<AppState> };
+      const guest = JSON.parse(guestRaw) as { schema?: number; state?: Partial<AppState> };
       if (guest.state?.guestMode) {
         return {
           authed: true,
@@ -914,6 +914,7 @@ function loadPersistedState(): Partial<AppState> | null {
           settings: {
             ...seed().settings,
             ...(guest.state.settings ?? {}),
+            ...(Number(guest.schema ?? 0) < 2 ? { elamEnabled: false, mobileLamMode: "compact" as const } : {}),
             appearance: migrateAppearance(guest.state.settings?.appearance),
           },
         };
@@ -955,9 +956,11 @@ function loadPersistedState(): Partial<AppState> | null {
         : fallback;
     }
     // Merge settings so older saved profiles receive newly introduced preferences.
+    const migrateAssistantDefaults = Number(parsed.schema ?? 0) < 6;
     safe.settings = {
       ...seed().settings,
       ...(state.settings ?? {}),
+      ...(migrateAssistantDefaults ? { elamEnabled: false, mobileLamMode: "compact" as const } : {}),
       appearance: migrateAppearance(state.settings?.appearance),
     };
     safe.authed = !!state.authed;
@@ -1012,7 +1015,7 @@ function savePersistedState(state: AppState) {
           settings: state.settings,
           devMode: false,
         },
-        schema: 1,
+        schema: 2,
       }));
       return;
     }

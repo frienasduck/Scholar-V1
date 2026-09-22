@@ -88,7 +88,7 @@ function playLamActivationSound() {
 type LamWidgetProps = { currentView?: string; scholarClass?: 9 | 11; subject?: string; chapter?: string; summary?: string; concepts?: string[] };
 
 export function LamWidget(props: LamWidgetProps) {
-  const mobileMode = useStore((state) => state.settings.mobileLamMode ?? "off");
+  const mobileMode = useStore((state) => state.settings.mobileLamMode ?? "compact");
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");

@@ -65,7 +65,7 @@ import {
   BookModeReader,
   type BookModeBookmark,
 } from "@/components/ebook/book-mode-reader";
-import { ElamAssistant } from "@/components/ebook/elam-assistant";
+import { setLamPageContext } from "@/lib/lam-context";
 
 type SectionType =
   | "heading"
@@ -794,6 +794,18 @@ function EnhancedEbookSystem({
   const pageMap = data?.pageMap.find(
     (item) => item.scannedPage === state.scannedPage,
   );
+
+  useEffect(() => {
+    if (!page) return;
+    setLamPageContext({
+      ebookTitle: config.title,
+      subjectTitle: config.subject,
+      chapterTitle: page.chapterTitle,
+      sourcePageNumber: state.source === "scan" ? state.scannedPage : state.textPage,
+      visibleText: page.rawText,
+    });
+    return () => setLamPageContext({});
+  }, [config.subject, config.title, page, state.scannedPage, state.source, state.textPage]);
   const pageQuestions = useMemo(
     () =>
       data?.questions.filter(
@@ -2143,17 +2155,6 @@ function EnhancedEbookSystem({
             </div>
           </div>
         </div>
-      )}
-
-      {(nav === "Reader" || bookModeOpen) && page && (
-        <ElamAssistant
-          bookId={data.book.id}
-          bookTitle={config.title}
-          subject={config.subject}
-          page={pageNumber}
-          chapter={page.chapterTitle}
-          pageText={page.rawText}
-        />
       )}
 
       <BookModeReader

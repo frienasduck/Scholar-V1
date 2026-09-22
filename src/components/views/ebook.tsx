@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
-import { askAI } from "@/lib/ai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +22,6 @@ import {
   MathsEbookSystem,
 } from "@/components/views/maths-ebook-system";
 import { BookModeReader } from "@/components/ebook/book-mode-reader";
-import { ElamAssistant } from "@/components/ebook/elam-assistant";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { setLamPageContext } from "@/lib/lam-context";
 import {
@@ -78,6 +76,37 @@ const EB_STYLE = `
 .eb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 @keyframes shiny { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
 .eb-shiny { animation: shiny 6s linear infinite; }
+@media (max-width: 640px) {
+  .scholar-ebook { min-height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height)); }
+  .eb-library-nav { align-items: flex-start; gap: .75rem; }
+  .eb-library-nav > button { min-height: 2.75rem; padding-inline: .75rem; }
+  .eb-library-hero { margin-block: 1.25rem 1.5rem; }
+  .eb-stat-card { min-width: 0; padding: .7rem; gap: .6rem; }
+  .eb-stat-card:last-child { grid-column: 1 / -1; }
+  .eb-continue-card { align-items: flex-start; }
+  .eb-book-grid { grid-template-columns: minmax(0, 1fr); }
+  .eb-chapter-card { padding: 1rem; }
+  .eb-chapter-metrics { flex-wrap: wrap; gap: .45rem .8rem; }
+  .eb-reader-shell { flex-direction: column; min-height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height)); }
+  .eb-reader-main { min-height: 0; }
+  .eb-reader-topbar { position: sticky; top: 0; display: block; padding: .55rem .65rem; }
+  .eb-reader-meta { width: 100%; gap: .45rem; overflow: hidden; }
+  .eb-reader-meta > [data-chapter-badge] { min-width: 0; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eb-reader-tools { width: 100%; margin-top: .45rem; padding-bottom: .15rem; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
+  .eb-reader-tools::-webkit-scrollbar { display: none; }
+  .eb-reader-tools button { display: grid; min-width: 2.6rem; min-height: 2.6rem; place-items: center; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.035); }
+  .eb-reader-tools .eb-tool-divider { display: none; }
+  .eb-page-stage { padding: .65rem .5rem 1rem; overflow-x: hidden; }
+  .eb-page-motion { width: 100%; min-width: 0; }
+  .eb-page-frame { width: 100%; border-radius: .9rem; }
+  .eb-page-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: .45rem; }
+  .eb-page-actions button { width: 100%; min-height: 2.75rem; justify-content: center; white-space: normal; line-height: 1.15; }
+  .eb-reader-pagination { position: sticky; bottom: 0; gap: .35rem; padding: .5rem; }
+  .eb-reader-pagination > button { min-width: 4.7rem; min-height: 2.75rem; padding-inline: .55rem; }
+  .eb-page-counter { gap: .35rem; }
+  .eb-page-counter input { width: 3.15rem; min-height: 2.5rem; }
+  .eb-page-progress, .eb-progress-label { display: none; }
+}
 `;
 
 interface ChapterMapping {
@@ -227,6 +256,13 @@ export function EBookView() {
   const [activePage, setActivePage] = useState(1);
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeBookId, view]);
+
+  useEffect(() => {
     const ebookTitle =
       activeBookId === "maths-pt1"
         ? "Mathematics Part 1"
@@ -255,9 +291,6 @@ export function EBookView() {
   const [ocrText, setOcrText] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrReviewed, setOcrReviewed] = useState<Record<number, string>>({});
-  const [aiExplainPage, setAiExplainPage] = useState<number | null>(null);
-  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -432,42 +465,18 @@ export function EBookView() {
     setOcrText("");
   }, [ocrModal, ocrText, ocrReviewed, persist]);
 
-  const resolveElamPageText = useCallback(async () => {
-    const saved = ocrReviewed[activePage];
-    if (saved?.trim()) return saved;
-    const response = await fetch("/api/ocr", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ page: activePage, bookId: "physics-pt1" }),
-    });
-    const result = await response.json();
-    if (!response.ok || !result.text) throw new Error(result.error || "ELAM could not read this page");
-    const next = { ...ocrReviewed, [activePage]: result.text as string };
-    persist({ ocrReviewed: next });
-    return result.text as string;
-  }, [activePage, ocrReviewed, persist]);
-
-  // AI Explain
-  const handleAIExplain = useCallback(
-    async (page: number) => {
-      setAiExplainPage(page);
-      setAiExplanation(null);
-      setAiLoading(true);
-      try {
-        const ocrContent = ocrReviewed[page];
-        const prompt = ocrContent
-          ? `Explain this CBSE Class 11 Physics textbook page content in simple terms:\n\n${ocrContent}\n\nKeep it under 200 words. Use markdown.`
-          : `The user is reading page ${page} of their Class 11 Physics textbook (Chapter: ${chapters.find((c) => page >= c.startPage && page <= c.endPage)?.title ?? "Unknown"}). Give a brief overview of what this page likely covers and key concepts to focus on. Keep it under 150 words.`;
-        const result = await askAI(prompt, "physics-11");
-        setAiExplanation(result);
-      } catch {
-        toast.error("Could not generate explanation");
-      } finally {
-        setAiLoading(false);
-      }
-    },
-    [ocrReviewed, chapters],
-  );
+  const openPageLam = useCallback(() => {
+    const chapter = chapters.find((item) => activePage >= item.startPage && activePage <= item.endPage);
+    const context = {
+      ebookTitle: activeBook.title,
+      subjectTitle: activeBook.subject,
+      chapterTitle: chapter?.title,
+      sourcePageNumber: activePage,
+      visibleText: ocrReviewed[activePage] ?? "",
+    };
+    setLamPageContext(context);
+    window.dispatchEvent(new CustomEvent("scholar:open-lam", { detail: { context } }));
+  }, [activeBook.subject, activeBook.title, activePage, chapters, ocrReviewed]);
 
   // Search
   const searchResults = useMemo(() => {
@@ -535,7 +544,7 @@ export function EBookView() {
   // ===== HOME VIEW =====
   if (view === "home") {
     return (
-      <div className="scholar-ebook scholar-responsive-page relative bg-[#0a0a0f] overflow-hidden -m-4 lg:-m-6 text-white eb-font">
+      <div className="scholar-ebook scholar-responsive-page relative bg-[#0a0a0f] overflow-hidden -m-3 sm:-m-4 lg:-m-6 text-white eb-font">
         <style>{EB_STYLE}</style>
         <ReadyBackgroundVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
@@ -548,7 +557,7 @@ export function EBookView() {
           <motion.nav
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between py-4"
+            className="eb-library-nav flex items-center justify-between py-3 sm:py-4"
           >
             <div className="flex items-center gap-3">
               <div className="grid place-items-center h-9 w-9 rounded-xl bg-white/5 border border-white/10">
@@ -567,7 +576,7 @@ export function EBookView() {
           </motion.nav>
 
           {/* Hero */}
-          <div className="mt-8 mb-8">
+          <div className="eb-library-hero mt-8 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -645,7 +654,7 @@ export function EBookView() {
             ].map((s, i) => (
               <div
                 key={i}
-                className="eb-glass rounded-xl p-3 flex items-center gap-3"
+                className="eb-stat-card eb-glass rounded-xl p-3 flex items-center gap-3"
               >
                 <div
                   className="grid place-items-center h-9 w-9 rounded-lg"
@@ -667,7 +676,7 @@ export function EBookView() {
 
           {/* Continue Reading */}
           <div
-            className="eb-glass rounded-2xl p-4 mb-6 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+            className="eb-continue-card eb-glass rounded-2xl p-4 mb-6 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
             onClick={() => setView("reader")}
           >
             <div className="flex items-center gap-3">
@@ -736,7 +745,7 @@ export function EBookView() {
 
           {/* Book Selector */}
           <p className="text-sm text-white/50 mb-3">Select Book</p>
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="eb-book-grid grid grid-cols-2 gap-3 mb-6">
             {BOOKS.map((book) => (
               <button
                 key={book.id}
@@ -786,7 +795,7 @@ export function EBookView() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="eb-glass rounded-2xl p-5 cursor-pointer hover:bg-white/5 transition-colors"
+                  className="eb-chapter-card eb-glass rounded-2xl p-5 cursor-pointer hover:bg-white/5 transition-colors"
                   onClick={() => {
                     jumpTo(ch.startPage);
                     setView("reader");
@@ -803,7 +812,7 @@ export function EBookView() {
                       <h3 className="text-lg font-semibold text-white">
                         {ch.title}
                       </h3>
-                      <div className="flex items-center gap-3 mt-2 text-[11px] text-white/40">
+                      <div className="eb-chapter-metrics flex items-center gap-3 mt-2 text-[11px] text-white/40">
                         <span className="flex items-center gap-1">
                           <FileText className="h-3 w-3" /> Pg {ch.startPage}–
                           {ch.endPage} ({chPages} pages)
@@ -868,7 +877,7 @@ export function EBookView() {
 
   return (
     <div
-      className={`scholar-ebook scholar-responsive-page relative ${fullscreen ? "fixed inset-0 z-50" : ""} bg-[#0a0a0f] overflow-hidden ${fullscreen ? "" : "-m-4 lg:-m-6"} text-white eb-font flex`}
+      className={`eb-reader-shell scholar-ebook scholar-responsive-page relative ${fullscreen ? "fixed inset-0 z-50" : ""} bg-[#0a0a0f] overflow-hidden ${fullscreen ? "" : "-m-3 sm:-m-4 lg:-m-6"} text-white eb-font flex`}
     >
       <style>{EB_STYLE}</style>
 
@@ -963,10 +972,13 @@ export function EBookView() {
       )}
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="eb-reader-main flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="sticky top-0 z-20 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="eb-reader-topbar sticky top-0 z-20 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="eb-reader-meta flex items-center gap-3 min-w-0">
+            <button onClick={() => setView("home")} className="lg:hidden inline-flex min-h-10 items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 text-xs text-white/75" aria-label="Return to e-book library">
+              <ChevronLeft className="h-4 w-4" /> Library
+            </button>
             {!showSidebar && !fullscreen && (
               <button
                 onClick={() => setShowSidebar(true)}
@@ -979,6 +991,7 @@ export function EBookView() {
             {currentChapter && (
               <Badge
                 className="text-[9px] px-2 py-0"
+                data-chapter-badge
                 style={{
                   background: `${currentChapter.color}20`,
                   color: currentChapter.color,
@@ -999,7 +1012,7 @@ export function EBookView() {
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="eb-reader-tools flex items-center gap-1.5" aria-label="Reader tools">
             <button
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
@@ -1015,7 +1028,7 @@ export function EBookView() {
             >
               <ZoomIn className="h-4 w-4" />
             </button>
-            <div className="w-px h-6 bg-white/10 mx-1" />
+            <div className="eb-tool-divider w-px h-6 bg-white/10 mx-1" />
             <button
               onClick={() => setRotation((rotation + 90) % 360)}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
@@ -1040,7 +1053,7 @@ export function EBookView() {
             >
               <BookOpen className="h-4 w-4" />
             </button>
-            <div className="w-px h-6 bg-white/10 mx-1" />
+            <div className="eb-tool-divider w-px h-6 bg-white/10 mx-1" />
             <button
               onClick={() => toggleBookmark(activePage)}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
@@ -1071,8 +1084,10 @@ export function EBookView() {
               <Eye className="h-4 w-4" />
             </button>
             <button
-              onClick={() => handleAIExplain(activePage)}
-              className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
+              onClick={openPageLam}
+              className="text-cyan-100 hover:text-white p-1.5 rounded-lg bg-cyan-300/10 hover:bg-cyan-300/15"
+              aria-label="Ask LAM about this page"
+              title="Ask LAM about this page"
             >
               <Sparkles className="h-4 w-4" />
             </button>
@@ -1080,7 +1095,7 @@ export function EBookView() {
         </div>
 
         {/* Page Display */}
-        <div className="flex-1 overflow-auto eb-scroll flex flex-col items-center p-4">
+        <div className="eb-page-stage flex-1 overflow-auto eb-scroll flex flex-col items-center p-4">
           <AnimatePresence mode="wait">
             <motion.div
               key={activePage}
@@ -1088,7 +1103,7 @@ export function EBookView() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="flex flex-col items-center"
+              className="eb-page-motion flex flex-col items-center"
             >
               {/* Page Label */}
               <div className="mb-3 flex items-center gap-2">
@@ -1103,7 +1118,7 @@ export function EBookView() {
               </div>
               {/* Page Image */}
               <div
-                className="relative eb-glass rounded-2xl overflow-hidden shadow-2xl"
+                className="eb-page-frame relative eb-glass rounded-2xl overflow-hidden shadow-2xl"
                 style={{
                   maxWidth: `${zoom * 100}%`,
                   transition: "max-width 0.2s",
@@ -1123,7 +1138,7 @@ export function EBookView() {
                 />
               </div>
               {/* Page Actions */}
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+              <div className="eb-page-actions mt-4 flex flex-wrap gap-2 justify-center">
                 <Button
                   size="sm"
                   variant="outline"
@@ -1169,10 +1184,10 @@ export function EBookView() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleAIExplain(activePage)}
+                  onClick={openPageLam}
                   className="bg-white/5 border-white/15 text-white hover:bg-white/10 text-xs"
                 >
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> AI Explain
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Ask LAM
                 </Button>
                 <Button
                   size="sm"
@@ -1192,23 +1207,6 @@ export function EBookView() {
                   <Save className="h-3.5 w-3.5 mr-1.5" /> Save to Notes
                 </Button>
               </div>
-              {/* AI Explanation */}
-              {aiExplainPage === activePage && (aiLoading || aiExplanation) && (
-                <div className="mt-4 max-w-2xl w-full eb-glass rounded-xl p-4">
-                  <p className="text-[10px] uppercase tracking-wide text-violet-400 font-semibold mb-2 flex items-center gap-1.5">
-                    <Sparkles className="h-3 w-3" /> AI Explanation
-                    {aiLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-                  </p>
-                  {aiExplanation && (
-                    <div
-                      className="text-sm text-white/80 whitespace-pre-wrap"
-                      style={{ lineHeight: 1.6 }}
-                    >
-                      {aiExplanation}
-                    </div>
-                  )}
-                </div>
-              )}
               {/* Page Note Preview */}
               {pageNote && (
                 <div className="mt-4 max-w-2xl w-full eb-glass rounded-xl p-4">
@@ -1237,7 +1235,7 @@ export function EBookView() {
         </div>
 
         {/* Bottom nav */}
-        <div className="sticky bottom-0 bg-black/60 backdrop-blur-xl border-t border-white/10 px-4 py-2 flex items-center justify-between">
+        <div className="eb-reader-pagination sticky bottom-0 bg-black/60 backdrop-blur-xl border-t border-white/10 px-4 py-2 flex items-center justify-between">
           <Button
             size="sm"
             variant="ghost"
@@ -1247,7 +1245,7 @@ export function EBookView() {
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> Prev
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="eb-page-counter flex items-center gap-2">
             <input
               type="number"
               min={1}
@@ -1257,13 +1255,13 @@ export function EBookView() {
               className="w-14 text-center text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white"
             />
             <span className="text-xs text-white/40">/ {totalPages}</span>
-            <div className="w-24 h-1 rounded-full bg-white/10 overflow-hidden ml-2">
+            <div className="eb-page-progress w-24 h-1 rounded-full bg-white/10 overflow-hidden ml-2">
               <div
                 className="h-full bg-indigo-400 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-xs text-white/40">{progress}%</span>
+            <span className="eb-progress-label text-xs text-white/40">{progress}%</span>
           </div>
           <Button
             size="sm"
@@ -1276,16 +1274,6 @@ export function EBookView() {
           </Button>
         </div>
       </div>
-
-      <ElamAssistant
-        bookId={activeBook.id}
-        bookTitle={activeBook.title}
-        subject={activeBook.subject}
-        page={activePage}
-        chapter={currentChapter?.title}
-        pageText={ocrReviewed[activePage] ?? ""}
-        resolvePageText={resolveElamPageText}
-      />
 
       <BookModeReader
         open={bookModeOpen}

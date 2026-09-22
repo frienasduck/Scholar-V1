@@ -23,7 +23,7 @@ type ElamAssistantProps = {
  * handed to LamWidget so navigation, history, voice and privacy stay unified.
  */
 export function ElamAssistant({ bookId, bookTitle, subject, page, chapter, pageText = "", resolvePageText }: ElamAssistantProps) {
-  const enabled = useStore((state) => state.settings.elamEnabled !== false);
+  const enabled = useStore((state) => state.settings.elamEnabled === true);
   const compact = useStore((state) => state.settings.elamCompact === true);
   const [loading, setLoading] = useState(false);
 
