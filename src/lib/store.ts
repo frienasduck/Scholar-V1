@@ -807,7 +807,7 @@ function legacyDefaults() {
       reduceMotion: false,
       elamEnabled: false,
       elamCompact: false,
-      mobileLamMode: "compact" as const,
+      mobileLamMode: "off" as const,
       sound: true,
       transitionMusic: true,
       transitionVolume: 65,
@@ -885,7 +885,7 @@ function seed() {
 // ===== Manual persistence (safer than persist middleware — guarantees arrays exist) =====
 const STORAGE_KEY = "neha-scholar-v5";
 const GUEST_STORAGE_KEY = "scholar-guest-session-v1";
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 function loadPersistedState(): Partial<AppState> | null {
   if (typeof window === "undefined") return null;
@@ -914,7 +914,7 @@ function loadPersistedState(): Partial<AppState> | null {
           settings: {
             ...seed().settings,
             ...(guest.state.settings ?? {}),
-            ...(Number(guest.schema ?? 0) < 2 ? { elamEnabled: false, mobileLamMode: "compact" as const } : {}),
+            ...(Number(guest.schema ?? 0) < 7 ? { elamEnabled: false, mobileLamMode: "off" as const } : {}),
             appearance: migrateAppearance(guest.state.settings?.appearance),
           },
         };
@@ -956,11 +956,11 @@ function loadPersistedState(): Partial<AppState> | null {
         : fallback;
     }
     // Merge settings so older saved profiles receive newly introduced preferences.
-    const migrateAssistantDefaults = Number(parsed.schema ?? 0) < 6;
+    const migrateAssistantDefaults = Number(parsed.schema ?? 0) < 7;
     safe.settings = {
       ...seed().settings,
       ...(state.settings ?? {}),
-      ...(migrateAssistantDefaults ? { elamEnabled: false, mobileLamMode: "compact" as const } : {}),
+      ...(migrateAssistantDefaults ? { elamEnabled: false, mobileLamMode: "off" as const } : {}),
       appearance: migrateAppearance(state.settings?.appearance),
     };
     safe.authed = !!state.authed;

@@ -1102,7 +1102,7 @@ export function SettingsView() {
             <TabsContent value="lam" className="mt-2 space-y-4">
               <div className="asme-glass rounded-3xl p-6">
                 <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Mobile LAM" desc="Choose whether LAM is absent, compact, or fully available on mobile. Off stops wake listening and idle effects.">
-                  <Select value={settings.mobileLamMode ?? "compact"} onValueChange={(value) => updateSettings({ mobileLamMode: value as "off" | "compact" | "full" })}><SelectTrigger aria-label="Mobile LAM mode" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent></Select>
+                  <Select value={settings.mobileLamMode ?? "off"} onValueChange={(value) => updateSettings({ mobileLamMode: value as "off" | "compact" | "full" })}><SelectTrigger aria-label="Mobile LAM mode" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent></Select>
                 </GlassSettingRow>
               </div>
               <div className="asme-glass rounded-3xl p-6 text-sm leading-6 text-white/58">
