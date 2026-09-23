@@ -1,5 +1,20 @@
 # Neha's Scholar — Worklog
 
+## 23 September 2026 — LAM Live Tutor visual transplant and production integration
+
+- Rebuilt the canonical `/live-tutor` experience from the supplied Z.ai visual reference while retaining Scholar's authenticated APIs, provider routing, streaming protocol, learning context, voice pipeline, memory store, safe response renderer and confirmed action executor. No mock adapter, demo identity, Z.ai SDK, local-only backend, or duplicate tutor route was imported.
+- Calm Tutor, Exam Coach and Curious Scientist now have separate durable conversation/session histories while sharing the same account-bound learning memory. Startup restores the latest saved session for each personality through a new authenticated, ownership-scoped session-read endpoint.
+- Added the reference's cinematic backgrounds, open conversation canvas, glass navigation/composer/tool dock, preparation state, personality/settings/memory/context/mission/session panels and responsive drawers. Fixed a mobile-only focus regression where the microphone control could programmatically scroll the clipped tutor canvas sideways; the non-scrollable root now uses `overflow: clip`.
+- Kept provider availability honest: Auto, Groq, Gemini and NVIDIA are derived from server environment configuration, and requests continue through `/api/lam/chat`. Added explicit confirmation flows for navigation, Notes, Quiz, Focus and slideshow actions; microphones are requested only after a user click, with browser recognition and the existing transcription fallback.
+- Verification: scoped ESLint/diff/security scans passed; the optimized Next.js production build passed; focused Chrome coverage passes streamed chat, independent personality histories, explicit microphone use, confirmed actions and required 1440×900, 390×844, 320×568 and 1024×600 viewport bounds. No schema migration, dependency change, Android edit, commit, push or deployment was performed.
+
+## 22 September 2026 — Developer Access security hardening (env-only credential)
+
+- Removed the built-in Developer Access fallback credential entirely. `src/lib/auth/developer-access.ts` no longer contains any committed password encoding; the expected credential now lives only in the server-only `SCHOLAR_DEVELOPER_ACCESS_PASSWORD` environment variable (plain or scrypt-encoded), and the API fails closed — returning the existing safe "not available" behavior — when it is absent or too short. No client-side expected value, no `NEXT_PUBLIC_` exposure, and the failed-login audit event records only a generic outcome, never credential material.
+- Replaced the production plaintext default in `tests/developer-access.test.ts` with a clearly test-only credential configured inside the test environment; added tests for env-absent fail-closed behavior, too-short configuration rejection, scrypt-encoded configuration compatibility, and that API responses never echo the configured credential. All prior coverage (rate limiting, cookie security, tampering, sessionVersion binding, allowlist integration, Group Study host authorization) retained.
+- Documented the new requirement in `.env.example`. Deployment note: `SCHOLAR_DEVELOPER_ACCESS_PASSWORD` must now be set in production for Developer Access to be available; the feature is unavailable rather than degraded when unset. Private beta, Guest Mode, accountless Group Study, and normal auth are unaffected.
+- No database migration, no Android/native change, no deployment, and no Replay QA work in this pass.
+
 ## 22 September 2026 — Product-wide responsive foundation
 
 - Audited the shared shell, mobile navigation, visual-viewport handling, dialogs, Android WebView markers, and the critical responsive routes before editing. The existing mobile implementation already had a drawer, bottom navigation and several route-specific media queries, but broad global heading/table/overflow overrides and `100vh` assumptions caused collisions and made individual defects difficult to reason about.
@@ -31,10 +46,10 @@
 
 - New flow: beta gate footer → Privacy → Privacy Notice → bottom "Access website for developers" → Scholar-styled dialog → server-verified password → full Scholar. The privacy page (`src/app/privacy/page.tsx`) was expanded into a fuller notice (information processed, account, Guest Mode, Group Study, materials, AI, cookies, security, retention, contact) using the existing `InformationPage` design.
 - **Authorization integration (no scattered bypasses):** `isBetaAllowed` in `src/lib/auth/beta.ts` now also accepts a valid Developer Access session, so the standard session restore, login, and all Group Study host checks (room create/join/revalidate) recognize the developer through the single existing choke point. Participants and Guest Mode are unchanged.
-- **Server-only verification:** new `src/lib/auth/developer-access.ts` reads `SCHOLAR_DEVELOPER_ACCESS_PASSWORD` (plain or scrypt-encoded) and falls back to a committed scrypt encoding of the built-in beta developer password — the plain value appears in no shipped source, page HTML, bundle, or log. New rate-limited route `POST/DELETE /api/developer-access` verifies per IP and per submitted value (10/15 min), records `DEVELOPER_ACCESS_*` audit events, and returns one generic error message for every failure.
+- **Server-only verification:** new `src/lib/auth/developer-access.ts` reads `SCHOLAR_DEVELOPER_ACCESS_PASSWORD` (plain or scrypt-encoded); the feature fails closed when the variable is unset, and no built-in credential exists anywhere in the repository. New rate-limited route `POST/DELETE /api/developer-access` verifies per IP and per submitted value (10/15 min), records `DEVELOPER_ACCESS_*` audit events, and returns one generic error message for every failure.
 - **Sessions:** developer access uses a signed HMAC (AUTH_SESSION_SECRET) HttpOnly/Secure/SameSite=Lax cookie, 12h lifetime, bound to the account's `sessionVersion`, and is re-verified server-side on every request. Correct password signs in the single authorized beta account server-side (public registration stays closed) and issues its normal Scholar session, so refresh/navigation keep access and the existing logout clears it. Wrong or unauthenticated guesses consume the same limiter and never reveal configuration.
-- **Tests:** new `tests/developer-access.test.ts` (16 tests: exact-password verification, near-miss rejection, secret-not-in-sources scan, generic errors, rate limiting, cookie security, tampered-cookie rejection, refresh persistence, version binding, allowlist override precedence, Group Study host authorization); `tests/private-beta-auth.test.ts` updated for the now-async `isBetaAllowed`. Full bun suite 229 pass / 0 fail; typecheck clean; production build passes. Deployment: `SCHOLAR_DEVELOPER_ACCESS_PASSWORD` is optional (built-in fallback); if set on Vercel it must hold the exact developer password.
-
+- **Tests:** new `tests/developer-access.test.ts` (16 tests: exact-password verification, near-miss rejection, secret-not-in-sources scan, generic errors, rate limiting, cookie security, tampered-cookie rejection, refresh persistence, version binding, allowlist override precedence, Group Study host authorization); `tests/private-beta-auth.test.ts` updated for the now-async `isBetaAllowed`. Full bun suite 229 pass / 0 fail; typecheck clean; production build passes. Deployment: `SCHOLAR_DEVELOPER_ACCESS_PASSWORD` is required (fail-closed when unset); it must hold the exact developer password or a supported scrypt encoding of it.
+
 
 ## 16 September 2026 — Beta allowlist transfer to scholarofficialacc@gmail.com
 
@@ -391,7 +406,7 @@ Stage Summary:
 - AI integration fully working: 5 teacher personas + 9 specialized tools, all via z-ai-web-dev-sdk server-side.
 - Lint clean, dev server healthy, mobile responsive, sticky footer working.
 - Scheduled maintenance cron job created (every 15 min).
-- **Next phase priorities** (for cron job): 
+- **Next phase priorities** (for cron job):
   1. Polish: add subtle hover elevations across all cards, refine empty states with illustrations
   2. New features: implement the 5 locked mini-games (Formula Invaders, Zombie Maths, Timeline Rush, Crossword, Cortis Simulator)
   3. Interconnections: wire "Start Quiz"/"Create Flashcards" actions from Resources to actually navigate between views (currently toasts only)

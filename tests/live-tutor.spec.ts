@@ -53,7 +53,7 @@ async function prepare(page: Page) {
   }, { email });
 }
 
-test("Live Tutor preserves the session across personality changes and streams a response", async ({ page }) => {
+test("Live Tutor keeps personality conversations independent and restores them", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await prepare(page);
@@ -66,6 +66,11 @@ test("Live Tutor preserves the session across personality changes and streams a 
   await page.getByRole("button", { name: "Live Tutor settings" }).click();
   await page.getByRole("button", { name: "Curious", exact: true }).click();
   await expect(page.getByRole("heading", { name: "What shall we discover?" })).toBeVisible();
+  await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Exam", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Let’s make this count." })).toBeVisible();
+  await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Calm", exact: true }).click();
   await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close panel" }).click();
   await page.waitForTimeout(900);
@@ -86,12 +91,43 @@ test("Live Tutor microphone is explicit and the mobile composer does not overflo
   await page.screenshot({ path: "test-artifacts/live-tutor-mobile.png", fullPage: true });
 });
 
+test("Live Tutor remains inside every required responsive viewport", async ({ page }) => {
+  await prepare(page);
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }, { width: 1024, height: 600 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("region", { name: "LAM Live Tutor", exact: true })).toBeVisible();
+    const geometry = await page.evaluate(() => [".lt-root", ".lt-nav", ".lt-composer", ".lt-dock"].map((selector) => {
+      const rect = document.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
+      return { selector, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    }));
+    for (const item of geometry) {
+      expect(item.left, `${item.selector} left edge at ${viewport.width}×${viewport.height}`).toBeGreaterThanOrEqual(-1);
+      expect(item.right, `${item.selector} right edge at ${viewport.width}×${viewport.height}`).toBeLessThanOrEqual(viewport.width + 1);
+      expect(item.top, `${item.selector} top edge at ${viewport.width}×${viewport.height}`).toBeGreaterThanOrEqual(-1);
+      expect(item.bottom, `${item.selector} bottom edge at ${viewport.width}×${viewport.height}`).toBeLessThanOrEqual(viewport.height + 1);
+    }
+  }
+});
+
 test("Live Tutor asks before executing a Scholar navigation action", async ({ page }) => {
   await prepare(page);
   await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
   await page.getByLabel("Message LAM Live Tutor").fill("open notes");
   await page.getByRole("button", { name: "Ask LAM" }).click();
   await expect(page.getByText("Open notes", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Confirm" }).click();
+  await page.getByRole("button", { name: "Approve" }).click();
+  await expect(page).toHaveURL(/\/notes$/);
+});
+
+test("Live Tutor asks before saving a streamed answer to Scholar Notes", async ({ page }) => {
+  await prepare(page);
+  await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
+  await page.getByLabel("Message LAM Live Tutor").fill("Explain Newton's second law");
+  await page.getByRole("button", { name: "Ask LAM" }).click();
+  await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save to Notes" }).click();
+  await expect(page.getByText(/Save “Live Tutor/)).toBeVisible();
+  await page.getByRole("button", { name: "Approve" }).click();
   await expect(page).toHaveURL(/\/notes$/);
 });

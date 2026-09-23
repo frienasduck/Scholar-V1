@@ -4,9 +4,9 @@ import { NextRequest } from "next/server";
 
 mock.module("server-only", () => ({}));
 
-// The plain developer password exists ONLY inside this test process to verify
-// server behavior; it is never written to source, logs, or worklog.
-const DEV_PASSWORD = process.env.DEVELOPER_ACCESS_TEST_PASSWORD ?? "scholarprivatebeta123";
+// Test-only Developer Access credential, unrelated to any real deployment
+// credential. It is injected into the environment inside the test process.
+const DEV_PASSWORD = "test-only-developer-access-password";
 const TEST_AUTH_SECRET = "scholar-test-session-secret-value-32-chars-min";
 
 const envKeys = [
@@ -112,7 +112,8 @@ mock.module("../src/lib/subscriptions/audit", () => ({
 }));
 
 const { isBetaAllowed } = await import("../src/lib/auth/beta");
-const { createDeveloperAccessSession, hasDeveloperAccessSession, verifyDeveloperAccessPassword } = await import("../src/lib/auth/developer-access");
+const { createDeveloperAccessSession, hasDeveloperAccessSession, verifyDeveloperAccessPassword, developerAccessPasswordConfigured } = await import("../src/lib/auth/developer-access");
+const { hashPassword } = await import("../src/lib/auth/password");
 const { getSessionUser } = await import("../src/lib/auth/session");
 const { POST: developerAccessPost } = await import("../src/app/api/developer-access/route");
 
@@ -126,6 +127,7 @@ const devAccessRequest = (password: unknown) =>
 beforeEach(() => {
   for (const key of envKeys) delete process.env[key];
   process.env.AUTH_SESSION_SECRET = TEST_AUTH_SECRET;
+  process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD = DEV_PASSWORD;
   users = [{ ...developerUser }];
   restoredUser = null;
   room = null;
@@ -137,6 +139,7 @@ beforeEach(() => {
 });
 
 afterAll(() => {
+  process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD = originalEnv.SCHOLAR_DEVELOPER_ACCESS_PASSWORD;
   for (const key of envKeys) {
     if (originalEnv[key] === undefined) delete process.env[key];
     else process.env[key] = originalEnv[key];
@@ -144,12 +147,12 @@ afterAll(() => {
 });
 
 describe("developer access password verification (server-side)", () => {
-  test("exact developer password verifies through the server-only fallback", async () => {
+  test("exact test-only configured password verifies", async () => {
     expect(await verifyDeveloperAccessPassword(DEV_PASSWORD)).toBe(true);
   });
 
   test("wrong, near-miss, and empty passwords are rejected", async () => {
-    for (const candidate of ["", "wrong-password", "ScholarPrivateBeta123", "scholarprivatebeta124", "scholarprivatebeta12", " scholarprivatebeta123"]) {
+    for (const candidate of ["", "wrong-password", "Test-Only-Developer-Access-Password", "test-only-developer-access-passphrase", "test-only-developer-access-passwor", " test-only-developer-access-password"]) {
       expect(await verifyDeveloperAccessPassword(candidate)).toBe(false);
     }
   });
@@ -168,6 +171,29 @@ describe("developer access password verification (server-side)", () => {
 });
 
 describe("developer access API", () => {
+  test("Developer Access API is unavailable when the environment variable is absent", async () => {
+    delete process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD;
+    const response = await developerAccessPost(devAccessRequest(DEV_PASSWORD));
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe("Developer access is not available.");
+    expect(cookieValues.has("scholar_developer_access")).toBe(false);
+    expect(cookieValues.has("scholar_session")).toBe(false);
+  });
+
+  test("Developer Access API is unavailable for too-short configuration values", async () => {
+    for (const invalid of ["", "short", "1234567"]) {
+      process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD = invalid;
+      const response = await developerAccessPost(devAccessRequest(DEV_PASSWORD));
+      expect(response.status).toBe(403);
+    }
+  });
+
+  test("the API response never echoes the configured credential", async () => {
+    const response = await developerAccessPost(devAccessRequest("not-the-password"));
+    const payload = JSON.stringify(await response.json());
+    expect(payload).not.toContain(DEV_PASSWORD);
+  });
+
   test("wrong password returns the exact user-facing error and no session", async () => {
     cookieValues.set("scholar_session", "opaque-test-session");
     restoredUser = developerUser;

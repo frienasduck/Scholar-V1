@@ -6,11 +6,12 @@ import { verifyPassword } from "@/lib/auth/password";
 /**
  * Server-only Developer Access configuration and session helpers.
  *
- * The expected password is never stored in client code, HTML, public bundles,
- * or logs: it is read from a server-only environment variable, with a stored
- * scrypt-encoding fallback so the feature works without extra deployment
- * configuration. The fallback keeps the plain beta password out of this
- * repository while still allowing exact server-side verification.
+ * The expected password lives ONLY in the server-only environment variable
+ * SCHOLAR_DEVELOPER_ACCESS_PASSWORD. There is deliberately no built-in or
+ * fallback credential: when that variable is absent or too short, Developer
+ * Access fails closed and the API reports it as unavailable. The value is
+ * never stored in client code, HTML, public bundles, or logs, and it is never
+ * echoed back in an API response.
  *
  * Sessions are signed HMAC tokens in an HttpOnly, Secure (production),
  * SameSite=Lax cookie. Frontend state alone can never grant access: every
@@ -20,11 +21,6 @@ import { verifyPassword } from "@/lib/auth/password";
 
 const DEV_ACCESS_COOKIE = "scholar_developer_access";
 const DEV_ACCESS_MAX_AGE = 60 * 60 * 12; // 12h, independent of the 7d auth session.
-// Salted scrypt encoding of the built-in private-beta developer password.
-// The plain value is never committed; an scrypt hash cannot be entered back
-// into the login box, keeping the raw password out of this repository.
-const FALLBACK_PASSWORD_ENCODED = "scrypt:wXWDcmwGIIc6Qa_Pco9YPw:foCyZ9Kqdsn_KFg6_QPKD2voVrj-dOneXkYtdpLbRQwt-icwLnnqaTIKm-OhnWrCULkcURx1IO2oa4TPT0lIIA";
-
 type DeveloperAccessSession = {
   purpose: "developer-access";
   userId: string;
@@ -43,25 +39,29 @@ function constantTimeEqual(a: string, b: string) {
   return timingSafeEqual(left, right);
 }
 
-async function fallbackPasswordMatches(password: string) {
-  // No result caching: every attempt is verified against the stored encoding.
-  return verifyPassword(password, FALLBACK_PASSWORD_ENCODED);
+/**
+ * The configured credential, or null when Developer Access must fail closed.
+ * Accepts either a plain password or a supported password encoding (see
+ * verifyPassword), mirroring the other password-based gates in Scholar.
+ * Values shorter than 8 characters are treated as invalid configuration.
+ */
+function configuredDeveloperAccessPassword(): string | null {
+  const configured = process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD;
+  return configured && configured.length >= 8 ? configured : null;
 }
 
-export function developerAccessPasswordConfigured(): "config" | "fallback" | null {
-  const configured = process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD;
-  if (configured && configured.length >= 8) return "config";
-  return FALLBACK_PASSWORD_ENCODED ? "fallback" : null;
+export function developerAccessPasswordConfigured(): boolean {
+  return configuredDeveloperAccessPassword() !== null;
 }
 
 export async function verifyDeveloperAccessPassword(password: string): Promise<boolean> {
-  const configured = process.env.SCHOLAR_DEVELOPER_ACCESS_PASSWORD;
-  if (configured && configured.length >= 8) {
-    if (await verifyPassword(password, configured)) return true;
-    // A configured value may also be provided as the plain beta password.
-    return constantTimeEqual(password, configured);
-  }
-  return fallbackPasswordMatches(password);
+  const configured = configuredDeveloperAccessPassword();
+  if (!configured) return false;
+  // The configured value may be an scrypt-encoded password hash or a plain
+  // password; both are compared timing-safely. A failed hash check never
+  // falls back to any other stored credential.
+  if (await verifyPassword(password, configured)) return true;
+  return constantTimeEqual(password, configured);
 }
 
 function sessionSecret() {

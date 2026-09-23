@@ -19,7 +19,9 @@ const schema = z.object({ password: z.string().min(1).max(128) });
 /**
  * Developer Access — server-side password verification for the private-beta
  * gate's privacy-page entry point. The expected password lives only in
- * server-only configuration; responses never reveal configuration details.
+ * server-only configuration (SCHOLAR_DEVELOPER_ACCESS_PASSWORD). When that
+ * variable is absent or invalid the endpoint fails closed: it reports
+ * Developer Access as unavailable and never reveals configuration details.
  *
  * POST /api/developer-access  { password } — verify and issue a signed
  *   HttpOnly developer-access session for the authorized beta account,
@@ -27,8 +29,7 @@ const schema = z.object({ password: z.string().min(1).max(128) });
  * DELETE /api/developer-access — exit developer access.
  */
 export async function POST(request: NextRequest) {
-  const configured = developerAccessPasswordConfigured();
-  if (!configured) {
+  if (!developerAccessPasswordConfigured()) {
     return NextResponse.json({ error: "Developer access is not available." }, { status: 403 });
   }
   try {
@@ -56,7 +57,9 @@ export async function POST(request: NextRequest) {
       await recordAudit("DEVELOPER_ACCESS_LOGIN_FAILED", {
         actorUserId: user?.id,
         targetUserId: user?.id,
-        metadata: { configuredSource: configured },
+        // Only the event type is recorded — never the submitted value, the
+        // configured credential, or any derived material.
+        metadata: { outcome: "invalid-password" },
       });
       return NextResponse.json({ error: "Incorrect developer access password." }, { status: 401 });
     }
