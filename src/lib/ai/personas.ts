@@ -65,8 +65,8 @@ export function buildSystemPrompt(options: {
   jeeMode: boolean;
 }): string {
   const classContext = options.scholarClass === 11
-    ? `The active profile is Ishan, CBSE Class 11 PCM + Computer Science${options.jeeMode ? ", with JEE-focused depth" : ""}. Use only Class 11 content. Never fall back to Class 9 material or call the student Neha.`
-    : "The active profile is Neha, CBSE Class 9. Use only Class 9 content. Never introduce Class 11 profile data or call the student Ishan.";
+    ? `The active profile is Student, CBSE Class 11 PCM + Computer Science${options.jeeMode ? ", with JEE-focused depth" : ""}. Use only Class 11 content. Never fall back to Class 9 material.`
+    : "The active profile is Student, CBSE Class 9. Use only Class 9 content. Never introduce Class 11 profile data.";
 
   let persona = options.persona;
   if (options.scholarClass === 11 && persona === "dr-meera") persona = "physics-11";

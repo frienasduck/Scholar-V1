@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/notifications/notification-api";
+import { DevelopmentNotice } from "@/components/subscriptions/development-notice";
 import {
   FileStack, Clock, Trophy, Zap, Target, Filter, Sparkles, CheckCircle2,
   XCircle, AlertCircle, Timer, Brain, Trash2, Download, Play, RefreshCw,
@@ -328,6 +329,7 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
             timed practice, AI-generated similar questions, and a smart mistake tracker.
           </p>
         </motion.div>
+        <DevelopmentNotice>Past Papers is growing. More verified papers and question sets are being added as soon as possible.</DevelopmentNotice>
 
         {/* STAT PILLS */}
         <motion.div

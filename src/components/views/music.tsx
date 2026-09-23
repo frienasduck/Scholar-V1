@@ -23,9 +23,11 @@ interface Track {
   emoji: string;
   duration: string;
   desc: string;
+  featured?: boolean;
 }
 
 const TRACKS: Track[] = [
+  { id: "kalyani-remix", videoId: "zAiIgYOH4Ys", title: "KALYANI (Remix)", category: "Scholar Pick", emoji: "✨", duration: "3:11", desc: "Featured · Trending in Scholar", featured: true },
   { id: "lofi", videoId: "jfKfPfyJRdk", title: "Lo-Fi Hip Hop Radio", category: "Lo-Fi", emoji: "🎧", duration: "Live", desc: "Beats to relax & study to" },
   { id: "classical", videoId: "jgpJVI3tDbY", title: "Classical Study Music", category: "Classical", emoji: "🎻", duration: "1:00:00", desc: "Mozart, Bach & more" },
   { id: "nature", videoId: "eKFTSSKCzWA", title: "Nature Sounds — Forest", category: "Nature", emoji: "🌿", duration: "3:00:00", desc: "Birds, streams & wind" },
@@ -307,7 +309,7 @@ export function MusicView() {
                   Sound that helps you <span className="text-fuchsia-300">study deeper.</span>
                 </h1>
                 <p className="text-sm text-white/60 mu-font max-w-md">
-                  8 hand-picked audio streams — lo-fi, classical, binaural, rain, and more. Pick a vibe, hit play, and dive in.
+                  {TRACKS.length} hand-picked tracks — KALYANI (Remix), lo-fi, classical, binaural, rain, and more. Pick a vibe, hit play, and dive in.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-4">
                   <span className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/60 mu-font">Plus: ad-free</span>
@@ -694,6 +696,7 @@ function TrackCard({
             Now Playing
           </div>
         )}
+        {track.featured && !isActive ? <div className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-100 backdrop-blur-xl">Featured · Scholar Pick</div> : null}
         <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-white text-[10px] font-mono">
           {track.duration}
         </span>

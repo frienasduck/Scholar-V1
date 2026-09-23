@@ -13,7 +13,7 @@ async function enterClassEleven(page: Page) {
   await expect(page.getByRole("button", { name: "Start Your Journey" })).toBeVisible({ timeout: 25_000 });
   await page.getByRole("button", { name: "Start Your Journey" }).click();
   await page.getByRole("button", { name: /Class 11/ }).last().click();
-  await page.getByPlaceholder("Ishan").fill("Ishan");
+  await page.getByPlaceholder("Your name").fill("Alex");
   await page.getByPlaceholder("you@scholar.app").fill(`canvas-${Date.now()}@scholar.app`);
   await page.locator('input[type="password"]').fill("canvas-workspace-test");
   await page.getByRole("button", { name: "Create Account" }).click();

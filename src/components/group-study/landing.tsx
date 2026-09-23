@@ -156,10 +156,12 @@ function FormStatus({ title, detail }: { title: string; detail: string }) {
 
 function JoinForm({
   canHost,
+  hostReason,
   onHost,
   onJoined,
 }: {
   canHost: boolean | null;
+  hostReason?: "plus_required" | "sign_in_required";
   onHost: () => void;
   onJoined: (roomId: string) => void;
 }) {
@@ -267,6 +269,10 @@ function JoinForm({
         <button type="button" className="btn btn--glass" onClick={onHost}>
           Create Study Room <ArrowRight aria-hidden="true" />
         </button>
+      ) : canHost === false && hostReason === "plus_required" ? (
+        <Link href="/plus#group-study" className="btn btn--glass" role="button">
+          Unlock Beta hosting with Scholar Plus
+        </Link>
       ) : canHost === false ? (
         <Link href="/?signin=1" className="btn btn--glass" role="button">
           Sign in as host
@@ -450,6 +456,7 @@ export function GroupStudyLanding({
   const [overview, setOverview] = useState<{
     canHost: boolean;
     roomId?: string;
+    hostReason?: "plus_required" | "sign_in_required";
   } | null>(null);
   const [accessError, setAccessError] = useState("");
   const [form, setForm] = useState<"join" | "create">("join");
@@ -476,7 +483,7 @@ export function GroupStudyLanding({
 
   const checkAccess = useCallback(async (signal?: AbortSignal) => {
     try {
-      const value = await groupRequest<{ canHost: boolean; roomId?: string }>(
+      const value = await groupRequest<{ canHost: boolean; roomId?: string; hostReason?: "plus_required" | "sign_in_required" }>(
         "/api/group-study/rooms",
         { signal },
       );
@@ -613,6 +620,7 @@ export function GroupStudyLanding({
               ) : (
                 <JoinForm
                   canHost={overview?.canHost ?? null}
+                  hostReason={overview?.hostReason}
                   onHost={() => setForm("create")}
                   onJoined={enter}
                 />
@@ -667,8 +675,8 @@ export function GroupStudyLanding({
               </ul>
               <hr className="card__divider" />
               <p className="card__fineprint">
-                During private beta, room creation is limited to the authorized
-                Scholar account.
+                During Beta, Scholar Plus members can host. Invited participants
+                can join without a Scholar account.
               </p>
             </section>
           </div>

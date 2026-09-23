@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/notifications/notification-api";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { openScholarPlus } from "@/lib/subscriptions/promo";
 import {
   ClipboardCheck, Sparkles, Clock, Trophy, Brain, Play, ChevronRight, ChevronLeft,
   Download, CheckCircle2, XCircle, AlertCircle, FileText, Award, Settings, History,
@@ -105,7 +107,7 @@ function saveHistory(scholarClass: 9 | 11, list: MockResult[]) {
 const LEADERBOARD_SEED = [
   { name: "Aarav Sharma", school: "Delhi Public School", score: 94, you: false },
   { name: "Diya Patel", school: "DAV Public School", score: 91, you: false },
-  { name: "Ishaan Gupta", school: "Ryan International", score: 89, you: false },
+  { name: "Arjun Gupta", school: "Ryan International", score: 89, you: false },
   { name: "Ananya Reddy", school: "Kendriya Vidyalaya", score: 87, you: false },
   { name: "Kabir Singh", school: "Modern School", score: 85, you: false },
   { name: "Saanvi Iyer", school: "Bishop Cotton", score: 83, you: false },
@@ -119,6 +121,7 @@ const LEADERBOARD_SEED = [
 // Component
 // ============================================================================
 export function MockExamView() {
+  const access = useScholarAccess();
   const mastery = useStore((s) => s.mastery);
   const scholarClass = useStore((s) => s.user.scholarClass);
   const CURRICULUM = useCurriculum();
@@ -265,6 +268,7 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
       profileSetJSON(scholarClass, "mock-exam-pending-review", questions);
       setReviewSource("ai");
       toast.success(`Generated ${questions.length} questions. Review them before starting.`);
+      void access.refresh();
       completeBackgroundTask(
         backgroundTaskId,
         `${questions.length} questions are ready for review.`,
@@ -694,12 +698,13 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
               </div>
 
               <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/10">
-                <div className="text-xs text-white/50">
+                <div className="min-w-0 text-xs text-white/50">
                   {config.numQuestions} questions • {config.duration} min • {config.difficulty} • {config.pattern}
                   {config.examType === "chapter" && config.chapterIds.length > 0 && <span className="text-indigo-300"> • {config.chapterIds.length} chapter{config.chapterIds.length === 1 ? "" : "s"}</span>}
                   {config.examType === "jee" && <span className="text-fuchsia-300"> • JEE mode</span>}
+                  {access.monthlyUsage ? <span className="mt-1 block text-cyan-200/80">{access.monthlyUsage.mockExams.remaining} of {access.monthlyUsage.mockExams.limit} AI generations remaining this month</span> : null}
                 </div>
-                <Button className="bg-indigo-500 hover:bg-indigo-600 text-white" disabled={generating || (config.examType === "chapter" && config.chapterIds.length === 0)} onClick={generatePaper}>
+                <Button className="ml-3 bg-indigo-500 hover:bg-indigo-600 text-white" disabled={generating || access.monthlyUsage?.mockExams.remaining === 0 || (config.examType === "chapter" && config.chapterIds.length === 0)} onClick={generatePaper}>
                   {generating ? (
                     <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><Sparkles className="h-4 w-4 mr-2" /></motion.span> Generating…</>
                   ) : (
@@ -707,6 +712,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   )}
                 </Button>
               </div>
+              {access.monthlyUsage?.mockExams.remaining === 0 ? <button type="button" className="mt-3 text-xs font-semibold text-cyan-200 underline underline-offset-4" onClick={() => openScholarPlus({ source: "mock-exam", feature: "limits" })}>Monthly AI generation limit reached · View Scholar Plus</button> : null}
 
               <div className="mt-5 rounded-2xl border border-violet-300/20 bg-violet-500/[0.07] p-4">
                 <div className="mb-3 flex items-start gap-3">

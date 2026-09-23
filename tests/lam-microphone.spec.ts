@@ -7,7 +7,7 @@ async function enterScholar(page: Page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Start Your Journey" }).click({ timeout: 90_000 });
   await page.getByRole("button", { name: /Class 11/ }).last().click();
-  await page.getByPlaceholder("Ishan").fill("Ishan");
+  await page.getByPlaceholder("Your name").fill("Alex");
   await page.getByPlaceholder("you@scholar.app").fill(`voice-${Date.now()}@scholar.app`);
   await page.locator('input[type="password"]').fill("local-test");
   await page.getByRole("button", { name: "Create Account" }).click();
@@ -45,4 +45,3 @@ test("microphone tap requests a real stream, starts truthful listening, and clea
   await lam.getByRole("button", { name: "Stop listening" }).first().click();
   await expect(lam.getByText("Listening…", { exact: true })).toHaveCount(0);
 });
-

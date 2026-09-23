@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({
-  baseURL: process.env.SCHOLAR_TEST_URL || "http://127.0.0.1:3001",
+  baseURL: process.env.SCHOLAR_TEST_URL || "http://127.0.0.1:3000",
   launchOptions: { executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" },
 });
 test.setTimeout(120_000);
@@ -10,10 +10,10 @@ const email = "responsive@example.test";
 const session = {
   authenticated: true,
   developerMode: false,
-  plan: "FREE",
+  plan: "PLUS",
   entitlementsLoaded: true,
   user: { id: "responsive-user", email, name: "Responsive Learner", role: "USER", coins: 0, currentScholarClass: 11 },
-  access: { plan: "FREE", source: "free", entitlementsLoaded: true, entitlements: [], subscriptionId: null, subscriptionStatus: null, subscriptionEndsAt: null, storageLimitBytes: 10_000_000, dailyQuizLimit: 3, dailySlideshowLimit: 1 },
+  access: { plan: "PLUS", source: "plus", entitlementsLoaded: true, entitlements: ["lam_ai"], subscriptionId: "responsive-plus", subscriptionStatus: "ACTIVE", subscriptionEndsAt: null, storageLimitBytes: 100_000_000, dailyQuizLimit: 30, dailySlideshowLimit: 10, monthlyEbookUploadLimit: 20, monthlyMockExamLimit: 30 },
   usage: { day: "2026-09-22", quiz: { used: 0, limit: 3 }, slideshow: { used: 0, limit: 1 } },
   config: { subscriptionsEnabled: true, checkoutConfigured: false },
 };
@@ -101,27 +101,16 @@ test("shell, drawer and fixed navigation adapt across tablet, compact laptop and
   }
 });
 
-test("mobile LAM opens as a keyboard-safe panel without page overflow", async ({ page }) => {
+test("legacy floating LAM stays disabled on mobile without page overflow", async ({ page }) => {
   await prepareAuthenticated(page, "full");
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/study", { waitUntil: "domcontentloaded" });
-  const lamToggle = page.getByRole("button", { name: "LAM", exact: true });
-  await expect(lamToggle).toBeVisible({ timeout: 20_000 });
-  await lamToggle.click();
-  const onboarding = page.getByRole("heading", { name: "Meet LAM" });
-  if (await onboarding.isVisible().catch(() => false)) {
-    const lam = page.getByLabel("LAM personal assistant");
-    for (const label of ["Continue", "Continue", "Continue", "Start using LAM"]) {
-      await lam.getByRole("button", { name: label }).click();
-    }
-  }
-  const input = page.getByRole("textbox", { name: "Message LAM" });
-  await expect(input).toBeVisible();
-  await input.focus();
+  await expect(page.getByRole("button", { name: "LAM", exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("LAM personal assistant")).toHaveCount(0);
   await expectNoPageOverflow(page);
 });
 
-test("mobile E-Book uses the compact reader and routes page help through LAM", async ({ page }) => {
+test("mobile E-Book remains compact while legacy floating LAM stays disabled", async ({ page }) => {
   await prepareAuthenticated(page, "compact");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/ebook", { waitUntil: "domcontentloaded" });
@@ -132,9 +121,8 @@ test("mobile E-Book uses the compact reader and routes page help through LAM", a
   await expect(page.getByRole("button", { name: "Ask LAM", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /ELAM/i })).toHaveCount(0);
   await page.getByRole("button", { name: "Ask LAM", exact: true }).click();
-  await expect(page.getByLabel("LAM personal assistant")).toBeVisible();
+  await expect(page.getByLabel("LAM personal assistant")).toHaveCount(0);
   await expectNoPageOverflow(page);
-  await page.getByRole("button", { name: "Close LAM" }).click();
   await page.getByRole("button", { name: "Return to e-book library" }).click();
   await page.getByRole("button", { name: /Mathematics Part 1/ }).click();
   await page.getByText("Sets", { exact: true }).last().click();

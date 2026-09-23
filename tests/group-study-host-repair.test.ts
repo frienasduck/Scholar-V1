@@ -9,12 +9,17 @@ const host = {
 };
 let user: typeof host | null = host;
 let allowed = true;
+let plusEligible = true;
 const cookies = new Map<string, string>();
 mock.module("../src/lib/auth/session", () => ({
   getSessionUser: async () => user,
 }));
 mock.module("../src/lib/auth/beta", () => ({
   isBetaAllowed: async (value: typeof host | null) => Boolean(value && allowed),
+}));
+mock.module("../src/lib/subscriptions/entitlements", () => ({
+  resolveUserEntitlements: async () => ({ entitlementsLoaded: true, entitlements: plusEligible ? ["group_study_beta"] : [] }),
+  hasEntitlement: (access: { entitlements: string[] }, entitlement: string) => access.entitlements.includes(entitlement),
 }));
 mock.module("next/headers", () => ({
   cookies: async () => ({
@@ -333,6 +338,7 @@ beforeEach(() => {
   members = [];
   user = host;
   allowed = true;
+  plusEligible = true;
   cookies.clear();
   nestedHost = false;
   versionSelected = false;
@@ -397,6 +403,11 @@ test("unauthenticated and blocked accounts cannot create rooms", async () => {
   expect((await createRoom(request("rooms", { name: "Room" }))).status).toBe(
     403,
   );
+  expect(members).toHaveLength(0);
+});
+test("a signed-in Free user cannot create a Beta room", async () => {
+  plusEligible = false;
+  expect((await createRoom(request("rooms", { name: "Room" }))).status).toBe(403);
   expect(members).toHaveLength(0);
 });
 test("accountless join waits for approval, receives no code, and cannot escalate or cross rooms", async () => {

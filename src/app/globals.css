@@ -43,6 +43,24 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+.scholar-development-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  width: min(100%, 46rem);
+  margin-block: .75rem 1.25rem;
+  padding: .8rem 1rem;
+  border: 1px solid rgba(164, 244, 253, .16);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(164, 244, 253, .08), rgba(255, 255, 255, .025));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .08), 0 14px 36px rgba(0, 0, 0, .16);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  color: rgba(255, 255, 255, .7);
+  font-size: .8rem;
+  line-height: 1.4rem;
+}
+
 /* ===== Scholar — Premium Dark-first Theme ===== */
 :root {
   --radius: 0.875rem;
@@ -498,22 +516,22 @@ html[data-scholar-theme="theme-paper"] {
 }
 
 /* Markdown content styling */
-.prose-neha { @apply text-sm leading-relaxed; }
-.prose-neha h1 { @apply text-2xl font-semibold mt-6 mb-3; }
-.prose-neha h2 { @apply text-xl font-semibold mt-5 mb-2; }
-.prose-neha h3 { @apply text-base font-semibold mt-4 mb-2; }
-.prose-neha p { @apply my-3; }
-.prose-neha ul { @apply list-disc pl-5 my-3 space-y-1; }
-.prose-neha ol { @apply list-decimal pl-5 my-3 space-y-1; }
-.prose-neha code { @apply font-mono text-[0.85em] px-1.5 py-0.5 rounded bg-muted; }
-.prose-neha pre { @apply my-3 p-3 rounded-lg bg-muted overflow-x-auto; }
-.prose-neha pre code { @apply bg-transparent p-0; }
-.prose-neha blockquote { @apply border-l-2 border-primary/40 pl-4 italic text-muted-foreground my-3; }
-.prose-neha strong { @apply font-semibold; }
-.prose-neha a { @apply text-primary underline underline-offset-2; }
-.prose-neha table { @apply w-full my-3 text-sm border-collapse; }
-.prose-neha th, .prose-neha td { @apply border border-border px-3 py-1.5 text-left; }
-.prose-neha th { @apply bg-muted font-medium; }
+.scholar-prose { @apply text-sm leading-relaxed; }
+.scholar-prose h1 { @apply text-2xl font-semibold mt-6 mb-3; }
+.scholar-prose h2 { @apply text-xl font-semibold mt-5 mb-2; }
+.scholar-prose h3 { @apply text-base font-semibold mt-4 mb-2; }
+.scholar-prose p { @apply my-3; }
+.scholar-prose ul { @apply list-disc pl-5 my-3 space-y-1; }
+.scholar-prose ol { @apply list-decimal pl-5 my-3 space-y-1; }
+.scholar-prose code { @apply font-mono text-[0.85em] px-1.5 py-0.5 rounded bg-muted; }
+.scholar-prose pre { @apply my-3 p-3 rounded-lg bg-muted overflow-x-auto; }
+.scholar-prose pre code { @apply bg-transparent p-0; }
+.scholar-prose blockquote { @apply border-l-2 border-primary/40 pl-4 italic text-muted-foreground my-3; }
+.scholar-prose strong { @apply font-semibold; }
+.scholar-prose a { @apply text-primary underline underline-offset-2; }
+.scholar-prose table { @apply w-full my-3 text-sm border-collapse; }
+.scholar-prose th, .scholar-prose td { @apply border border-border px-3 py-1.5 text-left; }
+.scholar-prose th { @apply bg-muted font-medium; }
 
 /* ========================================================================
    MOBILE ENHANCEMENT SYSTEM — affects only ≤1023px, desktop unchanged

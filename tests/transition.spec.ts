@@ -57,7 +57,7 @@ async function openSignup(page: Page) {
 
 async function createClass9Profile(page: Page) {
   await openSignup(page);
-  await page.getByPlaceholder("Neha Salah").fill("Neha");
+  await page.getByPlaceholder("Your name").fill("Alex");
   await page.getByPlaceholder("you@scholar.app").fill("transition@scholar.app");
   await page.locator('input[type="password"]').fill("local-test");
   await page.getByRole("button", { name: "Create Account" }).click();
@@ -73,7 +73,7 @@ test("successful login uses only 25–41 and leaving the intro destroys the play
   expect(load).toMatchObject({ videoId: "WJ2d0SzOMXc", startSeconds: 25, endSeconds: 41 });
 
   await page.getByRole("button", { name: "Skip intro" }).click();
-  await expect(page.getByText("Neha's Scholar", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Alex's Scholar", { exact: true }).first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => (window as any).__transitionAudioCalls.some((call: any) => call.type === "destroy"))).toBe(true);
 });
 

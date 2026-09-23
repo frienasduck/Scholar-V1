@@ -102,6 +102,30 @@ describe("Scholar Plus security invariants", () => {
     expect(source("src/app/api/store/purchase/route.ts")).toContain('requireEntitlement("store_plus_items")');
   });
 
+  test("new Plus capabilities are enforced by their server routes", () => {
+    expect(source("src/app/api/lam/chat/route.ts")).toContain('checkAssistantAccess("lam-chat")');
+    expect(source("src/lib/ai/access.ts")).toContain('requireCapability("lam_ai")');
+    expect(source("src/app/api/v2/intelligence/state/route.ts")).toContain('requireCapability("scholar_intelligence")');
+    expect(source("src/app/api/group-study/rooms/route.ts")).toContain('hasEntitlement(access, "group_study_beta")');
+    expect(source("src/app/api/ai/route.ts")).toContain('requireEntitlement("jee_focused_mode")');
+  });
+
+  test("custom E-Books are owner-scoped, PDF-only and quota-reserved server-side", () => {
+    const collection = source("src/app/api/ebooks/route.ts");
+    const item = source("src/app/api/ebooks/[ebookId]/route.ts");
+    expect(collection).toContain('signature !== "%PDF-"');
+    expect(collection).toContain('feature: "custom_ebook_upload"');
+    expect(collection).toContain("commitMonthlyUsage");
+    expect(collection).toContain("releaseMonthlyUsage");
+    expect(item).toContain("userId: user.id");
+  });
+
+  test("Settings never treats its local developer toggle as authorization", () => {
+    const settings = source("src/components/views/settings.tsx");
+    expect(settings).toContain('access.developerMode === true && access.access?.source === "developer"');
+    expect(settings).not.toContain("setDevMode(!devMode)");
+  });
+
   test("the Plus coin bonus is protected by a unique ledger entry", () => {
     const schema = source("prisma/schema.prisma");
     const review = source("src/app/api/admin/subscriptions/payment-requests/[id]/route.ts");

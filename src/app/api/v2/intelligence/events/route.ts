@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireCapability } from "@/lib/v2/entitlements";
 import { ingestEventsSchema, ingestMistakesSchema, toMistakeRecord } from "@/lib/v2/intelligence/schemas";
 import { storeEvidence, storeMistakes } from "@/lib/v2/intelligence/server";
 import { recordAudit } from "@/lib/subscriptions/audit";
@@ -15,10 +15,9 @@ import { recordAudit } from "@/lib/subscriptions/audit";
  * Body: { events?: EvidenceEventInput[], mistakes?: MistakeRecordInput[] }
  */
 export async function POST(request: NextRequest) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
-  }
+  const access = await requireCapability("scholar_intelligence");
+  if (!access.ok) return access.response;
+  const user = access.user;
 
   let body: unknown;
   try {

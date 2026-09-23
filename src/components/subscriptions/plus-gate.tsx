@@ -4,7 +4,7 @@ import { ArrowLeft, LockKeyhole, Sparkles } from "lucide-react";
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
-export function PlusGate({ entitlement, title, description, children }: { entitlement: ScholarEntitlement; title: string; description: string; children: React.ReactNode }) {
+export function PlusGate({ entitlement, title, description, anchor, children }: { entitlement: ScholarEntitlement; title: string; description: string; anchor?: string; children: React.ReactNode }) {
   const access = useScholarAccess();
   if (access.loading) return <div className="min-h-[60vh] animate-pulse rounded-[2rem] border border-white/10 bg-white/5" />;
   if (access.has(entitlement)) return <>{children}</>;
@@ -12,7 +12,7 @@ export function PlusGate({ entitlement, title, description, children }: { entitl
   const price = offerEnabled ? access.config?.offerPriceInr : access.config?.regularPriceInr;
   const regularPrice = access.config?.regularPriceInr;
   const offerLabel = access.config?.offerLabel ?? "Inauguration Offer";
-  const navigate = (viewId: string) => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId } }));
+  const navigate = (viewId: string) => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId, anchor } }));
   return (
     <section className="relative min-h-[70vh] overflow-hidden rounded-[2rem] border border-white/10 bg-[#05080f] p-5 sm:p-10">
       <div aria-hidden className="absolute inset-0">

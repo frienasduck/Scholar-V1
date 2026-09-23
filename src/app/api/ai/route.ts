@@ -12,6 +12,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { requireEntitlement, resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
 import { reserveGeneration, commitGeneration, releaseGeneration, QuotaExceededError, ReservationConflictError } from "@/lib/v2/usage/ledger";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import { commitMonthlyUsage, MonthlyQuotaError, releaseMonthlyUsage, reserveMonthlyUsage } from "@/lib/subscriptions/monthly-usage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -59,6 +60,10 @@ export async function POST(request: NextRequest) {
         const required = await requireEntitlement(body.feature);
         if (!required.ok) return required.response;
       }
+      if (body.jeeMode) {
+        const required = await requireEntitlement("jee_focused_mode");
+        if (!required.ok) return required.response;
+      }
     } catch (error) {
       if (error instanceof RateLimitError) return errorResponse("Too many AI requests. Please wait and try again.", 429, "RATE_LIMITED");
       if (error instanceof Error && (error as Error & { code?: string }).code === "QUOTA_REACHED") return errorResponse("Your daily generation limit has been reached. Upgrade to Scholar Plus for a higher limit.", 429, "QUOTA_REACHED");
@@ -87,6 +92,7 @@ export async function POST(request: NextRequest) {
   ];
 
   let reservationKey: string | undefined;
+  let monthlyReservationKey: string | undefined;
   if (body.usage) {
     try {
       const key = `${sessionUser.id}:${body.requestId ?? crypto.randomUUID()}:${body.usage}`;
@@ -98,6 +104,17 @@ export async function POST(request: NextRequest) {
       if (error instanceof ReservationConflictError) return errorResponse("This request has already been handled. Start a new generation to retry.", 409, "GENERATION_REPLAY");
       console.warn("[Scholar AI] quota reservation unavailable");
       return errorResponse("Scholar could not check your generation allowance. Please retry.", 503, "QUOTA_UNAVAILABLE");
+    }
+  }
+  if (mode === "mock-exam") {
+    try {
+      const key = `${sessionUser.id}:mock-exam:${body.requestId ?? crypto.randomUUID()}`;
+      const reserved = await reserveMonthlyUsage({ userId: sessionUser.id, feature: "mock_exam_generation", idempotencyKey: key, access: await resolveUserEntitlements(sessionUser.id) });
+      if (reserved.replayed) return errorResponse("This mock exam request has already been handled.", 409, "GENERATION_REPLAY");
+      monthlyReservationKey = key;
+    } catch (error) {
+      if (error instanceof MonthlyQuotaError) return errorResponse(`Your ${error.limit} monthly mock exam generations have been used.`, 429, "MONTHLY_QUOTA_REACHED");
+      return errorResponse("Scholar could not verify your monthly mock exam allowance.", 503, "QUOTA_UNAVAILABLE");
     }
   }
   if (queryStream || mode === "stream") {
@@ -120,6 +137,7 @@ export async function POST(request: NextRequest) {
             throw new AIProviderError("The AI response did not match the required structure. Please retry.", 502, "AI_SCHEMA_MISMATCH");
           }
           await recordUsage(reservationKey, sessionUser.id);
+          if (monthlyReservationKey) await commitMonthlyUsage(sessionUser.id, monthlyReservationKey);
           return NextResponse.json({ ok: true, data: validated?.success ? validated.data : value });
         } catch (error) {
           if (attempt || signal.aborted || !(error instanceof AIProviderError) || !["AI_SCHEMA_MISMATCH", "GROQ_INVALID_JSON"].includes(error.code)) throw error;
@@ -136,9 +154,11 @@ export async function POST(request: NextRequest) {
       maxTokens: 4_000,
     });
     await recordUsage(reservationKey, sessionUser.id);
+    if (monthlyReservationKey) await commitMonthlyUsage(sessionUser.id, monthlyReservationKey);
     return NextResponse.json({ ok: true, text });
   } catch (error) {
     await releaseUsage(reservationKey, sessionUser.id);
+    if (monthlyReservationKey) await releaseMonthlyUsage(sessionUser.id, monthlyReservationKey);
     const detail = publicAIError(error);
     return errorResponse(detail.message, detail.status, detail.code);
   }

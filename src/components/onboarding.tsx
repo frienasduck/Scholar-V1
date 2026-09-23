@@ -15,8 +15,8 @@ export function Onboarding() {
   const pushActivity = useStore((s) => s.pushActivity);
   const reduceMotion = useStore((s) => s.settings.reduceMotion);
   const user = useStore((s) => s.user);
-  const studentName = user.scholarClass === 11 ? "Ishan" : "Neha";
-  const appName = user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar";
+  const studentName = user.name?.split(" ")[0] || "Student";
+  const appName = "Scholar";
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const { transition, audioStatus, retrySound, stopTransition } = useScholarTransition();

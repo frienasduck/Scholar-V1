@@ -6,14 +6,28 @@ import { db } from "@/lib/db";
 import { publicSubscriptionConfig } from "@/lib/subscriptions/config";
 import { databaseUnavailableError } from "@/lib/auth/errors";
 import { publicBetaConfig } from "@/lib/auth/beta";
+import { getMonthlyUsage } from "@/lib/subscriptions/monthly-usage";
 
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (!user) return NextResponse.json({ authenticated: false, config: publicSubscriptionConfig(), beta: publicBetaConfig() });
+    if (!user) {
+      const access = await resolveUserEntitlements(null);
+      return NextResponse.json({
+        authenticated: false,
+        developerMode: false,
+        plan: access.plan,
+        entitlements: access.entitlements,
+        entitlementsLoaded: access.entitlementsLoaded,
+        access,
+        config: publicSubscriptionConfig(),
+        beta: publicBetaConfig(),
+      });
+    }
     const access = await resolveUserEntitlements(user.id);
-    const [usage, storage, pendingPayment] = await Promise.all([
+    const [usage, monthlyUsage, storage, pendingPayment] = await Promise.all([
       getUsage(user.id, access),
+      getMonthlyUsage(user.id, access),
       db.storedFile.aggregate({ where: { userId: user.id, deletedAt: null }, _sum: { sizeBytes: true } }),
       db.scholarPaymentRequest.findFirst({
         where: { userId: user.id, status: { in: ["created", "submitted", "more_information_required"] } },
@@ -36,6 +50,7 @@ export async function GET() {
       developerMode: access.plan === "DEVELOPER",
       access,
       usage,
+      monthlyUsage,
       storage: { usedBytes: storage._sum.sizeBytes ?? 0, limitBytes: access.storageLimitBytes },
       pendingPayment,
       config: publicSubscriptionConfig(),

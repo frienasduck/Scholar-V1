@@ -20,10 +20,6 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/notifications/notification-api";
 
-const DEVELOPER_CONTACT_EMAIL = "ishansalah123@gmail.com";
-const DEVELOPER_CONTACT_SUBJECT = "Scholar Developer Section Access";
-const DEVELOPER_CONTACT_BODY = "Hi, I have a question about a developer-restricted Scholar section.";
-
 const SEE_WHY_REASONS = [
   "Beta development — the feature is being actively built and tested.",
   "Experimental features — new capabilities being validated before release.",
@@ -91,8 +87,6 @@ export function LockedSection({ sectionTitle, gradientClass }: LockedSectionProp
       setLoading(false);
     }
   }, [password, sectionTitle]);
-
-  const mailtoHref = `mailto:${DEVELOPER_CONTACT_EMAIL}?subject=${encodeURIComponent(DEVELOPER_CONTACT_SUBJECT)}&body=${encodeURIComponent(DEVELOPER_CONTACT_BODY)}`;
 
   return (
     <div className="relative min-h-[70vh] w-full overflow-hidden rounded-[2rem]">
@@ -286,11 +280,11 @@ export function LockedSection({ sectionTitle, gradientClass }: LockedSectionProp
                             issue?
                           </p>
                           <a
-                            href={mailtoHref}
+                            href="/help"
                             className="flex items-center justify-center gap-2 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-medium text-white/60 hover:bg-white/[0.06] hover:text-white/80 transition-colors"
                           >
                             <Mail className="h-3.5 w-3.5" />
-                            Contact Developer
+                            Scholar support
                           </a>
                         </div>
                       </div>

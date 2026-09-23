@@ -41,7 +41,7 @@ export async function loadLiveTutorMemoryContext(input: {
   }
 
   const sections = [
-    ranked.length ? `Relevant learning memory:\n${ranked.map((memory) => `- [${memory.kind}] ${memory.content}`).join("\n")}` : "No durable Live Tutor memory matched this turn.",
+    ranked.length ? `Relevant learning memory:\n${ranked.map((memory) => `- [${memory.kind}] ${memory.content}`).join("\n")}` : "No durable LAM AI memory matched this turn.",
     mastery.length ? `Lowest current mastery signals:\n${mastery.map((item) => `- ${item.topic || item.chapter || item.subject}: ${Math.round(item.score * 100)}% (${item.evidenceCount} evidence item${item.evidenceCount === 1 ? "" : "s"})`).join("\n")}` : "No mastery signals are available.",
     mistakes.length ? `Recent unresolved mistakes:\n${mistakes.map((item) => `- ${item.subject}${item.topic ? ` · ${item.topic}` : ""}: ${item.mistakeType}`).join("\n")}` : "No unresolved mistake records are available.",
     revision.length ? `Due revision:\n${revision.map((item) => `- ${item.subject}${item.topic ? ` · ${item.topic}` : ""}: ${item.title}`).join("\n")}` : "No revision items are currently due.",

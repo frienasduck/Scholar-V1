@@ -25,8 +25,8 @@ async function enterProfile(
     .last()
     .click();
   await page
-    .getByPlaceholder(scholarClass === 11 ? "Ishan" : "Neha Salah")
-    .fill(scholarClass === 11 ? "Ishan" : "Neha");
+    .getByPlaceholder("Your name")
+    .fill("Alex");
   await page
     .getByPlaceholder("you@scholar.app")
     .fill(`smoke${scholarClass}@scholar.app`);
@@ -36,7 +36,7 @@ async function enterProfile(
   await page.getByRole("button", { name: "Skip intro" }).click();
   await expect(
     page
-      .getByText(scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar", {
+      .getByText("Alex's Scholar", {
         exact: true,
       })
       .first(),

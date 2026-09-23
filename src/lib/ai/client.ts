@@ -64,7 +64,7 @@ export interface AIClientRequest {
   temperature?: number;
   scholarClass: 9 | 11;
   jeeMode: boolean;
-  feature?: "aisig" | "homework_scanner";
+  feature?: "aisig" | "homework_scanner" | "workspace_ai" | "lam_ai";
   usage?: "quiz_generation" | "slideshow_generation";
 }
 

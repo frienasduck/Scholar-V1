@@ -892,7 +892,7 @@ function Editor({
         </div>
         {showPreview && (
           <ScrollArea className="flex-1 min-h-0 mindloop-scroll">
-            <div className="px-4 py-3 prose-neha text-white">
+            <div className="px-4 py-3 scholar-prose text-white">
               {content.trim() ? (
                 <Markdown content={content} />
               ) : (

@@ -31,7 +31,7 @@ export const aiRequestSchema = z.object({
   json: z.boolean().optional().default(false),
   scholarClass: z.union([z.literal(9), z.literal(11)]).optional().default(11),
   jeeMode: z.boolean().optional().default(false),
-  feature: z.enum(["aisig", "homework_scanner"]).optional(),
+  feature: z.enum(["aisig", "homework_scanner", "workspace_ai", "lam_ai"]).optional(),
   usage: z.enum(["quiz_generation", "slideshow_generation"]).optional(),
 });
 

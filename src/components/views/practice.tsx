@@ -8,6 +8,7 @@ import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { ALL_PRACTICE_QUESTIONS, ALL_PHYSICS_QUESTIONS, PHYSICS_CHAPTER_QUESTIONS, isReviewNeeded, type PracticeQuestion } from "@/lib/question-bank";
 import { PdfImportReview } from "@/components/views/pdf-import-review";
 import { toast } from "@/lib/notifications/notification-api";
+import { DevelopmentNotice } from "@/components/subscriptions/development-notice";
 import {
   Check, X, Eye, EyeOff, Sparkles, Loader2, Clock, Award, TrendingUp,
   ListChecks, ArrowLeft, ArrowRight, Filter, Atom, FlaskConical, Calculator, Code2, ChevronRight, PenLine, Scan,
@@ -100,6 +101,8 @@ export function PracticeView() {
             </div>
           </div>
         </motion.nav>
+
+        <DevelopmentNotice>Practice Questions is still being expanded. More focused question sets are being added as soon as possible.</DevelopmentNotice>
 
         <div className="mt-8 mb-8">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-xs text-white/50 mb-5">

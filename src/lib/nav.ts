@@ -31,7 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "levels", label: "Levels", icon: Trophy, group: "Learn" },
   { id: "lab", label: "Experiment Lab", icon: FlaskConical, group: "Learn" },
   { id: "ai-tutor", label: "AI Tutor", icon: Sparkles, group: "Learn" },
-  { id: "live-tutor", label: "Live Tutor", icon: BrainCircuit, group: "Learn", badge: "BETA" },
+  { id: "live-tutor", label: "LAM AI", icon: BrainCircuit, group: "Learn", badge: "PLUS" },
   { id: "ai-tools", label: "AI Tools", icon: Lightbulb, group: "Learn" },
   { id: "notes", label: "Notes", icon: NotebookPen, group: "Learn" },
   { id: "resources", label: "Resources", icon: BookOpen, group: "Learn" },

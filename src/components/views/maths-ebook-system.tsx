@@ -901,7 +901,7 @@ function EnhancedEbookSystem({
     if (!page || !data) return;
     void runAI(
       `${mode} - page ${page.originalPageNumber}`,
-      `Use only the supplied authoritative printed text from ${config.title}. Student: Ishan, CBSE Class 11. Subject: ${config.subject}. Chapter: ${page.chapterTitle}. Source page: ${page.originalPageNumber}. Mode: ${mode}.\n\nPAGE TEXT:\n${page.rawText}\n\nRespond with: what this page teaches; definitions; formulas; each main section; one helpful worked example; common mistakes; exam relevance; mini recap; and three check questions. Cite ${config.title}, ${page.chapterTitle}, source page ${page.originalPageNumber}. Preserve notation. Do not use or trust handwritten scan answers.`,
+      `Use only the supplied authoritative printed text from ${config.title}. Student: Scholar learner, CBSE Class 11. Subject: ${config.subject}. Chapter: ${page.chapterTitle}. Source page: ${page.originalPageNumber}. Mode: ${mode}.\n\nPAGE TEXT:\n${page.rawText}\n\nRespond with: what this page teaches; definitions; formulas; each main section; one helpful worked example; common mistakes; exam relevance; mini recap; and three check questions. Cite ${config.title}, ${page.chapterTitle}, source page ${page.originalPageNumber}. Preserve notation. Do not use or trust handwritten scan answers.`,
     );
   };
 
@@ -1034,7 +1034,7 @@ function EnhancedEbookSystem({
     } else {
       void runAI(
         `${action} this ${section.type}`,
-        `${action} the exact selected book block for Ishan, CBSE Class 11 ${config.subject}. Preserve notation, use simple steps, and cite ${config.title}, ${page?.chapterTitle}, page ${page?.originalPageNumber}.\n\n${section.text}`,
+        `${action} the exact selected book block for a CBSE Class 11 Scholar learner in ${config.subject}. Preserve notation, use simple steps, and cite ${config.title}, ${page?.chapterTitle}, page ${page?.originalPageNumber}.\n\n${section.text}`,
       );
     }
   };
@@ -1329,7 +1329,7 @@ function EnhancedEbookSystem({
         <BookOpen className="mx-auto mb-4 h-10 w-10 text-amber-500" />
         <h2 className="text-xl font-bold">Class 11 book</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {config.title} belongs only to Ishan&apos;s Class 11 profile. No Class
+          {config.title} belongs only to the active Class 11 Scholar profile. No Class
           11 book data is loaded into Class 9.
         </p>
         <Button className="mt-5" onClick={onBack}>
@@ -1914,7 +1914,7 @@ function EnhancedEbookSystem({
         <div className="mx-auto max-w-5xl p-4 sm:p-7">
           <h1 className="text-2xl font-bold">My {nav}</h1>
           <p className="mt-1 text-sm text-white/45">
-            Profile-scoped to Ishan · Class 11
+            Profile-scoped · Class 11
           </p>
           <div className="mt-5 space-y-3">
             {nav === "Book Notes" &&

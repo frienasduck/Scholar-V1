@@ -1726,7 +1726,7 @@ export function AIToolsView() {
               </p>
               <div className="flex items-center gap-2 justify-center mt-3">
                 <span className="h-px w-8 bg-white/20" />
-                <span className="text-[10px] tracking-widest text-white/50">{scholarClass === 11 ? "ISHAN'S SCHOLAR" : "NEHA'S SCHOLAR"}</span>
+                <span className="text-[10px] tracking-widest text-white/50">SCHOLAR · CLASS {scholarClass}</span>
                 <span className="h-px w-8 bg-white/20" />
               </div>
             </div>

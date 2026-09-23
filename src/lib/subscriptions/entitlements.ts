@@ -11,6 +11,9 @@ export const SCHOLAR_ENTITLEMENTS = [
   "nigtube_ad_free", "study_music_ad_free", "quiz_generation_plus",
   "slideshow_generation_plus", "formula_explorer", "plus_coin_bonus",
   "python_workspace",
+  "scholar_intelligence", "lam_ai", "premium_experiments",
+  "premium_resources", "jee_focused_mode", "group_study_beta",
+  "workspace_ai", "custom_ebook_upload",
 ] as const;
 
 export type ScholarEntitlement = (typeof SCHOLAR_ENTITLEMENTS)[number];
@@ -31,6 +34,8 @@ export type ResolvedEntitlements = {
   storageLimitBytes: number;
   dailyQuizLimit: number;
   dailySlideshowLimit: number;
+  monthlyEbookUploadLimit: number;
+  monthlyMockExamLimit: number;
 };
 
 const all = () => [...SCHOLAR_ENTITLEMENTS];
@@ -78,6 +83,8 @@ export async function resolveUserEntitlements(userId: string | null): Promise<Re
       storageLimitBytes: subscriptionConfig.plusStorageMb * 1024 * 1024,
       dailyQuizLimit: subscriptionConfig.plusQuizGenerations,
       dailySlideshowLimit: subscriptionConfig.plusSlideshowGenerations,
+      monthlyEbookUploadLimit: subscriptionConfig.plusEbookUploadsMonthly,
+      monthlyMockExamLimit: subscriptionConfig.plusMockExamGenerationsMonthly,
     };
   }
 
@@ -89,6 +96,8 @@ export async function resolveUserEntitlements(userId: string | null): Promise<Re
       storageLimitBytes: subscriptionConfig.freeStorageMb * 1024 * 1024,
       dailyQuizLimit: subscriptionConfig.freeQuizGenerations,
       dailySlideshowLimit: subscriptionConfig.freeSlideshowGenerations,
+      monthlyEbookUploadLimit: subscriptionConfig.freeEbookUploadsMonthly,
+      monthlyMockExamLimit: subscriptionConfig.freeMockExamGenerationsMonthly,
     };
   }
 
@@ -109,6 +118,8 @@ export async function resolveUserEntitlements(userId: string | null): Promise<Re
     storageLimitBytes: (elevated ? subscriptionConfig.plusStorageMb : subscriptionConfig.freeStorageMb) * 1024 * 1024,
     dailyQuizLimit: elevated ? subscriptionConfig.plusQuizGenerations : subscriptionConfig.freeQuizGenerations,
     dailySlideshowLimit: elevated ? subscriptionConfig.plusSlideshowGenerations : subscriptionConfig.freeSlideshowGenerations,
+    monthlyEbookUploadLimit: elevated ? subscriptionConfig.plusEbookUploadsMonthly : subscriptionConfig.freeEbookUploadsMonthly,
+    monthlyMockExamLimit: elevated ? subscriptionConfig.plusMockExamGenerationsMonthly : subscriptionConfig.freeMockExamGenerationsMonthly,
   };
 }
 export async function resolveCurrentEntitlements() {

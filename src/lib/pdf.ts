@@ -34,7 +34,7 @@ export interface ExportPDFOpts {
   accent?: string;
   author?: string;          // default derived from scholarClass
   className?: string;       // default derived from scholarClass
-  brandName?: string;       // default derived from scholarClass ("Neha's Scholar" / "Ishan's Scholar")
+  brandName?: string;       // defaults to the neutral Scholar brand
   scholarClass?: 9 | 11;    // 9 by default (legacy callers)
   type?: DocType; // affects cover styling
 }
@@ -113,18 +113,18 @@ interface ClassProfile {
 }
 
 const PROFILE_CLASS9: ClassProfile = {
-  author: "Neha Salah",
+  author: "Scholar",
   className: "Class 9 • CBSE",
-  brandName: "Neha's Scholar",
-  studentName: "Neha",
+  brandName: "Scholar",
+  studentName: "Student",
   syllabus: "CBSE Class 9",
 };
 
 const PROFILE_CLASS11: ClassProfile = {
-  author: "Ishan",
+  author: "Scholar",
   className: "Class 11 • CBSE (PCM + CS)",
-  brandName: "Ishan's Scholar",
-  studentName: "Ishan",
+  brandName: "Scholar",
+  studentName: "Student",
   syllabus: "CBSE Class 11",
 };
 

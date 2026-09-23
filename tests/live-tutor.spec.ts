@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 test.use({
-  baseURL: process.env.SCHOLAR_TEST_URL || "http://127.0.0.1:3001",
+  baseURL: process.env.SCHOLAR_TEST_URL || "http://127.0.0.1:3000",
   launchOptions: { executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" },
   viewport: { width: 1440, height: 960 },
 });
@@ -9,9 +9,9 @@ test.setTimeout(90_000);
 
 const email = "live-tutor@example.test";
 const session = {
-  authenticated: true, developerMode: false, plan: "FREE", entitlementsLoaded: true,
+  authenticated: true, developerMode: false, plan: "PLUS", entitlementsLoaded: true,
   user: { id: "live-tutor-user", email, name: "Live Learner", role: "USER", coins: 0, currentScholarClass: 11 },
-  access: { plan: "FREE", source: "free", entitlementsLoaded: true, entitlements: [], subscriptionId: null, subscriptionStatus: null, subscriptionEndsAt: null, storageLimitBytes: 10_000_000, dailyQuizLimit: 3, dailySlideshowLimit: 1 },
+  access: { plan: "PLUS", source: "plus", entitlementsLoaded: true, entitlements: ["lam_ai"], subscriptionId: "test-plus", subscriptionStatus: "ACTIVE", subscriptionEndsAt: null, storageLimitBytes: 10_000_000, dailyQuizLimit: 30, dailySlideshowLimit: 10, monthlyEbookUploadLimit: 20, monthlyMockExamLimit: 30 },
   usage: { day: "2026-09-21", quiz: { used: 0, limit: 3 }, slideshow: { used: 0, limit: 1 } },
   config: { subscriptionsEnabled: true, checkoutConfigured: false },
 };
@@ -59,11 +59,11 @@ test("Live Tutor keeps personality conversations independent and restores them",
   await prepare(page);
   await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Ready when you are." })).toBeVisible();
-  await expect(page.getByLabel("Message LAM Live Tutor")).toBeVisible();
-  await page.getByLabel("Message LAM Live Tutor").fill("Explain Newton's second law");
+  await expect(page.getByLabel("Message LAM AI")).toBeVisible();
+  await page.getByLabel("Message LAM AI").fill("Explain Newton's second law");
   await page.getByRole("button", { name: "Ask LAM" }).click();
   await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Live Tutor settings" }).click();
+  await page.getByRole("button", { name: "LAM AI settings" }).click();
   await page.getByRole("button", { name: "Curious", exact: true }).click();
   await expect(page.getByRole("heading", { name: "What shall we discover?" })).toBeVisible();
   await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toHaveCount(0);
@@ -83,7 +83,7 @@ test("Live Tutor microphone is explicit and the mobile composer does not overflo
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /Talk/ }).click();
-  await expect(page.getByLabel("Message LAM Live Tutor")).toHaveValue("Explain momentum");
+  await expect(page.getByLabel("Message LAM AI")).toHaveValue("Explain momentum");
   await expect(page.getByText("Listening", { exact: true })).toBeVisible();
   const geometry = await page.evaluate(() => ({ viewport: innerWidth, page: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
   expect(geometry.page).toBeLessThanOrEqual(geometry.viewport + 1);
@@ -96,7 +96,7 @@ test("Live Tutor remains inside every required responsive viewport", async ({ pa
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }, { width: 1024, height: 600 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("region", { name: "LAM Live Tutor", exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "LAM AI", exact: true })).toBeVisible();
     const geometry = await page.evaluate(() => [".lt-root", ".lt-nav", ".lt-composer", ".lt-dock"].map((selector) => {
       const rect = document.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
       return { selector, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
@@ -113,7 +113,7 @@ test("Live Tutor remains inside every required responsive viewport", async ({ pa
 test("Live Tutor asks before executing a Scholar navigation action", async ({ page }) => {
   await prepare(page);
   await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("Message LAM Live Tutor").fill("open notes");
+  await page.getByLabel("Message LAM AI").fill("open notes");
   await page.getByRole("button", { name: "Ask LAM" }).click();
   await expect(page.getByText("Open notes", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Approve" }).click();
@@ -123,11 +123,11 @@ test("Live Tutor asks before executing a Scholar navigation action", async ({ pa
 test("Live Tutor asks before saving a streamed answer to Scholar Notes", async ({ page }) => {
   await prepare(page);
   await page.goto("/live-tutor", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("Message LAM Live Tutor").fill("Explain Newton's second law");
+  await page.getByLabel("Message LAM AI").fill("Explain Newton's second law");
   await page.getByRole("button", { name: "Ask LAM" }).click();
   await expect(page.getByText("Force equals mass times acceleration.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save to Notes" }).click();
-  await expect(page.getByText(/Save “Live Tutor/)).toBeVisible();
+  await expect(page.getByText(/Save “LAM AI/)).toBeVisible();
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page).toHaveURL(/\/notes$/);
 });

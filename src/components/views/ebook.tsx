@@ -22,6 +22,7 @@ import {
   MathsEbookSystem,
 } from "@/components/views/maths-ebook-system";
 import { BookModeReader } from "@/components/ebook/book-mode-reader";
+import { CustomEbookLibrary } from "@/components/ebook/custom-ebook-library";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { setLamPageContext } from "@/lib/lam-context";
 import {
@@ -617,6 +618,8 @@ export function EBookView() {
               stay saved to this profile.
             </motion.p>
           </div>
+
+          <CustomEbookLibrary />
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">

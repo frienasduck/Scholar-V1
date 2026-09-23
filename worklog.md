@@ -1,4 +1,13 @@
-# Neha's Scholar — Worklog
+# Scholar — Worklog
+
+## 23 September 2026 — Scholar Plus entitlement and premium-experience pass
+
+- Centralized the new premium capabilities in the existing server-backed entitlement resolver: Scholar Intelligence, LAM AI, JEE Focused Mode, functional Experiments, selected Resources, Group Study Beta hosting, and Workspace AI. Locked UI remains discoverable and deep-links to the relevant section of the expanded Scholar Plus page; API-backed actions also enforce access server-side.
+- Added calendar-month upload and mock-exam quotas using the existing usage ledger tables and atomic reservations: Free receives 3 custom E-Book uploads and 3 mock exams per month; Plus receives 20 uploads and 30 mock exams. Failed processing/generation releases its reservation. Month boundaries use the account timezone, falling back to Asia/Kolkata.
+- Added private, owner-scoped PDF E-Book uploads with MIME/signature/size/page validation, rate limiting, server-side text extraction, page mapping, secure retrieval/deletion, quota UI and LAM AI context handoff. Scanned documents are marked honestly as needing OCR; background OCR remains deferred rather than being simulated.
+- Added Answer Lab custom questions, compact Practice/Past Papers development notices, premium Workspace insights, Study Music/Nigtube promo repairs, Kalyani Remix as a real linked Scholar Pick, LAM AI naming/focus cleanup, and neutral production demo/default names. Group Study participants remain accountless while Plus eligibility is required only for room creation.
+- Developer controls in Settings now follow the server-authorized developer session and no longer grant privileges from the local toggle. Existing HttpOnly-cookie, password verification, rate limiting, expiry and session binding remain unchanged.
+- Verification in this pass includes Prisma generation, TypeScript, ESLint, entitlement/monetization/auth/provider/security tests, an optimized production build, and responsive browser checks. No database reset, Android change, commit, push, or deployment is part of this pass.
 
 ## 23 September 2026 — LAM Live Tutor visual transplant and production integration
 

@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Crown, HardDrive, Loader2, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Beaker, BookOpen, Bot, Check, Crown, FileUp, HardDrive, Loader2, ShieldCheck, Sparkles, Users, Wand2, Workflow, Target } from "lucide-react";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { toast } from "@/lib/notifications/notification-api";
 
-const BENEFIT_GROUPS = [
-  { title: "AI & Study Tools", icon: Wand2, items: ["AISIG", "Homework Scanner", "Exam Prep", "Assignments", "Practical Lab", "Derivation Library", "Formula Explorer", "Python Workspace"] },
-  { title: "Content & Media", icon: Crown, items: ["Levels", "Higher Quiz generation", "Higher Slideshow generation", "Ad-free Nigtube", "Ad-free Study Music"] },
-  { title: "Storage & Account", icon: HardDrive, items: ["Expanded Files storage", "Class 9 access", "Appearance Lab", "One-time +5,000 Coins bonus"] },
-];
+const FEATURE_SECTIONS = [
+  { id: "ai", title: "LAM AI & Scholar Intelligence", icon: Bot, copy: "Use context-aware tutoring, provider choice, learning memory, mastery signals, weak-topic insights, and a focused revision queue.", bullets: ["LAM AI live tutoring", "Scholar Intelligence insights", "Premium AI limits"] },
+  { id: "jee", title: "JEE Focused Mode", icon: Target, copy: "Switch Scholar into a JEE-oriented Class 11 flow without locking ordinary CBSE material.", bullets: ["JEE-context AI assistance", "Exam-style practice", "Targeted revision organisation"] },
+  { id: "experiments", title: "Interactive Experiments", icon: Beaker, copy: "Get early access to every experiment that is genuinely interactive. Unfinished simulations remain honestly marked Coming Soon.", bullets: ["Vernier Calipers", "Screw Gauge", "Pendulum Motion"] },
+  { id: "resources", title: "Premium Resources", icon: BookOpen, copy: "Keep the free library useful, then add richer mind maps, question banks, sample papers, practicals, and presentations.", bullets: ["Intentional Free + Plus mix", "Premium resource downloads", "Official links stay free"] },
+  { id: "workspace", title: "Workspace Intelligence", icon: Workflow, copy: "Turn stored progress and tasks into a concise study brief, and ask questions from inside the workspace.", bullets: ["Workspace Insights", "AI Chat widget", "Action-focused study brief"] },
+  { id: "group-study", title: "Group Study Beta", icon: Users, copy: "Plus members can host Beta rooms. Invited participants can still join an authorised room without buying Plus or creating an account.", bullets: ["Plus host early access", "Accountless invited participants", "Host-controlled permissions"] },
+  { id: "ebooks", title: "Custom E-Books", icon: FileUp, copy: "Upload private PDFs and turn selectable document text into a Scholar study source.", bullets: ["Free: 3 uploads/month", "Plus: 20 uploads/month", "Owner-only private storage"] },
+  { id: "limits", title: "Higher Generation Limits", icon: HardDrive, copy: "Plus raises expensive AI-generation allowances while ordinary Scholar study tools remain useful on Free.", bullets: ["Free: 3 mock exams/month", "Plus: 30 mock exams/month", "Higher configured quiz and slideshow limits"] },
+] as const;
 
 const COMPARISON = [
   ["Class 11 core study tools", "Included", "Included"],
+  ["LAM AI & Scholar Intelligence", "Locked preview", "Included"],
+  ["JEE Focused Mode", "Locked preview", "Included"],
+  ["Interactive experiments", "Coming Soon previews", "Functional experiments included"],
+  ["Resources", "Free library", "Free + premium library"],
+  ["Group Study Beta hosting", "Join invited rooms", "Create and host rooms"],
+  ["Custom E-Book uploads", "3 / month", "20 / month"],
+  ["AI mock exams", "3 / month", "30 / month"],
   ["AI-generated quizzes and slideshows", "3 each per day", "Higher configured limits"],
   ["File storage", "30 MB", "Expanded storage"],
   ["Class 9 and advanced study labs", "Preview", "Included"],
@@ -37,6 +49,12 @@ export function ScholarPlusView() {
     finally { setLoading(false); }
   };
   const price = access.config?.offerEnabled ? access.config.offerPriceInr : access.config?.regularPriceInr;
+  useEffect(() => {
+    if (!window.location.hash) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    const frame = window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
   if (access.config?.subscriptionsEnabled === false) {
     return <main className="mx-auto grid min-h-[70vh] max-w-3xl place-items-center"><section className="rounded-[2.5rem] border border-emerald-200/15 bg-emerald-300/[.07] p-8 text-center text-white backdrop-blur-2xl sm:p-12"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-300 text-black"><Check className="h-6 w-6" /></span><h1 className="mt-5 text-3xl font-semibold">All Scholar features are unlocked</h1><p className="mt-3 leading-7 text-white/60">Subscriptions are currently disabled. No payment, promotion, quota, or upgrade is required.</p></section></main>;
   }
@@ -54,7 +72,7 @@ export function ScholarPlusView() {
       <div className="relative max-w-2xl">
         <p className="flex items-center gap-2 text-xs uppercase tracking-[.25em] text-cyan-200"><Sparkles className="h-4 w-4" /> Scholar Plus</p>
         <h1 className="mt-4 text-4xl font-semibold sm:text-6xl">More space to learn, build, and explore.</h1>
-        <p className="mt-5 max-w-xl leading-7 text-white/60">Unlock Scholar’s advanced academic tools while keeping the complete Class 11 core experience available on Free.</p>
+        <p className="mt-5 max-w-xl leading-7 text-white/60">Unlock Scholar’s strongest AI, focused study modes, early-access collaboration, and higher limits while keeping the Class 11 core useful on Free.</p>
         <div className="mt-8 flex flex-wrap items-end gap-3">
           <span className="text-xl text-white/35 line-through">₹{access.config?.regularPriceInr ?? 300}</span>
           <span className="text-5xl font-semibold">₹{price ?? 100}</span>
@@ -72,24 +90,15 @@ export function ScholarPlusView() {
         {access.config?.subscriptionsEnabled && !access.config.checkoutConfigured && <p className="mt-3 text-sm text-amber-200">Checkout is temporarily unavailable until the UPI recipient is configured.</p>}
       </div>
     </section>
-    <section>
-      <h2 className="text-2xl font-semibold">Included with Scholar Plus</h2>
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {BENEFIT_GROUPS.map((group) => (
-          <div key={group.title} className="rounded-3xl border border-white/10 bg-white/[.04] p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/10 text-cyan-200"><group.icon className="h-5 w-5" /></span>
-              <h3 className="font-semibold">{group.title}</h3>
-            </div>
-            <ul className="mt-4 space-y-2.5">
-              {group.items.map((benefit) => (
-                <li key={benefit} className="flex items-start gap-2.5 text-sm text-white/75">
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-300/10 text-emerald-300"><Check className="h-3 w-3" /></span>
-                  <span>{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <nav aria-label="Scholar Plus benefits" className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[.035] p-2 backdrop-blur-xl">{FEATURE_SECTIONS.map((section) => <a key={section.id} href={`#${section.id}`} className="min-h-10 shrink-0 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white">{section.title}</a>)}</nav>
+    <section id="overview" className="scroll-mt-24">
+      <p className="text-xs font-semibold uppercase tracking-[.22em] text-cyan-200">What Plus changes</p><h2 className="mt-2 text-2xl font-semibold">A stronger Scholar, not a broken Free tier</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">Free keeps core learning, standard resources, Nigtube, Study Music, and limited generation. Plus adds premium intelligence, focused modes, collaboration hosting, richer resources, and higher cost-aware limits.</p>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {FEATURE_SECTIONS.map((section) => (
+          <article id={section.id} key={section.id} className="scroll-mt-24 rounded-3xl border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.02))] p-5 shadow-[inset_0_1px_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-6">
+            <div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/10 text-cyan-100"><section.icon className="h-5 w-5" /></span><div><h3 className="font-semibold text-white">{section.title}</h3><p className="mt-1 text-sm leading-6 text-white/55">{section.copy}</p></div></div>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-3">{section.bullets.map((item) => <li key={item} className="flex items-start gap-2 rounded-xl border border-white/[.07] bg-black/15 p-2.5 text-xs leading-5 text-white/70"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />{item}</li>)}</ul>
+          </article>
         ))}
       </div>
     </section>
@@ -99,7 +108,7 @@ export function ScholarPlusView() {
     </section>
     <section className="grid gap-4 md:grid-cols-2">
       <div className="rounded-3xl border border-white/10 bg-white/[.035] p-6"><h2 className="text-xl font-semibold">Payment and approval</h2><p className="mt-3 text-sm leading-6 text-white/55">After payment, submit the payer name and UPI transaction reference. Payment is manually verified before Scholar Plus is activated. A submitted reference never grants access automatically.</p></div>
-      <div className="rounded-3xl border border-white/10 bg-white/[.035] p-6"><h2 className="text-xl font-semibold">Frequently asked</h2><p className="mt-3 text-sm font-medium">Is renewal or expiry automatic?</p><p className="mt-1 text-sm leading-6 text-white/55">No interval or expiry is claimed unless it is explicitly configured and confirmed during approval.</p><p className="mt-3 text-sm font-medium">Does Plus make every AI tool paid?</p><p className="mt-1 text-sm leading-6 text-white/55">No. Core AI tools remain available on Free; AISIG and Homework Scanner are the Plus-only AI tools.</p></div>
+      <div className="rounded-3xl border border-white/10 bg-white/[.035] p-6"><h2 className="text-xl font-semibold">Frequently asked</h2><p className="mt-3 text-sm font-medium">Is renewal or expiry automatic?</p><p className="mt-1 text-sm leading-6 text-white/55">No interval or expiry is claimed unless it is explicitly configured and confirmed during approval.</p><p className="mt-3 text-sm font-medium">What remains on Free?</p><p className="mt-1 text-sm leading-6 text-white/55">Core Class 11 learning, standard resources, media, local study tools, and limited custom E-Book and mock-exam usage remain available. Premium AI and early-access modes show clear locked previews.</p></div>
     </section>
   </main>;
 }

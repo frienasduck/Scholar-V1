@@ -11,6 +11,7 @@ import {
   Send, Loader2, BookOpen, Target, Lightbulb, Volume2, Settings,
   Home, Star, Bookmark, Download, Eye, Activity, Flame, Droplet,
   ShieldAlert, ListChecks, Sigma,
+  LockKeyhole,
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { Markdown } from "@/lib/shared";
@@ -21,6 +22,8 @@ import {
   type LabSimProps,
 } from "@/components/views/lab-interactive";
 import { Construction, Gauge } from "lucide-react";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { openScholarPlus } from "@/lib/subscriptions/promo";
 
 // ===== Lab completion persistence (profile-scoped) =====
 const LAB_COMPLETED_KEY = "lab-completed-experiments";
@@ -1938,6 +1941,7 @@ function ExperimentInfoPanel({ experiment }: { experiment: Experiment }) {
 
 // ===== Experiment Lab View =====
 export function LabView() {
+  const access = useScholarAccess();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedExp, setSelectedExp] = useState<Experiment | null>(null);
@@ -1975,6 +1979,10 @@ export function LabView() {
   }, [search, activeCategory]);
 
   function openExperiment(exp: Experiment) {
+    if (isInteractive(exp) && !access.has("premium_experiments")) {
+      openScholarPlus({ source: "experiments", feature: "experiments" });
+      return;
+    }
     setSelectedExp(exp);
     setShowLanding(false);
     setAiExplanation(null);
@@ -2399,6 +2407,7 @@ export function LabView() {
                           <Check className="h-3.5 w-3.5 text-white" />
                         </div>
                       )}
+                      {isInteractive(exp) && !access.has("premium_experiments") ? <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-cyan-200/20 bg-black/55 px-2 py-1 text-[10px] font-semibold text-cyan-100 backdrop-blur-xl"><LockKeyhole className="h-3 w-3" />PLUS</span> : null}
                       <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] lab-font">{exp.duration}</span>
                       <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] lab-font" style={{ background: `${exp.color}30`, color: exp.color }}>
                         {exp.difficulty}

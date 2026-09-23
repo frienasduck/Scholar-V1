@@ -17,6 +17,14 @@ export const ENTITLEMENT_KEYS = [
   "concept_galaxy",
   "achievements",
   "premium_storage",
+  "scholar_intelligence",
+  "lam_ai",
+  "premium_experiments",
+  "premium_resources",
+  "jee_focused_mode",
+  "group_study_beta",
+  "workspace_ai",
+  "custom_ebook_upload",
 ] as const;
 
 export type ScholarEntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
@@ -56,6 +64,16 @@ export function hasCapability(access: ResolvedEntitlements, key: ScholarEntitlem
       return planElevated(access); // reserved — cards only, no feature yet
     case "premium_storage":
       return planElevated(access) || hasV1Entitlement(access, "expanded_file_storage");
+    case "custom_ebook_upload":
+      return access.authenticated;
+    case "scholar_intelligence":
+    case "lam_ai":
+    case "premium_experiments":
+    case "premium_resources":
+    case "jee_focused_mode":
+    case "group_study_beta":
+    case "workspace_ai":
+      return planElevated(access) || hasV1Entitlement(access, key);
     default:
       return false;
   }

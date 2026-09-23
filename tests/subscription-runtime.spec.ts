@@ -20,13 +20,13 @@ test("Scholar Plus disabled mode, PWA instructions, mobile LAM, and direct route
   await expect(page.locator("[data-nextjs-dialog]")) .toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: /Don't have an account/i }).click();
-  await page.getByPlaceholder("Ishan").fill("Runtime Scholar");
+  await page.getByPlaceholder("Your name").fill("Runtime Scholar");
   await page.getByPlaceholder("you@scholar.app").fill(`runtime-${Date.now()}@scholar.app`);
   await page.locator('input[type="password"]').fill("runtime-test-password");
   await page.getByRole("button", { name: "Create Account" }).click();
   await expect(page.getByRole("button", { name: "Skip intro" })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Skip intro" }).click();
-  await expect(page.getByText("Ishan's Scholar", { exact: true }).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Runtime Scholar's Scholar", { exact: true }).first()).toBeVisible({ timeout: 30_000 });
 
   await expect(page.locator('[aria-label="LAM personal assistant"]')).toHaveCount(0);
   const bottomNav = page.locator(".scholar-bottom-nav");

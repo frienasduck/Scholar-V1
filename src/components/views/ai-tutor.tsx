@@ -328,7 +328,7 @@ export function AITutorView() {
     };
 
     try {
-      const reply = await askAIStream(content, activePersonaId, { history, signal: controller.signal, onDelta: (_delta, full) => {
+      const reply = await askAIStream(content, activePersonaId, { history, feature: "lam_ai", signal: controller.signal, onDelta: (_delta, full) => {
         partial = full;
         updateTimer ??= setTimeout(flush, 64);
       } });

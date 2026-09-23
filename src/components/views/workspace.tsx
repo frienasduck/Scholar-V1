@@ -24,7 +24,10 @@ import {
   BarChart3, Music, Trash2, ChevronUp, ChevronDown, X, Play, Pause,
   RotateCcw, Send, Sparkles, Eraser, Square, Circle, Minus, Save, Zap,
   Flame, Coins, TrendingUp, Layers, ArrowUp, ArrowDown, Target,
+  LockKeyhole, Loader2,
 } from "lucide-react";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { openScholarPlus } from "@/lib/subscriptions/promo";
 
 // ============================================================================
 // Study Workspace
@@ -33,7 +36,8 @@ import {
 type WidgetType =
   | "timer" | "notes" | "aichat" | "stats" | "todo"
   | "flashcards" | "calculator" | "whiteboard" | "formulas" | "calendar"
-  | "music" | "sticky" | "progress" | "upcoming" | "focusplan" | "quote";
+  | "music" | "sticky" | "progress" | "upcoming" | "focusplan" | "quote"
+  | "insights";
 
 interface WidgetDef {
   type: WidgetType;
@@ -60,7 +64,10 @@ const WIDGETS: WidgetDef[] = [
   { type: "upcoming",   name: "Upcoming Tasks",   icon: CalendarDays, color: "#38bdf8", description: "The next assignments, exams and revision tasks." },
   { type: "focusplan",  name: "Next Best Action", icon: Target,       color: "#fb7185", description: "A focused recommendation based on current progress." },
   { type: "quote",      name: "Daily Spark",      icon: Sparkles,     color: "#a78bfa", description: "A fresh study thought for the day." },
+  { type: "insights",   name: "Workspace Insights", icon: Brain,       color: "#67e8f9", description: "Turn your tasks and progress into a focused AI study brief." },
 ];
+
+const PREMIUM_WIDGETS = new Set<WidgetType>(["aichat", "insights"]);
 
 const DEFAULT_LAYOUT: WidgetType[] = ["timer", "notes", "aichat", "stats", "todo"];
 const STORAGE_LAYOUT = "ws-layout";
@@ -79,6 +86,7 @@ function saveLayout(l: WidgetType[]) { try { localStorage.setItem(STORAGE_LAYOUT
 // Main Component
 // ============================================================================
 export function WorkspaceView() {
+  const access = useScholarAccess();
   const CURRICULUM = useCurriculum();
   const [layout, setLayout] = useState<WidgetType[]>(() => loadLayout());
   const [editMode, setEditMode] = useState(false);
@@ -165,6 +173,7 @@ export function WorkspaceView() {
           <AnimatePresence mode="popLayout">
             {layout.map((type, idx) => {
               const def = WIDGETS.find((w) => w.type === type)!;
+              const premiumLocked = PREMIUM_WIDGETS.has(type) && !access.has("workspace_ai");
               return (
                 <motion.div key={type}
                   initial={{ opacity: 0, scale: 0.92 }}
@@ -199,7 +208,7 @@ export function WorkspaceView() {
                   </div>
 
                   {/* Widget body */}
-                  <WidgetRenderer type={type} color={def.color} />
+                  {premiumLocked ? <button type="button" onClick={() => openScholarPlus({ source: "workspace", feature: "workspace" })} className="grid min-h-44 w-full place-items-center rounded-xl border border-cyan-200/15 bg-cyan-200/[.045] p-5 text-center"><span><LockKeyhole className="mx-auto h-6 w-6 text-cyan-200" /><strong className="mt-3 block text-sm text-white">Scholar Plus workspace intelligence</strong><span className="mt-1 block text-xs leading-5 text-white/50">Unlock AI chat and workspace-wide study insights.</span></span></button> : <WidgetRenderer type={type} color={def.color} />}
                 </motion.div>
               );
             })}
@@ -231,7 +240,7 @@ export function WorkspaceView() {
                 const inLayout = layout.includes(w.type);
                 return (
                   <button key={w.type} disabled={inLayout}
-                    onClick={() => addWidget(w.type)}
+                    onClick={() => PREMIUM_WIDGETS.has(w.type) && !access.has("workspace_ai") ? openScholarPlus({ source: "workspace", feature: "workspace" }) : addWidget(w.type)}
                     className={cn("w-44 min-w-44 shrink-0 p-3 rounded-xl border text-left transition-all",
                       inLayout ? "border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/25")}>
                     <div className="flex items-center gap-2 mb-1.5">
@@ -239,6 +248,7 @@ export function WorkspaceView() {
                         <w.icon className="h-4 w-4" />
                       </div>
                       {inLayout && <Check className="h-3.5 w-3.5 text-emerald-300 ml-auto" />}
+                      {PREMIUM_WIDGETS.has(w.type) && !access.has("workspace_ai") ? <span className="ml-auto rounded-full border border-cyan-200/20 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-100">PLUS</span> : null}
                     </div>
                     <p className="text-sm text-white font-medium">{w.name}</p>
                     <p className="text-[10px] text-white/50 mt-0.5 leading-tight">{w.description}</p>
@@ -274,8 +284,26 @@ function WidgetRenderer({ type, color }: { type: WidgetType; color: string }) {
     case "upcoming":   return <UpcomingWidget color={color} />;
     case "focusplan":  return <FocusPlanWidget color={color} />;
     case "quote":      return <QuoteWidget color={color} />;
+    case "insights":   return <WorkspaceInsightsWidget color={color} />;
     default:           return null;
   }
+}
+
+function WorkspaceInsightsWidget({ color }: { color: string }) {
+  const mastery = useStore((state) => state.mastery);
+  const tasks = useStore((state) => state.tasks);
+  const [insight, setInsight] = useState("");
+  const [loading, setLoading] = useState(false);
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const pending = tasks.filter((task) => !task.done).slice(0, 8).map((task) => task.title).join(", ") || "No pending tasks";
+      const result = await askAI(`Create a concise, factual study brief from this Scholar workspace data. Do not invent deadlines or performance. Mastery: ${JSON.stringify(mastery)}. Pending tasks: ${pending}. Give one priority, three next actions, and one realistic focus suggestion.`, "default", { feature: "workspace_ai" });
+      setInsight(result);
+    } catch { toast.error("Workspace insights are temporarily unavailable."); }
+    finally { setLoading(false); }
+  };
+  return <div className="min-h-44"><p className="text-xs leading-5 text-white/55">Summarise your stored progress and open tasks into a focused next-action brief.</p>{insight ? <div className="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white/[.04] p-3 text-xs leading-5 text-white/80">{insight}</div> : <Button className="mt-4 text-black" style={{ background: color }} disabled={loading} onClick={() => void generate()}>{loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}Generate insights</Button>}</div>;
 }
 
 // ============================================================================

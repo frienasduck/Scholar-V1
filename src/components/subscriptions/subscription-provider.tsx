@@ -15,8 +15,9 @@ type SessionState = {
   plan?: ScholarPlan;
   entitlementsLoaded?: boolean;
   user?: { id: string; email: string; name: string | null; role: string; coins: number; currentScholarClass: number };
-  access?: { plan: ScholarPlan; source: ScholarAccessSource; entitlementsLoaded: boolean; entitlements: ScholarEntitlement[]; subscriptionId: string | null; subscriptionStatus: string | null; subscriptionEndsAt: string | null; storageLimitBytes: number; dailyQuizLimit: number; dailySlideshowLimit: number };
+  access?: { plan: ScholarPlan; source: ScholarAccessSource; entitlementsLoaded: boolean; entitlements: ScholarEntitlement[]; subscriptionId: string | null; subscriptionStatus: string | null; subscriptionEndsAt: string | null; storageLimitBytes: number; dailyQuizLimit: number; dailySlideshowLimit: number; monthlyEbookUploadLimit: number; monthlyMockExamLimit: number };
   usage?: { day: string; quiz: { used: number; limit: number }; slideshow: { used: number; limit: number } };
+  monthlyUsage?: { period: string; timezone: string; ebookUploads: { used: number; limit: number; remaining: number }; mockExams: { used: number; limit: number; remaining: number } };
   storage?: { usedBytes: number; limitBytes: number };
   pendingPayment?: { publicReference: string; status: string; createdAt: string } | null;
   config?: { subscriptionsEnabled: boolean; regularPriceInr: number; offerPriceInr: number; offerEnabled: boolean; offerLabel: string; billingInterval: string | null; durationDays: number | null; checkoutConfigured: boolean; promoOpenFrequency: number; installDismissDays: number };

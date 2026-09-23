@@ -143,7 +143,7 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   "subscription-payment": SubscriptionPaymentView,
 };
 
-const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title: string; description: string }> = {
+const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title: string; description: string; anchor?: string }> = {
   levels: { entitlement: "levels", title: "Levels", description: "Unlock Scholar progression, advanced rewards, and full level insights." },
   "exam-prep": { entitlement: "exam_prep", title: "Exam Prep", description: "Build complete exam-focused revision plans and advanced preparation material." },
   assignments: { entitlement: "assignments", title: "Assignments", description: "Create, manage, and improve assignments with Scholar’s advanced workflow." },
@@ -151,6 +151,9 @@ const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title
   derivations: { entitlement: "derivation_library", title: "Derivation Library", description: "Study complete derivations with guided steps and focused practice." },
   formulas: { entitlement: "formula_explorer", title: "Formula Explorer", description: "Explore formulas visually, understand each symbol, and generate guided practice." },
   python: { entitlement: "python_workspace", title: "Python Workspace", description: "Write, run, and learn Python in browser with an interactive CPython environment and AI code assistance." },
+  intelligence: { entitlement: "scholar_intelligence", title: "Scholar Intelligence", description: "Turn your learning evidence into mastery, revision, and weakness insights.", anchor: "ai" },
+  "ai-tutor": { entitlement: "lam_ai", title: "AI Tutor", description: "Learn with Scholar's context-aware premium AI tutor.", anchor: "ai" },
+  "live-tutor": { entitlement: "lam_ai", title: "LAM AI", description: "Use LAM AI with live tutoring personalities, memory, and provider choice.", anchor: "ai" },
 };
 const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment", "live-tutor"]);
 
@@ -605,6 +608,10 @@ export function AppShell() {
         }
       }
       if (detail?.jeeToggle) {
+        if (!access.has("jee_focused_mode")) {
+          openScholarPlus({ source: "jee", feature: "jee" });
+          return;
+        }
         setLoadingText({
           title: user.jeeMode ? "Disabling JEE Mode" : "Enabling JEE Mode",
           subtitle: user.jeeMode ? "Returning to standard CBSE mode" : "Switching to advanced competitive preparation",
@@ -633,13 +640,13 @@ export function AppShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const navigate = useCallback((id: string, updateHistory = true) => {
+  const navigate = useCallback((id: string, updateHistory = true, anchor?: string) => {
     setActive(id);
     setMobileOpen(false);
     setMobileNavOpen(false);
     if (updateHistory) {
-      const nextPath = id === "dashboard" ? "/" : `/${id}`;
-      if (window.location.pathname !== nextPath) window.history.pushState({ viewId: id }, "", nextPath);
+      const nextPath = `${id === "dashboard" ? "/" : `/${id}`}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
+      if (`${window.location.pathname}${window.location.hash}` !== nextPath) window.history.pushState({ viewId: id, anchor }, "", nextPath);
     }
     const main = document.getElementById("main-scroll");
     if (main) main.scrollTo({ top: 0, behavior: "smooth" });
@@ -659,7 +666,7 @@ export function AppShell() {
     const onNav = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.viewId && VIEW_COMPONENTS[detail.viewId]) {
-        navigate(detail.viewId);
+        navigate(detail.viewId, true, typeof detail.anchor === "string" ? detail.anchor : typeof detail.payload?.feature === "string" ? detail.payload.feature : undefined);
       }
     };
     window.addEventListener("neha-scholar:navigate", onNav);

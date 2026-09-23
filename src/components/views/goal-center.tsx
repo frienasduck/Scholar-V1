@@ -107,7 +107,7 @@ export function GoalCenterView() {
   const xp = useStore((s) => s.xp);
   const jeeMode = useStore((s) => s.user.jeeMode);
   const scholarClass = useStore((s) => s.user.scholarClass);
-  const studentName = scholarClass === 11 ? "Ishan" : "Neha";
+  const studentName = "Student";
   const coins = useStore((s) => s.coins);
   const streak = useStore((s) => s.streak);
   const mastery = useStore((s) => s.mastery);

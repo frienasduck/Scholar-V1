@@ -55,6 +55,7 @@ model User {
   hostedStudyRooms      GroupStudyRoom[]
   liveTutorSessions     LiveTutorSession[]
   liveTutorMemories     LiveTutorMemory[]
+  customEbooks          CustomEbook[]
 }
 
 model Session {
@@ -165,6 +166,26 @@ model StoredFile {
 
   @@unique([userId, clientId])
   @@index([userId, deletedAt])
+}
+
+model CustomEbook {
+  id               String    @id @default(cuid())
+  userId           String
+  title            String
+  originalFileName String
+  mimeType         String    @default("application/pdf")
+  sizeBytes        Int
+  pageCount        Int
+  text             String    @default("")
+  pageTexts        Json      @default("[]")
+  pdfBytes         Bytes
+  processingStatus String    @default("ready") // ready | needs_ocr | failed
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt, createdAt])
 }
 
 model CoinLedger {

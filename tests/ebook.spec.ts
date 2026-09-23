@@ -10,7 +10,7 @@ async function enterProfile(page: Page, scholarClass: 9 | 11) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Start Your Journey" }).click();
   await page.getByRole("button", { name: new RegExp(`Class ${scholarClass}`) }).last().click();
-  await page.getByPlaceholder(scholarClass === 11 ? "Ishan" : "Neha Salah").fill(scholarClass === 11 ? "Ishan" : "Neha");
+  await page.getByPlaceholder("Your name").fill("Alex");
   await page.getByPlaceholder("you@scholar.app").fill(`ebook${scholarClass}@scholar.app`);
   await page.locator('input[type="password"]').fill("ebook-runtime-test");
   await page.getByRole("button", { name: "Create Account" }).click();

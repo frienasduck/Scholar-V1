@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireCapability } from "@/lib/v2/entitlements";
 import { intelligenceSnapshot } from "@/lib/v2/intelligence/server";
 
 /**
@@ -11,10 +11,9 @@ import { intelligenceSnapshot } from "@/lib/v2/intelligence/server";
  * convenience only.
  */
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
-  }
+  const access = await requireCapability("scholar_intelligence");
+  if (!access.ok) return access.response;
+  const user = access.user;
   try {
     const snapshot = await intelligenceSnapshot(user.id);
     return NextResponse.json(snapshot);

@@ -21,7 +21,7 @@ async function createClass11Profile(page: Page) {
   });
   await page.getByRole("button", { name: "Start Your Journey" }).click();
   await page.getByRole("button", { name: /Class 11/ }).last().click();
-  await page.getByPlaceholder("Ishan").fill("Ishan");
+  await page.getByPlaceholder("Your name").fill("Alex");
   await page.getByPlaceholder("you@scholar.app").fill("startup-test@scholar.app");
   await page.locator('input[type="password"]').fill("local-startup-test");
   await page.getByRole("button", { name: "Create Account" }).click();

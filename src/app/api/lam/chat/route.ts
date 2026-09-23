@@ -71,15 +71,15 @@ export async function POST(request: NextRequest) {
     query: input.message,
     subject: context.subjectTitle,
     chapter: context.chapterTitle,
-  }).catch(() => ({ text: "Live Tutor memory is temporarily unavailable. Continue without it.", selectedMemoryIds: [], summary: { memories: 0, relevantMemories: 0, weakTopics: [], unresolvedMistakes: 0, dueRevision: 0 } })) : null;
+  }).catch(() => ({ text: "LAM AI memory is temporarily unavailable. Continue without it.", selectedMemoryIds: [], summary: { memories: 0, relevantMemories: 0, weakTopics: [], unresolvedMistakes: 0, dueRevision: 0 } })) : null;
   const retrieved = [context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `page ${context.sourcePageNumber}` : "", context.activeFileName ? `Active uploaded file: ${context.activeFileName}` : "", context.selectedText ? `Selected material:\n${context.selectedText}` : "", context.visibleText ? `Visible or extracted text:\n${context.visibleText}` : ""].filter(Boolean).join(" · ");
   const system = [
     "You are LAM (Learning Assistant and Mentor), Scholar's calm personal learning assistant. You are an AI, not a human.",
     `Active profile: ${context.profileName}, CBSE Class ${context.scholarClass}. Profile ID: ${input.profileId}. Never mix content or identity from another class.`,
     `Current Scholar view: ${context.currentView}; route: ${context.currentRoute}; subject: ${context.subjectTitle ?? "not supplied"}; chapter: ${context.chapterTitle ?? "not supplied"}.`,
     `Mode: ${input.assistantMode}. ${modeRules[input.assistantMode]}`,
-    input.liveTutor ? `Live Tutor personality: ${input.liveTutor.personality}. ${PERSONALITY_BEHAVIOR[input.liveTutor.personality]}` : "",
-    input.liveTutor ? `Live Tutor experience mode: ${input.liveTutor.mode}. Voice responses should be concise, conversational, and easy to interrupt. Put longer detail in clear written structure.` : "",
+    input.liveTutor ? `LAM AI personality: ${input.liveTutor.personality}. ${PERSONALITY_BEHAVIOR[input.liveTutor.personality]}` : "",
+    input.liveTutor ? `LAM AI experience mode: ${input.liveTutor.mode}. Voice responses should be concise, conversational, and easy to interrupt. Put longer detail in clear written structure.` : "",
     `Preferred response detail: ${input.responseDetail ?? "balanced"}.`,
     context.weakTopics?.length ? `Stored weak-topic signals: ${context.weakTopics.join(", ")}.` : "No weak-topic history was supplied.",
     context.recentQuizScore ? `Most recent stored quiz result: ${context.recentQuizScore}.` : "No recent quiz result was supplied.",
@@ -93,14 +93,14 @@ export async function POST(request: NextRequest) {
 
   if (input.liveTutor) {
     const existingSession = await db.liveTutorSession.findUnique({ where: { id: input.liveTutor.sessionId }, select: { userId: true } });
-    if (existingSession && existingSession.userId !== access.user.id) return NextResponse.json({ ok: false, error: "Live Tutor session ownership could not be verified." }, { status: 403 });
+    if (existingSession && existingSession.userId !== access.user.id) return NextResponse.json({ ok: false, error: "LAM AI session ownership could not be verified." }, { status: 403 });
     if (existingSession) {
       await db.liveTutorSession.update({ where: { id: input.liveTutor.sessionId }, data: { personality: input.liveTutor.personality, provider: input.liveTutor.provider, mode: input.liveTutor.mode, lastActivityAt: new Date(), status: "active" } });
     } else {
       await db.liveTutorSession.create({ data: { id: input.liveTutor.sessionId, userId: access.user.id, profileId: input.profileId, title: input.message.slice(0, 80), personality: input.liveTutor.personality, provider: input.liveTutor.provider, mode: input.liveTutor.mode } });
     }
     const existingTurn = await db.liveTutorMessage.findUnique({ where: { id: input.liveTutor.turnId }, select: { sessionId: true } });
-    if (existingTurn && existingTurn.sessionId !== input.liveTutor.sessionId) return NextResponse.json({ ok: false, error: "Live Tutor turn ownership could not be verified." }, { status: 403 });
+    if (existingTurn && existingTurn.sessionId !== input.liveTutor.sessionId) return NextResponse.json({ ok: false, error: "LAM AI turn ownership could not be verified." }, { status: 403 });
     if (existingTurn) await db.liveTutorMessage.update({ where: { id: input.liveTutor.turnId }, data: { content: input.message, inputMode: input.inputMode } });
     else await db.liveTutorMessage.create({ data: { id: input.liveTutor.turnId, sessionId: input.liveTutor.sessionId, role: "user", content: input.message, inputMode: input.inputMode } });
   }

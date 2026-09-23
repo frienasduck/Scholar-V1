@@ -279,7 +279,6 @@ export function AnswerLabView() {
   const jeeMode = useStore((s) => s.user.jeeMode);
   const scholarClass = useStore((s) => s.user.scholarClass);
   const QUESTIONS = useActiveQuestions();
-  const studentName = scholarClass === 11 ? "Ishan" : "Neha";
   const addCoins = useStore((s) => s.addCoins);
   const pushActivity = useStore((s) => s.pushActivity);
 
@@ -290,6 +289,11 @@ export function AnswerLabView() {
   const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
   const [evaluationError, setEvaluationError] = useState(false);
   const [uploadedName, setUploadedName] = useState<string | null>(null);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customQuestion, setCustomQuestion] = useState("");
+  const [customSubject, setCustomSubject] = useState("");
+  const [customContext, setCustomContext] = useState("");
+  const [customMarks, setCustomMarks] = useState(5);
   const [mobileTab, setMobileTab] = useState<"problem" | "write" | "feedback">("problem");
   const answerPanelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -317,6 +321,26 @@ export function AnswerLabView() {
     setActiveQ(q); setAnswer(""); setEvalResult(null); setEvaluationError(false); setUploadedName(null);
     setMobileTab("write");
     setTimeout(() => { answerPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80);
+  };
+
+  const createCustomQuestion = () => {
+    if (customQuestion.trim().length < 8) return toast.error("Enter the complete question first.");
+    const question: DescriptiveQ = {
+      id: `custom-${crypto.randomUUID()}`,
+      subject: "physics",
+      subjectName: customSubject.trim() || "Custom question",
+      chapter: "Student provided",
+      question: customQuestion.trim(),
+      marks: Math.max(1, Math.min(20, customMarks)),
+      keywords: customContext.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 12),
+      modelAnswer: "No authoritative model answer was supplied for this custom question. Treat AI feedback as study guidance and verify it against your teacher's rubric.",
+      tips: "Answer the question directly, show your reasoning, define important terms, and include units where relevant.",
+    };
+    selectQuestion(question);
+    setCustomOpen(false);
+    setCustomQuestion("");
+    setCustomContext("");
+    toast.info("Custom question ready", { description: "Feedback is AI-generated guidance, not an official mark." });
   };
 
   const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -559,6 +583,7 @@ ${entry.result.modelAnswer}
 
               {/* Question list */}
               <div className={cn("space-y-2 lg:max-h-[70vh] overflow-y-auto al-scroll pr-1 lg:block", mobileTab === "problem" ? "block" : "hidden")}>
+                <button type="button" onClick={() => setCustomOpen(true)} className="mb-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-200/[.08] px-4 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-200/[.13]"><Sparkles className="h-4 w-4" />Create Custom Question</button>
                 {filteredQs.map((q, i) => {
                   const color = SUBJECT_COLORS[q.subject];
                   const isActive = activeQ?.id === q.id;
@@ -649,10 +674,10 @@ ${entry.result.modelAnswer}
                       {evaluationError && !evaluating && (
                         <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
                           <p className="text-sm font-semibold text-amber-200">AI evaluation is unavailable.</p>
-                          <p className="text-xs text-white/60 mt-1">The local rubric checks required concepts and structure without inventing an AI response.</p>
+                          <p className="text-xs text-white/60 mt-1">{activeQ.id.startsWith("custom-") ? "Retry when AI evaluation is available. Scholar will not invent an authoritative rubric for a custom question." : "The local rubric checks required concepts and structure without inventing an AI response."}</p>
                           <div className="flex flex-wrap gap-2 mt-2">
                             <Button size="sm" variant="outline" onClick={evaluate}>Retry AI</Button>
-                            <Button size="sm" variant="outline" onClick={useLocalRubricEvaluation}>Use Local Rubric Evaluation</Button>
+                            {!activeQ.id.startsWith("custom-") ? <Button size="sm" variant="outline" onClick={useLocalRubricEvaluation}>Use Local Rubric Evaluation</Button> : null}
                             <Button size="sm" variant="ghost" onClick={() => setEvaluationError(false)}>Cancel</Button>
                           </div>
                         </div>
@@ -870,6 +895,17 @@ ${entry.result.modelAnswer}
           </TabsContent>
         </Tabs>
       </div>
+      <Dialog open={customOpen} onOpenChange={setCustomOpen}>
+        <DialogContent className="al-glass-strong max-w-xl rounded-3xl border-white/15 bg-[#080b12]/95 text-white">
+          <DialogHeader><DialogTitle>Create Custom Question</DialogTitle><DialogDescription>Paste a question, then answer it with the same Answer Lab evaluation flow. Any score is AI-generated guidance unless you provide a real rubric.</DialogDescription></DialogHeader>
+          <div className="space-y-4">
+            <label className="block text-xs font-medium text-white/65">Question<Textarea value={customQuestion} onChange={(event) => setCustomQuestion(event.target.value)} rows={5} placeholder="Paste the complete question…" className="mt-2 border-white/10 bg-white/[.05] text-white" /></label>
+            <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-white/65">Subject or context<input value={customSubject} onChange={(event) => setCustomSubject(event.target.value)} placeholder="e.g. Physics" className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-white/[.05] px-3 text-sm text-white outline-none focus:border-cyan-200/35" /></label><label className="text-xs font-medium text-white/65">Marks<input type="number" min={1} max={20} value={customMarks} onChange={(event) => setCustomMarks(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-white/[.05] px-3 text-sm text-white outline-none focus:border-cyan-200/35" /></label></div>
+            <label className="block text-xs font-medium text-white/65">Expected concepts (optional, comma-separated)<Textarea value={customContext} onChange={(event) => setCustomContext(event.target.value)} rows={2} placeholder="Only add concepts from a real marking scheme or teacher guidance" className="mt-2 border-white/10 bg-white/[.05] text-white" /></label>
+          </div>
+          <DialogFooter><Button variant="ghost" onClick={() => setCustomOpen(false)}>Cancel</Button><Button onClick={createCustomQuestion} disabled={customQuestion.trim().length < 8}><PenTool className="mr-2 h-4 w-4" />Start attempt</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

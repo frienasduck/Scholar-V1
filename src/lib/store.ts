@@ -444,13 +444,13 @@ function legacyDefaults() {
   const day = 24 * 60 * 60 * 1000;
   return {
     user: {
-      name: "Neha Salah",
-      username: "neha_salah",
+      name: "Student",
+      username: "student",
       bio: "CBSE scholar • Aspiring doctor • Loves chemistry",
       school: "Delhi Public School",
       class: "9 - CBSE",
       avatar: "🦋",
-      email: "neha@scholar.app",
+      email: "",
       scholarClass: 9 as 9 | 11,
       jeeMode: false,
     },
@@ -1186,8 +1186,8 @@ export const useStore = create<AppState>()(
             ...savedCurrent,
             user: {
               ...s.user,
-              name: cls === 11 ? "Ishan" : "Neha Salah",
-              username: cls === 11 ? "ishan" : "neha_salah",
+              name: "Student",
+              username: "student",
               scholarClass: cls,
               jeeMode: cls === 9 ? false : s.user.jeeMode,
             },
@@ -1210,8 +1210,8 @@ export const useStore = create<AppState>()(
             ...savedCurrent,
             user: {
               ...s.user,
-              name: cls === 11 ? "Ishan" : "Neha Salah",
-              username: cls === 11 ? "ishan" : "neha_salah",
+              name: "Student",
+              username: "student",
               scholarClass: cls,
               jeeMode: cls === 9 ? false : s.user.jeeMode,
             },

@@ -11,6 +11,7 @@ import {
 } from "@/lib/group-study/server";
 import { createRoomSchema, ROOM_LIFETIME_MS } from "@/lib/group-study/policy";
 import type { GroupStudyOverview, RoomStatus } from "@/lib/group-study/types";
+import { resolveUserEntitlements, hasEntitlement } from "@/lib/subscriptions/entitlements";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -70,7 +71,8 @@ async function createRoomForHost(
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (user && (await isBetaAllowed(user))) {
+    const canHost = Boolean(user && (await isBetaAllowed(user)) && hasEntitlement(await resolveUserEntitlements(user.id), "group_study_beta"));
+    if (user && canHost) {
       const rooms = await db.groupStudyRoom.findMany({
         where: { hostUserId: user.id },
         orderBy: { createdAt: "desc" },
@@ -113,7 +115,7 @@ export async function GET() {
     }
     // Not signed in (or not allowlisted): plain join entry, nothing else.
     const joiner: GroupStudyOverview = { canHost: false, recentRooms: [] };
-    return NextResponse.json(joiner, {
+    return NextResponse.json({ ...joiner, signedIn: Boolean(user), hostReason: user ? "plus_required" : "sign_in_required" }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {
@@ -125,9 +127,10 @@ export async function POST(request: Request) {
   try {
     assertRoomMutationRequest(request);
     const user = await getSessionUser();
-    if (!user || !(await isBetaAllowed(user))) {
+    const access = user ? await resolveUserEntitlements(user.id) : null;
+    if (!user || !(await isBetaAllowed(user)) || !access || !hasEntitlement(access, "group_study_beta")) {
       throw new GroupStudyError(
-        "Only the authorized beta host can create study rooms right now.",
+        "Group Study room creation is currently an early-access Scholar Plus feature. Invited participants can still join without an account.",
         403,
         "HOST_REQUIRED",
       );

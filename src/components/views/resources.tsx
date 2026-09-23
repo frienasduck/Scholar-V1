@@ -23,9 +23,12 @@ import {
   ExternalLink, Filter, ChevronDown, ChevronRight, X, TrendingUp, History,
   Trash2, FolderOpen, Layers, GraduationCap, FlaskConical, Presentation,
   Video, Globe, FileQuestion, ScrollText, BookMarked, Check, Loader2,
+  LockKeyhole,
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { openScholarPlus } from "@/lib/subscriptions/promo";
 
 // ============================================================================
 // Resources — Scholar Digital Library (Class 9 / Class 11 aware)
@@ -84,6 +87,9 @@ interface ResourceEntry {
   externalUrl?: string;
   isExternal?: boolean;
 }
+
+const PREMIUM_RESOURCE_TYPES = new Set<ResourceType>(["mindmap", "infographic", "questionbank", "samplepaper", "practical", "slides"]);
+function isPremiumResource(entry: ResourceEntry) { return !entry.isExternal && PREMIUM_RESOURCE_TYPES.has(entry.type); }
 
 // ===== Generate resource catalog from the active curriculum =====
 // Quality over quantity: ~10 high-quality resources per chapter.
@@ -465,6 +471,7 @@ const AURA_STYLE = `
 `;
 
 export function ResourcesView() {
+  const access = useScholarAccess();
   const CURRICULUM = useCurriculum();
   const scholarClass = useStore((s) => s.user.scholarClass);
   const studyProgress = useStore((s) => s.studyProgress);
@@ -515,6 +522,10 @@ export function ResourcesView() {
   }, [scholarClass]);
 
   const handleDownload = useCallback(async (entry: ResourceEntry) => {
+    if (isPremiumResource(entry) && !access.has("premium_resources")) {
+      openScholarPlus({ source: "resources", feature: "resources" });
+      return;
+    }
     setDownloadedIds((prev) => {
       if (prev.includes(entry.id)) return prev;
       const next = [entry.id, ...prev];
@@ -592,12 +603,16 @@ export function ResourcesView() {
     generateAndDownloadFile(entry, CURRICULUM);
     pushActivity({ type: "note", text: `Downloaded: ${entry.title}`, icon: "⬇️" });
     toast.success(`Downloaded "${entry.title}"`, { description: `${entry.sizeMB} MB • ${RESOURCE_TYPES[entry.type].label}` });
-  }, [CURRICULUM, scholarClass, pushActivity]);
+  }, [CURRICULUM, scholarClass, pushActivity, access]);
 
   const [aiLoading, setAiLoading] = useState(false);
   const [aiLoadingEntry, setAiLoadingEntry] = useState<string | null>(null);
 
   const handleOpen = useCallback(async (entry: ResourceEntry) => {
+    if (isPremiumResource(entry) && !access.has("premium_resources")) {
+      openScholarPlus({ source: "resources", feature: "resources" });
+      return;
+    }
     addToRecent(entry.id);
 
     // External links — open in new tab
@@ -892,6 +907,7 @@ export function ResourcesView() {
                   isFavorite={favorites.includes(entry.id)}
                   isDownloaded={downloadedIds.includes(entry.id)}
                   isLoading={aiLoadingEntry === entry.id}
+                  premiumLocked={isPremiumResource(entry) && !access.has("premium_resources")}
                   onToggleFavorite={() => toggleFavorite(entry.id)}
                   onDownload={() => handleDownload(entry)}
                   onOpen={() => handleOpen(entry)}
@@ -968,11 +984,12 @@ function FilterChip({ active, onClick, label, accent, count, small }: {
   );
 }
 
-function ResourceCard({ entry, isFavorite, isDownloaded, isLoading, onToggleFavorite, onDownload, onOpen, onPreview }: {
+function ResourceCard({ entry, isFavorite, isDownloaded, isLoading, premiumLocked, onToggleFavorite, onDownload, onOpen, onPreview }: {
   entry: ResourceEntry;
   isFavorite: boolean;
   isDownloaded: boolean;
   isLoading?: boolean;
+  premiumLocked?: boolean;
   onToggleFavorite: () => void;
   onDownload: () => void;
   onOpen: () => void;
@@ -1005,6 +1022,7 @@ function ResourceCard({ entry, isFavorite, isDownloaded, isLoading, onToggleFavo
             {!entry.isExternal && entry.type !== "mindmap" && entry.type !== "video" && (
               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-medium">AI</span>
             )}
+            {premiumLocked ? <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-100"><LockKeyhole className="h-2.5 w-2.5" />PLUS</span> : null}
           </div>
           <h3 className="text-sm font-semibold leading-snug text-white line-clamp-2 mt-0.5">{entry.title}</h3>
         </div>
@@ -1028,7 +1046,7 @@ function ResourceCard({ entry, isFavorite, isDownloaded, isLoading, onToggleFavo
       {/* Actions */}
       <div className="flex gap-1.5 pt-1">
         <Button size="sm" onClick={onOpen} disabled={isLoading} className="flex-1 h-8 text-xs" style={{ background: meta.color, color: "white" }}>
-          {isLoading ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</> : entry.isExternal ? <><ExternalLink className="h-3 w-3 mr-1" /> Open</> : <><Play className="h-3 w-3 mr-1" /> Open</>}
+          {isLoading ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…</> : premiumLocked ? <><LockKeyhole className="h-3 w-3 mr-1" /> Unlock</> : entry.isExternal ? <><ExternalLink className="h-3 w-3 mr-1" /> Open</> : <><Play className="h-3 w-3 mr-1" /> Open</>}
         </Button>
         <Button size="sm" variant="outline" onClick={onPreview} className="h-8 px-2.5 bg-white/5 border-white/15 text-white hover:bg-white/10">
           <Eye className="h-3.5 w-3.5" />

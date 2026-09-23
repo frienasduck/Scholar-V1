@@ -79,26 +79,37 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Scholar Plus system",
+    date: "23 Sep 2026",
+    title: "Clear premium access, useful Free limits",
+    items: [
+      "LAM AI, Scholar Intelligence, JEE Focused Mode, functional Experiments, selected Resources, Workspace insights and Group Study hosting now share one consistent Scholar Plus access policy.",
+      "Free accounts can upload 3 private PDF E-Books and generate 3 mock exams per calendar month; Plus raises those limits to 20 and 30.",
+      "Answer Lab accepts custom typed questions, while Practice Questions and Past Papers now show concise development notices.",
+      "Study Music highlights Kalyani Remix as a Scholar Pick, promotional glass cards fit on mobile, and user-facing tutor labels now consistently say LAM AI.",
+    ],
+  },
+  {
     version: "Responsive foundation",
     date: "22 Sep 2026",
     title: "Scholar now fits the screen you study on",
     items: [
       "The shared mobile shell now reserves safe space for bottom navigation and responds to the software keyboard instead of covering active controls.",
       "Dialogs, drawers, toolbars and dense tab rows stay reachable on small phones and tablets without creating page-wide horizontal scrolling.",
-      "Dashboard, Files, E-Book, Quiz, Flashcards, Notes, Focus, Nigtube, Music, Settings, LAM Live Tutor and Group Study received targeted responsive repairs.",
+      "Dashboard, Files, E-Book, Quiz, Flashcards, Notes, Focus, Nigtube, Music, Settings, LAM AI and Group Study received targeted responsive repairs.",
       "The existing desktop interface, private-beta rules, Guest Mode, Group Study permissions, Follow Host and explicit microphone/camera consent remain unchanged.",
     ],
   },
   {
-    version: "LAM Live Tutor Beta",
+    version: "LAM AI Beta",
     date: "21 Sep 2026",
     title: "A voice-first tutor that stays in your Scholar",
     items: [
-      "Live Tutor is available under Learn with Calm Tutor, Exam Coach and Curious Scientist personalities; switching style keeps the same session and transcript.",
+      "LAM AI is available under Learn with Calm Tutor, Exam Coach and Curious Scientist personalities; switching style keeps the same session and transcript.",
       "Talk after an explicit microphone tap, interrupt a spoken reply at any time, or continue by text in the same conversation. English (UK) is the launch voice.",
       "Auto, Groq, Gemini and NVIDIA controls reflect the providers actually configured on the Scholar server; unavailable models are never simulated.",
       "LAM can prepare guided study missions, use relevant mastery and revision signals, and propose allowlisted Scholar actions that require your confirmation.",
-      "Live Tutor memory is account-scoped and transparent: explicitly saved memories can be inspected and deleted from the tutor workspace.",
+      "LAM AI memory is account-scoped and transparent: explicitly saved memories can be inspected and deleted from the tutor workspace.",
     ],
   },
   {
@@ -368,7 +379,14 @@ export function SettingsView() {
   const [lamPreferences, setLamPreferences] = useState<LamPreferences>(() => loadLamState(lamProfileId).preferences);
   const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
   const access = useScholarAccess();
-  const appearanceUnlocked = devMode || access.has("appearance_lab");
+  const developerAuthorized = access.developerMode === true && access.access?.source === "developer";
+  const appearanceUnlocked = access.has("appearance_lab");
+
+  useEffect(() => {
+    // Local state is presentation-only. It mirrors the signed server session
+    // and can never grant developer capabilities by itself.
+    if (devMode !== developerAuthorized) setDevMode(developerAuthorized);
+  }, [devMode, developerAuthorized, setDevMode]);
 
   useEffect(() => {
     setLamPreferences(loadLamState(lamProfileId).preferences);
@@ -425,7 +443,6 @@ export function SettingsView() {
       const response = await fetch("/api/developer/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: devPasswordInput }) });
       const value = await response.json();
       if (!response.ok) throw new Error(value.error || "Developer Mode access denied.");
-      setDevMode(true);
       setShowDevPassword(false);
       setDevPasswordInput("");
       window.dispatchEvent(new Event("scholar:session-changed"));
@@ -479,7 +496,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `neha-scholar-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `scholar-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Backup downloaded");
@@ -793,7 +810,7 @@ export function SettingsView() {
                       }
                       if (user.scholarClass !== 9) {
                         window.dispatchEvent(new CustomEvent("scholar:class-switch", { detail: { newClass: 9 } }));
-                        toast.success("Switching to Class 9…", { description: "Loading Neha's Scholar profile" });
+                        toast.success("Switching to Class 9…", { description: "Loading the Class 9 Scholar profile" });
                       }
                     }}
                     className={`rounded-2xl p-5 text-left border-2 transition-all hover:scale-[1.02] ${
@@ -806,7 +823,7 @@ export function SettingsView() {
                       <span className="text-3xl">📘</span>
                       <div>
                         <p className="font-bold text-white text-base">Class 9</p>
-                        <p className="text-xs text-white/50">Neha's Scholar</p>
+                        <p className="text-xs text-white/50">Scholar · Class 9</p>
                         {!access.has("class_9_access") && <p className="text-[10px] font-semibold text-cyan-200">Scholar Plus</p>}
                       </div>
                       {user.scholarClass === 9 && <Check className="h-5 w-5 text-indigo-400 ml-auto" />}
@@ -819,7 +836,7 @@ export function SettingsView() {
                     onClick={() => {
                       if (user.scholarClass !== 11) {
                         window.dispatchEvent(new CustomEvent("scholar:class-switch", { detail: { newClass: 11 } }));
-                        toast.success("Switching to Class 11…", { description: "Loading Ishan's Scholar profile" });
+                        toast.success("Switching to Class 11…", { description: "Loading the Class 11 Scholar profile" });
                       }
                     }}
                     className={`rounded-2xl p-5 text-left border-2 transition-all hover:scale-[1.02] ${
@@ -832,7 +849,7 @@ export function SettingsView() {
                       <span className="text-3xl">⚛️</span>
                       <div>
                         <p className="font-bold text-white text-base">Class 11</p>
-                        <p className="text-xs text-white/50">Ishan's Scholar</p>
+                        <p className="text-xs text-white/50">Scholar · Class 11</p>
                       </div>
                       {user.scholarClass === 11 && <Check className="h-5 w-5 text-blue-400 ml-auto" />}
                     </div>
@@ -878,7 +895,7 @@ export function SettingsView() {
                   </div>
                   <div>
                     <p className="text-white/40 text-xs">Profile Name</p>
-                    <p className="text-white font-medium">{user.scholarClass === 11 ? "Ishan's Scholar" : "Neha's Scholar"}</p>
+                    <p className="text-white font-medium">Scholar · Class {user.scholarClass}</p>
                   </div>
                   <div>
                     <p className="text-white/40 text-xs">JEE Mode</p>
@@ -1277,19 +1294,18 @@ export function SettingsView() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-amber-400">Developer Mode Active</p>
-                    <p className="text-sm text-white/50 mt-0.5">These controls let you manipulate game state, XP, coins and more. They will affect your real progress — use responsibly.</p>
+                    <p className="font-semibold text-amber-400">{developerAuthorized ? "Developer Mode Active" : "Developer authorization required"}</p>
+                    <p className="text-sm text-white/50 mt-0.5">{developerAuthorized ? "These controls let you manipulate game state, XP, coins and more. They will affect your real progress — use responsibly." : "Developer controls are protected by a signed, expiring server session. A browser toggle or localStorage edit cannot unlock them."}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-medium text-amber-400 hidden sm:inline">{devMode ? "ON" : "OFF"}</span>
+                    <span className="text-xs font-medium text-amber-400 hidden sm:inline">{developerAuthorized ? "ON" : "OFF"}</span>
                     <Switch
-                      checked={devMode}
+                      checked={developerAuthorized}
                       onCheckedChange={(v) => {
                         if (v) {
                           setShowDevPassword(true);
                         } else {
                           void fetch("/api/developer/session", { method: "DELETE" }).finally(() => window.dispatchEvent(new Event("scholar:session-changed")));
-                          setDevMode(false);
                           toast.success("Dev mode disabled");
                         }
                       }}
@@ -1298,6 +1314,7 @@ export function SettingsView() {
                 </div>
               </div>
 
+              {developerAuthorized ? <>
               <div className="asme-glass rounded-3xl p-6 space-y-4">
                 <h3 className="font-semibold flex items-center gap-2 text-white">
                   <Coins className="h-4 w-4 text-white/70" /> Resource Controls
@@ -1349,6 +1366,7 @@ export function SettingsView() {
                   <ResetEverythingDialog onConfirm={() => { resetEverything(); toast.success("Everything reset"); }} />
                 </div>
               </div>
+              </> : <div className="asme-glass rounded-3xl p-6 text-center" data-testid="developer-controls-locked"><Lock className="mx-auto h-7 w-7 text-amber-300" /><h3 className="mt-3 font-semibold text-white">Developer controls are locked</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/50">Use the switch above and complete server verification. Privileged controls are not rendered until the signed session is confirmed.</p></div>}
             </TabsContent>
           </Tabs>
         </div>

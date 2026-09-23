@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireCapability } from "@/lib/v2/entitlements";
 import { db } from "@/lib/db";
 import { reviewUpdateSchema, manualOrderSchema } from "@/lib/v2/intelligence/schemas";
 import { nextReview } from "@/lib/v2/intelligence/spaced-repetition";
@@ -12,10 +12,9 @@ import { recordAudit } from "@/lib/subscriptions/audit";
  * Ownership is enforced: items are always scoped to the session user.
  */
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
-  }
+  const access = await requireCapability("scholar_intelligence");
+  if (!access.ok) return access.response;
+  const user = access.user;
   const items = await db.revisionItem.findMany({
     where: { userId: user.id },
     orderBy: [{ dueAt: "asc" }, { priority: "desc" }],
@@ -41,10 +40,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
-  }
+  const access = await requireCapability("scholar_intelligence");
+  if (!access.ok) return access.response;
+  const user = access.user;
 
   let body: unknown;
   try {

@@ -36,13 +36,13 @@ const WHEEL_SEGMENTS = [
 ];
 
 const FAKE_CLASSMATES = [
-  { name: "Kabir Singh", avatar: "🦁", xp: 2150, isNeha: false },
-  { name: "Ananya Reddy", avatar: "🦊", xp: 1820, isNeha: false },
-  { name: "Diya Patel", avatar: "🦢", xp: 1610, isNeha: false },
-  { name: "Meera Iyer", avatar: "🦌", xp: 1490, isNeha: false },
-  { name: "Aarav Sharma", avatar: "🐯", xp: 1280, isNeha: false },
-  { name: "Ishaan Verma", avatar: "🐼", xp: 980, isNeha: false },
-  { name: "Sara Khan", avatar: "🦄", xp: 760, isNeha: false },
+  { name: "Kabir Singh", avatar: "🦁", xp: 2150, isYou: false },
+  { name: "Ananya Reddy", avatar: "🦊", xp: 1820, isYou: false },
+  { name: "Diya Patel", avatar: "🦢", xp: 1610, isYou: false },
+  { name: "Meera Iyer", avatar: "🦌", xp: 1490, isYou: false },
+  { name: "Aarav Sharma", avatar: "🐯", xp: 1280, isYou: false },
+  { name: "Arjun Verma", avatar: "🐼", xp: 980, isYou: false },
+  { name: "Sara Khan", avatar: "🦄", xp: 760, isYou: false },
 ];
 
 const LUCKY_KEY = "achievements-lucky";
@@ -72,7 +72,7 @@ export function AchievementsView() {
   const leaderboard = useMemo(() => {
     const all = [
       ...FAKE_CLASSMATES,
-      { name: displayName || user.name, avatar: user.avatar, xp, isNeha: true },
+      { name: displayName || user.name, avatar: user.avatar, xp, isYou: true },
     ];
     return all
       .sort((a, b) => b.xp - a.xp)
@@ -510,7 +510,7 @@ export function AchievementsView() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className={`flex items-center gap-3 p-3 rounded-xl ${
-                  p.isNeha
+                  p.isYou
                     ? "bg-gradient-to-r from-indigo-500/15 to-teal-500/10 ring-1 ring-indigo-500/30"
                     : "hover:bg-muted/50"
                 }`}
@@ -538,11 +538,11 @@ export function AchievementsView() {
                 <div className="flex-1 min-w-0">
                   <p
                     className={`text-sm font-medium truncate ${
-                      p.isNeha ? "text-gradient" : ""
+                      p.isYou ? "text-gradient" : ""
                     }`}
                   >
                     {p.name}
-                    {p.isNeha && " (you)"}
+                    {p.isYou && " (you)"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">

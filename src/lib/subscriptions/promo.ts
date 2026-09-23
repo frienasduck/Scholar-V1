@@ -14,7 +14,16 @@ export type PlusPromoSource =
   | "mind-map"
   | "concept-galaxy"
   | "generation-limit"
-  | "nav";
+  | "nav"
+  | "intelligence"
+  | "lam-ai"
+  | "experiments"
+  | "resources"
+  | "jee"
+  | "group-study"
+  | "workspace"
+  | "ebooks"
+  | "mock-exam";
 
 export interface OpenPlusOptions {
   source: PlusPromoSource;
@@ -30,7 +39,7 @@ export function openScholarPlus({ source, feature }: OpenPlusOptions): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent("neha-scholar:navigate", {
-      detail: { viewId: "plus", payload: { source, feature } },
+      detail: { viewId: "plus", payload: { source, feature }, anchor: feature },
     }),
   );
   try {

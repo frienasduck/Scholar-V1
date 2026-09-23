@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { isFlagEnabled, publicV2Flags, V2_FLAG_KEYS, type V2FlagKey } from "../src/lib/v2/flags";
 import { hasCapability, capabilitiesForAccess } from "../src/lib/v2/entitlements-core";
 import type { ScholarEntitlement } from "../src/lib/subscriptions/entitlements";
+import { usageMonth } from "../src/lib/subscriptions/usage-month";
 import { dailyLimitForFeature, usageKeyForFeature, GENERATION_POLICIES } from "../src/lib/v2/usage/policy";
 import {
   scoreScholarVoice,
@@ -99,13 +100,15 @@ function access(overrides: Partial<Parameters<typeof hasCapability>[0]> = {}): P
     storageLimitBytes: 30 * 1024 * 1024,
     dailyQuizLimit: 3,
     dailySlideshowLimit: 3,
+    monthlyEbookUploadLimit: 3,
+    monthlyMockExamLimit: 3,
     ...overrides,
   };
 }
 
 describe("entitlement capabilities", () => {
-  test("free user has no premium capabilities", () => {
-    expect(capabilitiesForAccess(access())).toEqual([]);
+  test("free signed-in user only has the quota-limited custom E-Book capability", () => {
+    expect(capabilitiesForAccess(access())).toEqual(["custom_ebook_upload"]);
   });
 
   test("plus user gets all premium capabilities", () => {
@@ -127,6 +130,18 @@ describe("entitlement capabilities", () => {
   test("developer and unlocked plans are elevated", () => {
     expect(hasCapability(access({ plan: "DEVELOPER", source: "developer" }), "premium_ai_limits")).toBe(true);
     expect(hasCapability(access({ plan: "UNLOCKED", source: "subscriptions_disabled" }), "scholar_plus")).toBe(true);
+  });
+});
+
+describe("monthly quota boundaries", () => {
+  test("calendar month follows the user's timezone rather than UTC", () => {
+    const instant = new Date("2026-08-31T20:00:00.000Z");
+    expect(usageMonth("UTC", instant)).toBe("2026-08");
+    expect(usageMonth("Asia/Kolkata", instant)).toBe("2026-09");
+  });
+
+  test("invalid timezones fall back to the UTC calendar month", () => {
+    expect(usageMonth("not/a-zone", new Date("2026-02-15T00:00:00.000Z"))).toBe("2026-02");
   });
 });
 
