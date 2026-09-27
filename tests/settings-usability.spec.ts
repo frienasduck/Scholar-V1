@@ -6,6 +6,7 @@ test.use({
   viewport: { width: 1440, height: 900 },
 });
 test.setTimeout(120_000);
+const developerTestPassword = process.env.SCHOLAR_TEST_DEVELOPER_PASSWORD;
 
 async function enterClass11(page: Page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -30,6 +31,7 @@ async function settleLaunch(page: Page) {
 }
 
 test("developer appearance gate, update log and notification preview are functional", async ({ page }) => {
+  test.skip(!developerTestPassword, "Set SCHOLAR_TEST_DEVELOPER_PASSWORD to exercise the server-configured developer gate.");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await enterClass11(page);
@@ -40,7 +42,7 @@ test("developer appearance gate, update log and notification preview are functio
   await expect(page.getByText("Appearance Lab", { exact: true })).toBeVisible();
   await expect(page.getByText("Beta · Developer only", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Developer unlock" }).click();
-  await page.getByPlaceholder("Enter dev password").fill("inmfs123");
+  await page.getByPlaceholder("Enter dev password").fill(developerTestPassword!);
   await page.getByRole("button", { name: "Unlock", exact: true }).click();
   await expect(page.getByText("Unlocked for this developer", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Restore original font" })).toBeVisible();

@@ -88,6 +88,7 @@ const dbMock = {
   securityAttempt: securityAttemptDb,
   groupStudyRoom: roomDb,
   groupStudyParticipant: participantDb,
+  $transaction: async <T>(callback: (tx: { user: typeof userDb; session: typeof sessionDb; $queryRaw: () => Promise<unknown[]> }) => Promise<T>) => callback({ user: userDb, session: sessionDb, $queryRaw: async () => [] }),
 };
 mock.module("../src/lib/db", () => ({ db: dbMock }));
 
@@ -104,6 +105,7 @@ mock.module("../src/lib/security/rate-limit", () => ({
     if (count >= maximum) throw new TestRateLimitError();
     attempts.push({ key, action, createdAt: new Date() });
   },
+  requestRateLimitKey: (_request: Request, namespace: string) => `${namespace}:test-ip`,
   RateLimitError: TestRateLimitError,
 }));
 const auditEvents: string[] = [];
@@ -280,7 +282,7 @@ describe("developer access session security", () => {
     expect(await hasDeveloperAccessSession(developerUser.id, developerUser.sessionVersion)).toBe(true);
     expect(await isBetaAllowed(developerUser)).toBe(true);
     expect(await hasDeveloperAccessSession("other-account", 1)).toBe(false);
-    expect(await isBetaAllowed({ id: "other-account", email: "other@example.test" })).toBe(false);
+    expect(await isBetaAllowed({ id: "other-account", email: "other@example.test" })).toBe(true);
   });
 
   test("tampered cookies fail verification", async () => {
@@ -311,11 +313,12 @@ describe("developer access session security", () => {
     expect(await hasDeveloperAccessSession(developerUser.id, developerUser.sessionVersion)).toBe(true);
   });
 
-  test("developer cookies cannot bypass a changed beta allowlist", async () => {
+  test("stale beta allowlists do not revoke an authenticated public account", async () => {
     await createDeveloperAccessSession(developerUser);
     restoredUser = developerUser;
     process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "different-account";
-    expect(await getSessionUser()).toBeNull();
+    cookieValues.set("scholar_session", "opaque-test-session");
+    expect((await getSessionUser())?.id).toBe(developerUser.id);
   });
 });
 
@@ -332,6 +335,7 @@ describe("group study host authorization", () => {
     expect(principalUser!.id === room!.hostUserId && (await isBetaAllowed(principalUser))).toBe(true);
     // Participant path: no beta authorization for room participants.
     expect(await isBetaAllowed(null)).toBe(false);
-    expect(await isBetaAllowed({ id: "participant-account", email: "participant@example.test" })).toBe(false);
+    expect(await isBetaAllowed({ id: "participant-account", email: "participant@example.test" })).toBe(true);
+    expect("participant-account" === String(room!.hostUserId)).toBe(false);
   });
 });

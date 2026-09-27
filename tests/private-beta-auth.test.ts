@@ -1,206 +1,58 @@
+// Regression coverage for retiring the ordinary beta gate (in-memory database only).
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { NextRequest } from "next/server";
-
 mock.module("server-only", () => ({}));
-
-const configKeys = ["SCHOLAR_PRIVATE_BETA", "SCHOLAR_BETA_ALLOWED_EMAILS", "SCHOLAR_BETA_ALLOWED_USER_IDS", "DEV_MODE_ENABLED"] as const;
-const originalConfig = Object.fromEntries(configKeys.map((key) => [key, process.env[key]]));
+const keys = ["SCHOLAR_PRIVATE_BETA", "SCHOLAR_BETA_ALLOWED_EMAILS", "SCHOLAR_BETA_ALLOWED_USER_IDS", "DEV_MODE_ENABLED"] as const;
+const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 const now = new Date();
-const betaUser = { id: "beta-owner", email: "scholarofficialacc123@gmail.com", name: "Beta owner", role: "USER", sessionVersion: 1, timezone: "UTC", coins: 0, plusBonusGrantedAt: null, currentScholarClass: 11, createdAt: now, updatedAt: now, passwordHash: "" };
-type FixtureUser = typeof betaUser;
-let users: FixtureUser[] = [];
-let restoredUser: FixtureUser | null = null;
-let sessionExpired = false;
-let userCreates = 0;
-let sessionCreates = 0;
-let sessionDeletes = 0;
-const cookieValues = new Map<string, string>();
-const cookieStore = {
-  get: (name: string) => cookieValues.has(name) ? { value: cookieValues.get(name)! } : undefined,
-  set: (name: string, value: string) => { cookieValues.set(name, value); },
+const ordinary = { id: "ordinary", email: "ordinary@example.test", name: "Learner", role: "USER", sessionVersion: 1, timezone: "UTC", coins: 0, plusBonusGrantedAt: null, currentScholarClass: 11, createdAt: now, updatedAt: now, passwordHash: "" };
+type FixtureUser = typeof ordinary;
+let users: FixtureUser[] = [], restored: FixtureUser | null = null, expired = false, created = 0, deleted = 0, limited = false, broken = false;
+const values = new Map<string, string>();
+const cookieOptions: Record<string, unknown>[] = [];
+mock.module("next/headers", () => ({ cookies: async () => ({ get: (key: string) => values.has(key) ? { value: values.get(key) } : undefined, set: (key: string, value: string, options: Record<string, unknown>) => { values.set(key, value); cookieOptions.push(options); } }), headers: async () => new Headers() }));
+const user = {
+  findUnique: async ({ where }: { where: { id?: string; email?: string } }) => { if (broken) throw new Error("private database failure"); return users.find((u) => where.id ? u.id === where.id : u.email === where.email) ?? null; },
+  create: async ({ data }: { data: Partial<FixtureUser> }) => { const row = { ...ordinary, ...data, id: `new-${users.length}` }; users.push(row); return row; },
 };
-
-mock.module("next/headers", () => ({ cookies: async () => cookieStore, headers: async () => new Headers() }));
-
-const userDb = {
-  findUnique: async (args: { where: { email?: string; id?: string } }) => users.find((user) => args.where.email ? user.email === args.where.email : user.id === args.where.id) ?? null,
-  create: async (args: { data: Partial<FixtureUser> }) => {
-    userCreates += 1;
-    const created = { ...betaUser, ...args.data, id: "new-test-account" };
-    users.push(created);
-    return created;
-  },
+const session = {
+  findUnique: async () => restored ? { id: "session", expiresAt: new Date(Date.now() + (expired ? -1000 : 60000)), user: restored } : null,
+  create: async () => { created++; return { id: "session" }; },
+  deleteMany: async () => { deleted++; return { count: 1 }; }, delete: async () => { deleted++; return {}; },
 };
-const dbMock = {
-  user: userDb,
-  session: {
-    findUnique: async () => restoredUser ? { id: "restored-session", expiresAt: new Date(Date.now() + (sessionExpired ? -1000 : 60_000)), user: restoredUser } : null,
-    create: async () => { sessionCreates += 1; return { id: "new-test-session" }; },
-    deleteMany: async () => { sessionDeletes += 1; return { count: 0 }; },
-    delete: async () => { sessionDeletes += 1; return { id: "restored-session" }; },
-  },
-  $transaction: async <T>(callback: (tx: { user: typeof userDb }) => Promise<T>) => callback({ user: userDb }),
-};
-mock.module("../src/lib/db", () => ({ db: dbMock }));
-class TestRateLimitError extends Error { retryAfterSeconds = 60; }
-mock.module("../src/lib/security/rate-limit", () => ({ enforceRateLimit: async () => undefined, RateLimitError: TestRateLimitError }));
-
+const tx = { user, session, $queryRaw: async () => [] };
+mock.module("../src/lib/db", () => ({ db: { ...tx, $transaction: async <T>(fn: (t: typeof tx) => Promise<T>) => fn(tx) } }));
+mock.module("../src/lib/auth/recovery", () => ({ queueAuthEmail: () => false }));
+class Limit extends Error { retryAfterSeconds = 60; }
+mock.module("../src/lib/security/rate-limit", () => ({ enforceRateLimit: async () => { if (limited) throw new Limit("Please retry later."); }, opaqueRateLimitKey: (n: string) => n, requestRateLimitKey: (_r: Request, n: string) => n, RateLimitError: Limit }));
+const { hashPassword, verifyPassword } = await import("../src/lib/auth/password");
 const { privateBetaEnabled, isBetaAllowed, publicBetaConfig } = await import("../src/lib/auth/beta");
-const { hashPassword } = await import("../src/lib/auth/password");
-const { getSessionUser, createDeveloperSession, hasDeveloperSession } = await import("../src/lib/auth/session");
+const { getSessionUser, createDeveloperSession, hasDeveloperSession, createAuthSession } = await import("../src/lib/auth/session");
 const { POST: login } = await import("../src/app/api/auth/login/route");
 const { POST: register } = await import("../src/app/api/auth/register/route");
-const { GET: sessionStatus } = await import("../src/app/api/auth/session/route");
-// Fixture credential belongs only to in-memory test records. No real DB access.
-const testPassword = "test-only-beta-password";
-const testHash = await hashPassword(testPassword);
-
-beforeEach(() => {
-  for (const key of configKeys) delete process.env[key];
-  users = [{ ...betaUser, passwordHash: testHash }];
-  restoredUser = null;
-  sessionExpired = false;
-  userCreates = 0;
-  sessionCreates = 0;
-  sessionDeletes = 0;
-  cookieValues.clear();
-});
-afterAll(() => {
-  for (const key of configKeys) {
-    if (originalConfig[key] === undefined) delete process.env[key];
-    else process.env[key] = originalConfig[key];
-  }
-});
-
-const request = (path: string, data: unknown) => new NextRequest(`https://scholar.example${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-
-describe("server-only private beta policy", () => {
-  test("defaults on and normalizes only email identity", async () => {
-    expect(privateBetaEnabled()).toBe(true);
-    expect(await isBetaAllowed({ id: "owner", email: " ScholarOfficialAcc123@GMAIL.com " })).toBe(true);
-    expect(await isBetaAllowed({ id: "other", email: "other@example.test" })).toBe(false);
-    expect(await isBetaAllowed(null)).toBe(false);
-  });
-
-  test("configured emails replace the default and empty configuration fails closed", async () => {
-    process.env.SCHOLAR_BETA_ALLOWED_EMAILS = " first@example.test, SECOND@example.test ";
-    expect(await isBetaAllowed(betaUser)).toBe(false);
-    expect(await isBetaAllowed({ id: "second", email: "second@example.test" })).toBe(true);
-    process.env.SCHOLAR_BETA_ALLOWED_EMAILS = "  ";
-    expect(await isBetaAllowed(betaUser)).toBe(false);
-  });
-
-  test("account ID configuration takes precedence over email and is exact", async () => {
-    process.env.SCHOLAR_BETA_ALLOWED_EMAILS = betaUser.email;
-    process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = " permitted-id ";
-    expect(await isBetaAllowed(betaUser)).toBe(false);
-    expect(await isBetaAllowed({ id: "permitted-id", email: "changed@example.test" })).toBe(true);
-    expect(await isBetaAllowed({ id: "PERMITTED-ID", email: betaUser.email })).toBe(false);
-    process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "";
-    expect(await isBetaAllowed(betaUser)).toBe(false);
-  });
-
-  test("explicitly disabling beta restores normal policy; invalid values stay closed", async () => {
-    for (const value of ["false", "0", "OFF", " no "]) {
-      process.env.SCHOLAR_PRIVATE_BETA = value;
-      expect(privateBetaEnabled()).toBe(false);
-      expect(await isBetaAllowed({ id: "ordinary", email: "ordinary@example.test" })).toBe(true);
-      expect(publicBetaConfig().registrationEnabled).toBe(true);
-    }
-    process.env.SCHOLAR_PRIVATE_BETA = "typo";
-    expect(privateBetaEnabled()).toBe(true);
-  });
-
-  test("public config contains no configured allowlist or account identifiers", async () => {
-    process.env.SCHOLAR_BETA_ALLOWED_EMAILS = "hidden@example.test";
-    process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "internal-id";
-    expect(publicBetaConfig()).toEqual({ privateBeta: true, registrationEnabled: false, contactEmail: "scholarofficialacc123@gmail.com" });
-  });
-});
-
-describe("private beta account API behavior", () => {
-  test("blocks all anonymous registrations without looking up or creating an account", async () => {
-    for (const email of [betaUser.email, "other@example.test"]) {
-      const response = await register(request("/api/auth/register", { email, password: testPassword, name: "Test" }));
-      expect(response.status).toBe(403);
-      expect((await response.json()).error).toBe("PRIVATE_BETA_REGISTRATION_CLOSED");
-    }
-    expect(userCreates).toBe(0);
-    expect(sessionCreates).toBe(0);
-  });
-
-  test("an allowed account still needs its correct existing password", async () => {
-    const denied = await login(request("/api/auth/login", { email: betaUser.email, password: "incorrect" }));
-    expect(denied.status).toBe(401);
-    expect(sessionCreates).toBe(0);
-    const accepted = await login(request("/api/auth/login", { email: betaUser.email.toUpperCase(), password: testPassword }));
-    expect(accepted.status).toBe(200);
-    const result = await accepted.json();
-    expect(result.user.id).toBe(betaUser.id);
-    expect(result.user.passwordHash).toBeUndefined();
-    expect(sessionCreates).toBe(1);
-    expect(cookieValues.has("scholar_session")).toBe(true);
-  });
-
-  test("unknown, incorrect, and blocked valid credentials share one negative response", async () => {
-    users.push({ ...betaUser, id: "ordinary-account", email: "ordinary@example.test", passwordHash: testHash });
-    const responses: ReturnType<typeof Object>[] = [];
-    for (const [email, password] of [["missing@example.test", testPassword], [betaUser.email, "wrong"], ["ordinary@example.test", testPassword]]) {
-      const response = await login(request("/api/auth/login", { email, password }));
-      expect(response.status).toBe(401);
-      responses.push(await response.json());
-    }
-    expect(responses[0]).toEqual(responses[1]);
-    expect(responses[1]).toEqual(responses[2]);
-    expect(sessionCreates).toBe(0);
-  });
-
-  test("normal registration and login remain available when beta is explicitly disabled", async () => {
-    process.env.SCHOLAR_PRIVATE_BETA = "false";
-    const created = await register(request("/api/auth/register", { email: "ordinary@example.test", password: testPassword, name: "Ordinary" }));
-    expect(created.status).toBe(200);
-    expect(userCreates).toBe(1);
-    const accepted = await login(request("/api/auth/login", { email: "ordinary@example.test", password: testPassword }));
-    expect(accepted.status).toBe(200);
-    const denied = await login(request("/api/auth/login", { email: "ordinary@example.test", password: "wrong" }));
-    expect((await denied.json()).error).toBe("INVALID_CREDENTIALS");
-  });
-
-  test("malformed login JSON is a controlled validation response", async () => {
-    const response = await login(new NextRequest("https://scholar.example/api/auth/login", { method: "POST", body: "{" }));
-    expect(response.status).toBe(400);
-  });
-});
-
-describe("private beta restored-session enforcement", () => {
-  test("pre-beta sessions lose access without deleting the account or its session", async () => {
-    cookieValues.set("scholar_session", "opaque-test-session");
-    restoredUser = { ...betaUser, id: "other-account", email: "other@example.test" };
-    expect(await getSessionUser()).toBeNull();
-    expect(sessionDeletes).toBe(0);
-    const response = await sessionStatus();
-    expect(response.status).toBe(200);
-    const payload = await response.json();
-    expect(payload.authenticated).toBe(false);
-    expect(payload.beta).toEqual(publicBetaConfig());
-    expect(payload.user).toBeUndefined();
-    process.env.SCHOLAR_PRIVATE_BETA = "false";
-    expect((await getSessionUser())?.id).toBe("other-account");
-  });
-
-  test("allowed sessions restore but expired sessions remain invalid", async () => {
-    cookieValues.set("scholar_session", "opaque-test-session");
-    restoredUser = betaUser;
-    expect((await getSessionUser())?.id).toBe(betaUser.id);
-    sessionExpired = true;
-    expect(await getSessionUser()).toBeNull();
-  });
-
-  test("developer cookies cannot bypass a changed beta allowlist", async () => {
-    process.env.DEV_MODE_ENABLED = "true";
-    await createDeveloperSession(betaUser);
-    expect(await hasDeveloperSession(betaUser.id)).toBe(true);
-    process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "different-account";
-    expect(await hasDeveloperSession(betaUser.id)).toBe(false);
-  });
+const { POST: logout } = await import("../src/app/api/auth/logout/route");
+const password = "unit-fixture-password-only", passwordHash = await hashPassword(password);
+beforeEach(() => { keys.forEach((key) => delete process.env[key]); users = [{ ...ordinary, passwordHash }]; restored = null; expired = false; created = deleted = 0; limited = broken = false; values.clear(); cookieOptions.length = 0; });
+afterAll(() => { for (const key of keys) { if (previous[key] === undefined) delete process.env[key]; else process.env[key] = previous[key]; } });
+const request = (path: string, data: unknown, origin = "https://scholar.example") => new NextRequest(`https://scholar.example/api/auth/${path}`, { method: "POST", headers: { "Content-Type": "application/json", Origin: origin }, body: JSON.stringify(data) });
+describe("public account policy", () => {
+  test("ordinary accounts are public; anonymous identities are still unauthenticated", async () => { expect(privateBetaEnabled()).toBe(false); expect(await isBetaAllowed(ordinary)).toBe(true); expect(await isBetaAllowed(null)).toBe(false); });
+  test("stale, empty and invalid beta configurations cannot close public access", async () => { for (const value of ["true", "typo", "false"]) { process.env.SCHOLAR_PRIVATE_BETA = value; process.env.SCHOLAR_BETA_ALLOWED_EMAILS = ""; process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "different"; expect(privateBetaEnabled()).toBe(false); expect(await isBetaAllowed(ordinary)).toBe(true); expect(publicBetaConfig().registrationEnabled).toBe(true); } });
+  test("public config never contains an allowlist", () => { process.env.SCHOLAR_BETA_ALLOWED_EMAILS = "hidden@example.test"; expect(JSON.stringify(publicBetaConfig())).not.toContain("hidden"); });
+  test("public registration normalizes email and stores a strong hash, never privileges", async () => { process.env.SCHOLAR_PRIVATE_BETA = "true"; const response = await register(request("register", { email: " NEW@Example.test ", name: "New Learner", password, confirmPassword: password })); expect(response.status).toBe(200); const row = users.at(-1)!; expect(row.email).toBe("new@example.test"); expect(row.role).toBe("USER"); expect(row.coins).toBe(0); expect(await verifyPassword(password, row.passwordHash)).toBe(true); expect(JSON.stringify(await response.json())).not.toContain("scrypt:"); expect(created).toBe(1); });
+  test("duplicate normalized email is rejected without creating another identity", async () => { const r = await register(request("register", { email: " ORDINARY@EXAMPLE.TEST ", name: "Test", password })); expect(r.status).toBe(409); expect(users).toHaveLength(1); expect(created).toBe(0); });
+  test("the service bootstrap email cannot be pre-hijacked through public signup", async () => { const r = await register(request("register", { email: "scholarofficialacc123@gmail.com", name: "Not the service owner", password })); expect(r.status).toBe(409); expect(created).toBe(0); });
+  test("signup rejects weak/mismatched passwords and forged privileges", async () => { for (const input of [{ password: "short" }, { confirmPassword: "different" }, { role: "ADMIN" }, { coins: 1000 }]) { const r = await register(request("register", { email: "new@example.test", name: "New", password, ...input })); expect(r.status).toBe(400); } expect(created).toBe(0); });
+  test("ordinary non-allowlisted password login works", async () => { process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "other"; const r = await login(request("login", { email: " ORDINARY@EXAMPLE.TEST ", password })); expect(r.status).toBe(200); expect((await r.json()).user.id).toBe(ordinary.id); expect(created).toBe(1); });
+  test("unknown identity and wrong password have the same generic negative response", async () => { const a = await login(request("login", { email: "missing@example.test", password })); const b = await login(request("login", { email: ordinary.email, password: "wrong" })); expect(a.status).toBe(401); expect(await a.json()).toEqual(await b.json()); expect(created).toBe(0); });
+  test("login rejects forged identity attributes", async () => { expect((await login(request("login", { email: ordinary.email, password, role: "ADMIN" }))).status).toBe(400); });
+  test("malformed/oversized JSON is bounded", async () => { expect((await login(new NextRequest("https://scholar.example/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{" }))).status).toBe(400); expect((await register(request("register", { name: "a".repeat(5000) }))).status).toBe(413); });
+  test("cross-origin mutations are rejected", async () => { expect((await login(request("login", { email: ordinary.email, password }, "https://attacker.example"))).status).toBe(403); expect(created).toBe(0); });
+  test("rate limits return retry information", async () => { limited = true; const r = await login(request("login", { email: ordinary.email, password })); expect(r.status).toBe(429); expect(r.headers.get("Retry-After")).toBe("60"); });
+  test("database failures stay safe", async () => { broken = true; const r = await login(request("login", { email: ordinary.email, password })); expect(r.status).toBe(503); expect(JSON.stringify(await r.json())).not.toContain("private database"); });
+  test("restored ordinary sessions are allowed despite stale beta env; expiration still rejects", async () => { values.set("scholar_session", "opaque-fixture-session"); restored = users[0]; process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "different"; expect((await getSessionUser())?.id).toBe(ordinary.id); expired = true; expect(await getSessionUser()).toBeNull(); expect(deleted).toBe(1); });
+  test("logout revokes the server session and clears privileged cookies", async () => { values.set("scholar_session", "opaque-fixture-session"); values.set("scholar_developer_access", "old"); const r = await logout(request("logout", {})); expect(r.status).toBe(200); expect(values.get("scholar_session")).toBe(""); expect(values.get("scholar_developer_access")).toBe(""); expect(deleted).toBe(1); });
+  test("session creation rotates opaque cookies and removes old Developer Access", async () => { values.set("scholar_session", "old"); values.set("scholar_developer_access", "old"); await createAuthSession(users[0]); expect(values.get("scholar_session")).toMatch(/^[A-Za-z0-9_-]{43}$/); expect(values.get("scholar_developer_access")).toBe(""); expect(cookieOptions.some((o) => o.httpOnly && o.sameSite === "lax")).toBe(true); expect(deleted).toBe(1); });
+  test("a stale credential version cannot create a session after reset", async () => { await expect(createAuthSession({ id: ordinary.id, sessionVersion: 0 })).rejects.toThrow("credentials changed"); expect(created).toBe(0); });
+  test("developer cookies remain bound to account and current version, not beta env", async () => { process.env.DEV_MODE_ENABLED = "true"; await createDeveloperSession(users[0]); expect(await hasDeveloperSession(ordinary.id)).toBe(true); process.env.SCHOLAR_BETA_ALLOWED_USER_IDS = "different"; expect(await hasDeveloperSession(ordinary.id)).toBe(true); users[0].sessionVersion++; expect(await hasDeveloperSession(ordinary.id)).toBe(false); });
 });

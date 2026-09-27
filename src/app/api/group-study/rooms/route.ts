@@ -12,6 +12,8 @@ import {
 import { createRoomSchema, ROOM_LIFETIME_MS } from "@/lib/group-study/policy";
 import type { GroupStudyOverview, RoomStatus } from "@/lib/group-study/types";
 import { resolveUserEntitlements, hasEntitlement } from "@/lib/subscriptions/entitlements";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { readBoundedJson } from "@/lib/security/request-body";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -136,7 +138,7 @@ export async function POST(request: Request) {
       );
     }
     const input = createRoomSchema.safeParse(
-      await request.json().catch(() => null),
+      await readBoundedJson(request, 8 * 1024),
     );
     if (!input.success)
       throw new GroupStudyError(
@@ -144,9 +146,12 @@ export async function POST(request: Request) {
         400,
         "VALIDATION_ERROR",
       );
-    await db.securityAttempt.create({
-      data: { key: `group-create:${user.id}`, action: "group-create" },
-    });
+    await enforceRateLimit(
+      `group-create:${user.id}`,
+      "group-create",
+      10,
+      60 * 60 * 1000,
+    );
     const room = await createRoomForHost(user, input.data);
     return NextResponse.json(
       { ok: true, roomId: room.id, name: room.name, code: room.code },

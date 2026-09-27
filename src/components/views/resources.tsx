@@ -637,7 +637,8 @@ export function ResourcesView() {
         const svg = generateMindmapSVG(entry, chapter, subject);
         const blob = new Blob([svg], { type: "image/svg+xml" });
         const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        window.open(url, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
         toast.success("Opening mind map", { description: entry.title });
       }
       return;

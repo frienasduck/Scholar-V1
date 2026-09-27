@@ -64,11 +64,14 @@
 /* ===== Scholar — Premium Dark-first Theme ===== */
 :root {
   --radius: 0.875rem;
-  --lam-glass-bg: rgba(2, 8, 23, 0.78);
-  --lam-glass-bg-strong: rgba(2, 8, 23, 0.96);
-  --lam-glass-border: rgba(207, 250, 254, 0.2);
-  --lam-glass-highlight: rgba(255, 255, 255, 0.46);
-  --lam-glass-shadow: rgba(0, 0, 0, 0.28);
+  /* LAM's material is the shared Scholar Liquid Glass plate, not a second
+     design system. These aliases keep existing LAM selectors working while
+     the values come from one source of truth. */
+  --lam-glass-bg: color-mix(in srgb, var(--sg-plate-ink) 78%, transparent);
+  --lam-glass-bg-strong: color-mix(in srgb, var(--sg-plate-ink) 96%, transparent);
+  --lam-glass-border: var(--sg-hairline-strong);
+  --lam-glass-highlight: var(--sg-highlight);
+  --lam-glass-shadow: var(--sg-shade);
   --lam-glass-blur: 22px;
   --lam-glass-saturation: 145%;
   --lam-radius-orb: 999px;
@@ -664,7 +667,8 @@ html[data-scholar-theme="theme-paper"] {
   .scholar-mobile-nav-toggle {
     display: inline-flex;
     min-width: 4.4rem;
-    min-height: 2.15rem;
+    /* Keep the pill visually compact while preserving a 44px touch target. */
+    min-height: 2.75rem;
     align-items: center;
     justify-content: center;
     gap: .32rem;

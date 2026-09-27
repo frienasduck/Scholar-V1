@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LearningProfileSettings } from "@/components/personalization/learning-profile-settings";
+import { AccountSecurity } from "@/components/account-security";
 import {
   User,
   Palette,
@@ -78,6 +80,7 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import { CustomCommandsPanel } from "@/components/reminders/custom-commands-panel";
 
 const SCHOLAR_UPDATE_LOG = [
+  { version: "Public authentication", date: "27 Sep 2026", title: "A calmer welcome, open to everyone", items: ["Email sign-in and account creation are now public, with a focused Liquid Glass form and no learning questions before authentication.", "Google sign-in is available when configured. Existing accounts connect Google explicitly in Settings; matching email alone never merges accounts.", "Email verification and password reset use single-use links when the sender is configured. Your Scholar, Guest Mode, Developer Access and Free/Plus permissions stay separate."] },
   {
     version: "Scholar Plus system",
     date: "23 Sep 2026",
@@ -137,7 +140,7 @@ const SCHOLAR_UPDATE_LOG = [
       "Group LAM: ask questions grounded in the room topic and shared materials, with summaries, flashcards and a shared five-question quiz builder.",
       "Live study chat with host announcements, plus synchronized focus timers, quizzes with host-controlled answer reveal, and polls.",
       "Shared room notes with host-controlled editing, raise hand, host mute/remove controls, room lock, pause and end for everyone.",
-      "Scholar is in private beta: public registration is closed, authorized accounts sign in as usual, and everyone can use Guest Mode or join Group Study rooms.",
+      "Scholar accounts are now public: sign in with email, create an account, or use configured Google sign-in. Guest Mode and accountless Group Study invites remain available.",
     ],
   },
   {
@@ -660,6 +663,7 @@ export function SettingsView() {
         <div className="relative z-10 flex-1 px-4 pb-8 max-w-5xl mx-auto w-full">
           <Tabs defaultValue="account" className="w-full">
             <TabsList className="scholar-settings-tabs asme-glass grid grid-cols-2 min-[480px]:grid-cols-3 lg:grid-cols-5 h-auto w-full rounded-2xl p-1.5 gap-1 mb-4 [&>button]:min-w-0 [&>button]:min-h-11 [&>button]:px-2 [&>button]:whitespace-normal">
+              <TabsTrigger value="personalization" className="asme-tab rounded-full text-xs px-3 py-2">Learning Profile</TabsTrigger>
               <TabsTrigger value="account" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <User className="h-3.5 w-3.5" />Account
               </TabsTrigger>
@@ -693,7 +697,9 @@ export function SettingsView() {
             </TabsList>
 
             {/* ===== Account ===== */}
+            <TabsContent value="personalization"><LearningProfileSettings /></TabsContent>
             <TabsContent value="account" className="mt-2">
+              <AccountSecurity />
               <div className="asme-glass rounded-3xl p-6 space-y-6">
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <div className="flex flex-col items-center gap-3 w-full sm:w-auto">

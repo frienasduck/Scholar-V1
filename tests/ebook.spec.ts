@@ -7,14 +7,37 @@ test.use({ baseURL, launchOptions: { executablePath }, viewport: { width: 1366, 
 test.setTimeout(120_000);
 
 async function enterProfile(page: Page, scholarClass: 9 | 11) {
+  const email = `ebook${scholarClass}@scholar.test`;
+  await page.route("**/api/auth/session", (route) => route.fulfill({
+    json: {
+      authenticated: true,
+      developerMode: false,
+      plan: "PLUS",
+      entitlementsLoaded: true,
+      user: { id: `ebook-${scholarClass}`, email, name: "Alex", role: "USER", coins: 0, currentScholarClass: scholarClass },
+      access: {
+        plan: "PLUS", source: "plus", entitlementsLoaded: true, entitlements: ["lam_ai"],
+        subscriptionId: "ebook-plus", subscriptionStatus: "ACTIVE", subscriptionEndsAt: null,
+        storageLimitBytes: 100_000_000, dailyQuizLimit: 30, dailySlideshowLimit: 10,
+        monthlyEbookUploadLimit: 20, monthlyMockExamLimit: 30,
+      },
+      usage: { day: "2026-09-27", quiz: { used: 0, limit: 30 }, slideshow: { used: 0, limit: 10 } },
+      config: { subscriptionsEnabled: true, checkoutConfigured: false },
+    },
+  }));
+  await page.route(/\.mp4(?:\?.*)?$/, (route) => route.abort());
+  await page.addInitScript(({ email, scholarClass }) => {
+    localStorage.setItem("scholar-workspace-owner-v1", email);
+    localStorage.setItem("neha-scholar-v5", JSON.stringify({ schema: 7, state: {
+      authed: true,
+      guestMode: false,
+      onboarded: true,
+      user: { email, name: "Alex", username: `ebook${scholarClass}`, bio: "", school: "", class: `${scholarClass} - CBSE`, avatar: "A", scholarClass, jeeMode: false },
+      settings: { mobileLamMode: "off", elamEnabled: false },
+    } }));
+  }, { email, scholarClass });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Start Your Journey" }).click();
-  await page.getByRole("button", { name: new RegExp(`Class ${scholarClass}`) }).last().click();
-  await page.getByPlaceholder("Your name").fill("Alex");
-  await page.getByPlaceholder("you@scholar.app").fill(`ebook${scholarClass}@scholar.app`);
-  await page.locator('input[type="password"]').fill("ebook-runtime-test");
-  await page.getByRole("button", { name: "Create Account" }).click();
-  await page.getByRole("button", { name: "Skip intro" }).click();
+  await expect(page.locator(".scholar-shell")).toBeVisible();
 }
 
 async function openMaths(page: Page, destination = "Reader") {

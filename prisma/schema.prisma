@@ -23,7 +23,8 @@ model User {
   id                  String    @id @default(cuid())
   email               String    @unique
   name                String?
-  passwordHash        String
+  passwordHash        String?
+  emailVerifiedAt     DateTime?
   role                UserRole  @default(USER)
   sessionVersion      Int       @default(1)
   timezone            String    @default("Asia/Kolkata")
@@ -56,6 +57,71 @@ model User {
   liveTutorSessions     LiveTutorSession[]
   liveTutorMemories     LiveTutorMemory[]
   customEbooks          CustomEbook[]
+  learningProfile       LearningProfile?
+  oauthAccounts         OAuthAccount[]
+  authActionTokens      AuthActionToken[]
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  provider          String
+  providerAccountId String
+  userId            String
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+}
+
+// Short-lived, single-use authorization attempts. No access/refresh/ID tokens.
+model OAuthAttempt {
+  stateHash    String   @id
+  browserHash  String
+  nonce        String
+  codeVerifier String
+  redirectUri  String
+  intent       String
+  userId       String?
+  sessionHash  String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model AuthActionToken {
+  tokenHash      String    @id
+  userId         String
+  purpose        String
+  email          String
+  sessionVersion Int
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}
+
+model LearningProfile {
+  userId        String   @id
+  required      Boolean  @default(true)
+  version       Int      @default(1)
+  revision      Int      @default(0)
+  status        String   @default("NOT_STARTED")
+  stage         Int      @default(0)
+  preferences   Json     @default("{}")
+  result        Json     @default("{}")
+  jobToken      String?
+  jobStartedAt  DateTime?
+  completedAt   DateTime?
+  skippedAt     DateTime?
+  bonusUsedBytes Int     @default(0)
+  bonusClosedAt DateTime?
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Session {
@@ -180,12 +246,16 @@ model CustomEbook {
   pageTexts        Json      @default("[]")
   pdfBytes         Bytes
   processingStatus String    @default("ready") // ready | needs_ocr | failed
+  allocation       String    @default("standard")
+  importKey        String?
+  importDigest     String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, deletedAt, createdAt])
+  @@unique([userId, importKey])
 }
 
 model CoinLedger {

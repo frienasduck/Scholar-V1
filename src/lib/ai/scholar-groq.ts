@@ -99,7 +99,11 @@ export async function generateScholarGroqJSON(request: ScholarGroqRequest): Prom
   return parseJSONObject(await complete(request, true));
 }
 
-export async function streamScholarGroqText(request: ScholarGroqRequest, onDelta: (delta: string) => void): Promise<void> {
+export async function streamScholarGroqText(
+  request: ScholarGroqRequest,
+  onDelta: (delta: string) => void,
+  onModelResolved?: (model: string) => void,
+): Promise<string> {
   const config = getScholarGroqConfig();
   const deadline = AbortSignal.timeout(50_000);
   const signal = request.signal ? AbortSignal.any([request.signal, deadline]) : deadline;
@@ -112,6 +116,7 @@ export async function streamScholarGroqText(request: ScholarGroqRequest, onDelta
     const attemptSignal = AbortSignal.any([signal, idle.signal]);
     try {
       attemptSignal.throwIfAborted();
+      onModelResolved?.(model);
       const stream = await client.chat.completions.create({ ...parameters(request, model, false), stream: true }, { signal: attemptSignal });
       for await (const chunk of stream) {
         const choice = chunk.choices[0];
@@ -125,7 +130,7 @@ export async function streamScholarGroqText(request: ScholarGroqRequest, onDelta
         }
       }
       validateCompletion(text, finish);
-      return;
+      return model;
     } catch (error) {
       console.warn("[Scholar AI stream]", { model, status: statusOf(error), partial: Boolean(text), code: error instanceof AIProviderError ? error.code : "PROVIDER_FAILURE" });
       if (!text && !signal.aborted && index < config.models.length - 1 && canFallback(error)) continue;
@@ -135,4 +140,5 @@ export async function streamScholarGroqText(request: ScholarGroqRequest, onDelta
       idle.abort();
     }
   }
+  throw new AIProviderError("Scholar AI is unavailable.", 503);
 }

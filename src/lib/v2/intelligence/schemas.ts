@@ -90,7 +90,9 @@ export const reviewUpdateSchema = z.object({
 });
 
 export const manualOrderSchema = z.object({
-  order: z.array(z.string().min(1).max(160)).max(500),
+  // The read endpoint returns at most 300 items, so accepting larger reorder
+  // batches only creates avoidable database work and cannot represent UI state.
+  order: z.array(z.string().min(1).max(160)).max(300),
 });
 
 export type IngestEventsInput = z.infer<typeof ingestEventsSchema>;

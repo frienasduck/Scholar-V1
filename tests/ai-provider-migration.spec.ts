@@ -97,7 +97,7 @@ test("normal LAM remains on Groq while Live Tutor is an explicit isolated extens
   expect(providers).not.toContain("AISIG_NVIDIA_API_KEY");
 });
 
-test("AISIG enhancement uses Groq while image generation stays unchanged", () => {
+test("AISIG enhancement uses Groq while image generation keeps its provider boundary and abuse guards", () => {
   const aiTools = read("src/components/views/ai-tools.tsx");
   const aisig = aiTools.slice(
     aiTools.indexOf("function AISIG()"),
@@ -108,25 +108,29 @@ test("AISIG enhancement uses Groq while image generation stays unchanged", () =>
   expect(read("src/lib/ai/client.ts")).toContain('fetch("/api/ai"');
 
   const imageRoute = read("src/app/api/ai-image/route.ts");
+  const nvidiaImage = read("src/lib/ai/nvidia-image.ts");
+  const geminiImage = read("src/lib/ai/gemini-image.ts");
   expect(imageRoute).toContain('from "@/lib/ai/nvidia-image"');
   expect(imageRoute).toContain("generateNvidiaImage");
   expect(imageRoute).not.toMatch(/scholar-groq|generateScholarGroq/i);
+  expect(imageRoute).toContain("readBoundedAIJSON");
+  expect(imageRoute).toContain("enforceRateLimit");
+  expect(imageRoute).toContain("Retry-After");
+  expect(nvidiaImage).toContain("MAX_IMAGE_BASE64_LENGTH = 4_000_000");
+  expect(geminiImage).toContain("MAX_IMAGE_BASE64_LENGTH = 4_000_000");
+});
 
-  const changedImageFiles = execFileSync(
-    "git",
-    [
-      "diff",
-      "--name-only",
-      "--",
-      "src/app/api/ai-image/route.ts",
-      "src/lib/ai/nvidia-image.ts",
-      "src/lib/ai/gemini-image.ts",
-    ],
-    { cwd: root, encoding: "utf8" },
-  )
-    .split(/\r?\n/)
-    .filter(Boolean);
-  expect(changedImageFiles).toEqual([]);
+test("AI routes enforce bounded inputs, cancellation, and durable abuse limits", () => {
+  const aiRoute = read("src/app/api/ai/route.ts");
+  const imageRoute = read("src/app/api/ai-image/route.ts");
+  const transcriptionRoute = read("src/app/api/lam/transcribe/route.ts");
+  const access = read("src/lib/ai/access.ts");
+  expect(aiRoute).toContain("ai-generation-burst");
+  expect(aiRoute).toContain("readBoundedAIJSON");
+  expect(imageRoute).toContain("ai-image-hourly");
+  expect(transcriptionRoute).toContain("MAX_MULTIPART_BYTES");
+  expect(transcriptionRoute).toContain("AbortSignal.timeout");
+  expect(access).toContain("${action}-hourly");
 });
 
 test("provider policy and inventory encode the migration explicitly", () => {

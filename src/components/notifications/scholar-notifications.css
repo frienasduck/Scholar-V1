@@ -282,3 +282,54 @@ html[data-high-contrast="true"] .scholar-notification-copy p { color: var(--noti
 
 html[data-appearance-motion="off"] .scholar-notification,
 html[data-appearance-motion="off"] [data-sonner-toast][data-removed="true"] .scholar-notification { animation-duration: 100ms !important; transform: none !important; }
+
+/* ==========================================================================
+   Scholar Liquid Glass alignment
+   The notification surface is the same material family as every other glass
+   layer in Scholar. Its tokens now resolve to the shared --sg-* values, so a
+   notification can never drift away from the rest of the product.
+   ========================================================================== */
+:root {
+  --notification-glass-bg: color-mix(in srgb, var(--sg-plate-ink) 74%, transparent);
+  --notification-glass-solid: color-mix(in srgb, var(--sg-plate-ink) 97%, transparent);
+  --notification-glass-border: var(--sg-hairline-strong);
+  --notification-glass-blur: min(var(--sg-blur), 30px);
+  --notification-title: var(--sg-ink-text);
+  --notification-message: var(--sg-muted-text);
+}
+
+/* Status colour reaches the icon, a hairline edge tint and a faint wash. */
+.scholar-notification-tint {
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--notification-accent) var(--sg-tone-alpha, 14%), transparent), transparent 62%);
+}
+
+.scholar-notification-edge {
+  background: linear-gradient(
+    140deg,
+    rgb(255 255 255 / 0),
+    rgb(255 255 255 / 22%) 32%,
+    color-mix(in srgb, var(--notification-accent) 30%, rgb(255 255 255 / 40%)) 62%,
+    rgb(255 255 255 / 0)
+  );
+}
+
+/* Tier 3: no backdrop dependency, stronger plate, identical identity. */
+html[data-sg-material="fallback"] .scholar-notification-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--notification-glass-solid) 94%, transparent);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .scholar-notification-glass {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--notification-glass-solid) !important;
+  }
+}
+
+/* Reduced motion: the material stays, the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .scholar-notification-specular { animation: none !important; }
+}

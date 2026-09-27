@@ -12,6 +12,8 @@ import type { LamMessage, LamPreferences } from "@/lib/lam/types";
 import { LIVE_TUTOR_MODES, LIVE_TUTOR_PERSONALITIES, PERSONALITY_COPY, type LiveTutorMemoryRecord, type LiveTutorMission, type LiveTutorMode, type LiveTutorPersonality, type LiveTutorProvider, type LiveTutorProviderStatus, type LiveTutorState } from "@/lib/live-tutor/types";
 import { navigateTo } from "@/lib/nav-event";
 import { useStore } from "@/lib/store";
+import { aiErrorMessage } from "@/lib/ai/client";
+import { consumeSSEChunk } from "@/lib/ai/sse";
 import "@/components/live-tutor/live-tutor.css";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
@@ -182,6 +184,8 @@ export function LiveTutorView() {
     if (!sessionIds[persona]) setSessionIds((current) => ({ ...current, [persona]: sessionId }));
     append(persona, { id: turnId, role: "user", content: message, inputMode, createdAt: now() }); setStatus("thinking"); setStreaming("");
     const controller = new AbortController(); abortRef.current = controller; let full = ""; let sources: Array<{ label: string; route?: string }> = [];
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined; let timedOut = false; let finished = false;
+    const deadline = window.setTimeout(() => { timedOut = true; controller.abort(); }, 55_000);
     try {
       const response = await fetch("/api/lam/chat", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal, body: JSON.stringify({
         profileId, message, inputMode, assistantMode: mode === "examiner" ? "question-coach" : mode === "rapid-revision" ? "revision-coach" : "tutor",
@@ -189,21 +193,35 @@ export function LiveTutorView() {
         messages: messages.filter((item) => item.role !== "tool").slice(-10).map(({ role, content }) => ({ role: role as "user" | "assistant", content })), responseDetail: prefs.responseDetail,
         liveTutor: { sessionId, turnId, provider, personality: persona, mode },
       }) });
-      if (!response.ok || !response.body) { const result = await response.json().catch(() => null); throw new Error(result?.error || "LAM could not start this response."); }
-      const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
-      while (true) {
-        const chunk = await reader.read(); if (chunk.done) break; buffer += decoder.decode(chunk.value, { stream: true }); const events = buffer.split("\n\n"); buffer = events.pop() ?? "";
-        for (const event of events) { const line = event.split("\n").find((part) => part.startsWith("data: ")); if (!line) continue; const payload = JSON.parse(line.slice(6)) as { type: string; value?: string; message?: string; provider?: string; model?: string; source?: { label: string; route?: string } };
-          if (payload.type === "start") setResolvedModel([payload.provider, payload.model].filter(Boolean).join(" · "));
-          if (payload.type === "text-delta" && payload.value) { full += payload.value; setStreaming(full); }
-          if (payload.type === "source" && payload.source) sources = [...sources, payload.source];
-          if (payload.type === "error") throw new Error(payload.message || "LAM could not finish this response.");
+      if (!response.ok || !response.body) { const result = await response.json().catch(() => null); throw new Error(aiErrorMessage(result, "LAM could not start this response.")); }
+      reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
+      const consumeEvent = (rawEvent: string) => {
+        let payload: { type?: string; value?: string; message?: string; provider?: string; model?: string; source?: { label: string; route?: string } };
+        try {
+          const parsedEvent = JSON.parse(rawEvent) as unknown;
+          if (!parsedEvent || typeof parsedEvent !== "object" || Array.isArray(parsedEvent)) throw new Error("invalid event");
+          payload = parsedEvent as typeof payload;
+        } catch {
+          throw new Error("LAM returned malformed streaming data. Please retry.");
         }
+        if (payload.type === "start") setResolvedModel([payload.provider, payload.model].filter(Boolean).join(" · "));
+        if (payload.type === "text-delta" && payload.value) { full += payload.value; setStreaming(full); }
+        if (payload.type === "source" && payload.source) sources = [...sources, payload.source];
+        if (payload.type === "error") throw new Error(payload.message || "LAM could not finish this response.");
+        if (payload.type === "finish") finished = true;
+      };
+      while (true) {
+        const chunk = await reader.read();
+        const parsedChunk = consumeSSEChunk(buffer, chunk.done ? decoder.decode() : decoder.decode(chunk.value, { stream: true }), { flush: chunk.done });
+        buffer = parsedChunk.buffer;
+        for (const event of parsedChunk.events) consumeEvent(event);
+        if (chunk.done) break;
       }
       if (!full.trim()) throw new Error("LAM returned an empty response. Please retry.");
+      if (!finished) throw new Error("Connection lost before LAM finished. Please retry.");
       append(persona, { id: `${turnId}:assistant`, role: "assistant", content: full, createdAt: now(), sources }); setStreaming(""); setStatus("complete"); speak(full);
-    } catch (caught) { if (controller.signal.aborted) return; setStreaming(""); setStatus("error"); setError(caught instanceof Error ? caught.message : "LAM could not complete this turn."); }
-    finally { if (abortRef.current === controller) abortRef.current = null; }
+    } catch (caught) { if (controller.signal.aborted && !timedOut) return; setStreaming(""); setStatus("error"); setError(timedOut ? "LAM took too long. Please retry or ask a shorter question." : caught instanceof Error ? caught.message : "LAM could not complete this turn."); }
+    finally { window.clearTimeout(deadline); await reader?.cancel().catch(() => undefined); reader?.releaseLock(); if (abortRef.current === controller) abortRef.current = null; }
   }, [append, busy, context, messages, mode, patchPreferences, personality, prefs.responseDetail, profileId, provider, sessionIds, speak, user.name, user.scholarClass]);
 
   const startRecording = useCallback((stream: MediaStream) => {
@@ -212,7 +230,7 @@ export function LiveTutorView() {
     recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
     recorder.onerror = () => { setError("The browser could not record this microphone."); stopEverything(); };
     recorder.onstop = async () => { stopMediaStream(stream); streamRef.current = null; if (!chunksRef.current.length) { setStatus("idle"); return; } setStatus("transcribing");
-      try { const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" }); const form = new FormData(); form.set("audio", blob, `live-tutor.${blob.type.includes("mp4") ? "mp4" : "webm"}`); const response = await fetch("/api/lam/transcribe", { method: "POST", body: form }); const result = await response.json().catch(() => null); if (!response.ok || !result?.text) throw new Error(result?.error || "LAM could not transcribe that recording."); await sendMessage(result.text, "voice"); }
+      try { const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" }); const form = new FormData(); form.set("audio", blob, `live-tutor.${blob.type.includes("mp4") ? "mp4" : "webm"}`); const response = await fetch("/api/lam/transcribe", { method: "POST", body: form, signal: AbortSignal.timeout(50_000) }); const result = await response.json().catch(() => null); if (!response.ok || !result?.text) throw new Error(aiErrorMessage(result, "LAM could not transcribe that recording.")); await sendMessage(result.text, "voice"); }
       catch (caught) { setError(caught instanceof Error ? caught.message : "LAM could not transcribe that recording."); setStatus("error"); }
     };
     recorderRef.current = recorder; recorder.start(250); setStatus("listening");

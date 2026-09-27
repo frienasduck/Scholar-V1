@@ -10,10 +10,17 @@ export async function checkAssistantAccess(action: "lam-chat" | "lam-transcribe"
     if (!capability.ok) return capability;
     const user = capability.user;
     await enforceRateLimit(user.id, action, action === "lam-chat" ? 30 : 10, 60_000);
+    await enforceRateLimit(user.id, `${action}-hourly`, action === "lam-chat" ? 120 : 30, 60 * 60_000);
     return { ok: true as const, user };
   } catch (error) {
     const limited = error instanceof RateLimitError;
     console.warn("[Scholar assistant access]", { action, code: limited ? "RATE_LIMITED" : "ACCESS_CHECK_FAILED" });
-    return { ok: false as const, response: NextResponse.json({ ok: false, error: limited ? "Too many requests. Please wait a minute and retry." : "Scholar could not verify your session. Please retry." }, { status: limited ? 429 : 503 }) };
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { ok: false, error: limited ? "Too many requests. Please wait and retry." : "Scholar could not verify your session. Please retry." },
+        { status: limited ? 429 : 503, headers: limited ? { "Retry-After": String(error.retryAfterSeconds) } : undefined },
+      ),
+    };
   }
 }

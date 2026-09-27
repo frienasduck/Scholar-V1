@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBillingProvider } from "@/lib/v2/billing/registry";
 import { webhookIdempotencyKey, planEntitlementReconciliation } from "@/lib/v2/billing/webhook";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { readBoundedText, RequestBodyError } from "@/lib/security/request-body";
+
+const MAX_WEBHOOK_BYTES = 1024 * 1024;
 
 /**
  * Billing webhook endpoint (provider-neutral).
@@ -19,7 +22,21 @@ import { recordAudit } from "@/lib/subscriptions/audit";
  */
 export async function POST(request: NextRequest) {
   const provider = getBillingProvider();
-  const rawBody = await request.text();
+  let rawBody: string;
+  try {
+    rawBody = await readBoundedText(request, MAX_WEBHOOK_BYTES);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json(
+        { error: error.code, message: error.message },
+        { status: error.status },
+      );
+    }
+    return NextResponse.json(
+      { error: "WEBHOOK_BODY_UNAVAILABLE", message: "The webhook body could not be read." },
+      { status: 400 },
+    );
+  }
   const headers = Object.fromEntries(request.headers.entries());
 
   // 1. VERIFY — provider checks the signature against the exact raw body.

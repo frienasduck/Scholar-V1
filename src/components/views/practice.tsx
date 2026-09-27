@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
+import { useLearningProfile } from "@/components/personalization/personalization-provider";
 import { askAI } from "@/lib/ai";
 import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
 import { ALL_PRACTICE_QUESTIONS, ALL_PHYSICS_QUESTIONS, PHYSICS_CHAPTER_QUESTIONS, isReviewNeeded, type PracticeQuestion } from "@/lib/question-bank";
@@ -53,7 +54,8 @@ const MATHS_CHAPTERS = [
 
 export function PracticeView() {
   const scholarClass = useStore((s) => s.user.scholarClass);
-  const [activeSubject, setActiveSubject] = useState<SubjectTab>("maths");
+  const {profile}=useLearningProfile();
+  const [activeSubject, setActiveSubject] = useState<SubjectTab>(()=>(profile?.result?.grade===scholarClass ? profile.result.priorities.find(s=>s.id in SUBJECT_META)?.id as SubjectTab | undefined : undefined) ?? "maths");
   const [activeChapter, setActiveChapter] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "mcq" | "subjective">("all");
   const [showPdfReview, setShowPdfReview] = useState(false);

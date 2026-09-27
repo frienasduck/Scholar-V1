@@ -8,11 +8,12 @@ export default function PrivacyPage() {
     <InformationPage title="Privacy & your data" intro="Understand what stays on this device and what is sent to Scholar's services.">
       <section>
         <h2>Information Scholar processes</h2>
-        <p>Scholar keeps your study workspace usable on this device and processes the minimum account information needed to run the service. This notice describes the categories of information involved in using Scholar during the private beta. It is a plain-language summary, not an exhaustive legal document, and it may be updated as Scholar evolves.</p>
+        <p>Scholar keeps your study workspace usable on this device and processes the minimum account information needed to run the service. This notice describes the categories of information involved in using Scholar. It is a plain-language summary, not an exhaustive legal document, and it may be updated as Scholar evolves.</p>
       </section>
       <section>
         <h2>Account information</h2>
         <p>If you sign in with a Scholar account, Scholar processes your email address, display name, selected class, and security settings such as your password (stored only as a salted hash) and server session. Sessions use an HttpOnly cookie and can be signed out at any time from Scholar's settings.</p>
+        <p>When you choose Google sign-in, Scholar verifies your Google identity, email and display name on the server and stores the stable Google account identifier. Google access, refresh and identity tokens are not saved. Connecting Google to an existing account requires signing into that account first. Email recovery and verification, when configured, send single-use links through Scholar’s existing email provider.</p>
       </section>
       <section>
         <h2>Guest Mode</h2>
@@ -44,7 +45,7 @@ export default function PrivacyPage() {
       </section>
       <section>
         <h2>Contact and privacy information</h2>
-        <p>Questions about this notice or your data can be sent to Scholar's support channel from the Help &amp; feedback page. During the private beta, beta access questions go to the Scholar contact address shown on the sign-in page.</p>
+        <p>Questions about this notice or your data can be sent to Scholar's support channel from the Help &amp; feedback page.</p>
       </section>
       <DeveloperAccessSection />
     </InformationPage>

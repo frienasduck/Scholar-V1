@@ -64,13 +64,29 @@ async function revokeCurrentAuthSession() {
   if (token) await db.session.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
 }
 
-export async function createAuthSession(user: { id: string }) {
+export async function createAuthSession(user: { id: string; sessionVersion?: number }) {
   await revokeCurrentAuthSession();
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + AUTH_MAX_AGE * 1000);
-  await db.session.create({ data: { tokenHash: hashSessionToken(token), userId: user.id, expiresAt } });
+  // A reset cannot revoke sessions and then be raced by an old-password login.
+  if (user.sessionVersion !== undefined) {
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${user.id} FOR UPDATE`;
+      const fresh = await tx.user.findUnique({ where: { id: user.id }, select: { sessionVersion: true } });
+      if (!fresh || fresh.sessionVersion !== user.sessionVersion) throw new Error("Account credentials changed");
+      await tx.session.create({ data: { tokenHash: hashSessionToken(token), userId: user.id, expiresAt } });
+    });
+  } else await db.session.create({ data: { tokenHash: hashSessionToken(token), userId: user.id, expiresAt } });
   const store = await cookies();
   store.set(AUTH_COOKIE, token, cookieOptions(AUTH_MAX_AGE));
+  store.set(DEV_COOKIE, "", cookieOptions(0));
+  await clearDeveloperAccessSession();
+}
+
+/** Bind explicit account linking to this exact server-authenticated session. */
+export async function currentAuthSessionHash() {
+  const token = (await cookies()).get(AUTH_COOKIE)?.value;
+  return token ? hashSessionToken(token) : null;
 }
 
 export async function clearAuthSession() {
@@ -115,11 +131,6 @@ export async function getSessionUser() {
     await db.session.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
-  // Apply the current policy on every restore, including sessions issued
-  // before beta was enabled. Keep the account and its data intact.
-  // A valid Developer Access session (verified server-side from its cookie)
-  // authorizes the account here through isBetaAllowed.
-  if (!(await isBetaAllowed(session.user))) return null;
   return session.user;
 }
 

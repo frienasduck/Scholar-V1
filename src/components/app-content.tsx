@@ -6,9 +6,14 @@ import { workspaceOwner } from "@/lib/account-workspace";
 import { AuthScreen } from "@/components/auth-screen";
 import { Onboarding } from "@/components/onboarding";
 import { AppShell } from "@/components/app-shell";
+import { PersonalizationProvider } from "@/components/personalization/personalization-provider";
 import { ScholarTransitionProvider } from "@/components/scholar-transition";
 import { LaunchReadinessGate } from "@/components/launch-readiness-gate";
 import { SubscriptionProvider, useScholarAccess } from "@/components/subscriptions/subscription-provider";
+
+function currentWorkspaceOwner(): string {
+  try { return workspaceOwner(window.localStorage); } catch { return ""; }
+}
 
 export function AppContent() {
   return (
@@ -36,7 +41,7 @@ function ScholarContent() {
   const session = useScholarAccess();
 
   useEffect(() => {
-    if (!session.loading && session.status !== "error" && !session.authenticated && guestMode && workspaceOwner(localStorage) !== "guest") {
+    if (!session.loading && session.status !== "error" && !session.authenticated && guestMode && currentWorkspaceOwner() !== "guest") {
       useStore.getState().startGuestSession();
       return;
     }
@@ -63,7 +68,7 @@ function ScholarContent() {
   if (workspaceError) {
     return <div role="alert" className="grid min-h-dvh place-items-center bg-background p-6"><div className="max-w-md space-y-4"><h1 className="text-xl font-semibold">Your saved workspace is protected</h1><p>Scholar could not safely switch accounts because browser storage is full or unavailable. No previous account’s work has been discarded. Keep this browser’s data and contact support before clearing storage.</p><button className="rounded-xl border px-4 py-3" onClick={() => window.location.reload()}>Retry safely</button></div></div>;
   }
-  if ((guestMode && !session.authenticated && workspaceOwner(localStorage) !== "guest") || (session.authenticated && session.user?.email !== workspaceEmail)) {
+  if ((guestMode && !session.authenticated && currentWorkspaceOwner() !== "guest") || (session.authenticated && session.user?.email !== workspaceEmail)) {
     return <div role="status" className="grid min-h-dvh place-items-center bg-background">Opening your account’s workspace…</div>;
   }
   if (session.status === "initializing" && !guestMode) {
@@ -73,6 +78,7 @@ function ScholarContent() {
     return <div role="alert" className="grid min-h-dvh place-items-center bg-background px-6 text-center"><div className="max-w-sm space-y-4"><h1 className="text-xl font-semibold">We couldn't check your session</h1><p className="text-sm text-muted-foreground">Your saved work is still here. Check your connection and try again.</p><button className="rounded-xl border border-border px-5 py-3" onClick={() => void session.refresh()}>Retry connection</button></div></div>;
   }
   if (!authed) return <AuthScreen />;
+  if (session.authenticated && session.user) return <PersonalizationProvider key={session.user.id}><AppShell /></PersonalizationProvider>;
   if (!onboarded) return <Onboarding />;
   return <AppShell />;
 }

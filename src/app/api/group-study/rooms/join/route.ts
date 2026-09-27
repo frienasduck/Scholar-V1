@@ -19,6 +19,8 @@ import {
   normalizeRoomCode,
   displayNameSchema,
 } from "@/lib/group-study/policy";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { readBoundedJson } from "@/lib/security/request-body";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
   try {
     assertRoomMutationRequest(request);
     const input = joinRoomSchema.safeParse(
-      await request.json().catch(() => null),
+      await readBoundedJson(request, 8 * 1024),
     );
     if (!input.success)
       throw new GroupStudyError(
@@ -42,26 +44,15 @@ export async function POST(request: Request) {
     if (!/^SCH[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(code)) {
       throw new GroupStudyError(GENERIC_JOIN_FAILURE, 404, "ROOM_NOT_FOUND");
     }
-    // One combined limiter: code guessing and join floods share the same budget.
-    await db.securityAttempt.create({
-      data: {
-        key: `group-join:${groupStudyIpKey(request)}`,
-        action: "group-join",
-      },
-    });
-    const recent = await db.securityAttempt.count({
-      where: {
-        key: `group-join:${groupStudyIpKey(request)}`,
-        action: "group-join",
-        createdAt: { gte: new Date(Date.now() - 15 * 60_000) },
-      },
-    });
-    if (recent > 30)
-      throw new GroupStudyError(
-        "Too many join attempts. Wait a few minutes and try again.",
-        429,
-        "JOIN_RATE_LIMITED",
-      );
+    // One atomic limiter: code guessing and join floods share the same budget.
+    // The previous insert-then-count sequence allowed concurrent requests to
+    // race past the ceiling.
+    await enforceRateLimit(
+      `group-join:${groupStudyIpKey(request)}`,
+      "group-join",
+      30,
+      15 * 60_000,
+    );
 
     const room = await db.groupStudyRoom.findUnique({ where: { code } });
     // Identical response and timing profile whether the code is unknown, the

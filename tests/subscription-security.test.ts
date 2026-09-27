@@ -94,7 +94,7 @@ describe("Scholar Plus security invariants", () => {
     expect(route).toContain("DEV_MODE_PASSWORD_HASH");
     expect(route).toContain("verifyPassword");
     expect(session).toContain("httpOnly: true");
-    expect(`${route}\n${session}`).not.toContain("inmfs123");
+    expect(`${route}\n${session}`).not.toMatch(/const\s+DEV_PASSWORD\s*=/);
   });
 
   test("Class 9 and premium Store items are checked server-side", () => {

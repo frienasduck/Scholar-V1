@@ -3,11 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { LIVE_TUTOR_VIDEOS, type LiveTutorPersonality } from "@/lib/live-tutor/types";
 
-type Layer = { personality: LiveTutorPersonality; key: number };
+type Layer = { personality: LiveTutorPersonality; key: number; ready?: boolean };
 
 export function PersonalityBackground({ personality }: { personality: LiveTutorPersonality }) {
   const sequence = useRef(1);
+  const revealTimers = useRef(new Map<number, number>());
   const [layers, setLayers] = useState<Layer[]>([{ personality, key: 0 }]);
+
+  useEffect(() => () => {
+    revealTimers.current.forEach((timer) => window.clearTimeout(timer));
+    revealTimers.current.clear();
+  }, []);
 
   useEffect(() => {
     setLayers((current) => {
@@ -18,15 +24,21 @@ export function PersonalityBackground({ personality }: { personality: LiveTutorP
   }, [personality]);
 
   const reveal = (key: number) => {
-    setLayers((current) => current.map((layer) => layer.key === key ? { ...layer, ready: true } as Layer & { ready: boolean } : layer));
-    window.setTimeout(() => setLayers((current) => current.filter((layer) => layer.key === key || current.length === 1)), 720);
+    setLayers((current) => current.map((layer) => layer.key === key ? { ...layer, ready: true } : layer));
+    const existing = revealTimers.current.get(key);
+    if (existing !== undefined) window.clearTimeout(existing);
+    const timer = window.setTimeout(() => {
+      revealTimers.current.delete(key);
+      setLayers((current) => current.filter((layer) => layer.key === key || current.length === 1));
+    }, 720);
+    revealTimers.current.set(key, timer);
   };
 
   return (
     <div className="liveTutorVideoStack" aria-hidden="true">
       {layers.map((layer, index) => {
         const asset = LIVE_TUTOR_VIDEOS[layer.personality];
-        const ready = Boolean((layer as Layer & { ready?: boolean }).ready) || layers.length === 1;
+        const ready = Boolean(layer.ready) || layers.length === 1;
         return (
           <video
             key={layer.key}

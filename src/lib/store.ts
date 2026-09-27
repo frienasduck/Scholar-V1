@@ -1030,7 +1030,10 @@ function savePersistedState(state: AppState) {
 }
 
 const persistedState = loadPersistedState();
-let loadedWorkspaceOwner = typeof window === "undefined" ? "" : workspaceOwner(localStorage);
+let loadedWorkspaceOwner = (() => {
+  if (typeof window === "undefined") return "";
+  try { return workspaceOwner(window.localStorage); } catch { return ""; }
+})();
 
 export const useStore = create<AppState>()(
   (set, get) => ({

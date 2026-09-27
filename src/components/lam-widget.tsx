@@ -25,6 +25,8 @@ import { microphoneEnvironmentError, microphoneErrorMessage, queryMicrophonePerm
 import { useLamRenderQuality } from "@/lib/lam/render-quality";
 import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
 import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
+import { aiErrorMessage } from "@/lib/ai/client";
+import { consumeSSEChunk } from "@/lib/ai/sse";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
 type Recognition = {
@@ -437,23 +439,32 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
         reminderSummary: summaryForLAM(reminderProfile.reminders, user.scholarClass),
         messages: conversation.messages.filter((message) => message.role !== "tool" && message.content).slice(-10).map(({ role, content: value }) => ({ role, content: value })),
       }) });
-      if (!response.ok || !response.body) { const data = await response.json().catch(() => null) as { error?: string } | null; throw new Error(data?.error ?? "LAM could not connect to Groq."); }
+      if (!response.ok || !response.body) { const data = await response.json().catch(() => null); throw new Error(aiErrorMessage(data, "LAM could not connect to the AI service.")); }
       reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
-      while (true) {
-        const chunk = await reader.read(); if (chunk.done) break;
-        buffer += decoder.decode(chunk.value, { stream: true }).replace(/\r\n/g, "\n");
-        const frames = buffer.split("\n\n"); buffer = frames.pop() ?? "";
-        for (const frame of frames) for (const line of frame.split("\n")) if (line.startsWith("data:")) {
-          const event = JSON.parse(line.slice(5).trim()) as { type: string; value?: string; message?: string; source?: { label: string; route?: string } };
-           if (event.type === "text-delta" && event.value) {
-             full += event.value;
-             if (streamFlushTimer === null) streamFlushTimer = window.setTimeout(flushStream, 64);
-          }
-          if (event.type === "source" && event.source) commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, sources: [...(message.sources ?? []), event.source!] } : message) } : item) }));
-          if (event.type === "error") throw new Error(event.message ?? "LAM could not answer.");
-          if (event.type === "finish") finished = true;
+      const consumeEvent = (raw: string) => {
+        let event: { type?: string; value?: string; message?: string; source?: { label: string; route?: string } };
+        try {
+          const parsedEvent = JSON.parse(raw) as unknown;
+          if (!parsedEvent || typeof parsedEvent !== "object" || Array.isArray(parsedEvent)) throw new Error("invalid event");
+          event = parsedEvent as typeof event;
+        } catch {
+          throw new Error("LAM returned malformed streaming data. Please retry.");
         }
-       }
+        if (event.type === "text-delta" && event.value) {
+          full += event.value;
+          if (streamFlushTimer === null) streamFlushTimer = window.setTimeout(flushStream, 64);
+        }
+        if (event.type === "source" && event.source) commit((previous) => ({ ...previous, conversations: previous.conversations.map((item) => item.id === previous.activeConversationId ? { ...item, messages: item.messages.map((message) => message.id === assistantId ? { ...message, sources: [...(message.sources ?? []), event.source!] } : message) } : item) }));
+        if (event.type === "error") throw new Error(event.message ?? "LAM could not answer.");
+        if (event.type === "finish") finished = true;
+      };
+      while (true) {
+        const chunk = await reader.read();
+        const parsedChunk = consumeSSEChunk(buffer, chunk.done ? decoder.decode() : decoder.decode(chunk.value, { stream: true }), { flush: chunk.done });
+        buffer = parsedChunk.buffer;
+        for (const event of parsedChunk.events) consumeEvent(event);
+        if (chunk.done) break;
+      }
       if (streamFlushTimer !== null) window.clearTimeout(streamFlushTimer);
       flushStream();
       if (!full.trim()) throw new Error("LAM returned an empty response.");

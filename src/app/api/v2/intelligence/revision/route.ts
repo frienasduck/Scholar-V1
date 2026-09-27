@@ -5,6 +5,8 @@ import { reviewUpdateSchema, manualOrderSchema } from "@/lib/v2/intelligence/sch
 import { nextReview } from "@/lib/v2/intelligence/spaced-repetition";
 import type { ReviewSchedule } from "@/lib/v2/intelligence/types";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 
 /**
  * GET /api/v2/intelligence/revision — due revision items for the session user.
@@ -15,6 +17,12 @@ export async function GET() {
   const access = await requireCapability("scholar_intelligence");
   if (!access.ok) return access.response;
   const user = access.user;
+  try {
+    await enforceRateLimit(`intelligence-revision-read:${user.id}`, "intelligence-revision-read", 60, 60_000);
+  } catch (error) {
+    if (error instanceof RateLimitError) return NextResponse.json({ error: "RATE_LIMITED", message: error.message }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
+    return NextResponse.json({ error: "REVISION_UNAVAILABLE" }, { status: 503 });
+  }
   const items = await db.revisionItem.findMany({
     where: { userId: user.id },
     orderBy: [{ dueAt: "asc" }, { priority: "desc" }],
@@ -46,9 +54,12 @@ export async function POST(request: NextRequest) {
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+    await enforceRateLimit(`intelligence-revision-write:${user.id}`, "intelligence-revision-write", 30, 60_000);
+    body = await readBoundedJson(request, 256 * 1024);
+  } catch (error) {
+    if (error instanceof RateLimitError) return NextResponse.json({ error: "RATE_LIMITED", message: error.message }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
+    return NextResponse.json({ error: "REVISION_UNAVAILABLE", message: "Scholar could not update revision right now." }, { status: 503 });
   }
 
   const payload = body as { action?: string };
@@ -59,33 +70,40 @@ export async function POST(request: NextRequest) {
     }
     const { itemId, rating, at } = parsed.data;
 
-    const item = await db.revisionItem.findFirst({ where: { id: itemId, userId: user.id } });
-    if (!item) {
+    const outcome = await db.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "RevisionItem" WHERE "id" = ${itemId} AND "userId" = ${user.id} FOR UPDATE
+      `;
+      if (!locked[0]) return null;
+      const item = await tx.revisionItem.findFirst({ where: { id: itemId, userId: user.id } });
+      if (!item) return null;
+      const schedule: ReviewSchedule = {
+        state: item.state as ReviewSchedule["state"],
+        intervalDays: item.intervalDays,
+        ease: item.ease,
+        dueAt: item.dueAt.getTime(),
+        reviewCount: item.reviewCount,
+        lapses: item.lapses,
+      };
+      const next = nextReview(schedule, rating, at);
+      const updated = await tx.revisionItem.update({
+        where: { id: item.id },
+        data: {
+          state: next.state,
+          intervalDays: next.intervalDays,
+          ease: next.ease,
+          dueAt: new Date(next.dueAt),
+          reviewCount: next.reviewCount,
+          lapses: next.lapses,
+          lastReviewedAt: new Date(at),
+        },
+      });
+      return { updated, next };
+    });
+    if (!outcome) {
       return NextResponse.json({ error: "ITEM_NOT_FOUND" }, { status: 404 });
     }
-
-    const schedule: ReviewSchedule = {
-      state: item.state as ReviewSchedule["state"],
-      intervalDays: item.intervalDays,
-      ease: item.ease,
-      dueAt: item.dueAt.getTime(),
-      reviewCount: item.reviewCount,
-      lapses: item.lapses,
-    };
-    const next = nextReview(schedule, rating, at);
-
-    const updated = await db.revisionItem.update({
-      where: { id: item.id },
-      data: {
-        state: next.state,
-        intervalDays: next.intervalDays,
-        ease: next.ease,
-        dueAt: new Date(next.dueAt),
-        reviewCount: next.reviewCount,
-        lapses: next.lapses,
-        lastReviewedAt: new Date(at),
-      },
-    });
+    const { updated, next } = outcome;
 
     await recordAudit("INTELLIGENCE_REVISION_REVIEWED", {
       actorUserId: user.id,
@@ -112,14 +130,13 @@ export async function POST(request: NextRequest) {
     }
     // Order is stored per item as a relative priority hint.
     const { order } = parsed.data;
-    let written = 0;
-    for (let index = 0; index < order.length; index++) {
-      const result = await db.revisionItem.updateMany({
-        where: { id: order[index], userId: user.id },
+    const results = await db.$transaction(order.map((id, index) =>
+      db.revisionItem.updateMany({
+        where: { id, userId: user.id },
         data: { priority: 1000 - index },
-      });
-      written += result.count;
-    }
+      }),
+    ));
+    const written = results.reduce((sum, result) => sum + result.count, 0);
     return NextResponse.json({ ok: true, written });
   }
 

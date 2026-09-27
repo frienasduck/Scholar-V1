@@ -2,6 +2,7 @@ import "server-only";
 
 import { GoogleGenAI } from "@google/genai";
 import { AIProviderError } from "@/lib/ai/errors";
+import { consumeSSEChunk } from "@/lib/ai/sse";
 import { getScholarGroqConfig, streamScholarGroqText, type ScholarGroqMessage } from "@/lib/ai/scholar-groq";
 import type { LiveTutorProvider, LiveTutorProviderStatus } from "./types";
 
@@ -31,18 +32,42 @@ export function liveTutorProviderStatus(): LiveTutorProviderStatus[] {
   ];
 }
 
-function resolveProvider(requested: LiveTutorProvider, preferLargeContext: boolean): Exclude<LiveTutorProvider, "auto"> {
+const LIVE_TUTOR_DEADLINE_MS = 50_000;
+
+export function resolveProviderOrder(requested: LiveTutorProvider, preferLargeContext: boolean): Array<Exclude<LiveTutorProvider, "auto">> {
   const status = liveTutorProviderStatus();
   const available = (id: LiveTutorProvider) => status.some((item) => item.id === id && item.available);
   if (requested !== "auto") {
     if (!available(requested)) throw new AIProviderError(`${requested === "gemini" ? "Gemini" : requested === "nvidia" ? "NVIDIA" : "Groq"} text tutoring is not configured on this Scholar server. Choose Auto or another available provider.`, 503, "LIVE_TUTOR_PROVIDER_UNAVAILABLE");
-    return requested;
+    return [requested];
   }
-  if (preferLargeContext && available("gemini")) return "gemini";
-  if (available("groq")) return "groq";
-  if (available("gemini")) return "gemini";
-  if (available("nvidia")) return "nvidia";
+  const preferred: Array<Exclude<LiveTutorProvider, "auto">> = preferLargeContext
+    ? ["gemini", "groq", "nvidia"]
+    : ["groq", "gemini", "nvidia"];
+  const providers = preferred.filter(available);
+  if (providers.length) return providers;
   throw new AIProviderError("No LAM AI text provider is configured on this Scholar server.", 503, "LIVE_TUTOR_PROVIDER_UNAVAILABLE");
+}
+
+function statusOf(error: unknown) {
+  return error && typeof error === "object" && "status" in error ? Number(error.status) : 0;
+}
+
+function canAutoFallback(error: unknown) {
+  if (!(error instanceof AIProviderError)) return true;
+  return error.status === 429 || error.status === 502 || error.status === 503 || error.status === 504;
+}
+
+export function validateGeminiCompletion(received: boolean, finishReason: string | undefined) {
+  if (!received) throw new AIProviderError("Gemini returned no answer. Please retry.", 502, "GEMINI_EMPTY_RESPONSE");
+  if (finishReason === "STOP") return;
+  if (finishReason === "MAX_TOKENS") {
+    throw new AIProviderError("The Gemini answer exceeded its output limit. Ask for a shorter response.", 422, "AI_OUTPUT_TRUNCATED");
+  }
+  if (["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"].includes(finishReason ?? "")) {
+    throw new AIProviderError("Gemini stopped this answer for safety. Rephrase the request and try again.", 422, "AI_CONTENT_FILTERED");
+  }
+  throw new AIProviderError("Connection to Gemini closed before the answer finished. Please retry.", 502, "AI_STREAM_INCOMPLETE");
 }
 
 async function streamGemini(request: LiveTutorProviderRequest) {
@@ -53,10 +78,12 @@ async function streamGemini(request: LiveTutorProviderRequest) {
     role: message.role === "assistant" ? "model" : "user",
     parts: [{ text: message.content }],
   }));
+  const model = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.6-flash";
   try {
     const ai = new GoogleGenAI({ apiKey });
+    request.onProviderResolved?.("gemini", model);
     const stream = await ai.models.generateContentStream({
-      model: process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.6-flash",
+      model,
       contents,
       config: {
         systemInstruction: system,
@@ -66,51 +93,74 @@ async function streamGemini(request: LiveTutorProviderRequest) {
       },
     });
     let received = false;
+    let finishReason: string | undefined;
     for await (const chunk of stream) {
       request.signal.throwIfAborted();
+      const candidateFinishReason = chunk.candidates?.[0]?.finishReason;
+      if (candidateFinishReason) finishReason = String(candidateFinishReason);
       const value = chunk.text;
       if (value) { received = true; request.onDelta(value); }
     }
-    if (!received) throw new AIProviderError("Gemini returned no answer. Please retry.", 502, "GEMINI_EMPTY_RESPONSE");
+    validateGeminiCompletion(received, finishReason);
+    return model;
   } catch (error) {
     if (error instanceof AIProviderError) throw error;
     if (request.signal.aborted || (error instanceof Error && error.name === "AbortError")) throw new AIProviderError("The Gemini request was cancelled or timed out.", 504, "AI_TIMEOUT");
-    const status = error && typeof error === "object" && "status" in error ? Number(error.status) : 0;
+    const status = statusOf(error);
+    if (status === 401 || status === 403) throw new AIProviderError("Gemini text tutoring is temporarily unavailable. Try Auto or contact support.", 503, "GEMINI_AUTH_FAILED");
+    if (status === 404) throw new AIProviderError("The configured Gemini model is unavailable. Try Auto or another provider.", 503, "GEMINI_MODEL_UNAVAILABLE");
     if (status === 429) throw new AIProviderError("Gemini is busy right now. Try Auto or retry shortly.", 429, "GEMINI_RATE_LIMITED");
+    if (status === 400 || status === 413 || status === 422) throw new AIProviderError("Gemini could not process this input. Shorten the conversation and retry.", 422, "GEMINI_INVALID_REQUEST");
+    if (status === 503) throw new AIProviderError("Gemini is temporarily overloaded. Try Auto or retry shortly.", 503, "GEMINI_OVERLOADED");
     throw new AIProviderError("Gemini could not finish this response.", 502, "GEMINI_REQUEST_FAILED");
   }
 }
 
 async function streamNvidiaModel(request: LiveTutorProviderRequest, apiKey: string, endpoint: string, model: string) {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: request.messages,
-      temperature: request.temperature ?? 0.35,
-      max_tokens: request.maxTokens ?? 4_000,
-      stream: true,
-    }),
-    signal: request.signal,
-  });
-  if (!response.ok || !response.body) {
-    if (response.status === 429 || response.status === 503) throw new AIProviderError("NVIDIA is temporarily overloaded. Try Auto or retry shortly.", 503, "NVIDIA_OVERLOADED");
-    throw new AIProviderError("NVIDIA could not start this response.", 502, "NVIDIA_REQUEST_FAILED");
-  }
-  request.onProviderResolved?.("nvidia", model);
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let received = false;
-  const consumeLine = (line: string) => {
-    const data = line.trim().replace(/^data:\s*/, "");
-    if (!data || data === "[DONE]") return;
-    try {
-      const parsed = JSON.parse(data) as {
-        choices?: Array<{ delta?: { content?: string } }>;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: request.messages,
+        temperature: request.temperature ?? 0.35,
+        max_tokens: request.maxTokens ?? 4_000,
+        stream: true,
+      }),
+      signal: request.signal,
+    });
+    if (!response.ok || !response.body) {
+      if (response.status === 401 || response.status === 403) throw new AIProviderError("NVIDIA text tutoring is temporarily unavailable. Try Auto or contact support.", 503, "NVIDIA_AUTH_FAILED");
+      if (response.status === 404) throw new AIProviderError("The configured NVIDIA model is unavailable. Try Auto or another provider.", 503, "NVIDIA_MODEL_UNAVAILABLE");
+      if (response.status === 429 || response.status === 503) throw new AIProviderError("NVIDIA is temporarily overloaded. Try Auto or retry shortly.", 503, "NVIDIA_OVERLOADED");
+      if (response.status === 400 || response.status === 413 || response.status === 422) throw new AIProviderError("NVIDIA could not process this input. Shorten the conversation and retry.", 422, "NVIDIA_INVALID_REQUEST");
+      throw new AIProviderError("NVIDIA could not start this response.", 502, "NVIDIA_REQUEST_FAILED");
+    }
+    const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+    if (!contentType.includes("text/event-stream")) throw new AIProviderError("NVIDIA returned an unsupported stream format.", 502, "NVIDIA_MALFORMED_STREAM");
+
+    request.onProviderResolved?.("nvidia", model);
+    reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let received = false;
+    let completed = false;
+    const consumeEvent = (data: string) => {
+      if (!data) return;
+      if (data === "[DONE]") { completed = true; return; }
+      let parsed: {
+        choices?: Array<{ delta?: { content?: string }; finish_reason?: string | null }>;
         error?: { message?: string; code?: number | string };
       };
+      try {
+        const value = JSON.parse(data) as unknown;
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid event");
+        parsed = value as typeof parsed;
+      } catch {
+        throw new AIProviderError("NVIDIA returned malformed streaming data. Try Auto or retry.", 502, "NVIDIA_MALFORMED_STREAM");
+      }
       if (parsed.error) {
         const overloaded = parsed.error.code === 503 || /overload|unavailable/i.test(parsed.error.message ?? "");
         throw new AIProviderError(
@@ -119,23 +169,31 @@ async function streamNvidiaModel(request: LiveTutorProviderRequest, apiKey: stri
           overloaded ? "NVIDIA_OVERLOADED" : "NVIDIA_STREAM_ERROR",
         );
       }
-      const value = parsed.choices?.[0]?.delta?.content;
+      const choice = parsed.choices?.[0];
+      const value = choice?.delta?.content;
       if (value) { received = true; request.onDelta(value); }
-    } catch (error) {
-      if (error instanceof AIProviderError) throw error;
-      // Ignore provider keepalives and non-JSON frames.
+      if (choice?.finish_reason === "stop") completed = true;
+      else if (choice?.finish_reason === "length") throw new AIProviderError("The NVIDIA answer exceeded its output limit. Ask for a shorter response.", 422, "AI_OUTPUT_TRUNCATED");
+      else if (choice?.finish_reason) throw new AIProviderError("NVIDIA stopped before completing the answer. Please retry.", 502, "AI_STREAM_INCOMPLETE");
+    };
+
+    while (true) {
+      const chunk = await reader.read();
+      const parsed = consumeSSEChunk(buffer, chunk.done ? decoder.decode() : decoder.decode(chunk.value, { stream: true }), { flush: chunk.done });
+      buffer = parsed.buffer;
+      for (const event of parsed.events) consumeEvent(event);
+      if (chunk.done) break;
     }
-  };
-  while (true) {
-    const chunk = await reader.read();
-    if (chunk.done) break;
-    buffer += decoder.decode(chunk.value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) consumeLine(line);
+    if (!received) throw new AIProviderError("NVIDIA returned no answer. Please retry.", 502, "NVIDIA_EMPTY_RESPONSE");
+    if (!completed) throw new AIProviderError("Connection to NVIDIA closed before the answer finished. Please retry.", 502, "AI_STREAM_INCOMPLETE");
+  } catch (error) {
+    if (error instanceof AIProviderError) throw error;
+    if (request.signal.aborted || (error instanceof Error && error.name === "AbortError")) throw new AIProviderError("The NVIDIA request was cancelled or timed out.", 504, "AI_TIMEOUT");
+    throw new AIProviderError("NVIDIA could not finish this response.", 502, "NVIDIA_REQUEST_FAILED");
+  } finally {
+    await reader?.cancel().catch(() => undefined);
+    reader?.releaseLock();
   }
-  if (buffer.trim()) consumeLine(buffer);
-  if (!received) throw new AIProviderError("NVIDIA returned no answer. Please retry.", 502, "NVIDIA_EMPTY_RESPONSE");
 }
 
 async function streamNvidia(request: LiveTutorProviderRequest): Promise<string> {
@@ -151,23 +209,39 @@ async function streamNvidia(request: LiveTutorProviderRequest): Promise<string> 
 }
 
 export async function streamLiveTutorText(request: LiveTutorProviderRequest): Promise<{ provider: Exclude<LiveTutorProvider, "auto">; model: string }> {
-  const provider = resolveProvider(request.provider, Boolean(request.preferLargeContext));
-  if (provider === "groq") {
-    const config = getScholarGroqConfig();
-    request.onProviderResolved?.(provider, config.model);
-    await streamScholarGroqText({
-      messages: request.messages as ScholarGroqMessage[],
-      temperature: request.temperature,
-      maxTokens: request.maxTokens,
-      signal: request.signal,
-    }, request.onDelta);
-    return { provider, model: config.model };
+  const deadline = AbortSignal.timeout(LIVE_TUTOR_DEADLINE_MS);
+  const signal = AbortSignal.any([request.signal, deadline]);
+  const providers = resolveProviderOrder(request.provider, Boolean(request.preferLargeContext));
+  let lastError: unknown;
+
+  for (const provider of providers) {
+    let emitted = false;
+    const attempt: LiveTutorProviderRequest = {
+      ...request,
+      signal,
+      onDelta: (value) => { emitted = true; request.onDelta(value); },
+    };
+    try {
+      signal.throwIfAborted();
+      if (provider === "groq") {
+        const config = getScholarGroqConfig();
+        const model = await streamScholarGroqText({
+          messages: request.messages as ScholarGroqMessage[],
+          temperature: request.temperature,
+          maxTokens: request.maxTokens,
+          signal,
+        }, attempt.onDelta, (resolvedModel) => request.onProviderResolved?.(provider, resolvedModel));
+        return { provider, model: model || config.model };
+      }
+      if (provider === "gemini") return { provider, model: await streamGemini(attempt) };
+      return { provider, model: await streamNvidia(attempt) };
+    } catch (error) {
+      lastError = error;
+      if (signal.aborted) throw new AIProviderError("The LAM AI request was cancelled or timed out.", 504, "AI_TIMEOUT");
+      if (request.provider !== "auto" || emitted || !canAutoFallback(error)) throw error;
+    }
   }
-  if (provider === "gemini") {
-    request.onProviderResolved?.(provider, process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.6-flash");
-    await streamGemini(request);
-    return { provider, model: process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.6-flash" };
-  }
-  const model = await streamNvidia(request);
-  return { provider, model };
+
+  if (lastError instanceof Error) throw lastError;
+  throw new AIProviderError("No LAM AI provider could complete this response.", 503, "LIVE_TUTOR_PROVIDER_UNAVAILABLE");
 }

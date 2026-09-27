@@ -31,6 +31,7 @@ export function ReadyBackgroundVideo({
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const announcedRef = useRef(false);
+  useEffect(() => { announcedRef.current = false; }, [src, readinessId]);
   useEffect(() => { if (loadVideo) videoRef.current?.load(); }, [loadVideo, src]);
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -39,12 +40,22 @@ export function ReadyBackgroundVideo({
       if (active) { setLoadVideo(true); if (videoRef.current?.readyState && videoRef.current.readyState >= 2) void videoRef.current.play().catch(() => undefined); }
       else videoRef.current?.pause();
     };
-    const observer = new IntersectionObserver(entries => { visibleRef.current = entries[0]?.isIntersecting ?? false; sync(); }, { rootMargin: "100px" });
-    if (containerRef.current) observer.observe(containerRef.current);
-    media.addEventListener("change", sync);
+    const observer = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(entries => { visibleRef.current = entries[0]?.isIntersecting ?? false; sync(); }, { rootMargin: "100px" })
+      : null;
+    if (observer && containerRef.current) observer.observe(containerRef.current);
+    else visibleRef.current = true;
+    if (typeof media.addEventListener === "function") media.addEventListener("change", sync);
+    else media.addListener(sync);
     document.addEventListener("visibilitychange", sync);
     sync();
-    return () => { observer.disconnect(); media.removeEventListener("change", sync); document.removeEventListener("visibilitychange", sync); videoRef.current?.pause(); };
+    return () => {
+      observer?.disconnect();
+      if (typeof media.removeEventListener === "function") media.removeEventListener("change", sync);
+      else media.removeListener(sync);
+      document.removeEventListener("visibilitychange", sync);
+      videoRef.current?.pause();
+    };
   }, [reduceMotion, src]);
 
   const announceReady = (status: "video" | "poster") => {
@@ -101,6 +112,10 @@ export function ReadyBackgroundVideo({
         style={{ objectPosition }}
         onLoadedData={() => void activateVideo()}
         onCanPlay={() => void activateVideo()}
+        onLoadStart={() => {
+          setReady(false);
+          setFailed(false);
+        }}
         onPlaying={() => {
           setReady(true);
           announceReady("video");

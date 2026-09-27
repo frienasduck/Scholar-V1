@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { streamGroqText } from "@/lib/ai/groq";
 import { AIProviderError } from "@/lib/ai/errors";
+import { AIRequestBodyError, readBoundedAIJSON } from "@/lib/ai/request";
 import { LAM_MODES } from "@/lib/lam/types";
 import { SCHOLAR_AI_FORMATTING_RULES } from "@/lib/ai/formatting";
 import { checkAssistantAccess } from "@/lib/ai/access";
@@ -9,6 +10,9 @@ import { db } from "@/lib/db";
 import { loadLiveTutorMemoryContext } from "@/lib/live-tutor/memory";
 import { streamLiveTutorText } from "@/lib/live-tutor/providers";
 import { LIVE_TUTOR_MODES, LIVE_TUTOR_PERSONALITIES, LIVE_TUTOR_PROVIDERS, PERSONALITY_BEHAVIOR } from "@/lib/live-tutor/types";
+import { validateLiveTutorMessageScope, validateLiveTutorSessionScope } from "@/lib/live-tutor/session-scope";
+import { savedPreferencesSchema } from "@/lib/personalization/schema";
+import { lamContext, responseDetail } from "@/lib/personalization/engine";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -61,11 +65,21 @@ const modeRules: Record<(typeof LAM_MODES)[number], string> = {
 export async function POST(request: NextRequest) {
   const access = await checkAssistantAccess("lam-chat");
   if (!access.ok) return access.response;
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  let raw: unknown;
+  try {
+    raw = await readBoundedAIJSON(request, 512 * 1024);
+  } catch (error) {
+    if (error instanceof AIRequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    return NextResponse.json({ ok: false, error: "The LAM request body could not be read." }, { status: 400 });
+  }
+  const parsed = schema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid or profile-mismatched LAM request." }, { status: 400 });
   const input = parsed.data;
 
   const context = input.pageContext;
+  const learningProfile = await db.learningProfile.findUnique({where:{userId:access.user.id},select:{status:true,preferences:true}}).catch(()=>null);
+  const saved = learningProfile?.status === "COMPLETED" ? savedPreferencesSchema.safeParse(learningProfile.preferences) : null;
+  const learning = saved?.success && saved.data.grade === context.scholarClass ? saved.data : null;
   const memoryContext = input.liveTutor ? await loadLiveTutorMemoryContext({
     userId: access.user.id,
     query: input.message,
@@ -80,7 +94,9 @@ export async function POST(request: NextRequest) {
     `Mode: ${input.assistantMode}. ${modeRules[input.assistantMode]}`,
     input.liveTutor ? `LAM AI personality: ${input.liveTutor.personality}. ${PERSONALITY_BEHAVIOR[input.liveTutor.personality]}` : "",
     input.liveTutor ? `LAM AI experience mode: ${input.liveTutor.mode}. Voice responses should be concise, conversational, and easy to interrupt. Put longer detail in clear written structure.` : "",
-    `Preferred response detail: ${input.responseDetail ?? "balanced"}.`,
+    `Preferred response detail: ${input.responseDetail ?? (learning ? responseDetail(learning.style) : "balanced")}.`,
+    learning ? lamContext(learning) : "",
+    learning && !input.liveTutor ? PERSONALITY_BEHAVIOR[learning.personality] : "",
     context.weakTopics?.length ? `Stored weak-topic signals: ${context.weakTopics.join(", ")}.` : "No weak-topic history was supplied.",
     context.recentQuizScore ? `Most recent stored quiz result: ${context.recentQuizScore}.` : "No recent quiz result was supplied.",
     input.reminderSummary ? `The student's Smart Reminders 2.0 data:\n<reminders>\n${input.reminderSummary}\n</reminders>\nYou may answer questions about these reminders, but Scholar executes reminder actions (create/snooze/move/complete) locally — never claim you changed a reminder yourself.` : "No reminder data was supplied. Do not invent reminders.",
@@ -92,15 +108,20 @@ export async function POST(request: NextRequest) {
   ].join("\n\n");
 
   if (input.liveTutor) {
-    const existingSession = await db.liveTutorSession.findUnique({ where: { id: input.liveTutor.sessionId }, select: { userId: true } });
-    if (existingSession && existingSession.userId !== access.user.id) return NextResponse.json({ ok: false, error: "LAM AI session ownership could not be verified." }, { status: 403 });
+    const existingSession = await db.liveTutorSession.findUnique({ where: { id: input.liveTutor.sessionId }, select: { userId: true, profileId: true, personality: true } });
+    const sessionScopeError = validateLiveTutorSessionScope(existingSession, { userId: access.user.id, profileId: input.profileId, personality: input.liveTutor.personality });
+    if (sessionScopeError) return NextResponse.json({ ok: false, error: sessionScopeError.message }, { status: sessionScopeError.status });
     if (existingSession) {
       await db.liveTutorSession.update({ where: { id: input.liveTutor.sessionId }, data: { personality: input.liveTutor.personality, provider: input.liveTutor.provider, mode: input.liveTutor.mode, lastActivityAt: new Date(), status: "active" } });
     } else {
       await db.liveTutorSession.create({ data: { id: input.liveTutor.sessionId, userId: access.user.id, profileId: input.profileId, title: input.message.slice(0, 80), personality: input.liveTutor.personality, provider: input.liveTutor.provider, mode: input.liveTutor.mode } });
     }
     const existingTurn = await db.liveTutorMessage.findUnique({ where: { id: input.liveTutor.turnId }, select: { sessionId: true } });
-    if (existingTurn && existingTurn.sessionId !== input.liveTutor.sessionId) return NextResponse.json({ ok: false, error: "LAM AI turn ownership could not be verified." }, { status: 403 });
+    const turnScopeError = validateLiveTutorMessageScope(existingTurn, input.liveTutor.sessionId);
+    if (turnScopeError) return NextResponse.json({ ok: false, error: turnScopeError.message }, { status: turnScopeError.status });
+    const existingAssistantTurn = await db.liveTutorMessage.findUnique({ where: { id: `${input.liveTutor.turnId}:assistant` }, select: { sessionId: true } });
+    const assistantScopeError = validateLiveTutorMessageScope(existingAssistantTurn, input.liveTutor.sessionId);
+    if (assistantScopeError) return NextResponse.json({ ok: false, error: assistantScopeError.message }, { status: assistantScopeError.status });
     if (existingTurn) await db.liveTutorMessage.update({ where: { id: input.liveTutor.turnId }, data: { content: input.message, inputMode: input.inputMode } });
     else await db.liveTutorMessage.create({ data: { id: input.liveTutor.turnId, sessionId: input.liveTutor.sessionId, role: "user", content: input.message, inputMode: input.inputMode } });
   }

@@ -179,7 +179,11 @@ const tx = {
       return host;
     },
   },
-  securityAttempt: { create: async () => ({}), count: async () => rateCount },
+  securityAttempt: {
+    create: async () => ({}),
+    count: async () => rateCount,
+    deleteMany: async () => ({ count: 0 }),
+  },
   groupStudyRoom: {
     create: async ({
       data,
@@ -358,7 +362,9 @@ test("V2 joining keeps the atomic room lock without a stale serializable snapsho
   );
   expect(response.status).toBe(201);
   expect(transactionIsolation).toBe("ReadCommitted");
-  expect(readLocks).toBe(1);
+  // One advisory lock reserves the join-attempt budget and one row lock
+  // serializes room capacity/allocation.
+  expect(readLocks).toBe(2);
   expect(members[0].role).toBe("participant");
   expect(members[0].status).toBe("pending");
 });
@@ -408,6 +414,13 @@ test("unauthenticated and blocked accounts cannot create rooms", async () => {
 test("a signed-in Free user cannot create a Beta room", async () => {
   plusEligible = false;
   expect((await createRoom(request("rooms", { name: "Room" }))).status).toBe(403);
+  expect(members).toHaveLength(0);
+});
+test("room creation is durably rate limited", async () => {
+  rateCount = 10;
+  const response = await createRoom(request("rooms", { name: "Physics Revision" }));
+  expect(response.status).toBe(429);
+  expect((await response.json()).code).toBe("RATE_LIMITED");
   expect(members).toHaveLength(0);
 });
 test("accountless join waits for approval, receives no code, and cannot escalate or cross rooms", async () => {

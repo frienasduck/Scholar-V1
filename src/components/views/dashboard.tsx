@@ -32,6 +32,7 @@ import {
 import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
+import { ScholarToday } from "@/components/personalization/scholar-today";
 
 // ===== Daily Challenge — pending state in localStorage =====
 // XP is NOT awarded on click. Instead, the user is redirected to the
@@ -319,54 +320,77 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
   }
 
   return (
-    <div className="scholar-dashboard scholar-responsive-page relative bg-[#010101] overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-4 lg:-m-6">
       <style>{`
         @import url('https://db.onlinewebfonts.com/c/2bf40ab72ea4897a3fd9b6e48b233a19?family=Garamond');
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap');
+        /* Dashboard surfaces use the shared Scholar Liquid Glass material.
+           The dashboard's cinematic video gives the glass real depth to
+           refract, so these two surfaces opt into the same token values as
+           every other panel instead of keeping a private recipe. */
         .dash-glass {
-          background: rgba(255,255,255,0.01);
-          background-blend-mode: luminosity;
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
-          border: none;
-          box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
           position: relative;
           overflow: hidden;
+          background-color: color-mix(in srgb, var(--sg-plate-ink) 6%, transparent);
+          background-image: linear-gradient(150deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0) 52%);
+          -webkit-backdrop-filter: blur(min(var(--sg-blur), 18px)) saturate(145%);
+          backdrop-filter: blur(min(var(--sg-blur), 18px)) saturate(145%);
+          border: 1px solid var(--sg-hairline);
+          box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 14px 34px -20px rgb(0 0 0 / 0.55);
+          transition: background-color 220ms ease, box-shadow 220ms ease;
         }
         .dash-glass::before {
           content: '';
           position: absolute; inset: 0;
           border-radius: inherit;
           padding: 1.4px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+          background: linear-gradient(180deg, rgb(255 255 255 / 0.42) 0%, rgb(255 255 255 / 0.14) 20%, rgb(255 255 255 / 0) 42%, rgb(255 255 255 / 0) 58%, rgb(255 255 255 / 0.14) 80%, rgb(255 255 255 / 0.42) 100%);
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
           pointer-events: none;
+          mix-blend-mode: screen;
         }
         .dash-glass-strong {
-          background: rgba(255,255,255,0.01);
-          backdrop-filter: blur(50px);
-          -webkit-backdrop-filter: blur(50px);
-          border: none;
-          box-shadow: 4px 4px 4px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.15);
           position: relative;
           overflow: hidden;
+          background-color: color-mix(in srgb, var(--sg-plate-ink) 10%, transparent);
+          background-image: linear-gradient(150deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0) 50%);
+          -webkit-backdrop-filter: blur(26px) saturate(152%);
+          backdrop-filter: blur(26px) saturate(152%);
+          border: 1px solid var(--sg-hairline-strong);
+          box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 24px 60px -28px rgb(0 0 0 / 0.62);
         }
         .dash-glass-strong::before {
           content: '';
           position: absolute; inset: 0;
           border-radius: inherit;
           padding: 1.4px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.2) 80%, rgba(255,255,255,0.5) 100%);
+          background: linear-gradient(180deg, rgb(255 255 255 / 0.5) 0%, rgb(255 255 255 / 0.2) 20%, rgb(255 255 255 / 0) 42%, rgb(255 255 255 / 0) 58%, rgb(255 255 255 / 0.2) 80%, rgb(255 255 255 / 0.5) 100%);
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
           pointer-events: none;
+          mix-blend-mode: screen;
         }
         .font-garamond { font-family: 'Garamond', 'Times New Roman', serif; }
         .font-geist { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; }
-        .dash-glass:hover { background: rgba(255,255,255,0.04); }
+        .dash-glass:hover { background-color: color-mix(in srgb, var(--sg-plate-ink) 11%, transparent); }
+        /* Tier 3: identical identity when blur or transparency is unavailable. */
+        html[data-sg-material="fallback"] .dash-glass,
+        html[data-sg-material="fallback"] .dash-glass-strong {
+          -webkit-backdrop-filter: none;
+          backdrop-filter: none;
+          background-color: color-mix(in srgb, var(--sg-plate-ink) 62%, transparent);
+        }
+        @media (prefers-reduced-transparency: reduce) {
+          html[data-sg-material="reduced"] .dash-glass,
+          html[data-sg-material="reduced"] .dash-glass-strong {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            background-color: color-mix(in srgb, var(--sg-plate-ink) 72%, transparent);
+          }
+        }
       `}</style>
 
       {/* Background video */}
@@ -379,6 +403,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
 
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+        <ScholarToday />
         {/* Navbar */}
         <nav className="relative z-20 px-5 sm:px-8 py-6 flex items-center justify-between">
           <span className="font-geist text-white font-light uppercase tracking-[0.25em] sm:tracking-[0.3em] text-sm">

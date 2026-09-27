@@ -1,4 +1,5 @@
 import "server-only";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { EvidenceEvent, MasteryEstimate, MistakeRecord } from "./types";
 import { estimateAllMastery, estimateMastery } from "./mastery";
@@ -42,7 +43,12 @@ export async function storeEvidence(userId: string, events: EvidenceEvent[]): Pr
       });
       stored += 1;
     } catch (error) {
+      // A client-chosen id may already belong to another account. Treat that
+      // as a non-write without revealing ownership; real database failures
+      // must propagate so the API never reports false success.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") continue;
       console.error("[Scholar intelligence] evidence write failed");
+      throw error;
     }
   }
   return stored;
@@ -78,68 +84,80 @@ export async function storeMistakes(userId: string, mistakes: MistakeRecord[]): 
       });
       stored += 1;
     } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") continue;
       console.error("[Scholar intelligence] mistake write failed");
+      throw error;
     }
   }
   return stored;
 }
 
 export async function recomputeMastery(userId: string): Promise<number> {
-  const attempts = await db.practiceAttempt.findMany({ where: { userId }, select: { id: true, kind: true, subject: true, chapter: true, topic: true, correct: true, score: true, total: true, difficulty: true, rating: true, source: true, occurredAt: true } });
-  const events: EvidenceEvent[] = attempts.map((attempt) => ({
-    id: attempt.id,
-    kind: attempt.kind as EvidenceEvent["kind"],
-    subject: attempt.subject,
-    chapter: attempt.chapter ?? undefined,
-    topic: attempt.topic ?? undefined,
-    correct: attempt.correct ?? undefined,
-    score: attempt.score ?? undefined,
-    total: attempt.total ?? undefined,
-    difficulty: (attempt.difficulty as EvidenceEvent["difficulty"]) ?? undefined,
-    rating: (attempt.rating as EvidenceEvent["rating"]) ?? undefined,
-    at: attempt.occurredAt.getTime(),
-    source: (attempt.source as EvidenceEvent["source"]) ?? "quiz",
-  }));
+  return db.$transaction(async (tx) => {
+    // PostgreSQL unique constraints permit multiple NULL values, while the
+    // mastery identity intentionally allows nullable chapter/topic fields.
+    // Serialize recomputation per account so concurrent snapshot requests
+    // cannot both observe "missing" and create duplicate nullable records.
+    await tx.$queryRaw`
+      SELECT pg_advisory_xact_lock(hashtextextended(${`mastery:${userId}`}, 0))
+    `;
+    const attempts = await tx.practiceAttempt.findMany({ where: { userId }, select: { id: true, kind: true, subject: true, chapter: true, topic: true, correct: true, score: true, total: true, difficulty: true, rating: true, source: true, occurredAt: true } });
+    const events: EvidenceEvent[] = attempts.map((attempt) => ({
+      id: attempt.id,
+      kind: attempt.kind as EvidenceEvent["kind"],
+      subject: attempt.subject,
+      chapter: attempt.chapter ?? undefined,
+      topic: attempt.topic ?? undefined,
+      correct: attempt.correct ?? undefined,
+      score: attempt.score ?? undefined,
+      total: attempt.total ?? undefined,
+      difficulty: (attempt.difficulty as EvidenceEvent["difficulty"]) ?? undefined,
+      rating: (attempt.rating as EvidenceEvent["rating"]) ?? undefined,
+      at: attempt.occurredAt.getTime(),
+      source: (attempt.source as EvidenceEvent["source"]) ?? "quiz",
+    }));
 
-  const estimates = [...estimateAllMastery(events).values()];
-  let written = 0;
-  for (const estimate of estimates) {
-    // Nullable chapter/topic can't use Prisma's compound-unique upsert (the
-    // generated where type requires non-null strings), so resolve by lookup.
-    const existing = await db.masteryRecord.findFirst({
-      where: {
-        userId,
-        subject: estimate.subject,
-        chapter: estimate.chapter ?? null,
-        topic: estimate.topic ?? null,
-      },
-      select: { id: true },
-    });
-    const data = {
-      level: estimate.level,
-      score: estimate.score,
-      accuracy: estimate.accuracy,
-      evidenceCount: estimate.evidenceCount,
-      decayed: estimate.decayed,
-      lastAttemptAt: estimate.lastAttemptAt ? new Date(estimate.lastAttemptAt) : null,
-      lastRevisedAt: estimate.lastRevisedAt ? new Date(estimate.lastRevisedAt) : null,
-    };
-    if (existing) {
-      await db.masteryRecord.update({ where: { id: existing.id }, data });
-    } else {
-      await db.masteryRecord.create({
-        data: {
+    const estimates = [...estimateAllMastery(events).values()];
+    let written = 0;
+    for (const estimate of estimates) {
+      // Nullable chapter/topic can't use Prisma's compound-unique upsert (the
+      // generated where type requires non-null strings), so resolve by lookup
+      // under the per-account lock above.
+      const existing = await tx.masteryRecord.findFirst({
+        where: {
           userId,
           subject: estimate.subject,
           chapter: estimate.chapter ?? null,
           topic: estimate.topic ?? null,
-          ...data,
         },
+        select: { id: true },
       });
+      const data = {
+        level: estimate.level,
+        score: estimate.score,
+        accuracy: estimate.accuracy,
+        evidenceCount: estimate.evidenceCount,
+        decayed: estimate.decayed,
+        lastAttemptAt: estimate.lastAttemptAt ? new Date(estimate.lastAttemptAt) : null,
+        lastRevisedAt: estimate.lastRevisedAt ? new Date(estimate.lastRevisedAt) : null,
+      };
+      if (existing) {
+        await tx.masteryRecord.update({ where: { id: existing.id }, data });
+      } else {
+        await tx.masteryRecord.create({
+          data: {
+            userId,
+            subject: estimate.subject,
+            chapter: estimate.chapter ?? null,
+            topic: estimate.topic ?? null,
+            ...data,
+          },
+        });
+      }
+      written += 1;
     }
-    written += 1;
-  }
-  return written;
+    return written;
+  }, { maxWait: 5_000, timeout: 15_000 });
 }
 
 export async function loadMastery(userId: string): Promise<MasteryEstimate[]> {

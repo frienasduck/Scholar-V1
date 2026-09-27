@@ -90,6 +90,14 @@ export function ScholarTransitionProvider({ children }: { children: ReactNode })
     let committed = false;
     let resolveSkip: () => void = () => undefined;
     let resolveOperation: () => void = () => undefined;
+    let progressTimer = 0;
+    let commitTimer = 0;
+    const clearOperationTimers = () => {
+      if (progressTimer) window.clearInterval(progressTimer);
+      if (commitTimer) window.clearTimeout(commitTimer);
+      progressTimer = 0;
+      commitTimer = 0;
+    };
     const skipSignal = new Promise<void>((resolve) => { resolveSkip = resolve; });
     const promise = new Promise<void>((resolve) => { resolveOperation = resolve; });
     const update = (patch: Partial<ActiveTransition>) => {
@@ -109,6 +117,7 @@ export function ScholarTransitionProvider({ children }: { children: ReactNode })
       skip: resolveSkip,
       cancel: () => {
         cancelled = true;
+        clearOperationTimers();
         resolveSkip();
         resolveOperation();
       },
@@ -124,7 +133,9 @@ export function ScholarTransitionProvider({ children }: { children: ReactNode })
         volume: settings.transitionVolume ?? 65,
         fadeInMs: 700,
         fadeOutMs: 1_000,
-        onStatus: (status) => setAudioStatus(status),
+        onStatus: (status) => {
+          if (operationRef.current?.id === id && !cancelled) setAudioStatus(status);
+        },
       });
     } else {
       setAudioStatus("idle");
@@ -139,11 +150,11 @@ export function ScholarTransitionProvider({ children }: { children: ReactNode })
       });
 
     const startedAt = performance.now();
-    const progressTimer = window.setInterval(() => {
+    progressTimer = window.setInterval(() => {
       const progress = Math.min(100, ((performance.now() - startedAt) / durationMs) * 100);
       update({ state: progress < 30 ? "playing" : progress < 88 ? "switching" : "finishing", progress });
     }, 100);
-    const commitTimer = window.setTimeout(commit, Math.min(5_000, durationMs * 0.32));
+    commitTimer = window.setTimeout(commit, Math.min(5_000, durationMs * 0.32));
 
     void (async () => {
       const skipped = await Promise.race([
@@ -160,8 +171,7 @@ export function ScholarTransitionProvider({ children }: { children: ReactNode })
         if (!cancelled) await waitFor(1_200);
       }
       if (cancelled) return;
-      window.clearInterval(progressTimer);
-      window.clearTimeout(commitTimer);
+      clearOperationTimers();
       update({ state: "completed", progress: 100 });
       await waitFor(settings.reduceMotion ? 80 : skipped ? 220 : 500);
       if (operationRef.current?.id === id) {

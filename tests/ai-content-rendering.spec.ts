@@ -22,15 +22,50 @@ test("legacy preparation protects code and detects incomplete streamed math", ()
   expect(mdToHtml(String.raw`Result: \(E=mc^2\)`)).toContain("katex");
 });
 
+test("markdown export makes unsafe links inert", () => {
+  const javascriptLink = mdToHtml("[open](javascript:alert(1))");
+  const attributeBreakout = mdToHtml('[open](https://example.com/\" onclick=\"alert(1))');
+
+  expect(javascriptLink).not.toContain("javascript:");
+  expect(javascriptLink).not.toContain("href=");
+  expect(attributeBreakout).not.toContain(' onclick="');
+  expect(attributeBreakout).toContain("&quot;");
+});
+
 async function enterClass11(page: Page) {
+  const email = "math-rendering@scholar.test";
+  await page.route("**/api/auth/session", (route) => route.fulfill({
+    json: {
+      authenticated: true,
+      developerMode: false,
+      plan: "PLUS",
+      entitlementsLoaded: true,
+      user: { id: "math-rendering", email, name: "Alex", role: "USER", coins: 0, currentScholarClass: 11 },
+      access: {
+        plan: "PLUS", source: "plus", entitlementsLoaded: true, entitlements: ["lam_ai"],
+        subscriptionId: "math-plus", subscriptionStatus: "ACTIVE", subscriptionEndsAt: null,
+        storageLimitBytes: 100_000_000, dailyQuizLimit: 30, dailySlideshowLimit: 10,
+        monthlyEbookUploadLimit: 20, monthlyMockExamLimit: 30,
+      },
+      usage: { day: "2026-09-27", quiz: { used: 0, limit: 30 }, slideshow: { used: 0, limit: 10 } },
+      config: { subscriptionsEnabled: true, checkoutConfigured: false },
+    },
+  }));
+  await page.route(/\.mp4(?:\?.*)?$/, (route) => route.abort());
+  await page.addInitScript(({ email }) => {
+    localStorage.setItem("scholar-workspace-owner-v1", email);
+    localStorage.setItem("neha-scholar-v5", JSON.stringify({ schema: 7, state: {
+      authed: true,
+      guestMode: false,
+      onboarded: true,
+      user: { email, name: "Alex", username: "math-rendering", bio: "", school: "", class: "11 - CBSE", avatar: "A", scholarClass: 11, jeeMode: false },
+      settings: { mobileLamMode: "full", elamEnabled: false },
+    } }));
+  }, { email });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Start Your Journey" }).click({ timeout: 90_000 });
-  await page.getByRole("button", { name: /Class 11/ }).last().click();
-  await page.getByPlaceholder("Your name").fill("Alex");
-  await page.getByPlaceholder("you@scholar.app").fill("math-rendering@scholar.app");
-  await page.locator('input[type="password"]').fill("local-test");
-  await page.getByRole("button", { name: "Create Account" }).click();
-  await page.getByRole("button", { name: "Skip intro" }).click();
+  await expect(page.locator(".scholar-shell")).toBeVisible();
+  const mobileMenu = page.getByRole("button", { name: "Open bottom menu" });
+  if (await mobileMenu.isVisible().catch(() => false)) await mobileMenu.click();
   await page.getByRole("button", { name: "LAM", exact: true }).click();
   if (await page.getByRole("heading", { name: "Meet LAM" }).isVisible().catch(() => false)) {
     const lam = page.getByLabel("LAM personal assistant");

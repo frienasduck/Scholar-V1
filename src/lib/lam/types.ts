@@ -48,6 +48,7 @@ export interface LamConversation {
 }
 
 export interface LamPreferences {
+  personalizationStamp?: string;
   assistantEnabled: boolean;
   wakeWordEnabled: boolean;
   voiceRepliesEnabled: boolean;

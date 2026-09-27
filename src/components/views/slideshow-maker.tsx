@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/lib/notifications/notification-api";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
@@ -2955,6 +2956,7 @@ function CoveragePanel({
   slideshow: Slideshow;
   onFix: () => void;
 }) {
+  const router = useRouter();
   const coverage = slideshow.coverage!;
   const pageLabel = coverage.totalPages.length
     ? `${coverage.pagesCovered.length} of ${coverage.totalPages.length} · ${formatPageRange(coverage.totalPages)}`
@@ -2973,7 +2975,7 @@ function CoveragePanel({
       "scholar:ebook:target",
       JSON.stringify({ bookId, page: firstPage, source: "text" }),
     );
-    window.location.href = "/ebook";
+    router.push("/ebook");
   };
 
   return (

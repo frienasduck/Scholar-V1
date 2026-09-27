@@ -18,6 +18,8 @@ export async function GET(_: NextRequest, context: { params: Promise<{ reference
       "Content-Disposition": `inline; filename="${(payment.proofFileName || "payment-proof").replace(/["\\\r\n]/g, "_")}"`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+      "Cross-Origin-Resource-Policy": "same-origin",
     },
   });
 }

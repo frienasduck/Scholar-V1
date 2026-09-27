@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateNvidiaImage } from "@/lib/ai/nvidia-image";
 import { publicAIError } from "@/lib/ai/errors";
+import { AIRequestBodyError, readBoundedAIJSON } from "@/lib/ai/request";
 import { imageRequestSchema } from "@/lib/ai/schemas";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { requireEntitlement } from "@/lib/subscriptions/entitlements";
 
 export const runtime = "nodejs";
@@ -10,11 +12,24 @@ export const maxDuration = 180;
 export async function POST(request: NextRequest) {
   const access = await requireEntitlement("aisig");
   if (!access.ok) return access.response;
+  try {
+    await enforceRateLimit(access.user.id, "ai-image-burst", 12, 10 * 60_000);
+    await enforceRateLimit(access.user.id, "ai-image-hourly", 40, 60 * 60_000);
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json(
+        { ok: false, error: { code: "RATE_LIMITED", message: "Too many image requests. Please wait and retry." } },
+        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } },
+      );
+    }
+    return errorResponse("Scholar could not verify this image request.", 503, "ACCESS_CHECK_FAILED");
+  }
   let raw: unknown;
   try {
-    raw = await request.json();
-  } catch {
-    return errorResponse("The request body must be valid JSON.", 400, "INVALID_JSON_BODY");
+    raw = await readBoundedAIJSON(request, 32 * 1024);
+  } catch (error) {
+    if (error instanceof AIRequestBodyError) return errorResponse(error.message, error.status, error.code);
+    return errorResponse("The request body could not be read.", 400, "INVALID_JSON_BODY");
   }
 
   const parsed = imageRequestSchema.safeParse(raw);

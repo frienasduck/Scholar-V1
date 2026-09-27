@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ScholarFooter } from "@/components/scholar-footer";
-import { useState, useEffect, useMemo, useCallback, Component, ReactNode } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore, getLevelInfo } from "@/lib/store";
 import { NAV_ITEMS, NAV_GROUPS } from "@/lib/nav";
@@ -87,6 +87,7 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
+import { ScholarGlass } from "@/components/liquid-glass";
 
 function ViewLoading() {
   return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
@@ -201,9 +202,10 @@ const PLUS_SOURCE_BY_NAV: Record<string, "achievements" | "mind-map" | "concept-
   galaxy: "concept-galaxy",
 };
 
-function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges> }) {
+function NavList({ active, onNavigate, badges, selectionId }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges>; selectionId: "desktop" | "mobile" }) {
   const backgroundTasks = useBackgroundTasks();
   const access = useScholarAccess();
+  const reduceMotion = useStore((state) => state.settings.reduceMotion);
   return (
     <nav className="flex flex-col gap-6 px-3 py-2">
       {NAV_GROUPS.map((group) => (
@@ -245,20 +247,39 @@ function NavList({ active, onNavigate, badges }: { active: string; onNavigate: (
               return (
                 <button
                   key={item.id}
+                  type="button"
+                  aria-current={isActive ? "page" : undefined}
                   onClick={() => {
                     markBackgroundTasksViewed(item.id);
                     onNavigate(item.id);
                   }}
                   className={cn(
-                    "group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all relative",
-                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                    "scholar-nav-item group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all relative",
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                     item.highlight && !isActive && "bg-gradient-to-r from-red-500/10 to-fuchsia-500/10 text-white border border-red-500/20",
                     hasFinishedTask &&
                       !isActive &&
                       "border border-cyan-300/25 bg-cyan-300/[0.07] shadow-[inset_0_0_18px_rgba(34,211,238,.08),0_0_14px_rgba(34,211,238,.11)]",
                   )}
                 >
-                  {isActive && <motion.div layoutId="nav-active" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-primary" />}
+                  {/* Exactly one Tier 1 refractive surface per navigation list:
+                      the selected pill. Repeated nav rows stay lightweight. */}
+                  {isActive && (
+                    <motion.span
+                      layoutId={`scholar-nav-selection-${selectionId}`}
+                      className="sg-nav-pill-motion"
+                      transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 430, damping: 36, mass: 0.7 }}
+                      aria-hidden="true"
+                    >
+                      <ScholarGlass
+                        as="span"
+                        variant="navigation"
+                        radius={12}
+                        interactive
+                        className="sg-nav-pill"
+                      />
+                    </motion.span>
+                  )}
                   <item.icon className={cn("scholar-nav-icon h-4.5 w-4.5 shrink-0", isActive && "text-primary", item.highlight && !isActive && "text-red-400")} />
                   <span className={cn("scholar-nav-label truncate flex-1 text-left", item.highlight && !isActive && "font-bold tracking-wide")}>{item.label}</span>
                   {hasFinishedTask && (
@@ -298,7 +319,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
   const li = getLevelInfo(xp);
 
   return (
-    <header className="scholar-mobile-topbar sticky top-0 z-30 h-16 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+    <header data-sg-chrome="topbar" className="scholar-mobile-topbar sticky top-0 z-30 h-16 border-b border-border/60">
       <div className="h-full flex items-center gap-2 px-3 sm:px-4 lg:px-6">
           <Button id="scholar-mobile-menu" variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobile} aria-label="Open navigation menu" aria-haspopup="dialog">
             <Menu className="h-5 w-5" />
@@ -406,7 +427,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpenChange: (o: boolean) => void; children: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden p-0 shadow-2xl max-w-xl" showCloseButton={true}>
+      <DialogContent data-glass-dialog="command" className="sg-dialog overflow-hidden p-0 shadow-2xl max-w-xl" showCloseButton={true}>
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
           {children}
@@ -480,6 +501,7 @@ export function AppShell() {
   });
   const [classLoading, setClassLoading] = useState(false);
   const [loadingText, setLoadingText] = useState({ title: "", subtitle: "" });
+  const classLoadingTimerRef = useRef<number | null>(null);
   const badges = useNavBadges();
 
   // Migrate legacy unscoped localStorage keys to profile-scoped keys.
@@ -566,6 +588,13 @@ export function AppShell() {
     return () => window.clearTimeout(timer);
   }, [settings.sidebarBehavior]);
 
+  useEffect(() => () => {
+    if (classLoadingTimerRef.current !== null) {
+      window.clearTimeout(classLoadingTimerRef.current);
+      classLoadingTimerRef.current = null;
+    }
+  }, []);
+
   // Persist sidebar state
   useEffect(() => {
     try { localStorage.setItem("scholar-sidebar-open", String(sidebarOpen)); } catch { /* ignore */ }
@@ -617,9 +646,11 @@ export function AppShell() {
           subtitle: user.jeeMode ? "Returning to standard CBSE mode" : "Switching to advanced competitive preparation",
         });
         setClassLoading(true);
-        setTimeout(() => {
+        if (classLoadingTimerRef.current !== null) window.clearTimeout(classLoadingTimerRef.current);
+        classLoadingTimerRef.current = window.setTimeout(() => {
           toggleJeeMode();
           setClassLoading(false);
+          classLoadingTimerRef.current = null;
         }, 2000);
       }
     };
@@ -649,7 +680,7 @@ export function AppShell() {
       if (`${window.location.pathname}${window.location.hash}` !== nextPath) window.history.pushState({ viewId: id, anchor }, "", nextPath);
     }
     const main = document.getElementById("main-scroll");
-    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+    if (main) main.scrollTo({ top: 0, behavior: useStore.getState().settings.reduceMotion ? "auto" : "smooth" });
   }, []);
 
   useEffect(() => {
@@ -677,53 +708,56 @@ export function AppShell() {
 
   // Per-view gradient background classes
   const viewBg: Record<string, string> = {
-    dashboard: "bg-gradient-to-br from-indigo-500/5 via-background to-teal-500/5",
-    "chapter-command": "bg-gradient-to-br from-violet-500/5 via-background to-fuchsia-500/5",
-    "ai-tutor": "bg-gradient-to-br from-fuchsia-500/5 via-background to-indigo-500/5",
-    "ai-tools": "bg-gradient-to-br from-violet-500/5 via-background to-indigo-500/5",
-    notes: "bg-gradient-to-br from-amber-500/5 via-background to-orange-500/5",
-    resources: "bg-gradient-to-br from-emerald-500/5 via-background to-teal-500/5",
-    study: "bg-gradient-to-br from-teal-500/5 via-background to-emerald-500/5",
-    ebook: "bg-gradient-to-br from-indigo-500/5 via-background to-blue-500/5",
-    practice: "bg-gradient-to-br from-blue-500/5 via-background to-cyan-500/5",
-    flashcards: "bg-gradient-to-br from-yellow-500/5 via-background to-amber-500/5",
-    quiz: "bg-gradient-to-br from-rose-500/5 via-background to-pink-500/5",
-    "exam-prep": "bg-gradient-to-br from-red-500/5 via-background to-orange-500/5",
-    planner: "bg-gradient-to-br from-cyan-500/5 via-background to-blue-500/5",
-    focus: "bg-gradient-to-br from-sky-500/5 via-background to-indigo-500/5",
-    analytics: "bg-gradient-to-br from-indigo-500/5 via-background to-violet-500/5",
-    achievements: "bg-gradient-to-br from-amber-500/5 via-background to-yellow-500/5",
-    mindmap: "bg-gradient-to-br from-violet-500/5 via-background to-purple-500/5",
-    galaxy: "bg-gradient-to-br from-purple-500/5 via-background to-fuchsia-500/5",
-    formulas: "bg-gradient-to-br from-blue-500/5 via-background to-cyan-500/5",
-    community: "bg-gradient-to-br from-pink-500/5 via-background to-rose-500/5",
-    store: "bg-gradient-to-br from-emerald-500/5 via-background to-green-500/5",
-    files: "bg-gradient-to-br from-slate-500/5 via-background to-zinc-500/5",
-    settings: "bg-gradient-to-br from-zinc-500/5 via-background to-slate-500/5",
-    friends: "bg-gradient-to-br from-pink-500/5 via-background to-fuchsia-500/5",
-    nigtube: "bg-gradient-to-br from-red-500/5 via-background to-fuchsia-500/5",
-    lab: "bg-gradient-to-br from-emerald-500/5 via-background to-teal-500/5",
-    levels: "bg-gradient-to-br from-amber-500/5 via-background to-teal-500/5",
-    "past-papers": "bg-gradient-to-br from-cyan-500/5 via-background to-blue-500/5",
-    "answer-lab": "bg-gradient-to-br from-rose-500/5 via-background to-pink-500/5",
-    "revision-hub": "bg-gradient-to-br from-emerald-500/5 via-background to-green-500/5",
-    "mock-exam": "bg-gradient-to-br from-red-500/5 via-background to-orange-500/5",
-    "goal-center": "bg-gradient-to-br from-amber-500/5 via-background to-yellow-500/5",
-    reminders: "bg-gradient-to-br from-fuchsia-500/5 via-background to-pink-500/5",
-    "doubt-history": "bg-gradient-to-br from-violet-500/5 via-background to-purple-500/5",
-    downloads: "bg-gradient-to-br from-sky-500/5 via-background to-cyan-500/5",
-    assignments: "bg-gradient-to-br from-teal-500/5 via-background to-emerald-500/5",
-    workspace: "bg-gradient-to-br from-indigo-500/5 via-background to-purple-500/5",
-    music: "bg-gradient-to-br from-purple-500/5 via-background to-indigo-500/5",
-    canvas: "bg-gradient-to-br from-slate-500/5 via-background to-zinc-500/5",
-    toolbox: "bg-gradient-to-br from-orange-500/5 via-background to-amber-500/5",
-    practicals: "bg-gradient-to-br from-green-500/5 via-background to-emerald-500/5",
-    python: "bg-gradient-to-br from-purple-500/5 via-background to-blue-500/5",
-    derivations: "bg-gradient-to-br from-cyan-500/5 via-background to-sky-500/5",
+    dashboard: "bg-gradient-to-br from-indigo-500/5 via-transparent to-teal-500/5",
+    "chapter-command": "bg-gradient-to-br from-violet-500/5 via-transparent to-fuchsia-500/5",
+    "ai-tutor": "bg-gradient-to-br from-fuchsia-500/5 via-transparent to-indigo-500/5",
+    "ai-tools": "bg-gradient-to-br from-violet-500/5 via-transparent to-indigo-500/5",
+    notes: "bg-gradient-to-br from-amber-500/5 via-transparent to-orange-500/5",
+    resources: "bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5",
+    study: "bg-gradient-to-br from-teal-500/5 via-transparent to-emerald-500/5",
+    ebook: "bg-gradient-to-br from-indigo-500/5 via-transparent to-blue-500/5",
+    practice: "bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5",
+    flashcards: "bg-gradient-to-br from-yellow-500/5 via-transparent to-amber-500/5",
+    quiz: "bg-gradient-to-br from-rose-500/5 via-transparent to-pink-500/5",
+    "exam-prep": "bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5",
+    planner: "bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-500/5",
+    focus: "bg-gradient-to-br from-sky-500/5 via-transparent to-indigo-500/5",
+    analytics: "bg-gradient-to-br from-indigo-500/5 via-transparent to-violet-500/5",
+    achievements: "bg-gradient-to-br from-amber-500/5 via-transparent to-yellow-500/5",
+    mindmap: "bg-gradient-to-br from-violet-500/5 via-transparent to-purple-500/5",
+    galaxy: "bg-gradient-to-br from-purple-500/5 via-transparent to-fuchsia-500/5",
+    formulas: "bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5",
+    community: "bg-gradient-to-br from-pink-500/5 via-transparent to-rose-500/5",
+    store: "bg-gradient-to-br from-emerald-500/5 via-transparent to-green-500/5",
+    files: "bg-gradient-to-br from-slate-500/5 via-transparent to-zinc-500/5",
+    settings: "bg-gradient-to-br from-zinc-500/5 via-transparent to-slate-500/5",
+    friends: "bg-gradient-to-br from-pink-500/5 via-transparent to-fuchsia-500/5",
+    nigtube: "bg-gradient-to-br from-red-500/5 via-transparent to-fuchsia-500/5",
+    lab: "bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5",
+    levels: "bg-gradient-to-br from-amber-500/5 via-transparent to-teal-500/5",
+    "past-papers": "bg-gradient-to-br from-cyan-500/5 via-transparent to-blue-500/5",
+    "answer-lab": "bg-gradient-to-br from-rose-500/5 via-transparent to-pink-500/5",
+    "revision-hub": "bg-gradient-to-br from-emerald-500/5 via-transparent to-green-500/5",
+    "mock-exam": "bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5",
+    "goal-center": "bg-gradient-to-br from-amber-500/5 via-transparent to-yellow-500/5",
+    reminders: "bg-gradient-to-br from-fuchsia-500/5 via-transparent to-pink-500/5",
+    "doubt-history": "bg-gradient-to-br from-violet-500/5 via-transparent to-purple-500/5",
+    downloads: "bg-gradient-to-br from-sky-500/5 via-transparent to-cyan-500/5",
+    assignments: "bg-gradient-to-br from-teal-500/5 via-transparent to-emerald-500/5",
+    workspace: "bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5",
+    music: "bg-gradient-to-br from-purple-500/5 via-transparent to-indigo-500/5",
+    canvas: "bg-gradient-to-br from-slate-500/5 via-transparent to-zinc-500/5",
+    toolbox: "bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5",
+    practicals: "bg-gradient-to-br from-green-500/5 via-transparent to-emerald-500/5",
+    python: "bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5",
+    derivations: "bg-gradient-to-br from-cyan-500/5 via-transparent to-sky-500/5",
   };
 
   return (
-    <div className="scholar-shell flex h-dvh w-full overflow-hidden bg-background" data-mobile-nav-open={mobileNavOpen ? "true" : "false"}>
+    <div className="scholar-shell flex h-dvh w-full overflow-hidden" data-mobile-nav-open={mobileNavOpen ? "true" : "false"}>
+      {/* Ambient glass environment. Glass needs something coherent to refract:
+          deep graphite with a few very soft fields instead of neon gradients. */}
+      <div className="sg-environment" aria-hidden="true" />
       <a href="#main-scroll" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[11000] focus:rounded-xl focus:bg-background focus:p-3">Skip to study content</a>
       {/* Desktop sidebar */}
       <AnimatePresence>
@@ -733,7 +767,8 @@ export function AppShell() {
             animate={{ width: 256, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="scholar-desktop-sidebar hidden lg:flex shrink-0 flex-col border-r border-border/60 bg-sidebar backdrop-blur-xl sticky top-0 h-screen overflow-hidden z-30 relative"
+            data-sg-chrome="sidebar"
+            className="scholar-desktop-sidebar hidden lg:flex shrink-0 flex-col border-r border-border/60 sticky top-0 h-screen overflow-hidden z-30 relative"
           >
             <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border/60 shrink-0">
               <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
@@ -745,7 +780,7 @@ export function AppShell() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto no-scrollbar">
-              <NavList active={active} onNavigate={navigate} badges={badges} />
+              <NavList active={active} onNavigate={navigate} badges={badges} selectionId="desktop" />
             </div>
           </motion.aside>
         )}
@@ -756,7 +791,7 @@ export function AppShell() {
         setMobileOpen(open);
         if (!open) window.setTimeout(() => document.getElementById("scholar-mobile-menu")?.focus(), 0);
       }}>
-        <SheetContent side="left" className="w-72 p-0">
+        <SheetContent side="left" data-sg-chrome="sidebar" className="w-72 p-0">
           <SheetHeader className="h-16 flex-row items-center gap-2.5 px-5 border-b border-border/60 space-y-0">
             <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
               <GraduationCap className="h-5 w-5" />
@@ -764,13 +799,13 @@ export function AppShell() {
             <SheetTitle className="text-left">{guestMode ? "Guest workspace" : `${user.name.split(" ")[0] || "Your"}’s Scholar`}</SheetTitle>
           </SheetHeader>
           <div className="scholar-mobile-drawer-body overflow-y-auto no-scrollbar">
-            <NavList active={active} onNavigate={navigate} badges={badges} />
+            <NavList active={active} onNavigate={navigate} badges={badges} selectionId="mobile" />
           </div>
         </SheetContent>
       </Sheet>
 
       {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full bg-transparent">
         <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
         <AnimatePresence initial={false}>
           {guestMode && guestBannerVisible ? (
@@ -866,20 +901,21 @@ export function AppShell() {
                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
                 transition={{ duration: settings.reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
                 aria-label="Primary mobile navigation"
+                data-sg-chrome="mobile-nav"
               >
-                <button onClick={() => navigate("dashboard")} className={cn(active === "dashboard" && "active")} aria-label="Home">
+                <button type="button" onClick={() => navigate("dashboard")} className={cn(active === "dashboard" && "active")} aria-label="Home" aria-current={active === "dashboard" ? "page" : undefined}>
                   <Home /> Home
                 </button>
-                <button onClick={() => navigate("study")} className={cn(active === "study" && "active")} aria-label="Study">
+                <button type="button" onClick={() => navigate("study")} className={cn(active === "study" && "active")} aria-label="Study" aria-current={active === "study" ? "page" : undefined}>
                   <BookOpen /> Study
                 </button>
-                <button onClick={() => navigate("practice")} className={cn(active === "practice" && "active")} aria-label="Practice">
+                <button type="button" onClick={() => navigate("practice")} className={cn(active === "practice" && "active")} aria-label="Practice" aria-current={active === "practice" ? "page" : undefined}>
                   <ListChecks /> Practice
                 </button>
-                <button onClick={() => navigate("ai-tools")} className={cn(active === "ai-tools" && "active")} aria-label="AI Tools">
+                <button type="button" onClick={() => navigate("ai-tools")} className={cn(active === "ai-tools" && "active")} aria-label="AI Tools" aria-current={active === "ai-tools" ? "page" : undefined}>
                   <Lightbulb /> AI
                 </button>
-                <button onClick={() => { setMobileNavOpen(false); setMobileOpen(true); }} aria-label="More sections">
+                <button type="button" onClick={() => { setMobileNavOpen(false); setMobileOpen(true); }} aria-label="More sections">
                   <Menu /> More
                 </button>
               </motion.nav>
@@ -887,7 +923,7 @@ export function AppShell() {
           </AnimatePresence>
           <button
             type="button"
-            className="scholar-mobile-nav-toggle"
+            className="scholar-mobile-nav-toggle sg-material sg-material--control"
             onClick={() => setMobileNavOpen((open) => !open)}
             aria-expanded={mobileNavOpen}
             aria-controls="scholar-mobile-bottom-navigation"

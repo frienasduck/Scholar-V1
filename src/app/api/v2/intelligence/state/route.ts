@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCapability } from "@/lib/v2/entitlements";
 import { intelligenceSnapshot } from "@/lib/v2/intelligence/server";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 
 /**
  * GET /api/v2/intelligence/state
@@ -15,9 +16,11 @@ export async function GET() {
   if (!access.ok) return access.response;
   const user = access.user;
   try {
+    await enforceRateLimit(`intelligence-state:${user.id}`, "intelligence-state", 12, 60_000);
     const snapshot = await intelligenceSnapshot(user.id);
     return NextResponse.json(snapshot);
   } catch (error) {
+    if (error instanceof RateLimitError) return NextResponse.json({ error: "RATE_LIMITED", message: error.message }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
     console.error("[Scholar intelligence] state computation failed", error instanceof Error ? error.message : "unknown");
     return NextResponse.json(
       { error: "INTELLIGENCE_UNAVAILABLE", message: "Scholar could not compute your intelligence snapshot right now. Please try again." },

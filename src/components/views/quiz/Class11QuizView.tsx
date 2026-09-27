@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useStore } from "@/lib/store";
+import { useLearningProfile } from "@/components/personalization/personalization-provider";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { GenerationQuotaIndicator } from "@/components/subscriptions/generation-quota";
 import { useCurriculum } from "@/lib/use-curriculum";
@@ -90,6 +91,7 @@ function inferMistakeType(subject: string, question: string, qType: string): str
 }
 
 export function Class11QuizView() {
+  const {profile}=useLearningProfile();
   const plusAccess = useScholarAccess();
   const scholarClass = useStore((s) => s.user.scholarClass);
   const quizAttempts = useStore((s) => s.quizAttempts);
@@ -102,7 +104,7 @@ export function Class11QuizView() {
   const pushActivity = useStore((s) => s.pushActivity);
 
   const [phase, setPhase] = useState<Phase>("home");
-  const [subject, setSubject] = useState("physics");
+  const [subject, setSubject] = useState(()=>(profile?.result?.grade===scholarClass ? profile.result.priorities.find(s=>SUBJECT_ORDER.some(id=>id===s.id))?.id : undefined) ?? "physics");
   const [chapterId, setChapterId] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
   const [type, setType] = useState("all");

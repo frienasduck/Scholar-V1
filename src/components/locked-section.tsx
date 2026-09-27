@@ -109,7 +109,12 @@ export function LockedSection({ sectionTitle, gradientClass }: LockedSectionProp
           className="w-full max-w-lg"
         >
           {/* Glass card */}
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#080d16]/80 shadow-2xl backdrop-blur-2xl">
+          {/* Developer Access surface — shared glass material, no refraction:
+              this form and its long explanation must stay perfectly sharp. */}
+          <div
+            className="sg-material sg-material--modal relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl"
+            style={{ "--sg-radius": "2rem" } as React.CSSProperties}
+          >
             {/* Subtle glow border */}
             <div className="pointer-events-none absolute inset-0 rounded-[2rem] border border-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]" />
 

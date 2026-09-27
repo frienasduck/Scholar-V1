@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkAssistantAccess } from "@/lib/ai/access";
+import { AIRequestBodyError, readBoundedMultipartForm } from "@/lib/ai/request";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-const MAX_BYTES = 10 * 1024 * 1024;
+// Vercel Functions reject request payloads above 4.5 MB before route code runs.
+const MAX_BYTES = 4 * 1024 * 1024;
+const MAX_MULTIPART_BYTES = MAX_BYTES + 256 * 1024;
 const allowed = new Set(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "video/webm"]);
 
 export async function POST(request: NextRequest) {
@@ -11,11 +14,17 @@ export async function POST(request: NextRequest) {
   if (!access.ok) return access.response;
   const key = process.env.GROQ_API_KEY?.trim();
   if (!key) return NextResponse.json({ ok: false, error: "Groq transcription is not configured." }, { status: 503 });
-  const data = await request.formData().catch(() => null);
+  let data: FormData;
+  try {
+    data = await readBoundedMultipartForm(request, MAX_MULTIPART_BYTES);
+  } catch (error) {
+    if (error instanceof AIRequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    return NextResponse.json({ ok: false, error: "The audio upload could not be read." }, { status: 400 });
+  }
   const audio = data?.get("audio");
   const normalizedType = audio instanceof File ? audio.type.split(";")[0].toLowerCase() : "";
   if (!(audio instanceof File) || audio.size === 0 || audio.size > MAX_BYTES || !allowed.has(normalizedType)) {
-    return NextResponse.json({ ok: false, error: "Provide a supported audio recording smaller than 10 MB." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Provide a supported audio recording smaller than 4 MB." }, { status: 400 });
   }
   const form = new FormData();
   form.set("file", audio, audio.name || "lam-recording.webm");
@@ -27,7 +36,11 @@ export async function POST(request: NextRequest) {
   const result = await response.json() as { text?: string };
   if (!result.text?.trim()) return NextResponse.json({ ok: false, error: "No speech was detected." }, { status: 422 });
   return NextResponse.json({ ok: true, text: result.text.trim() });
-  } catch {
-    return NextResponse.json({ ok: false, error: "Transcription could not finish. Check your connection and retry." }, { status: 502 });
+  } catch (error) {
+    const aborted = request.signal.aborted || (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name));
+    return NextResponse.json(
+      { ok: false, error: aborted ? "Transcription timed out or was cancelled. Please retry." : "Transcription could not finish. Check your connection and retry." },
+      { status: aborted ? 504 : 502 },
+    );
   }
 }

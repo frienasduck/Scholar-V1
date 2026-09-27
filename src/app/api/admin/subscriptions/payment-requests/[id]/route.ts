@@ -4,8 +4,9 @@ import { db } from "@/lib/db";
 import { requireAdminUser, UnauthorizedAdminAccessError } from "@/lib/auth/admin";
 import { subscriptionConfig } from "@/lib/subscriptions/config";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
-import { sendScholarEmail } from "@/lib/subscriptions/email";
+import { paymentReviewResultEmail, sendScholarEmail } from "@/lib/subscriptions/email";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 
 const actionSchema = z.object({
   action: z.enum(["approve", "reject", "request_information"]),
@@ -15,6 +16,8 @@ const actionSchema = z.object({
 }).superRefine((value, context) => {
   if (value.action !== "approve" && !value.reason) context.addIssue({ code: "custom", message: "A reason is required.", path: ["reason"] });
 });
+
+class PaymentStateError extends Error {}
 
 async function authenticatedAdmin() {
   try {
@@ -66,7 +69,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   if (!actor) return NextResponse.json({ error: "ADMIN_REQUIRED" }, { status: 403 });
   try {
     await enforceRateLimit(actor.id, "admin-payment-action", 20, 15 * 60 * 1000);
-    const parsed = actionSchema.safeParse(await request.json());
+    const parsed = actionSchema.safeParse(await readBoundedJson(request, 8 * 1024));
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid action." }, { status: 400 });
     const { id } = await context.params;
     const existing = await db.scholarPaymentRequest.findUnique({ where: { id }, include: { user: true, subscription: true } });
@@ -77,8 +80,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       const durationDays = parsed.data.durationDays ?? subscriptionConfig.durationDays;
       const endsAt = durationDays ? new Date(Date.now() + durationDays * 86_400_000) : null;
       const result = await db.$transaction(async (tx) => {
+        const locked = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT "id" FROM "ScholarPaymentRequest" WHERE "id" = ${id} FOR UPDATE
+        `;
+        if (!locked[0]) throw new Error("NOT_FOUND");
         const current = await tx.scholarPaymentRequest.findUnique({ where: { id }, include: { subscription: true } });
         if (!current) throw new Error("NOT_FOUND");
+        if (!new Set(["submitted", "approved"]).has(current.status)) {
+          throw new PaymentStateError("Payment proof must be submitted before approval.");
+        }
         let subscription = current.subscription;
         if (!subscription) {
           subscription = await tx.scholarSubscription.create({ data: {
@@ -105,33 +115,64 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         ] });
         return { subscription, bonusGranted: !bonus };
       });
-      await sendScholarEmail({
-        to: existing.user.email,
-        subject: "Scholar Plus activated",
-        idempotencyKey: `plus-active-${existing.id}`,
-        html: `<div style="font-family:system-ui,sans-serif"><h1>Scholar Plus activated</h1><p>Advanced tools, expanded storage${result.bonusGranted ? ", and 5,000 bonus Coins" : ""} are now available.</p></div>`,
-      });
-      return NextResponse.json({ ok: true, status: "approved", subscriptionId: result.subscription.id, bonusGranted: result.bonusGranted });
+      let notice: string | null = null;
+      try {
+        const mail = await sendScholarEmail({
+          to: existing.user.email,
+          subject: "Scholar Plus activated",
+          idempotencyKey: `plus-active-${existing.id}`,
+          html: paymentReviewResultEmail({ approved: true, bonusGranted: result.bonusGranted }),
+        });
+        if (!mail.sent) notice = "The subscription was activated, but the notification email could not be sent.";
+      } catch (error) {
+        console.error("[Scholar] Subscription activation email failed", error instanceof Error ? error.name : "unknown");
+        notice = "The subscription was activated, but the notification email could not be sent.";
+      }
+      return NextResponse.json({ ok: true, status: "approved", subscriptionId: result.subscription.id, bonusGranted: result.bonusGranted, notice });
     }
 
     const status = parsed.data.action === "reject" ? "rejected" : "more_information_required";
-    await db.scholarPaymentRequest.update({ where: { id }, data: {
-      status,
-      reviewedAt: new Date(),
-      reviewedByUserId: actor.id,
-      reviewNote: parsed.data.reason,
-      internalAdminNote: parsed.data.internalNote,
-    } });
-    await recordAudit(parsed.data.action === "reject" ? "PAYMENT_REJECTED" : "PAYMENT_INFORMATION_REQUESTED", { actorUserId: actor.id, targetUserId: existing.userId, paymentRequestId: id });
-    await sendScholarEmail({
-      to: existing.user.email,
-      subject: parsed.data.action === "reject" ? "Scholar Plus payment review update" : "More payment information is needed",
-      idempotencyKey: `${status}-${existing.id}-${Date.now()}`,
-      html: `<div style="font-family:system-ui,sans-serif"><h1>${parsed.data.action === "reject" ? "Payment verification was not completed" : "More information is needed"}</h1><p>${parsed.data.reason}</p></div>`,
+    await db.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "ScholarPaymentRequest" WHERE "id" = ${id} FOR UPDATE
+      `;
+      if (!locked[0]) throw new Error("NOT_FOUND");
+      const current = await tx.scholarPaymentRequest.findUnique({ where: { id }, select: { status: true } });
+      if (!current) throw new Error("NOT_FOUND");
+      if (!["submitted", "more_information_required"].includes(current.status)) {
+        throw new PaymentStateError("This payment request has already been finalized.");
+      }
+      await tx.scholarPaymentRequest.update({ where: { id }, data: {
+        status,
+        reviewedAt: new Date(),
+        reviewedByUserId: actor.id,
+        reviewNote: parsed.data.reason,
+        internalAdminNote: parsed.data.internalNote,
+      } });
     });
-    return NextResponse.json({ ok: true, status });
+    await recordAudit(parsed.data.action === "reject" ? "PAYMENT_REJECTED" : "PAYMENT_INFORMATION_REQUESTED", { actorUserId: actor.id, targetUserId: existing.userId, paymentRequestId: id });
+    let notice: string | null = null;
+    try {
+      const mail = await sendScholarEmail({
+        to: existing.user.email,
+        subject: parsed.data.action === "reject" ? "Scholar Plus payment review update" : "More payment information is needed",
+        idempotencyKey: `${status}-${existing.id}-${Date.now()}`,
+        html: paymentReviewResultEmail({
+          approved: false,
+          title: parsed.data.action === "reject" ? "Payment verification was not completed" : "More information is needed",
+          reason: parsed.data.reason,
+        }),
+      });
+      if (!mail.sent) notice = "The payment status was saved, but the notification email could not be sent.";
+    } catch (error) {
+      console.error("[Scholar] Payment review email failed", error instanceof Error ? error.name : "unknown");
+      notice = "The payment status was saved, but the notification email could not be sent.";
+    }
+    return NextResponse.json({ ok: true, status, notice });
   } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
     if (error instanceof RateLimitError) return NextResponse.json({ error: error.message }, { status: 429 });
+    if (error instanceof PaymentStateError) return NextResponse.json({ error: error.message }, { status: 409 });
     return NextResponse.json({ error: "The payment action could not be completed." }, { status: 500 });
   }
 }

@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter, JetBrains_Mono, Poppins, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
+import "@/components/liquid-glass/liquid-glass.css";
 import "katex/dist/katex.min.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { ScholarGlassProvider } from "@/components/liquid-glass";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -87,7 +89,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} ${poppins.variable} ${sourceSerif4.variable} ${instrumentSerif.variable} antialiased bg-background text-foreground min-h-screen`}
       >
-        {children}
+        <ScholarGlassProvider>{children}</ScholarGlassProvider>
         <SonnerToaster />
         <ServiceWorkerRegister />
       </body>

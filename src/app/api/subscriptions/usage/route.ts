@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
 import { resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
 import { consumeGeneration, getUsage } from "@/lib/subscriptions/usage";
+import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 
 const schema = z.object({ key: z.enum(["quiz_generation", "slideshow_generation"]) });
 
@@ -25,7 +26,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "AUTH_REQUIRED", message: "Sign in to generate content." }, { status: 401 });
-  const parsed = schema.safeParse(await request.json());
+  let raw: unknown;
+  try {
+    raw = await readBoundedJson(request, 2 * 1024);
+  } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
+    return NextResponse.json({ error: "INVALID_USAGE_KEY" }, { status: 400 });
+  }
+  const parsed = schema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "INVALID_USAGE_KEY" }, { status: 400 });
   try {
     const result = await consumeGeneration(user.id, parsed.data.key, await resolveUserEntitlements(user.id));

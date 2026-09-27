@@ -40,8 +40,10 @@ export const subscriptionConfig = {
   freeMockExamGenerationsMonthly: Math.max(0, integer("FREE_MONTHLY_MOCK_EXAMS", 3)),
   plusMockExamGenerationsMonthly: Math.max(0, integer("PLUS_MONTHLY_MOCK_EXAMS", 30)),
   upiQrAsset: process.env.SCHOLAR_UPI_QR_ASSET?.trim() || "/payments/scholar-plus-upi.jpg",
-  upiId: process.env.SCHOLAR_UPI_ID?.trim() || "8086327212@fam",
-  upiPhone: process.env.SCHOLAR_UPI_PHONE?.trim() || "8086327212",
+  // Payment destinations are deployment-specific and must never silently
+  // fall back to a real recipient when configuration is missing.
+  upiId: process.env.SCHOLAR_UPI_ID?.trim() || null,
+  upiPhone: process.env.SCHOLAR_UPI_PHONE?.trim() || null,
   paymentRecipient: process.env.SCHOLAR_PAYMENT_RECIPIENT_NAME?.trim() || "Scholar",
   adminPaymentEmail: process.env.SCHOLAR_ADMIN_PAYMENT_EMAIL?.trim().toLowerCase() || null,
   resendFromEmail: process.env.RESEND_FROM_EMAIL?.trim() || null,

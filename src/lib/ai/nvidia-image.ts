@@ -5,7 +5,8 @@ import { AIProviderError } from "@/lib/ai/errors";
 const DEFAULT_ENDPOINT =
   "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.2-klein-4b";
 const IMAGE_TIMEOUT_MS = 90_000;
-const MAX_IMAGE_BASE64_LENGTH = 20_000_000;
+// Keep the JSON response below Vercel Functions' 4.5 MB payload ceiling.
+const MAX_IMAGE_BASE64_LENGTH = 4_000_000;
 
 export interface GeneratedNvidiaImage {
   mimeType: "image/jpeg" | "image/png" | "image/webp";

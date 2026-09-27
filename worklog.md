@@ -1,5 +1,15 @@
 # Scholar — Worklog
 
+## 27 September 2026 — Your Scholar personalized arrival
+
+- Added authenticated, server-persisted first-login personalization using the existing session, entitlement, PDF, AI, audit and Liquid Glass infrastructure. Existing accounts receive an optional invitation; completed/skipped users and Guests are not forced into the flow. Drafts resume, revision checks protect competing tabs, and a job lease prevents overlapping analysis.
+- Built a cinematic eleven-stage preference journey, concise consequence feedback, optional secure PDF import, non-blocking Plus presentation, real server-progress planets, deterministic fallback and a final reveal. Settings exposes the saved Learning Profile, editing and rebuilding without deleting study data.
+- Added Scholar Today with actual priority subjects, ordered next actions, completed focus minutes, study window/days, upcoming exam and imported material. Supported Practice/Quiz subject defaults and existing LAM personality/detail preferences now use the saved blueprint. Server LAM context is account/class scoped; later explicit conversation preferences win.
+- Added a permanent 50 MiB initial-setup allocation in the existing Custom E-Book system. Actual PDF bytes and the saved book are committed atomically under the account lock; digest-bound idempotency prevents duplicate charging. Failed parsing/writes consume nothing. Completion/skip closes remaining capacity, and deletion/rebuilding never replenishes it. PDFs remain accessible beyond normal recurring limits. Existing 4 MiB/500-page/script/text safety limits remain.
+- Added an additive, unapplied migration. Existing accounts are seeded as optional invitees without changing User/auth fields. Generated and validated Prisma; validation used command-local placeholder URLs, not a database connection. The local environment has only a non-local generic DATABASE_URL, not Prisma's required DB_DATABASE_URL / DB_DATABASE_URL_UNPOOLED. No database migration, production configuration change, commit, staging, push, deployment or Android work was performed.
+- Validation results and exact file/staging lists are recorded in PERSONALIZATION_IMPLEMENTATION_REPORT.md. Browser checks use authenticated API fixtures; server boundary tests mock the database/provider/PDF parser. Those checks do not constitute a live database migration or live provider acceptance test.
+- Saved exam dates may pass without invalidating other preferences or blocking Skip. New editable drafts clearly explain clearing an expired exam while retaining other answers; future exam writes stay validated. Failed analysis remains recoverable through safe Skip. Focused verification passed 131 Bun tests, ten unique Chrome personalization cases including all 21 requested layouts, two Edge cases and two existing reader/LAM browser regressions. No full platform suite or live AI billing loop was run.
+
 ## 23 September 2026 — Scholar Plus entitlement and premium-experience pass
 
 - Centralized the new premium capabilities in the existing server-backed entitlement resolver: Scholar Intelligence, LAM AI, JEE Focused Mode, functional Experiments, selected Resources, Group Study Beta hosting, and Workspace AI. Locked UI remains discoverable and deep-links to the relevant section of the expanded Scholar Plus page; API-backed actions also enforce access server-side.
@@ -2088,7 +2098,7 @@ Work Log:
 
 ### Task 3a — Settings dev password gate (settings.tsx)
 - Imported `Lock` from `lucide-react`.
-- Added `const DEV_PASSWORD = "inmfs123"` inside `SettingsView`.
+- Added a client-side developer password gate (legacy implementation; credential redacted and later replaced by server-side verification).
 - Added state: `showDevPassword` (bool), `devPasswordInput` (string).
 - Added `confirmDevPassword()` — compares input to `DEV_PASSWORD`; on success calls `setDevMode(true)` + closes dialog; on failure toasts error.
 - Switch onCheckedChange: if `v === true` → `setShowDevPassword(true)` (opens dialog, does NOT enable dev mode yet); if `false` → `setDevMode(false)` + toast.
@@ -2225,7 +2235,7 @@ Work Log:
   - 38 view files ✅
   - AISIG: 7 refs ✅
   - AI PDF Studio FLAGSHIP: 6 refs ✅
-  - Dev password (inmfs123): 4 refs ✅
+  - Legacy developer password gate: 4 refs ✅ (credential redacted; later replaced by server-side verification)
   - Cortis main video a1vHjBy85TU + 3 shorts ✅
   - NIGTUBE: 63 id fields (43 videos + 11 playlists) ✅
   - Canvas + Toolbox: present ✅
@@ -2237,7 +2247,7 @@ Stage Summary:
 - FULL RESTORE COMPLETE after third revert. All features back:
   - 13 new views (~10,000+ lines): past-papers, answer-lab, revision-hub, mock-exam, goal-center, reminders, doubt-history, downloads, assignments, workspace, music, canvas, toolbox
   - AISIG + AI PDF Studio (FLAGSHIP) in ai-tools.tsx
-  - Dev mode password gate (inmfs123)
+  - Legacy developer password gate (credential redacted; later replaced by server-side verification)
   - Cortis shorts (3 muted) + main video (unmuted a1vHjBy85TU)
   - NIGTUBE 43 videos + 11 playlists + Playlists tab
   - Sidebar fixes (p-4 lg:p-6 + overflow-x-hidden)
@@ -2738,3 +2748,103 @@ Stage Summary:
 ## Intentionally deferred
 - Nigtube, Study Music and personal flashcards were not registered as Group features because their current components are personal/store-scoped and do not yet have safe room-scoped state or authorization adapters. Exposing them now would leak personal state or provide misleading synchronization.
 - Production-grade TURN service credentials/infrastructure are environment-specific and were not invented or committed. Voice/video works with configured ICE servers; TURN should be supplied before claiming reliable connectivity across restrictive networks.
+
+---
+
+# SCHOLAR LIQUID GLASS — 2026-09-23
+
+## Reference audit and architecture decision
+- Audited the `liquid-glass-react` reference (README, LICENSE, `src/index.tsx`, `src/shader-utils.ts`, `src/utils.ts`, the Next.js example and its global CSS) before touching Scholar. Reused the *design* of its optical pipeline; did not adopt the package.
+- Hybrid approach chosen (option C): an internal, optimized Scholar adapter instead of installing `liquid-glass-react`. Reasons: the reference reads `navigator.userAgent` in the component body (unsafe under App Router server rendering), attaches one `mousemove` + one `resize` listener and stores pointer position in React state per instance, mounts a ~12-primitive `<svg>` filter tree per instance, and needs a canvas `toDataURL()` pass for its `shader` mode. At Scholar's surface count that is the wrong shape.
+- MIT attribution retained in `src/components/liquid-glass/ATTRIBUTION.md` and in the file headers that adapt the filter-chain design. The displacement field itself is original — a generated inline SVG gradient (x field in red, y field in blue, neutral at the centre) instead of the reference's pre-baked JPEG maps.
+
+## One material system, three tiers
+- New `src/components/liquid-glass/`: `glass-tokens.ts` (material families and geometry hierarchy), `glass-runtime.ts` (one shared rAF pointer runtime), `glass-filter.tsx` (shared filter definitions), `liquid-glass-provider.tsx` (capability detection + runtime flags), `scholar-glass.tsx` (Tier 1), `glass-surface.tsx` (Tier 2), `glass-button.tsx`, `glass-input.tsx`, `glass-menu.tsx`, `glass-dialog.tsx`, `glass-notification.tsx`, `liquid-glass.css`, `index.ts`.
+- Tier 1 true refractive glass: `ScholarGlass` renders a dedicated warp layer carrying `backdrop-filter` plus `filter: url(#sg-refraction-*)`, a film plate, a specular sweep, a masked 1.5px edge light and a chromatic edge layer. Interaction is pure CSS (`:hover`, `:active`, `--sg-hover`, `--sg-press`) so pointer movement never re-renders a component.
+- Tier 2 optimized static glass: `GlassSurface` and the shared `[data-slot=…]` material mapping for cards, menus, popovers, selects, tooltips, dialogs, sheets, tabs and inputs.
+- Tier 3 fallback is automatic and complete: unsupported `backdrop-filter`, `prefers-reduced-transparency`, `prefers-reduced-motion`, coarse pointers, low-memory devices and a debounced compact/low-core heuristic each switch the whole product to a stronger plate with no refraction dependency. Fallback plates declare a plain colour before the token-derived `color-mix()` so degradation is complete even if `color-mix()` is unavailable.
+
+## Performance decisions
+- Three shared refraction filters exist in the whole document (subtle, standard, prominent) instead of one filter tree per glass surface.
+- One pointer listener, one rAF loop, one passive scroll listener, one resize listener and one `visibilitychange` listener for the entire product. Registered surfaces are updated by writing `--sg-pull-x/y`, `--sg-edge`, `--sg-angle`, `--sg-mx/my` directly on the DOM node. The loop stops itself after ~10 idle frames and pauses while the tab is hidden.
+- Touch-only, reduced-motion and fallback devices never run the pointer loop, and refraction is switched off for Firefox and WebKit-only user agents, matching the reference README's own warning.
+- Media is protected: video, iframe, canvas, object and embed inside any glass surface or `[data-glass-media]` container are forced to `filter: none`, no backdrop filter, no blend mode and no transform.
+- No `MutationObserver`, no interval, no animation of blur values, no shader mode anywhere.
+
+## Product surfaces converted
+- Global shell: ambient ink environment layer, translucent glass sidebar and top bar, one Tier 1 refractive selection pill per navigation list, glass mobile dock and dock toggle, glass command palette, and per-view background washes changed from an opaque page colour to transparent so the ambient environment and each view's own media can be seen through the glass.
+- Dashboard: its private `dash-glass` / `dash-glass-strong` recipes were migrated onto the shared tokens (with their own Tier 3 handling) rather than layered over.
+- Premium: the Scholar Plus lock uses the `premium` material with a bright glass primary CTA; entitlement checks, deep links and pricing logic untouched.
+- Developer Access: the locked-section card uses the `modal` material deliberately without refraction, and no authorization behaviour changed.
+- LAM: LAM's compact floating surfaces (composer capsule, text-selection menu, E-Book ask-LAM orb) render through the shared refraction filter with the shared masked edge light; the large LAM panel stays on the static material so long assistant answers are never behind a displacement filter.
+- Notifications: the notification card's tokens now resolve to the shared `--sg-*` values, with status colour reaching only the icon, a hairline edge tint and a faint material wash.
+- Legacy utilities: `glass`, `asme-glass`, `premium-card`, cards, and the ~40 view-local glass families (`dash-glass`, `cinema-glass`, `tb-glass`, `sr-glass`, `al-glass`, `aura-glass`, …) are re-pointed to the shared material in one documented block. Only material identity is normalised; layout, radius and each view's gradient identity are untouched. Decorative layers (`lam-glass-reflection`, the notification card) are excluded.
+- Loading states: `skeleton` and `[data-slot=skeleton]` use a slow glass sheen instead of bright grey blocks, with a reduced-motion variant.
+
+## Verification
+- `bunx tsc --noEmit` passed. `bun run lint` passed with no warnings. `bun run build` passed.
+- New `tests/liquid-glass-qa.spec.ts` (Chromium): one shared filter-defs block and exactly three refraction filters in the document; the Tier 1 warp layer resolves to `url("#sg-refraction-standard")`; the ambient environment is present; 23 backdrop surfaces on the dashboard; command-palette material `blur(30px) saturate(1.42)` at a 28px radius; Tier 3 forced fallback shows no backdrop filter with plates at 48–64% opacity; ten views (dashboard, settings, study, music, nigtube, e-book, workspace, resources, focus, plus) at 1440×900 with zero page errors and zero horizontal overflow; eight viewports from 1920×1080 down to 320×568 and 844×390 landscape with zero horizontal overflow; median frame time 16.7 ms; no dialog left mounted after Escape.
+- Not tested on this machine: real Firefox, real Safari/WebKit and the Android WebView. Their behaviour is inferred from capability fallback only and is reported as NOT TESTED.
+- No Prisma schema change, no migration, no Android change, no dependency added or removed.
+
+## Deliberately not done
+- Group Study's feature-local CSS (`gs-glass`, room v2) was left alone: it is already a coherent, feature-scoped liquid-glass language and rewriting it would risk the collaboration UI for no visual gain. It now inherits the shared ambient environment and shared floating surfaces.
+- Shader mode was not implemented and refraction is not applied to large content regions, long AI responses, PDF pages or video.
+
+---
+
+# SCHOLAR FULL PLATFORM AUDIT — 2026-09-27
+
+## Security and integrity
+- Hardened authentication, private-beta and developer-access request handling with opaque rate-limit keys, bounded JSON bodies, generic negative responses and fail-closed authorization.
+- Serialized rate limits, subscription usage, file quotas, payment decisions, revision updates and mastery recomputation where concurrent requests could otherwise exceed limits or overwrite newer state.
+- Removed production payment-destination fallbacks, strengthened audit pseudonymization, validated and re-encoded payment images, and sandboxed stored PDF/image responses.
+- Prevented private navigation HTML from entering the service-worker cache and added a static, non-sensitive offline fallback.
+- Bounded custom E-Book parsing by file size, page count, text size and time; rejected active PDF actions and released quota reservations on failure.
+- Added shared bounded-body parsing to public mutation routes, Group Study tools, OCR, AI, subscriptions and Intelligence endpoints.
+
+## AI and LAM reliability
+- Added incremental SSE parsing that survives CRLF and split chunks, rejects malformed or incomplete provider streams, and cancels timed-out readers.
+- Enforced provider deadlines, conservative Auto fallback before the first emitted answer, stable public errors and Vercel-compatible request/payload ceilings.
+- Scoped LAM sessions, personalities and caller-provided turn IDs to the authenticated account before any upsert.
+- Verified configured Groq, Gemini, NVIDIA and Auto text providers locally without logging generated content or credentials.
+
+## Client and accessibility
+- Removed leaking timers/listeners, hardened storage and browser-feature fallbacks, fixed desktop capability detection, and made onboarding rewards idempotent.
+- Added active-route semantics, named mobile controls, 44px mobile targets, focus trapping/restoration, keyboard dismissal and a safe no-`IntersectionObserver` media fallback.
+- Replaced the slideshow coverage panel's hard reload with Next.js client routing.
+
+## Dependency and build result
+- Updated Next.js to 16.3.6, Prisma to 6.19.3, Sharp to 0.35.4 and other compatible tooling; removed unused direct packages and regenerated `bun.lock`.
+- Reduced `bun audit` from 92 advisories (3 critical, 50 high) to 21 transitive advisories (17 high, 4 moderate). Remaining entries are restricted to Prisma/ESLint build tooling and `pptxgenjs`'s `image-size` dependency; incompatible major overrides were intentionally not forced.
+- Prisma Client generation and schema validation passed. TypeScript, ESLint and the optimized production build passed.
+
+## Focused verification
+- Security/API: 128 isolated tests passed across 11 files.
+- AI/LAM: 24 reliability tests and 7 provider-policy browser tests passed; local Groq, Gemini, NVIDIA and Auto smoke checks passed.
+- Browser: Chrome and Edge client-hardening runs passed; Liquid Glass QA passed across 10 views and eight representative viewports with zero page errors/overflow and a 16.7ms median frame interval.
+- Product flows: 14 responsive/LAM/Group Study browser tests, 5 E-Book tests and 3 AI rendering/export tests passed.
+
+## Honest limits
+- Firefox/WebKit binaries, Safari, physical microphone/STT, image-generation billing, production Vercel, production PostgreSQL and real installed-PWA behaviour were not exercised.
+- No schema or migration change, commit, push, deployment or Android change was made.
+
+# SCHOLAR PUBLIC AUTHENTICATION — 2026-09-27
+
+## Functional work preserved
+- Added public email/password authentication, Google server-code/OIDC authorization and explicit authenticated linking, while retaining Developer Access, Guest workspace ownership, entitlements and Your Scholar routing.
+- Added bounded auth mutations, origin checks, durable rate limits, provider deadlines, single-use state/nonce/browser/PKCE protection, signature/claim verification, and credential/session race protection.
+- Added optional Resend verification/recovery, hashed expiring single-use tokens, fragment-only recovery links and account-wide session revocation on password reset.
+- Preserved pending personalization migration and added the additive public-auth migration. No local or production migration was applied; no unknown remote database was used for acceptance.
+
+## Requested visual correction
+- Recovered the original AuthScreen landing markup, serif typography, original crystal and flower video assets, navbar, glass card, animations, feature cards and footer. Removed the unwanted split-screen stylesheet/copy.
+- Kept only necessary auth fields/actions inside the original card; removed the duplicate class question because Your Scholar collects it and returning accounts retain server class context.
+- Preserved all prior audit/Liquid Glass/personalization changes. Updated existing public copy and What's New without redesigning other systems.
+
+## Validation and limits
+- 208 focused isolated Bun tests passed across 16 files. Chrome public-auth QA: 8 passed; Edge original-shell/keyboard QA: 2 passed, with 12 viewports including every requested compact/landscape size.
+- Unmocked Chrome inspected both original live video backgrounds (readyState 4), captured the restored card at all six required sizes, and reported zero console/page errors and horizontal overflow.
+- Prisma generation/schema validation, TypeScript, lint, final restored-UI production build and git diff --check passed. Four focused Guest/personalization browser regressions passed on the final grouped run; exact commands are recorded in PUBLIC_AUTH_IMPLEMENTATION_REPORT.md.
+- LIVE DATABASE ACCEPTANCE, real Google OAuth/linking, and email delivery remain NOT TESTED. Google/Resend credentials are absent locally; production settings were not changed.
+- Nothing staged, committed, pushed or deployed. Android untouched. Local dev server left available at http://localhost:3000.

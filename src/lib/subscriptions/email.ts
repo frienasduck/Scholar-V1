@@ -9,6 +9,7 @@ export async function sendScholarEmail(input: { to: string; subject: string; htm
   const from = subscriptionConfig.resendFromEmail;
   if (!apiKey || !from) return { sent: false as const, reason: "EMAIL_NOT_CONFIGURED" };
   const response = await fetch("https://api.resend.com/emails", {
+    signal: AbortSignal.timeout(10_000),
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": input.idempotencyKey },
     body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html }),
@@ -41,4 +42,16 @@ ${row("Proof uploaded", input.proofUploaded ? "Yes" : "No")}
 <p style="margin:22px 0"><a href="${escapeHtml(input.reviewUrl)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#67e8f9;color:#07111d;text-decoration:none;font-weight:700">Open protected admin review</a></p>
 <p style="opacity:.65;font-size:12px">This link never approves a payment. Sign-in with an authorized administrator account is required.</p>
 </div>`;
+}
+
+export function paymentReviewResultEmail(input: {
+  approved: boolean;
+  bonusGranted?: boolean;
+  title?: string;
+  reason?: string;
+}) {
+  if (input.approved) {
+    return `<div style="font-family:system-ui,sans-serif"><h1>Scholar Plus activated</h1><p>Advanced tools, expanded storage${input.bonusGranted ? ", and 5,000 bonus Coins" : ""} are now available.</p></div>`;
+  }
+  return `<div style="font-family:system-ui,sans-serif"><h1>${escapeHtml(input.title || "Payment verification update")}</h1><p>${escapeHtml(input.reason || "Please review your Scholar payment request.")}</p></div>`;
 }

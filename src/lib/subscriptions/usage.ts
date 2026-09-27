@@ -1,4 +1,5 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import type { ResolvedEntitlements } from "@/lib/subscriptions/entitlements";
 import { recordAudit } from "@/lib/subscriptions/audit";
@@ -17,6 +18,13 @@ export async function consumeGeneration(userId: string, key: UsageKey, access: R
 
   try {
     return await db.$transaction(async (tx) => {
+      // The no-op conflict update acquires a row lock for this exact
+      // user/key/day bucket, making the quota check and increment atomic.
+      await tx.$executeRaw`
+        INSERT INTO "UsageCounter" ("id", "userId", "key", "day", "count", "updatedAt")
+        VALUES (${randomUUID()}, ${userId}, ${key}, ${day}, 0, ${new Date()})
+        ON CONFLICT ("userId", "key", "day") DO UPDATE SET "updatedAt" = EXCLUDED."updatedAt"
+      `;
       const existing = await tx.usageCounter.findUnique({ where: { userId_key_day: { userId, key, day } } });
       const count = existing?.count ?? 0;
       const status = evaluateQuota(limit, count);

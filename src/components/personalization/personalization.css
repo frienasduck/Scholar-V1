@@ -1,0 +1,83 @@
+.your-scholar{position:relative;isolation:isolate;min-height:100svh;min-height:100dvh;background:#090e17;color:#edf0f6;overflow-x:clip;font-family:inherit;padding:clamp(16px,3vw,44px);padding-bottom:max(24px,env(safe-area-inset-bottom));}
+.your-scholar-atmosphere{position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 22% 46%,#30445d75,transparent 48%),radial-gradient(ellipse at 82% 10%,#655d5040,transparent 43%),linear-gradient(170deg,#111927,#070b12 75%);}
+.your-scholar-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:auto;max-width:1480px;min-height:48px;}
+.your-scholar-header button{min-height:44px;}
+.your-scholar-wordmark{font-size:14px;letter-spacing:.22em;font-weight:600;white-space:nowrap;}
+.your-scholar-eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#c4cedd;line-height:1.6;}
+.your-scholar-layout{display:grid;grid-template-columns:minmax(240px,.8fr) minmax(0,1.2fr);gap:clamp(24px,5vw,80px);max-width:1380px;margin:clamp(24px,5vh,68px) auto 24px;align-items:center;}
+.your-scholar-observatory{position:relative;min-width:0;text-align:center;}
+.your-scholar-observatory p{font-family:Georgia,serif;font-size:clamp(24px,2.6vw,38px);line-height:1.3;color:#d6dce7;margin:20px 0;}
+.your-scholar-coordinate{font-size:10px;letter-spacing:.3em;color:#c0c9d5;}
+.your-scholar-stage{border-radius:32px;padding:clamp(20px,3.3vw,48px);min-width:0;box-shadow:inset 0 1px 0 #ffffff30,0 32px 80px #0005;}
+.your-scholar-stage h1,.your-scholar-reveal h1{font-family:Georgia,serif;font-weight:400;font-size:clamp(32px,3.5vw,56px);line-height:1.08;letter-spacing:-.035em;margin:16px 0;outline:none;overflow-wrap:anywhere;}
+.your-scholar-stage h2{font-family:Georgia,serif;font-weight:400;font-size:clamp(28px,3vw,42px);line-height:1.2;}
+.your-scholar-subtitle{font-size:clamp(14px,1.15vw,16px);line-height:1.7;color:#c5cdda;max-width:60ch;margin-bottom:24px;}
+.your-scholar-intro-details{display:grid;gap:14px;padding:22px 0;font-size:15px;color:#dde4ee;}
+.your-scholar-intro-details p,.your-scholar-note,.your-scholar-save-note{font-size:12px;line-height:1.65;color:#bcc7d6;}
+.your-scholar-save-note{text-align:right;margin:14px 0 0;font-size:11px;}
+.your-scholar-question h3{font-size:13px;font-weight:500;margin:22px 0 10px;color:#dce5f2;}
+.your-scholar-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.your-scholar-choice{border-radius:15px;min-height:52px;display:flex;gap:12px;align-items:center;justify-content:space-between;text-align:left;padding:12px 16px;font-size:13px;color:#e5eaf3;cursor:pointer;transition:border-color .2s,background-color .2s;overflow-wrap:anywhere;}
+.your-scholar-choice[aria-pressed=true]{border-color:#d4dfef9c;background-color:#c0d5f624;box-shadow:inset 0 1px 0 #ffffff50,0 3px 12px #0003;}
+.your-scholar-choice:disabled{opacity:.5;cursor:not-allowed;}
+.your-scholar :is(button,input):focus-visible{outline:2px solid #d6e4f9;outline-offset:3px;}
+.your-scholar-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:24px;}
+.your-scholar-actions button{min-height:44px;white-space:normal;text-align:center;}
+.your-scholar-action-spacer{flex:1;}
+.your-scholar-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0;}
+.your-scholar-input-grid label{display:grid;gap:8px;font-size:12px;color:#c5d0e0;min-width:0;}
+.your-scholar-input-grid input{width:100%;min-width:0;min-height:48px;border:1px solid #ffffff38;border-radius:12px;background:#ffffff09;padding:10px;color:#fff;color-scheme:dark;}
+.your-scholar-feedback{min-height:42px;margin:18px 0 0;font-size:12px;line-height:1.6;}
+.your-scholar-feedback>div{padding:12px;border-radius:14px;animation:scholar-feedback .25s ease;}
+.your-scholar-import{display:grid;gap:16px;}
+.your-scholar-import-meter,.your-scholar-plus>div{padding:24px;border-radius:22px;}
+.your-scholar-import-meter span{font-family:Georgia,serif;font-size:28px;}
+.your-scholar-import-meter p,.your-scholar-plus p{font-size:13px;line-height:1.7;color:#c8d2e1;}
+.your-scholar-import input{max-width:100%;min-height:44px;font-size:12px;}
+.your-scholar-error{border:1px solid #e3bba560;background:#57312944;border-radius:16px;padding:16px;font-size:13px;line-height:1.5;margin-top:20px;}
+.your-scholar-error button{margin:8px 8px 0 0;}
+.your-scholar-reveal ul{display:grid;gap:14px;margin:28px 0;padding:0;list-style:none;}
+.your-scholar-reveal li{display:flex;gap:12px;font-size:14px;line-height:1.6;}
+.your-scholar-reveal li span{color:#d5e2f9;}
+.your-scholar-cosmos{width:100%;height:clamp(220px,30vw,440px);position:relative;display:grid;place-items:center;perspective:800px;}
+.your-scholar-planet{width:66%;aspect-ratio:1;border-radius:50%;position:relative;background:radial-gradient(circle at 26% 20%,#c9d8e9aa 0,#4a678188 12%,#21354aa0 36%,#111b2bd9 67%,#060b16 83%);box-shadow:inset -20px -25px 48px #0009,inset 4px 4px 22px #e2edff50,0 0 50px #c4d4e918;overflow:hidden;animation:scholar-planet-arrive .6s cubic-bezier(.2,.7,.2,1);}
+.your-scholar-planet-light{position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,#ffffff14 45%,transparent 65%);border-radius:inherit;}
+.your-scholar-planet-core{position:absolute;inset:15%;border:1px solid #ffffff1c;border-radius:50%;background:radial-gradient(ellipse at 30% 20%,#dfe7fa26,transparent 70%);transform:rotate(-28deg) scaleX(.84);}
+.your-scholar-orbit{position:absolute;width:96%;height:64%;border:1px solid #c2d4f335;border-radius:50%;transform:rotate(-24deg);box-shadow:0 1px 0 #ffffff0c;}
+.orbit-two{width:88%;height:82%;transform:rotate(39deg);border-color:#afc2de20;}
+.your-scholar-journey .your-scholar-cosmos{max-width:460px;height:260px;margin:auto;}
+.planet-priorities .your-scholar-planet{background:radial-gradient(circle at 24% 18%,#e5dac6bb,#62564b 32%,#17191f 70%);}
+.planet-materials .your-scholar-planet{background:radial-gradient(circle at 24% 18%,#d4e7ddb0,#426456 32%,#101d1e 70%);}
+.planet-lam .your-scholar-planet{background:radial-gradient(circle at 24% 18%,#e2daefbb,#605475 32%,#1a1826 70%);}
+.planet-strategy .your-scholar-planet{background:radial-gradient(circle at 24% 18%,#eee2c2bb,#746044 32%,#211b17 70%);}
+.planet-dashboard .your-scholar-planet{background:radial-gradient(circle at 24% 18%,#dbe9edbb,#52757b 32%,#131f28 70%);}
+.your-scholar-orbital-book{position:absolute;top:30%;right:12%;font-size:34px;color:#e0ece6;transform:rotate(15deg);}
+.your-scholar-star{position:absolute;width:3px;height:3px;background:#f4f6ff;border-radius:50%;opacity:.7;}
+.star-one{top:12%;left:12%;}.star-two{bottom:8%;right:16%;}.star-three{top:28%;right:5%;}
+.your-scholar-journey{text-align:center;}
+.your-scholar-journey>p[role=status]{min-height:3em;font-size:13px;color:#ccd5e3;line-height:1.5;}
+.your-scholar-planets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left;margin:24px 0 0;padding:0;list-style:none;}
+.your-scholar-planets li{border:1px solid #ffffff20;padding:12px;border-radius:14px;font-size:12px;display:flex;align-items:center;gap:10px;color:#b9c7d8;}
+.your-scholar-planets li[aria-current=step]{background:#ffffff0d;border-color:#ffffff66;color:#fff;}
+.your-scholar-planets li[data-complete=true]{color:#d2e4da;}
+.your-scholar-planets small{display:block;font-size:10px;margin-top:3px;line-height:1.5;}
+.your-scholar-invite{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 20px;border-radius:18px;margin:10px;position:relative;z-index:60;font-size:13px;}
+.your-scholar-invite p{font-size:12px;color:var(--muted-foreground);}.your-scholar-invite>div{flex:1;min-width:180px;}
+.scholar-today{margin:24px auto;padding:clamp(20px,3vw,36px);border-radius:28px;width:calc(100% - 32px);max-width:960px;position:relative;color:#f2f5fb;}
+.scholar-today h2{font-family:Georgia,serif;font-size:clamp(26px,3vw,40px);line-height:1.2;}
+.scholar-today p{font-size:14px;line-height:1.7;color:#d4ddeb;}
+.scholar-today-priorities{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0;}.scholar-today-priorities span{padding:8px 12px;border-radius:99px;border:1px solid #fff3;font-size:12px;}
+.scholar-today-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:20px;}.scholar-today-actions button{text-align:left;min-height:64px;padding:12px;border-radius:15px;}.scholar-today-actions small{display:block;font-size:11px;font-weight:400;margin-top:4px;line-height:1.5;color:#cdd6e5;}
+.learning-profile{padding:24px;border-radius:24px;}.learning-profile dl{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr));margin:24px 0;}.learning-profile dt{font-size:12px;color:var(--muted-foreground);}.learning-profile dd{font-size:14px;margin-top:4px;overflow-wrap:anywhere;}
+@keyframes scholar-feedback{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes scholar-planet-arrive{from{opacity:.25;transform:translateY(12px) scale(.93)}to{opacity:1;transform:none}}
+@media(min-width:1200px) and (min-height:800px){.your-scholar-observatory .your-scholar-planet-light{animation:scholar-reflection 18s ease-in-out infinite alternate;}}
+@keyframes scholar-reflection{to{transform:translateX(10%) rotate(9deg)}}
+.is-paused *{animation-play-state:paused!important;}
+@media(max-width:900px){.your-scholar-layout{grid-template-columns:1fr;max-width:700px;gap:0;}.your-scholar-observatory{display:none;}.your-scholar-header>.your-scholar-eyebrow{display:none;}.your-scholar-atmosphere{background:radial-gradient(ellipse at 20% 12%,#4f658344,transparent 60%),linear-gradient(#121b2b,#080d15);}}
+@media(max-width:480px){.your-scholar{padding:14px 12px;padding-bottom:max(18px,env(safe-area-inset-bottom));}.your-scholar-header{gap:8px;}.your-scholar-wordmark{font-size:11px;letter-spacing:.13em;}.your-scholar-header button{font-size:11px;}.your-scholar-layout{margin:22px 0;}.your-scholar-stage{border-radius:24px;padding:22px 16px;}.your-scholar-choices{gap:8px;}.your-scholar-choice{padding:12px 10px;font-size:12px;}.your-scholar-actions{gap:8px;}.your-scholar-action-spacer{display:none;}.your-scholar-actions button{flex:1;}.your-scholar-actions button:last-child{flex-basis:100%;}.your-scholar-input-grid{grid-template-columns:1fr;}.your-scholar-journey .your-scholar-cosmos{height:210px;}.your-scholar-planets{gap:8px;}.your-scholar-planets li{padding:10px;font-size:11px;}.scholar-today-actions{grid-template-columns:1fr;}.learning-profile dl{grid-template-columns:1fr;}}
+@media(max-height:620px){.your-scholar-layout{margin-top:18px;align-items:start;}.your-scholar-observatory .your-scholar-cosmos{height:240px;}.your-scholar-journey .your-scholar-cosmos{height:160px;max-width:270px;}.your-scholar-stage{padding:20px;}.your-scholar-stage h1{font-size:32px;}.your-scholar-planets{margin-top:12px;}}
+@media(max-height:450px) and (min-width:600px){.your-scholar-journey{display:grid;grid-template-columns:180px minmax(0,1fr);gap:4px 20px;text-align:left;align-items:center;}.your-scholar-journey .your-scholar-cosmos{grid-column:1;grid-row:1/4;width:180px;height:135px;}.your-scholar-journey>.your-scholar-eyebrow,.your-scholar-journey>h2,.your-scholar-journey>p[role=status]{grid-column:2;margin:0;min-height:0;}.your-scholar-planets{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;}.your-scholar-planets li{padding:8px;}.your-scholar-journey h2{font-size:32px;}}
+@media(prefers-reduced-motion:reduce),(pointer:coarse){.your-scholar *{animation:none!important;}.your-scholar-planet{box-shadow:inset -14px -18px 32px #0009,inset 3px 3px 16px #e2edff50;}}
+.your-scholar-reduced *{animation:none!important;transition:none!important;}
+@media(prefers-reduced-transparency:reduce){.your-scholar-stage,.your-scholar-choice{background:#1b2635!important;backdrop-filter:none!important;}}

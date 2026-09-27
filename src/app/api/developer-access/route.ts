@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { UserRole } from "@prisma/client";
@@ -9,8 +9,9 @@ import { isBetaAllowed } from "@/lib/auth/beta";
 import { BETA_CONTACT_EMAIL } from "@/lib/auth/identity";
 import { hashPassword } from "@/lib/auth/password";
 import { isUniqueConstraintError } from "@/lib/auth/errors";
-import { checkRateLimit, enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import { enforceRateLimit, requestRateLimitKey, RateLimitError } from "@/lib/security/rate-limit";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 
 export const runtime = "nodejs";
 
@@ -33,27 +34,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Developer access is not available." }, { status: 403 });
   }
   try {
-    const parsed = schema.safeParse(await request.json().catch(() => null));
+    const parsed = schema.safeParse(await readBoundedJson(request, 4 * 1024));
     if (!parsed.success) {
       return NextResponse.json({ error: "Enter the developer access password." }, { status: 400 });
     }
 
-    // Rate limit BEFORE any verification work, keyed per IP and per submitted
-    // value (never logging or storing the value itself). Wrong passwords must
-    // not reveal the expected password, its length, or session internals.
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
-    const ipKey = `dev-access-ip:${createHash("sha256").update(ip).digest("hex").slice(0, 24)}`;
-    await checkRateLimit(ipKey, "developer-access", 10, 15 * 60 * 1000);
-    const valueKey = `dev-access-value:${createHash("sha256").update(parsed.data.password).digest("hex").slice(0, 24)}`;
-    await checkRateLimit(valueKey, "developer-access", 15, 15 * 60 * 1000);
+    // Reserve an attempt atomically BEFORE password verification. A separate
+    // count-then-record flow lets a concurrent flood perform unlimited scrypt
+    // work before any request records its failure. Never persist a hash of the
+    // submitted password: even a derived candidate is credential material.
+    const ipKey = requestRateLimitKey(request, "dev-access-ip");
+    await enforceRateLimit(ipKey, "developer-access", 10, 15 * 60 * 1000);
 
     const user = await getSessionUser();
 
     if (!(await verifyDeveloperAccessPassword(parsed.data.password))) {
-      // Only FAILED attempts consume the limiter, so a successful submission is
-      // never punished, and the message stays generic on every failure.
-      await enforceRateLimit(ipKey, "developer-access", 10, 15 * 60 * 1000);
-      await enforceRateLimit(valueKey, "developer-access", 15, 15 * 60 * 1000);
       await recordAudit("DEVELOPER_ACCESS_LOGIN_FAILED", {
         actorUserId: user?.id,
         targetUserId: user?.id,
@@ -64,8 +59,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Incorrect developer access password." }, { status: 401 });
     }
 
-    // The password is correct. Ensure the single authorized beta account exists
-    // (server-side only; the public registration endpoint stays closed) and
+    // The privileged password is correct. Ensure the developer bootstrap exists
+    // server-side (this never grants privilege merely for possessing its email) and
     // sign it in when the developer arrived without a Scholar session.
     let account = user;
     if (!account) {
@@ -96,6 +91,9 @@ export async function POST(request: NextRequest) {
     await recordAudit("DEVELOPER_ACCESS_ACTIVATED", { actorUserId: account.id, targetUserId: account.id });
     return NextResponse.json({ ok: true, user: { id: account.id, email: account.email, name: account.name, currentScholarClass: account.currentScholarClass } });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof RateLimitError) {
       return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
     }

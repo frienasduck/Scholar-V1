@@ -3,6 +3,8 @@ import { requireCapability } from "@/lib/v2/entitlements";
 import { ingestEventsSchema, ingestMistakesSchema, toMistakeRecord } from "@/lib/v2/intelligence/schemas";
 import { storeEvidence, storeMistakes } from "@/lib/v2/intelligence/server";
 import { recordAudit } from "@/lib/subscriptions/audit";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 
 /**
  * POST /api/v2/intelligence/events
@@ -21,9 +23,12 @@ export async function POST(request: NextRequest) {
 
   let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+    await enforceRateLimit(`intelligence-ingest:${user.id}`, "intelligence-ingest", 12, 60_000);
+    body = await readBoundedJson(request, 2 * 1024 * 1024);
+  } catch (error) {
+    if (error instanceof RateLimitError) return NextResponse.json({ error: "RATE_LIMITED", message: error.message }, { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } });
+    if (error instanceof RequestBodyError) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
+    return NextResponse.json({ error: "INTELLIGENCE_UNAVAILABLE", message: "Scholar could not accept study evidence right now." }, { status: 503 });
   }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400 });
@@ -56,8 +61,17 @@ export async function POST(request: NextRequest) {
   const events = eventsResult.data.events;
   const mistakes = mistakesResult.data.mistakes.map(toMistakeRecord);
 
-  const storedEvents = events.length ? await storeEvidence(user.id, events) : 0;
-  const storedMistakes = mistakes.length ? await storeMistakes(user.id, mistakes) : 0;
+  let storedEvents = 0;
+  let storedMistakes = 0;
+  try {
+    storedEvents = events.length ? await storeEvidence(user.id, events) : 0;
+    storedMistakes = mistakes.length ? await storeMistakes(user.id, mistakes) : 0;
+  } catch {
+    return NextResponse.json(
+      { error: "INTELLIGENCE_UNAVAILABLE", message: "Scholar could not store this study evidence right now. Please retry." },
+      { status: 503 },
+    );
+  }
 
   await recordAudit("INTELLIGENCE_EVIDENCE_INGESTED", {
     actorUserId: user.id,

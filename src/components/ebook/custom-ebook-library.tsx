@@ -48,13 +48,21 @@ export function CustomEbookLibrary() {
     }
   };
 
-  const open = async (ebook: EbookSummary) => {
+  const open = useCallback(async (ebook: EbookSummary) => {
     const response = await fetch(`/api/ebooks/${encodeURIComponent(ebook.id)}`, { cache: "no-store" });
     if (!response.ok) return toast.error("This E-Book could not be opened.");
     const value = await response.json();
     setActive({ ...ebook, text: value.ebook.text || "No selectable text was found in this PDF." });
     setLamPageContext({ ebookTitle: ebook.title, activeFileId: ebook.id, activeFileName: ebook.originalFileName, visibleText: String(value.ebook.text || "").slice(0, 8_000) });
-  };
+  },[]);
+
+  useEffect(()=>{
+    try{
+      const target=sessionStorage.getItem("scholar:ebook:custom-target");
+      const book=target ? ebooks.find(ebook=>ebook.id===target) : null;
+      if(book){sessionStorage.removeItem("scholar:ebook:custom-target");void open(book).catch(()=>toast.error("This E-Book could not be opened. Please retry from your library."));}
+    }catch{ /* Optional navigation hint; ownership is always checked by the API. */ }
+  },[ebooks,open]);
 
   if (!access.authenticated) {
     return <section className="eb-glass mb-6 rounded-2xl p-4 sm:p-5"><div className="flex items-start gap-3"><LockKeyhole className="mt-0.5 h-5 w-5 text-cyan-200" /><div><h2 className="font-semibold text-white">Upload your own E-Book</h2><p className="mt-1 text-sm leading-6 text-white/55">Sign in to securely upload private PDFs. Guest files are not sent to the server.</p></div></div></section>;

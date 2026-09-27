@@ -19,6 +19,15 @@ const WALLPAPERS: Record<string, string> = {
 
 const ROTATING_WALLPAPERS = ["deep-space", "aurora", "warm-study", "cool-focus", "abstract"] as const;
 
+function subscribeMediaQuery(query: MediaQueryList, listener: () => void): () => void {
+  if (typeof query.addEventListener === "function") {
+    query.addEventListener("change", listener);
+    return () => query.removeEventListener("change", listener);
+  }
+  query.addListener(listener);
+  return () => query.removeListener(listener);
+}
+
 function stableIndex(seed: string): number {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) hash = ((hash << 5) - hash + seed.charCodeAt(index)) | 0;
@@ -41,6 +50,9 @@ function AppearanceBackground({ settings, page }: { settings: ScholarAppearanceS
   const [videoFailed, setVideoFailed] = useState(false);
   const [visible, setVisible] = useState(() => typeof document === "undefined" || document.visibilityState !== "hidden");
   const [mobile, setMobile] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const [networkAllowsVideo, setNetworkAllowsVideo] = useState(true);
   const [batterySaverLikely, setBatterySaverLikely] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -52,8 +64,14 @@ function AppearanceBackground({ settings, page }: { settings: ScholarAppearanceS
     const query = window.matchMedia("(max-width: 767px)");
     const update = () => setMobile(query.matches);
     update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
+    return subscribeMediaQuery(query, update);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setPrefersReducedMotion(query.matches);
+    update();
+    return subscribeMediaQuery(query, update);
   }, []);
 
   useEffect(() => {
@@ -69,8 +87,12 @@ function AppearanceBackground({ settings, page }: { settings: ScholarAppearanceS
         : settings.rotateWallpapers === "daily" ? `day:${daily}` : "launch";
     if (settings.rotateWallpapers === "launch") {
       const key = "scholar:appearance:launch-wallpaper";
-      seed = sessionStorage.getItem(key) ?? `${Date.now()}:${crypto.randomUUID()}`;
-      sessionStorage.setItem(key, seed);
+      try {
+        seed = sessionStorage.getItem(key) ?? `${Date.now()}:${typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+        sessionStorage.setItem(key, seed);
+      } catch {
+        seed = `launch:${Date.now()}`;
+      }
     }
     let active = true;
     queueMicrotask(() => {
@@ -96,15 +118,18 @@ function AppearanceBackground({ settings, page }: { settings: ScholarAppearanceS
     if (!getBattery || !baseWallpaper.pauseOnBatterySaver) {
       return;
     }
+    let active = true;
     let battery: BatteryManager | null = null;
     const update = () => setBatterySaverLikely(Boolean(battery && !battery.charging && battery.level <= .2));
     void getBattery.call(navigator).then((value) => {
+      if (!active) return;
       battery = value;
       update();
       battery.addEventListener("chargingchange", update);
       battery.addEventListener("levelchange", update);
-    }).catch(() => setBatterySaverLikely(false));
+    }).catch(() => { if (active) setBatterySaverLikely(false); });
     return () => {
+      active = false;
       battery?.removeEventListener("chargingchange", update);
       battery?.removeEventListener("levelchange", update);
     };
@@ -113,6 +138,8 @@ function AppearanceBackground({ settings, page }: { settings: ScholarAppearanceS
     || wallpaper.stillOnMobile && mobile
     || !networkAllowsVideo
     || wallpaper.pauseOnBatterySaver && batterySaverLikely
+    || settings.accessibility.reduceMotion
+    || prefersReducedMotion
     || settings.performance === "battery"
     || settings.performance === "performance";
 
@@ -205,6 +232,10 @@ function AppearanceBackground({ settings, page }: { settings: ScholarAppearanceS
           playsInline
           loop={wallpaper.loop}
           preload="metadata"
+          onLoadStart={() => {
+            setVideoReady(false);
+            setVideoFailed(false);
+          }}
           onLoadedData={(event) => {
             event.currentTarget.playbackRate = wallpaper.videoSpeed;
             setVideoReady(true);
@@ -240,12 +271,12 @@ export function AppearanceRuntime({ settings, page }: { settings: ScholarAppeara
     apply();
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    darkQuery.addEventListener("change", apply);
-    motionQuery.addEventListener("change", apply);
+    const stopDark = subscribeMediaQuery(darkQuery, apply);
+    const stopMotion = subscribeMediaQuery(motionQuery, apply);
     const timer = settings.themeMode === "schedule" ? window.setInterval(apply, 60_000) : undefined;
     return () => {
-      darkQuery.removeEventListener("change", apply);
-      motionQuery.removeEventListener("change", apply);
+      stopDark();
+      stopMotion();
       if (timer) window.clearInterval(timer);
     };
   }, [effectiveSettings]);

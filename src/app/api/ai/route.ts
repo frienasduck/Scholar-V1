@@ -6,6 +6,7 @@ import {
   type ScholarGroqMessage,
 } from "@/lib/ai/scholar-groq";
 import { publicAIError, AIProviderError } from "@/lib/ai/errors";
+import { AIRequestBodyError, readBoundedAIJSON } from "@/lib/ai/request";
 import { buildSystemPrompt } from "@/lib/ai/personas";
 import { aiRequestSchema, quizGenerationSchema, schemaForMode, type AIMode } from "@/lib/ai/schemas";
 import { getSessionUser } from "@/lib/auth/session";
@@ -31,9 +32,10 @@ export async function POST(request: NextRequest) {
   const signal = AbortSignal.any([request.signal, AbortSignal.timeout(50_000)]);
   let raw: unknown;
   try {
-    raw = await request.json();
-  } catch {
-    return errorResponse("The request body must be valid JSON.", 400, "INVALID_JSON_BODY");
+    raw = await readBoundedAIJSON(request, 320 * 1024);
+  } catch (error) {
+    if (error instanceof AIRequestBodyError) return errorResponse(error.message, error.status, error.code);
+    return errorResponse("The request body could not be read.", 400, "INVALID_JSON_BODY");
   }
 
   const parsed = aiRequestSchema.safeParse(raw);
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
   if (!sessionUser) return errorResponse("Sign in to use Scholar AI.", 401, "AUTH_REQUIRED");
   if (sessionUser) {
     try {
+      await enforceRateLimit(sessionUser.id, "ai-generation-burst", 20, 60 * 1000);
       await enforceRateLimit(sessionUser.id, "ai-generation", 90, 60 * 60 * 1000);
       if (body.feature) {
         const required = await requireEntitlement(body.feature);
@@ -72,6 +75,10 @@ export async function POST(request: NextRequest) {
   }
   const queryStream = request.nextUrl.searchParams.get("stream") === "1";
   const mode: AIMode = body.mode ?? (queryStream ? "stream" : (body.json ? "json" : "chat"));
+  const wantsStream = queryStream || mode === "stream";
+  if (wantsStream && JSON_MODES.has(mode)) {
+    return errorResponse("Structured AI modes do not support streaming. Retry without stream mode.", 400, "INVALID_STREAM_MODE");
+  }
   const totalCharacters = body.messages.reduce((sum, message) => sum + message.content.length, 0);
   if (totalCharacters > 60_000) {
     return errorResponse("The conversation is too long. Start a new chat or shorten the input.", 413, "AI_CONTEXT_TOO_LARGE");
@@ -117,7 +124,7 @@ export async function POST(request: NextRequest) {
       return errorResponse("Scholar could not verify your monthly mock exam allowance.", 503, "QUOTA_UNAVAILABLE");
     }
   }
-  if (queryStream || mode === "stream") {
+  if (wantsStream) {
     return streamResponse(messages, body.temperature, signal, reservationKey, sessionUser.id);
   }
 

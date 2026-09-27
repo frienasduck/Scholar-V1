@@ -165,6 +165,20 @@ function escAttr(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function safeExportHref(value: string): string | null {
+  const href = value.replace(/&amp;/g, "&").trim();
+  if (!href || /[\u0000-\u001f\u007f]/.test(href)) return null;
+  if (href.startsWith("#") || href.startsWith("/") || href.startsWith("./") || href.startsWith("../")) {
+    return href;
+  }
+  try {
+    const parsed = new URL(href);
+    return ["http:", "https:", "mailto:"].includes(parsed.protocol) ? href : null;
+  } catch {
+    return null;
+  }
+}
+
 // Escape a string for use inside a CSS `content: "..."` double-quoted string.
 function escCssString(s: string): string {
   return s
@@ -1571,7 +1585,12 @@ export function mdToHtml(md: string): string {
 
   const inline = (s: string) =>
     esc(s)
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label: string, rawHref: string) => {
+        const href = safeExportHref(rawHref);
+        return href
+          ? `<a href="${escAttr(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+          : label;
+      })
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*([^*]+)\*/g, "<em>$1</em>");

@@ -6,11 +6,14 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { createWorker } from "tesseract.js";
 import { requireEntitlement } from "@/lib/subscriptions/entitlements";
+import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
+import { enforceRateLimit, RateLimitError, requestRateLimitKey } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_JSON_BYTES = 2 * 1024;
 const OCR_TIMEOUT_MS = 45_000;
 const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const activeJobs = new Map<string, Promise<OcrResult>>();
@@ -59,7 +62,7 @@ async function requestImage(request: NextRequest): Promise<{ source: Buffer; hom
     return { source: Buffer.from(await file.arrayBuffer()), homeworkScanner: true };
   }
   if (!contentType.includes("application/json")) throw new Error("UNSUPPORTED_REQUEST");
-  return { source: await pageImage(await request.json()), homeworkScanner: false };
+  return { source: await pageImage(await readBoundedJson(request, MAX_JSON_BYTES)), homeworkScanner: false };
 }
 
 async function runOcr(source: Buffer): Promise<OcrResult> {
@@ -97,6 +100,7 @@ async function runOcr(source: Buffer): Promise<OcrResult> {
 
 export async function POST(request: NextRequest) {
   try {
+    await enforceRateLimit(requestRateLimitKey(request, "ocr-ip"), "ocr", 15, 10 * 60_000);
     const input = await requestImage(request);
     if (input.homeworkScanner) {
       const access = await requireEntitlement("homework_scanner");
@@ -116,6 +120,15 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json(
+        { ok: false, code: "RATE_LIMITED", error: "Too many OCR requests. Please wait and retry." },
+        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } },
+      );
+    }
+    if (error instanceof RequestBodyError) {
+      return errorResponse(error.status, error.code, error.message);
+    }
     const code = error instanceof Error ? error.message : "OCR_FAILED";
     const known: Record<string, [number, string]> = {
       FILE_REQUIRED: [400, "Choose an image before starting OCR."],

@@ -66,11 +66,14 @@ export async function resolveScholarPlan(userId: string): Promise<PlanResolution
     && developerResult.status === "fulfilled"
     && subscriptionResult.status === "fulfilled";
   const role = userResult.status === "fulfilled" ? userResult.value?.role ?? UserRole.USER : UserRole.USER;
-  const developer = developerResult.status === "fulfilled" ? developerResult.value : false;
-  const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null;
+  const developer = entitlementsLoaded && developerResult.status === "fulfilled" ? developerResult.value : false;
+  const subscription = entitlementsLoaded && subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null;
 
-  // Any failed privilege lookup resolves to FREE. It must never grant access.
-  const plan: ScholarPlan = developer ? "DEVELOPER" : subscription ? "PLUS" : "FREE";
+  // Any failed privilege lookup resolves to FREE with no elevated source. Some
+  // callers render from the entitlement list directly rather than going
+  // through requireEntitlement, so entitlementsLoaded=false alone is not a
+  // sufficient authorization boundary.
+  const plan: ScholarPlan = entitlementsLoaded && developer ? "DEVELOPER" : entitlementsLoaded && subscription ? "PLUS" : "FREE";
   return { plan, role, entitlementsLoaded, subscription };
 }
 

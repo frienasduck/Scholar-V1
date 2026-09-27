@@ -21,12 +21,17 @@ export function Onboarding() {
   const [done, setDone] = useState(false);
   const { transition, audioStatus, retrySound, stopTransition } = useScholarTransition();
   const introRootRef = useRef<HTMLDivElement>(null);
+  const finishTimerRef = useRef<number | null>(null);
   const animationQuality = useMemo(() => resolveScholarAnimationQuality({ reduceMotion }), [reduceMotion]);
 
   useEffect(() => {
     if (transition?.type !== "login-intro" || !introRootRef.current) return;
     return animateScholarIntro(introRootRef.current, animationQuality);
   }, [animationQuality, transition?.type]);
+
+  useEffect(() => () => {
+    if (finishTimerRef.current !== null) window.clearTimeout(finishTimerRef.current);
+  }, []);
 
   const STEPS = [
     { icon: GraduationCap, title: `Welcome, ${studentName}`, desc: `Your complete study operating system for Class ${user.scholarClass} CBSE is ready.`, color: "from-indigo-500 to-violet-500" },
@@ -36,11 +41,15 @@ export function Onboarding() {
   ];
 
   const finish = () => {
+    if (done) return;
     stopTransition();
     setDone(true);
     addXP(50);
     pushActivity({ type: "onboarding", text: "Completed onboarding (+50 XP)", icon: "✨" });
-    setTimeout(() => setOnboarded(true), 900);
+    finishTimerRef.current = window.setTimeout(() => {
+      finishTimerRef.current = null;
+      setOnboarded(true);
+    }, reduceMotion ? 0 : 900);
   };
 
   const skipIntro = () => {
@@ -58,7 +67,7 @@ export function Onboarding() {
 
       <div className="w-full max-w-lg relative">
         {/* progress dots */}
-        <div className="flex justify-center gap-1.5 mb-6">
+        <div className="flex justify-center gap-1.5 mb-6" role="progressbar" aria-label="Onboarding progress" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1}>
           {STEPS.map((_, i) => (
             <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-8 bg-primary" : i < step ? "w-1.5 bg-primary/50" : "w-1.5 bg-muted"}`} />
           ))}
@@ -75,10 +84,10 @@ export function Onboarding() {
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, x: 30 }}
+            initial={reduceMotion ? false : { opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            exit={reduceMotion ? undefined : { opacity: 0, x: -30 }}
+            transition={{ duration: reduceMotion ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
             className="premium-card premium-shadow-lg p-8 text-center"
           >
             <div data-intro-mark className={`mx-auto grid place-items-center h-16 w-16 rounded-2xl bg-gradient-to-br ${cur.color} text-white shadow-lg mb-5`}>
@@ -102,7 +111,7 @@ export function Onboarding() {
                     Next <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={finish} className="bg-gradient-to-r from-indigo-500 to-teal-500 text-white">
+                  <Button size="sm" onClick={finish} disabled={done} className="bg-gradient-to-r from-indigo-500 to-teal-500 text-white">
                     {done ? <><Check className="h-4 w-4 mr-1" /> Done!</> : <>Start studying <Sparkles className="h-4 w-4 ml-1" /></>}
                   </Button>
                 )}

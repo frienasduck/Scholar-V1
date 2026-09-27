@@ -5,7 +5,8 @@ import { AIProviderError } from "@/lib/ai/errors";
 
 const DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image";
 const IMAGE_TIMEOUT_MS = 120_000;
-const MAX_IMAGE_BASE64_LENGTH = 16_000_000;
+// Keep the JSON response below Vercel Functions' 4.5 MB payload ceiling.
+const MAX_IMAGE_BASE64_LENGTH = 4_000_000;
 const SUPPORTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export interface GeneratedImage {

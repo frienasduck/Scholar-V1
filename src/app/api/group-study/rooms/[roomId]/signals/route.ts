@@ -7,6 +7,8 @@ import {
   groupStudyErrorResponse,
   GroupStudyError,
 } from "@/lib/group-study/server";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { readBoundedJson } from "@/lib/security/request-body";
 
 export const runtime = "nodejs";
 const signalSchema = z
@@ -84,14 +86,7 @@ export async function POST(
 ) {
   try {
     assertRoomMutationRequest(request);
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > MAX_SIGNAL_BYTES)
-      throw new GroupStudyError(
-        "That media signal is too large.",
-        413,
-        "SIGNAL_TOO_LARGE",
-      );
-    const input = signalSchema.safeParse(JSON.parse(raw));
+    const input = signalSchema.safeParse(await readBoundedJson(request, MAX_SIGNAL_BYTES));
     if (!input.success)
       throw new GroupStudyError(
         "That media signal is invalid.",
@@ -132,30 +127,22 @@ export async function POST(
         404,
         "PEER_NOT_FOUND",
       );
-    const key = `group-signal:${principal.id}`,
-      since = new Date(Date.now() - 60_000);
-    const recent = await db.securityAttempt.count({
-      where: { key, action: "group-signal", createdAt: { gte: since } },
+    await enforceRateLimit(
+      `group-signal:${principal.id}`,
+      "group-signal",
+      180,
+      60_000,
+    );
+    await db.groupStudySignal.create({
+      data: {
+        roomId,
+        senderId: principal.id,
+        targetId: target.id,
+        kind: input.data.kind,
+        payload: input.data.payload as Prisma.InputJsonObject,
+        expiresAt: new Date(Date.now() + 90_000),
+      },
     });
-    if (recent >= 180)
-      throw new GroupStudyError(
-        "Media signaling is moving too quickly. Please reconnect.",
-        429,
-        "RATE_LIMITED",
-      );
-    await db.$transaction([
-      db.securityAttempt.create({ data: { key, action: "group-signal" } }),
-      db.groupStudySignal.create({
-        data: {
-          roomId,
-          senderId: principal.id,
-          targetId: target.id,
-          kind: input.data.kind,
-          payload: input.data.payload as Prisma.InputJsonObject,
-          expiresAt: new Date(Date.now() + 90_000),
-        },
-      }),
-    ]);
     return Response.json(
       { ok: true },
       { status: 201, headers: { "Cache-Control": "private, no-store" } },

@@ -14,6 +14,7 @@ import {
 } from "@/lib/ai/scholar-groq";
 import { quizGenerationSchema, flashcardsSchema } from "@/lib/ai/schemas";
 import { AIProviderError, publicAIError } from "@/lib/ai/errors";
+import { RequestBodyError } from "@/lib/security/request-body";
 
 export const studyPromptSchema = z
   .object({
@@ -42,6 +43,11 @@ export const materialAnalysisSchema = z
 
 export function studyToolErrorResponse(error: unknown) {
   if (error instanceof GroupStudyError) return groupStudyErrorResponse(error);
+  if (error instanceof RequestBodyError)
+    return Response.json(
+      { error: error.code, code: error.code, message: error.message },
+      { status: error.status, headers: { "Cache-Control": "private, no-store" } },
+    );
   const safe = publicAIError(error);
   return Response.json(
     { error: safe.code, code: safe.code, message: safe.message },

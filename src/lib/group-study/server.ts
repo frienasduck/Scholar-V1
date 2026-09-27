@@ -10,7 +10,8 @@ import {
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/session";
 import { isBetaAllowed } from "@/lib/auth/beta";
-import { RateLimitError } from "@/lib/security/rate-limit";
+import { opaqueRateLimitKey, RateLimitError } from "@/lib/security/rate-limit";
+import { RequestBodyError } from "@/lib/security/request-body";
 import {
   HEARTBEAT_WRITE_MS,
   PRESENCE_ONLINE_MS,
@@ -96,6 +97,11 @@ export function groupStudyErrorResponse(error: unknown) {
         headers: { "Retry-After": String(error.retryAfterSeconds) },
       },
     );
+  if (error instanceof RequestBodyError)
+    return NextResponse.json(
+      { ok: false, error: error.code, code: error.code, message: error.message },
+      { status: error.status, headers: { "Cache-Control": "no-store" } },
+    );
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2034"
@@ -143,7 +149,7 @@ export function groupStudyIpKey(request: Request) {
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown";
-  return `group-ip:${createHash("sha256").update(ip).digest("hex")}`;
+  return opaqueRateLimitKey("group-ip", ip);
 }
 export function participantCookieName(roomId: string) {
   return `scholar_group_${roomId}`;

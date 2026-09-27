@@ -1,9 +1,10 @@
-// Scholar Service Worker v2 — versioned cache with update handling
-const CACHE = "scholar-v2";
-const OFFLINE_FALLBACK = "/";
+// Scholar Service Worker v3 — static assets only. Authenticated navigation
+// responses must never persist across sign-out or account changes.
+const CACHE = "scholar-v3";
+const OFFLINE_FALLBACK = "/offline.html";
 
 const CORE_ASSETS = [
-  "/",
+  OFFLINE_FALLBACK,
   "/logo.svg",
   "/manifest.json",
 ];
@@ -36,16 +37,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Network-first for navigation, cache-first for assets
+  // Navigation is always network-only. Caching rendered HTML can expose a
+  // previous account's private/admin page after sign-out on a shared device.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_FALLBACK)))
+        .catch(() => caches.match(OFFLINE_FALLBACK))
     );
   } else {
     event.respondWith(

@@ -4,6 +4,7 @@ import {
   runRoomStudyTool,
   studyToolErrorResponse,
 } from "@/lib/group-study/tools";
+import { readBoundedJson } from "@/lib/security/request-body";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export async function POST(
@@ -12,7 +13,7 @@ export async function POST(
 ) {
   try {
     assertRoomMutationRequest(request);
-    const input = materialAnalysisSchema.safeParse(await request.json());
+    const input = materialAnalysisSchema.safeParse(await readBoundedJson(request, 16 * 1024));
     if (!input.success)
       return Response.json(
         {

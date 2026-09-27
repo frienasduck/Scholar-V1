@@ -8,6 +8,7 @@ import {
   GroupStudyError,
 } from "@/lib/group-study/server";
 import { groupActionSchema } from "@/lib/group-study/policy";
+import { readBoundedJson } from "@/lib/security/request-body";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -19,7 +20,7 @@ export async function POST(
   try {
     assertRoomMutationRequest(request);
     const input = groupActionSchema.safeParse(
-      await request.json().catch(() => null),
+      await readBoundedJson(request, 128 * 1024),
     );
     if (!input.success)
       throw new GroupStudyError(
