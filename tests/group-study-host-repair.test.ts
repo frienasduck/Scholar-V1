@@ -168,6 +168,7 @@ const signals: Array<{
   expiresAt: Date;
 }> = [];
 const tx = {
+  $executeRaw: async () => { readLocks++; return 1; },
   $queryRaw: async (sql: TemplateStringsArray) => {
     if (sql.join("").includes('FROM "GroupStudyResource"')) return [];
     readLocks++;

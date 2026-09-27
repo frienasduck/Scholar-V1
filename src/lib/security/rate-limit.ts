@@ -38,7 +38,8 @@ export async function enforceRateLimit(key: string, action: string, maximum: num
     // Serialize the check-and-record sequence for this exact limiter bucket.
     // Without the advisory lock, concurrent requests can all observe the same
     // count and exceed the configured ceiling before any insert commits.
-    await tx.$queryRaw`
+    // PostgreSQL returns void here; execute without Prisma result deserialization.
+    await tx.$executeRaw`
       SELECT pg_advisory_xact_lock(
         hashtextextended(${`${action}\u001f${key}`}, 0)
       )

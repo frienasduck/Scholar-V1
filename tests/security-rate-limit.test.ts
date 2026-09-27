@@ -7,9 +7,9 @@ let lockCalls = 0;
 let transactionTail = Promise.resolve();
 
 const tx = {
-  $queryRaw: async () => {
+  $executeRaw: async () => {
     lockCalls += 1;
-    return [{ locked: null }];
+    return 1;
   },
   securityAttempt: {
     count: async ({ where }: { where: { key: string; action: string; createdAt: { gte: Date } } }) =>
