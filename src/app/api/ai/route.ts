@@ -3,6 +3,7 @@ import {
   generateScholarGroqJSON,
   generateScholarGroqText,
   streamScholarGroqText,
+  parseJSONObject,
   type ScholarGroqMessage,
 } from "@/lib/ai/scholar-groq";
 import { publicAIError, AIProviderError } from "@/lib/ai/errors";
@@ -14,6 +15,8 @@ import { requireEntitlement, resolveUserEntitlements } from "@/lib/subscriptions
 import { reserveGeneration, commitGeneration, releaseGeneration, QuotaExceededError, ReservationConflictError } from "@/lib/v2/usage/ledger";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { commitMonthlyUsage, MonthlyQuotaError, releaseMonthlyUsage, reserveMonthlyUsage } from "@/lib/subscriptions/monthly-usage";
+import { getUserAISettings, type UserAISettings } from "@/lib/ai/user-provider";
+import { streamLiveTutorText } from "@/lib/live-tutor/providers";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -55,6 +58,8 @@ export async function POST(request: NextRequest) {
   try { sessionUser = await getSessionUser(); }
   catch { return errorResponse("Scholar could not verify your session. Please retry.", 503, "SESSION_UNAVAILABLE"); }
   if (!sessionUser) return errorResponse("Sign in to use Scholar AI.", 401, "AUTH_REQUIRED");
+  const savedProvider = await getUserAISettings(sessionUser.id);
+  const custom = savedProvider?.scopes.includes("ai-tutor") ? savedProvider : null;
   if (sessionUser) {
     try {
       await enforceRateLimit(sessionUser.id, "ai-generation-burst", 20, 60 * 1000);
@@ -125,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
   }
   if (wantsStream) {
-    return streamResponse(messages, body.temperature, signal, reservationKey, sessionUser.id);
+    return streamResponse(messages, body.temperature, signal, reservationKey, sessionUser.id, custom);
   }
 
   try {
@@ -134,10 +139,8 @@ export async function POST(request: NextRequest) {
       let repair = "";
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const value = await generateScholarGroqJSON({
-            messages: [...withJSONInstruction(messages), ...(repair ? [{ role: "system" as const, content: repair }] : [])],
-            temperature: Math.min(body.temperature, attempt ? 0.4 : 0.8), signal,
-          });
+          const generation = { messages: [...withJSONInstruction(messages), ...(repair ? [{ role: "system" as const, content: repair }] : [])], temperature: Math.min(body.temperature, attempt ? 0.4 : 0.8), signal };
+          const value = custom ? parseJSONObject(await completeCustom(generation.messages, generation.temperature, signal, custom, 12_000)) : await generateScholarGroqJSON(generation);
           const validated = schema?.safeParse(value);
           if (validated && !validated.success) {
             repair = `Return a complete JSON object matching the requested format. Fix these validation issues: ${validated.error.issues.map(issue => `${issue.path.join(".")}: ${issue.message}`).join("; ").slice(0, 1500)}`;
@@ -154,12 +157,13 @@ export async function POST(request: NextRequest) {
       throw new AIProviderError("The AI returned invalid structured data. Please retry.");
     }
 
-    const text = await generateScholarGroqText({
+    const generation = {
       messages,
       temperature: body.temperature,
       signal,
       maxTokens: 4_000,
-    });
+    };
+    const text = custom ? await completeCustom(messages, body.temperature, signal, custom) : await generateScholarGroqText(generation);
     await recordUsage(reservationKey, sessionUser.id);
     if (monthlyReservationKey) await commitMonthlyUsage(sessionUser.id, monthlyReservationKey);
     return NextResponse.json({ ok: true, text });
@@ -196,12 +200,32 @@ async function releaseUsage(key: string | undefined, userId: string) {
   if (key) await releaseGeneration(key, userId).catch(() => console.warn("[Scholar AI] reservation release deferred to expiry"));
 }
 
+async function streamCustom(messages: ScholarGroqMessage[], temperature: number, signal: AbortSignal, custom: UserAISettings, onDelta: (value: string) => void, maxTokens = 4_000) {
+  await streamLiveTutorText({
+    provider: custom.provider,
+    credential: { apiKey: custom.apiKey, model: custom.model },
+    messages: messages.map((message) => ({ role: message.role as "system" | "user" | "assistant", content: typeof message.content === "string" ? message.content : "" })),
+    temperature,
+    maxTokens,
+    signal,
+    onDelta,
+  });
+}
+
+async function completeCustom(messages: ScholarGroqMessage[], temperature: number, signal: AbortSignal, custom: UserAISettings, maxTokens = 4_000) {
+  let text = "";
+  await streamCustom(messages, temperature, signal, custom, (delta) => { text += delta; }, maxTokens);
+  if (!text.trim()) throw new AIProviderError("Your selected model returned no answer. Try another model.", 502, "AI_EMPTY_RESPONSE");
+  return text;
+}
+
 function streamResponse(
   messages: ScholarGroqMessage[],
   temperature: number,
   signal: AbortSignal,
   reservationKey: string | undefined,
   userId: string,
+  custom: UserAISettings | null,
 ): Response {
   const encoder = new TextEncoder();
   const disconnected = new AbortController();
@@ -220,9 +244,8 @@ function streamResponse(
       };
 
       try {
-        await streamScholarGroqText({ messages, temperature, signal: streamSignal, maxTokens: 4_000 }, (delta) => {
-          send({ delta });
-        });
+        if (custom) await streamCustom(messages, temperature, streamSignal, custom, (delta) => send({ delta }));
+        else await streamScholarGroqText({ messages, temperature, signal: streamSignal, maxTokens: 4_000 }, (delta) => send({ delta }));
         // Usage is recorded only after the stream completes without error, so
         // aborted or failed generations never consume daily quota.
         await recordUsage(reservationKey, userId);

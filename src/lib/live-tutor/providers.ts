@@ -8,6 +8,8 @@ import type { LiveTutorProvider, LiveTutorProviderStatus } from "./types";
 
 export interface LiveTutorProviderRequest {
   provider: LiveTutorProvider;
+  credential?: { apiKey: string; model: string };
+  model?: string;
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
   signal: AbortSignal;
   temperature?: number;
@@ -20,15 +22,15 @@ export interface LiveTutorProviderRequest {
 export function liveTutorProviderStatus(): LiveTutorProviderStatus[] {
   const groqModel = process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-20b";
   const geminiModel = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.6-flash";
-  const nvidiaModel = process.env.NVIDIA_TEXT_MODEL?.trim() || "openai/gpt-oss-20b";
+  const nvidiaModel = process.env.NVIDIA_TEXT_MODEL?.trim() || "nvidia/nemotron-3-ultra-550b-a55b";
   const groq = Boolean(process.env.GROQ_API_KEY?.trim());
   const gemini = Boolean(process.env.GEMINI_API_KEY?.trim());
   const nvidia = Boolean((process.env.NVIDIA_TEXT_API_KEY ?? process.env.NVIDIA_API_KEY)?.trim());
   return [
     { id: "auto", label: "Auto", available: groq || gemini || nvidia, note: "Chooses the best available model for this turn." },
-    { id: "groq", label: "Groq", available: groq, model: groq ? groqModel : undefined, note: groq ? "Fast streamed tutoring" : "Not configured" },
-    { id: "gemini", label: "Gemini", available: gemini, model: gemini ? geminiModel : undefined, note: gemini ? "Large-context tutoring" : "Text model not configured" },
-    { id: "nvidia", label: "NVIDIA", available: nvidia, model: nvidia ? nvidiaModel : undefined, note: nvidia ? "Reasoning model" : "Text model not configured" },
+    { id: "groq", label: "Groq", available: groq, model: groq ? groqModel : undefined, models: [...new Set([groqModel, "openai/gpt-oss-20b", "openai/gpt-oss-120b"])], note: groq ? "Fast streamed tutoring" : "Not configured" },
+    { id: "gemini", label: "Gemini", available: gemini, model: gemini ? geminiModel : undefined, models: [...new Set([geminiModel, "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"])], note: gemini ? "Large-context tutoring" : "Text model not configured" },
+    { id: "nvidia", label: "NVIDIA Nemotron", available: nvidia, model: nvidia ? nvidiaModel : undefined, models: [nvidiaModel], note: nvidia ? "Nemotron reasoning model" : "Text model not configured" },
   ];
 }
 
@@ -71,14 +73,14 @@ export function validateGeminiCompletion(received: boolean, finishReason: string
 }
 
 async function streamGemini(request: LiveTutorProviderRequest) {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = request.credential?.apiKey ?? process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new AIProviderError("Gemini text tutoring is not configured.", 503, "GEMINI_NOT_CONFIGURED");
   const system = request.messages.filter((message) => message.role === "system").map((message) => message.content).join("\n\n");
   const contents = request.messages.filter((message) => message.role !== "system").map((message) => ({
     role: message.role === "assistant" ? "model" : "user",
     parts: [{ text: message.content }],
   }));
-  const model = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.6-flash";
+  const model = request.credential?.model ?? request.model ?? process.env.GEMINI_TEXT_MODEL?.trim() ?? "gemini-3.6-flash";
   try {
     const ai = new GoogleGenAI({ apiKey });
     request.onProviderResolved?.("gemini", model);
@@ -133,7 +135,7 @@ async function streamNvidiaModel(request: LiveTutorProviderRequest, apiKey: stri
     });
     if (!response.ok || !response.body) {
       if (response.status === 401 || response.status === 403) throw new AIProviderError("NVIDIA text tutoring is temporarily unavailable. Try Auto or contact support.", 503, "NVIDIA_AUTH_FAILED");
-      if (response.status === 404) throw new AIProviderError("The configured NVIDIA model is unavailable. Try Auto or another provider.", 503, "NVIDIA_MODEL_UNAVAILABLE");
+      if (response.status === 404 || response.status === 410) throw new AIProviderError("The selected NVIDIA model is unavailable. Try Auto or another provider.", 503, "NVIDIA_MODEL_UNAVAILABLE");
       if (response.status === 429 || response.status === 503) throw new AIProviderError("NVIDIA is temporarily overloaded. Try Auto or retry shortly.", 503, "NVIDIA_OVERLOADED");
       if (response.status === 400 || response.status === 413 || response.status === 422) throw new AIProviderError("NVIDIA could not process this input. Shorten the conversation and retry.", 422, "NVIDIA_INVALID_REQUEST");
       throw new AIProviderError("NVIDIA could not start this response.", 502, "NVIDIA_REQUEST_FAILED");
@@ -197,13 +199,13 @@ async function streamNvidiaModel(request: LiveTutorProviderRequest, apiKey: stri
 }
 
 async function streamNvidia(request: LiveTutorProviderRequest): Promise<string> {
-  const apiKey = (process.env.NVIDIA_TEXT_API_KEY ?? process.env.NVIDIA_API_KEY)?.trim();
+  const apiKey = request.credential?.apiKey ?? (process.env.NVIDIA_TEXT_API_KEY ?? process.env.NVIDIA_API_KEY)?.trim();
   if (!apiKey) throw new AIProviderError("NVIDIA text tutoring is not configured.", 503, "NVIDIA_NOT_CONFIGURED");
   const configuredEndpoint = process.env.NVIDIA_TEXT_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1";
   const endpoint = /\/chat\/completions\/?$/i.test(configuredEndpoint)
     ? configuredEndpoint
     : `${configuredEndpoint.replace(/\/$/, "")}/chat/completions`;
-  const configuredModel = process.env.NVIDIA_TEXT_MODEL?.trim() || "openai/gpt-oss-20b";
+  const configuredModel = request.credential?.model ?? request.model ?? process.env.NVIDIA_TEXT_MODEL?.trim() ?? "nvidia/nemotron-3-ultra-550b-a55b";
   await streamNvidiaModel(request, apiKey, endpoint, configuredModel);
   return configuredModel;
 }
@@ -211,7 +213,9 @@ async function streamNvidia(request: LiveTutorProviderRequest): Promise<string> 
 export async function streamLiveTutorText(request: LiveTutorProviderRequest): Promise<{ provider: Exclude<LiveTutorProvider, "auto">; model: string }> {
   const deadline = AbortSignal.timeout(LIVE_TUTOR_DEADLINE_MS);
   const signal = AbortSignal.any([request.signal, deadline]);
-  const providers = resolveProviderOrder(request.provider, Boolean(request.preferLargeContext));
+  const providers = request.credential && request.provider !== "auto"
+    ? [request.provider as Exclude<LiveTutorProvider, "auto">]
+    : resolveProviderOrder(request.provider, Boolean(request.preferLargeContext));
   let lastError: unknown;
 
   for (const provider of providers) {
@@ -224,9 +228,11 @@ export async function streamLiveTutorText(request: LiveTutorProviderRequest): Pr
     try {
       signal.throwIfAborted();
       if (provider === "groq") {
-        const config = getScholarGroqConfig();
+        const config = getScholarGroqConfig(request.credential, request.model);
         const model = await streamScholarGroqText({
           messages: request.messages as ScholarGroqMessage[],
+          credential: request.credential,
+          model: request.model,
           temperature: request.temperature,
           maxTokens: request.maxTokens,
           signal,

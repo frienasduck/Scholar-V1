@@ -8,11 +8,13 @@ import { SCHOLAR_AI_FORMATTING_RULES } from "@/lib/ai/formatting";
 import { checkAssistantAccess } from "@/lib/ai/access";
 import { db } from "@/lib/db";
 import { loadLiveTutorMemoryContext } from "@/lib/live-tutor/memory";
-import { streamLiveTutorText } from "@/lib/live-tutor/providers";
+import { liveTutorProviderStatus, streamLiveTutorText } from "@/lib/live-tutor/providers";
 import { LIVE_TUTOR_MODES, LIVE_TUTOR_PERSONALITIES, LIVE_TUTOR_PROVIDERS, PERSONALITY_BEHAVIOR } from "@/lib/live-tutor/types";
 import { validateLiveTutorMessageScope, validateLiveTutorSessionScope } from "@/lib/live-tutor/session-scope";
 import { savedPreferencesSchema } from "@/lib/personalization/schema";
 import { lamContext, responseDetail } from "@/lib/personalization/engine";
+import { getUserAISettings } from "@/lib/ai/user-provider";
+import { resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -40,6 +42,7 @@ const schema = z.object({
     sessionId: z.string().trim().min(8).max(100),
     turnId: z.string().trim().min(8).max(100),
     provider: z.enum(LIVE_TUTOR_PROVIDERS),
+    model: z.string().trim().max(100).optional(),
     personality: z.enum(LIVE_TUTOR_PERSONALITIES),
     mode: z.enum(LIVE_TUTOR_MODES),
   }).strict().optional(),
@@ -75,6 +78,17 @@ export async function POST(request: NextRequest) {
   const parsed = schema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid or profile-mismatched LAM request." }, { status: 400 });
   const input = parsed.data;
+  const [userAI, entitlements] = await Promise.all([getUserAISettings(access.user.id), resolveUserEntitlements(access.user.id)]);
+  const custom = userAI?.scopes.includes("lam") && (!input.liveTutor || ["auto", userAI.provider].includes(input.liveTutor.provider)) && (!input.liveTutor?.model || input.liveTutor.model === userAI.model) ? userAI : null;
+  const platformPremium = entitlements.plan !== "FREE";
+  if (input.liveTutor?.model) {
+    const selected = liveTutorProviderStatus().find((item) => item.id === input.liveTutor?.provider);
+    const valid = custom ? input.liveTutor.model === custom.model : Boolean(selected?.models?.includes(input.liveTutor.model) && (platformPremium || (selected.id === "groq" && selected.model === input.liveTutor.model)));
+    if (!valid) return NextResponse.json({ ok: false, error: "This model is not available for your selected provider and plan." }, { status: 403 });
+  }
+  if (!custom && input.liveTutor && !platformPremium && !["auto", "groq"].includes(input.liveTutor.provider)) {
+    return NextResponse.json({ ok: false, error: "Gemini and NVIDIA platform models require Scholar Plus. Add your own key to use them on Free." }, { status: 403 });
+  }
 
   const context = input.pageContext;
   const learningProfile = await db.learningProfile.findUnique({where:{userId:access.user.id},select:{status:true,preferences:true}}).catch(()=>null);
@@ -133,7 +147,7 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       const send = (event: object) => { if (!disconnected.signal.aborted) controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`)); };
       const configuredModel = process.env.GROQ_MODEL?.trim();
-      if (!input.liveTutor) send({ type: "start", provider: "groq", model: configuredModel && configuredModel !== "llama-3.3-70b-versatile" ? configuredModel : "openai/gpt-oss-20b" });
+      if (!input.liveTutor && !custom) send({ type: "start", provider: "groq", model: configuredModel && configuredModel !== "llama-3.3-70b-versatile" ? configuredModel : "openai/gpt-oss-20b" });
       let full = "";
       let resolvedProvider = "groq";
       let resolvedModel = configuredModel && configuredModel !== "llama-3.3-70b-versatile" ? configuredModel : "openai/gpt-oss-20b";
@@ -141,13 +155,26 @@ export async function POST(request: NextRequest) {
         const messages = [{ role: "system" as const, content: system }, ...input.messages, { role: "user" as const, content: input.message }];
         if (input.liveTutor) {
           await streamLiveTutorText({
-            provider: input.liveTutor.provider,
+            provider: custom?.provider ?? (platformPremium ? input.liveTutor.provider : "groq"),
+            credential: custom ? { apiKey: custom.apiKey, model: custom.model } : undefined,
+            model: custom ? custom.model : input.liveTutor.model,
             messages,
             temperature: input.liveTutor.personality === "exam" ? 0.2 : 0.35,
             maxTokens: 4_000,
             signal,
             preferLargeContext: Boolean(context.visibleText && context.visibleText.length > 6_000),
             onProviderResolved: (provider, model) => { resolvedProvider = provider; resolvedModel = model; send({ type: "start", provider, model }); },
+            onDelta: (value) => { full += value; send({ type: "text-delta", value }); },
+          });
+        } else if (custom) {
+          await streamLiveTutorText({
+            provider: custom.provider,
+            credential: { apiKey: custom.apiKey, model: custom.model },
+            messages,
+            temperature: 0.3,
+            maxTokens: 4_000,
+            signal,
+            onProviderResolved: (provider, model) => send({ type: "start", provider, model }),
             onDelta: (value) => { full += value; send({ type: "text-delta", value }); },
           });
         } else {

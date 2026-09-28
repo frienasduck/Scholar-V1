@@ -50,6 +50,24 @@ test("mobile reduced-motion splash remains readable without overflow", async ({ 
   await expect(splash).toBeHidden({ timeout: 20_000 });
 });
 
+test("the cinematic intro appears once per tab, not on reload", async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.route("**/api/auth/session", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await route.fulfill({ json: { authenticated: false, developerMode: false } });
+  });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".scholar-launch-overlay")).toBeVisible();
+  await expect(page.locator(".scholar-launch-overlay")).toBeHidden({ timeout: 20_000 });
+  expect(await page.evaluate(() => sessionStorage.getItem("scholar:launch-seen:v1"))).toBe("1");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("html")).toHaveAttribute("data-scholar-launch-seen", "true");
+  await expect(page.locator(".scholar-launch-overlay")).toHaveCount(0);
+  await expect(page.locator(".scholar-launch-reload-cover")).toBeVisible();
+  await expect(page.locator(".scholar-launch-reload-cover")).toBeHidden({ timeout: 15_000 });
+});
+
 test("slow session check stays within the branded splash", async ({ page }) => {
   await page.addInitScript(() => localStorage.clear());
   await page.route("**/api/auth/session", async (route) => {

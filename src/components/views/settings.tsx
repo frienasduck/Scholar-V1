@@ -78,6 +78,7 @@ import {
 } from "@/lib/startup/startup-modes";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { CustomCommandsPanel } from "@/components/reminders/custom-commands-panel";
+import { UserAISettings } from "@/components/ai/user-ai-settings";
 
 const SCHOLAR_UPDATE_LOG = [
   { version: "Public authentication", date: "27 Sep 2026", title: "A calmer welcome, open to everyone", items: ["Email sign-in and account creation are now public, with a focused Liquid Glass form and no learning questions before authentication.", "Google sign-in is available when configured. Existing accounts connect Google explicitly in Settings; matching email alone never merges accounts.", "Email verification and password reset use single-use links when the sender is configured. Your Scholar, Guest Mode, Developer Access and Free/Plus permissions stay separate."] },
@@ -86,7 +87,7 @@ const SCHOLAR_UPDATE_LOG = [
     date: "23 Sep 2026",
     title: "Clear premium access, useful Free limits",
     items: [
-      "LAM AI, Scholar Intelligence, JEE Focused Mode, functional Experiments, selected Resources, Workspace insights and Group Study hosting now share one consistent Scholar Plus access policy.",
+      "LAM AI tutoring is available on Free; premium AI model choices, Scholar Intelligence, JEE Focused Mode, selected Resources, Workspace insights and Group Study hosting remain Plus benefits.",
       "Free accounts can upload 3 private PDF E-Books and generate 3 mock exams per calendar month; Plus raises those limits to 20 and 30.",
       "Answer Lab accepts custom typed questions, while Practice Questions and Past Papers now show concise development notices.",
       "Study Music highlights Kalyani Remix as a Scholar Pick, promotional glass cards fit on mobile, and user-facing tutor labels now consistently say LAM AI.",
@@ -1123,6 +1124,7 @@ export function SettingsView() {
 
             {/* ===== LAM ===== */}
             <TabsContent value="lam" className="mt-2 space-y-4">
+              <UserAISettings />
               <div className="asme-glass rounded-3xl p-6">
                 <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Mobile LAM" desc="Choose whether LAM is absent, compact, or fully available on mobile. Off stops wake listening and idle effects.">
                   <Select value={settings.mobileLamMode ?? "off"} onValueChange={(value) => updateSettings({ mobileLamMode: value as "off" | "compact" | "full" })}><SelectTrigger aria-label="Mobile LAM mode" className="w-32 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="off">Off</SelectItem><SelectItem value="compact">Compact</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent></Select>

@@ -12,7 +12,11 @@
   text-align: center;
 }
 .scholar-launch:not(.scholar-launch-overlay) { animation: scholar-launch-enter .55s ease-out both; }
+html[data-scholar-launch-seen="true"] .scholar-launch:not(.scholar-launch-overlay) { animation: none; background: #050b16; }
+html[data-scholar-launch-seen="true"] .scholar-launch:not(.scholar-launch-overlay) .scholar-launch-sky,
+html[data-scholar-launch-seen="true"] .scholar-launch:not(.scholar-launch-overlay) .scholar-launch-center { display: none; }
 .scholar-launch-overlay { position: fixed; inset: 0; z-index: 10000; min-height: 0; height: 100dvh; transition: opacity cubic-bezier(.22,1,.36,1); }
+.scholar-launch-reload-cover { position: fixed; inset: 0; z-index: 10000; background: #050b16; transition: opacity 120ms ease-out; }
 .scholar-launch-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .scholar-launch-sky::before {
   content: "";

@@ -114,7 +114,7 @@ export async function resolveUserEntitlements(userId: string | null): Promise<Re
     plan: resolution.plan,
     source,
     entitlementsLoaded: resolution.entitlementsLoaded,
-    entitlements: elevated ? all() : [],
+    entitlements: elevated ? all() : ["lam_ai"],
     subscriptionId: resolution.subscription?.id ?? null,
     subscriptionStatus: resolution.subscription?.status ?? null,
     subscriptionEndsAt: resolution.subscription?.endsAt?.toISOString() ?? null,

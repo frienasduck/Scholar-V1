@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, isValidElement, type ReactNode } from "react";
+import { createElement, isValidElement, useSyncExternalStore, type ReactNode } from "react";
 import { toast as sonnerToast, type ExternalToast } from "sonner";
 import { ScholarNotification } from "@/components/notifications/scholar-notification";
 import type {
@@ -15,6 +15,41 @@ const records = new Map<string | number, ScholarNotificationRecord>();
 const recent = new Map<string, { id: string | number; at: number }>();
 const MAX_RECORDS = 80;
 const DEDUPE_WINDOW = 1_200;
+export type NotificationHistoryEntry = { id: string; type: ScholarNotificationType; title: string; message: string; at: number };
+let history: NotificationHistoryEntry[] = [];
+const EMPTY_HISTORY: NotificationHistoryEntry[] = [];
+let historyOwner = "";
+const listeners = new Set<() => void>();
+const publish = () => { listeners.forEach((listener) => listener()); };
+const storageKey = (owner: string) => `scholar:notification-history:${owner}`;
+
+export function setNotificationHistoryOwner(owner: string) {
+  if (historyOwner === owner) return;
+  historyOwner = owner;
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(storageKey(owner)) ?? "[]") as NotificationHistoryEntry[];
+    history = Array.isArray(parsed) ? parsed.filter((entry) => typeof entry?.title === "string" && typeof entry?.at === "number").slice(0, MAX_RECORDS) : [];
+  } catch { history = []; }
+  publish();
+}
+
+function recordHistory(record: ScholarNotificationRecord) {
+  if (record.type === "loading" || record.type === "progress") return;
+  const entry = { id: String(record.id), type: record.type, title: textKey(record.title), message: record.message ? textKey(record.message) : "", at: Date.now() };
+  history = [entry, ...history.filter((item) => item.id !== entry.id)].slice(0, MAX_RECORDS);
+  try { if (historyOwner) sessionStorage.setItem(storageKey(historyOwner), JSON.stringify(history)); } catch { /* Current session still works. */ }
+  publish();
+}
+
+export function clearNotificationHistory() {
+  history = [];
+  try { if (historyOwner) sessionStorage.removeItem(storageKey(historyOwner)); } catch { /* Current session still clears. */ }
+  publish();
+}
+
+export function useNotificationHistory() {
+  return useSyncExternalStore((listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => history, () => EMPTY_HISTORY);
+}
 
 function nextId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -41,6 +76,7 @@ function dismiss(id?: string | number) {
 function render(record: ScholarNotificationRecord) {
   records.set(record.id, record);
   trimRecords();
+  recordHistory(record);
   return sonnerToast.custom(
     (toastId) => createElement(ScholarNotification, {
       notification: { ...record, id: toastId },

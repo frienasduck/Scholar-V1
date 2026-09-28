@@ -87,6 +87,8 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
+import { FeedbackButton } from "@/components/feedback/feedback-button";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 function ViewLoading() {
   return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
@@ -155,7 +157,7 @@ const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title
   "ai-tutor": { entitlement: "lam_ai", title: "AI Tutor", description: "Learn with Scholar's context-aware premium AI tutor.", anchor: "ai" },
   "live-tutor": { entitlement: "lam_ai", title: "LAM AI", description: "Use LAM AI with live tutoring personalities, memory, and provider choice.", anchor: "ai" },
 };
-const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment", "live-tutor"]);
+const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment", "live-tutor", "ai-tutor"]);
 
 function useNavBadges() {
   const flashcards = useStore((s) => s.flashcards);
@@ -213,7 +215,7 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
           <div className="flex flex-col gap-0.5">
             {NAV_ITEMS.filter((n) => n.group === group && (!n.preview || access.developerMode)).map((item) => {
               const isActive = active === item.id;
-              const plusLocked = Boolean(VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
+              const plusLocked = Boolean(access.authenticated && VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
               const badge = (badges as Record<string, string | null>)[item.id];
               const hasFinishedTask = backgroundTasks.some(
                 (task) =>
@@ -342,9 +344,11 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
         </Button>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <FeedbackButton />
+          <NotificationCenter />
           {guestMode && <Badge variant="outline" className="scholar-top-status border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
           {devMode && <Badge variant="outline" className="scholar-top-status text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
-          <div className="scholar-top-status hidden sm:contents">
+          <div className="scholar-top-status hidden xl:contents">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-500">
             <Flame className="h-4 w-4" />
             <span className="text-sm font-semibold tabular-nums">{streak}</span>

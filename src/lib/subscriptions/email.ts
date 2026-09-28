@@ -4,7 +4,7 @@ import { subscriptionConfig } from "@/lib/subscriptions/config";
 function escapeHtml(value: unknown) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 }
-export async function sendScholarEmail(input: { to: string; subject: string; html: string; idempotencyKey: string }) {
+export async function sendScholarEmail(input: { to: string; subject: string; html: string; idempotencyKey: string; attachments?: Array<{ filename: string; content: string; content_type?: string }> }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = subscriptionConfig.resendFromEmail;
   if (!apiKey || !from) return { sent: false as const, reason: "EMAIL_NOT_CONFIGURED" };
@@ -12,7 +12,7 @@ export async function sendScholarEmail(input: { to: string; subject: string; htm
     signal: AbortSignal.timeout(10_000),
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": input.idempotencyKey },
-    body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html }),
+    body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html, ...(input.attachments?.length ? { attachments: input.attachments } : {}) }),
   });
   if (!response.ok) return { sent: false as const, reason: "EMAIL_PROVIDER_UNAVAILABLE" };
   return { sent: true as const };

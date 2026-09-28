@@ -66,8 +66,9 @@ export function hasCapability(access: ResolvedEntitlements, key: ScholarEntitlem
       return planElevated(access) || hasV1Entitlement(access, "expanded_file_storage");
     case "custom_ebook_upload":
       return access.authenticated;
-    case "scholar_intelligence":
     case "lam_ai":
+      return access.authenticated;
+    case "scholar_intelligence":
     case "premium_experiments":
     case "premium_resources":
     case "jee_focused_mode":

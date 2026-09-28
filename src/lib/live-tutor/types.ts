@@ -32,6 +32,7 @@ export interface LiveTutorProviderStatus {
   label: string;
   available: boolean;
   model?: string;
+  models?: string[];
   note?: string;
 }
 

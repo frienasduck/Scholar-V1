@@ -7,19 +7,22 @@ import { AIProviderError } from "@/lib/ai/errors";
 export type ScholarGroqMessage = ChatCompletionMessageParam;
 export type ScholarGroqRequest = {
   messages: ScholarGroqMessage[];
+  credential?: { apiKey: string; model: string };
+  model?: string;
   temperature?: number;
   maxTokens?: number;
   signal?: AbortSignal;
 };
 
-export function getScholarGroqConfig() {
+export function getScholarGroqConfig(credential?: ScholarGroqRequest["credential"], requestedModel?: string) {
+  if (credential) return { apiKey: credential.apiKey, model: credential.model, models: [credential.model] };
   const apiKey = process.env.GROQ_API_KEY?.trim();
   if (!apiKey) throw new AIProviderError("Scholar AI is not configured. Please contact support.", 503, "GROQ_NOT_CONFIGURED");
   // Preserve the deployed legacy alias mapping; model availability is account-specific.
   const configured = process.env.GROQ_MODEL?.trim();
-  const model = configured && configured !== "llama-3.3-70b-versatile" ? configured : "openai/gpt-oss-20b";
+  const model = requestedModel || (configured && configured !== "llama-3.3-70b-versatile" ? configured : "openai/gpt-oss-20b");
   const fallback = process.env.GROQ_FALLBACK_MODEL?.trim() || (model === "openai/gpt-oss-20b" ? "openai/gpt-oss-120b" : "openai/gpt-oss-20b");
-  return { apiKey, model, models: [...new Set([model, fallback])] };
+  return { apiKey, model, models: requestedModel ? [model] : [...new Set([model, fallback])] };
 }
 
 function statusOf(error: unknown) {
@@ -71,7 +74,7 @@ export function parseJSONObject(text: string): unknown {
 }
 
 async function complete(request: ScholarGroqRequest, json: boolean): Promise<string> {
-  const config = getScholarGroqConfig();
+  const config = getScholarGroqConfig(request.credential, request.model);
   const deadline = AbortSignal.timeout(50_000);
   const signal = request.signal ? AbortSignal.any([request.signal, deadline]) : deadline;
   const client = new Groq({ apiKey: config.apiKey, timeout: 25_000, maxRetries: 0 });
@@ -104,7 +107,7 @@ export async function streamScholarGroqText(
   onDelta: (delta: string) => void,
   onModelResolved?: (model: string) => void,
 ): Promise<string> {
-  const config = getScholarGroqConfig();
+  const config = getScholarGroqConfig(request.credential, request.model);
   const deadline = AbortSignal.timeout(50_000);
   const signal = request.signal ? AbortSignal.any([request.signal, deadline]) : deadline;
   const client = new Groq({ apiKey: config.apiKey, timeout: 20_000, maxRetries: 0 });

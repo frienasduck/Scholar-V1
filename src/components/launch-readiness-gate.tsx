@@ -37,7 +37,13 @@ const LaunchContentReadinessContext = createContext({
   reportProfileReady: (_ready: boolean) => {},
 });
 const FIRST_LAUNCH_MINIMUM_MS = 1900;
+const LAUNCH_SEEN_KEY = "scholar:launch-seen:v1";
 let launchShownInDocument = false;
+
+function hasShownLaunchInTab(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.sessionStorage.getItem(LAUNCH_SEEN_KEY) === "1"; } catch { return false; }
+}
 
 export function useScholarStartupReady(): boolean {
   return useContext(ScholarStartupReadyContext);
@@ -56,7 +62,8 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const reduceMotion = reduceMotionSetting || Boolean(systemReducedMotion);
   const devMode = useStore((state) => state.devMode);
   const session = useScholarAccess();
-  const mode = normaliseStartupMode(configuredMode);
+  const [repeatVisit] = useState(() => launchShownInDocument || hasShownLaunchInTab());
+  const mode = repeatVisit ? "quick" : normaliseStartupMode(configuredMode);
   const [visible, setVisible] = useState(true);
   const [gateMounted, setGateMounted] = useState(true);
   const [progress, setProgress] = useState<StartupReadinessProgress>({
@@ -88,7 +95,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     const controller = new AbortController();
     startedAtRef.current = performance.now();
-    minimumDurationRef.current = launchShownInDocument ? 0 : FIRST_LAUNCH_MINIMUM_MS;
+    minimumDurationRef.current = repeatVisit ? 0 : FIRST_LAUNCH_MINIMUM_MS;
     let active = true;
     controllerRef.current = controller;
     openNowRef.current = false;
@@ -144,10 +151,14 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     const remaining = Math.max(0, (minimumDurationRef.current ?? FIRST_LAUNCH_MINIMUM_MS) - elapsed);
     const timer = window.setTimeout(() => {
       launchShownInDocument = true;
+      if (!repeatVisit) {
+        try { window.sessionStorage.setItem(LAUNCH_SEEN_KEY, "1"); } catch { /* Private storage may be unavailable. */ }
+        document.documentElement.dataset.scholarLaunchSeen = "true";
+      }
       reveal();
     }, remaining);
     return () => window.clearTimeout(timer);
-  }, [visible, startupSettled, shellReady, profileReady, requiresProfile, reveal]);
+  }, [visible, startupSettled, shellReady, profileReady, requiresProfile, repeatVisit, reveal]);
 
   useEffect(() => {
     if (visible) return;
@@ -164,9 +175,9 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     if (visible) return;
     // Readiness is authoritative: a missed motion exit must never hide or
     // intercept the ready workspace. CSS fades independently; removal is bounded.
-    const timer = window.setTimeout(() => setGateMounted(false), reduceMotion ? 0 : 600);
+    const timer = window.setTimeout(() => setGateMounted(false), reduceMotion ? 0 : repeatVisit ? 130 : 600);
     return () => window.clearTimeout(timer);
-  }, [visible, reduceMotion]);
+  }, [visible, reduceMotion, repeatVisit]);
 
   const completedCount = progress.tasks.filter((task) =>
     ["completed", "failed", "skipped", "timed-out"].includes(task.status),
@@ -180,7 +191,9 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
           {children}
         </LaunchContentReadinessContext.Provider>
       </ScholarStartupReadyContext.Provider>
-      {gateMounted && (
+      {gateMounted && (repeatVisit ? (
+        <div className="scholar-launch-reload-cover" role="status" aria-label="Refreshing your Scholar workspace" aria-hidden={!visible} data-startup-repeat="true" style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transitionDuration: reduceMotion ? "0ms" : undefined }} />
+      ) : (
         <LaunchSplash overlay visible={visible} reducedMotion={reduceMotion} progress={progress.progress} message={message} modeLabel={mode}>
           <div className="scholar-launch-controls">
             <span className="text-[11px] text-[#9fbbd9]">{completedCount} of {progress.tasks.length || 1} preparation steps</span>
@@ -201,7 +214,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
             </details>
           ) : null}
         </LaunchSplash>
-      )}
+      ))}
     </>
   );
 }

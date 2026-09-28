@@ -25,7 +25,9 @@ function safeName(value: string) {
 async function extractPdf(bytes: Uint8Array) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loadingTask = pdfjs.getDocument({
-    data: bytes,
+    // PDF.js transfers its input buffer to a worker. Keep the original bytes
+    // intact for the private PDF stored after extraction succeeds.
+    data: bytes.slice(),
     stopAtErrors: true,
     disableFontFace: true,
     useSystemFonts: false,
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
   if (file.size < 5 || file.size > MAX_PDF_BYTES) return NextResponse.json({ error: "PDF_SIZE", message: "PDFs must be no larger than 4 MB." }, { status: 413 });
   const bytes = new Uint8Array(await file.arrayBuffer());
   const signature = new TextDecoder("ascii").decode(bytes.slice(0, 5));
-  if (file.type !== "application/pdf" || signature !== "%PDF-") return NextResponse.json({ error: "PDF_ONLY", message: "Only genuine PDF files are supported." }, { status: 415 });
+  if ((file.type && file.type !== "application/pdf") || !/\.pdf$/i.test(file.name) || signature !== "%PDF-") return NextResponse.json({ error: "PDF_ONLY", message: "Only genuine PDF files are supported." }, { status: 415 });
 
   if (form?.get("allocation") === "onboarding") {
     const key = request.headers.get("x-idempotency-key") ?? "";

@@ -6,7 +6,7 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import { toast } from "@/lib/notifications/notification-api";
 
 const FEATURE_SECTIONS = [
-  { id: "ai", title: "LAM AI & Scholar Intelligence", icon: Bot, copy: "Use context-aware tutoring, provider choice, learning memory, mastery signals, weak-topic insights, and a focused revision queue.", bullets: ["LAM AI live tutoring", "Scholar Intelligence insights", "Premium AI limits"] },
+  { id: "ai", title: "Premium AI & Scholar Intelligence", icon: Bot, copy: "LAM AI tutoring is free. Plus adds configured Gemini and NVIDIA model choices, higher AI limits, mastery signals, weak-topic insights, and a focused revision queue.", bullets: ["Premium AI models", "Scholar Intelligence insights", "Premium AI limits"] },
   { id: "jee", title: "JEE Focused Mode", icon: Target, copy: "Switch Scholar into a JEE-oriented Class 11 flow without locking ordinary CBSE material.", bullets: ["JEE-context AI assistance", "Exam-style practice", "Targeted revision organisation"] },
   { id: "experiments", title: "Interactive Experiments", icon: Beaker, copy: "Get early access to every experiment that is genuinely interactive. Unfinished simulations remain honestly marked Coming Soon.", bullets: ["Vernier Calipers", "Screw Gauge", "Pendulum Motion"] },
   { id: "resources", title: "Premium Resources", icon: BookOpen, copy: "Keep the free library useful, then add richer mind maps, question banks, sample papers, practicals, and presentations.", bullets: ["Intentional Free + Plus mix", "Premium resource downloads", "Official links stay free"] },
@@ -18,7 +18,7 @@ const FEATURE_SECTIONS = [
 
 const COMPARISON = [
   ["Class 11 core study tools", "Included", "Included"],
-  ["LAM AI & Scholar Intelligence", "Locked preview", "Included"],
+  ["Premium AI models & Scholar Intelligence", "Locked preview", "Included"],
   ["JEE Focused Mode", "Locked preview", "Included"],
   ["Interactive experiments", "Coming Soon previews", "Functional experiments included"],
   ["Resources", "Free library", "Free + premium library"],
