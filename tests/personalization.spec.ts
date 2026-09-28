@@ -187,11 +187,8 @@ test("cinematic interface stays responsive and no build video loads during early
   }
   await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
   await expect(page.getByRole("list",{name:"Your Scholar journey"})).toBeVisible();
-  const sceneButtons=page.getByRole("group",{name:"Choose background atmosphere"});
-  await sceneButtons.getByRole("button",{name:"Venus"}).click();
-  await expect(sceneButtons.getByRole("button",{name:"Venus"})).toHaveAttribute("aria-pressed","true");
+  await expect(page.getByRole("group",{name:"Choose background atmosphere"})).toHaveCount(0);
   await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
-  await expect(page.locator('.your-scholar-scene-video[data-scene="venus"]')).toHaveAttribute("src",SCHOLAR_SCENES.venus.video);
   await page.getByRole("group",{name:"Curriculum"}).getByRole("button",{name:"State"}).click();
   await expect(page.getByRole("group",{name:"Curriculum"}).getByRole("button",{name:"State"})).toHaveAttribute("aria-pressed","true");
   expect(await page.getByRole("group",{name:"Curriculum"}).getByRole("button",{name:"State"}).evaluate(el=>getComputedStyle(el,"::before").animationName)).toBe("ys-choice-light");
@@ -205,11 +202,11 @@ test("cinematic interface stays responsive and no build video loads during early
   }
   await page.emulateMedia({reducedMotion:"reduce"});
   await expect(page.locator(".your-scholar-scene-video")).toHaveCount(0);
-  expect(await page.locator(".your-scholar-scene").evaluate(el=>getComputedStyle(el).backgroundImage)).toContain("20260827_202133");
+  expect(await page.locator('.your-scholar-scene-layer[data-active="true"]').evaluate(el=>getComputedStyle(el).backgroundImage)).toContain("20260827_202133");
   expect(errors).toEqual([]);
 });
 
-test("supplied live scene video plays and atmosphere controls never travel or advance setup",async({page})=>{
+test("supplied live scene video plays and automatically crossfades without advancing setup",async({page})=>{
   test.skip(!process.env.SCHOLAR_QA_LIVE_MEDIA,"Opt-in live media check; normal regressions stay offline.");
   const {errors}=await fixture(page);
   await page.route(/\.mp4(?:\?.*)?$/,route=>route.continue());
@@ -217,10 +214,32 @@ test("supplied live scene video plays and atmosphere controls never travel or ad
   await expect(page.locator('.your-scholar-scene-video[data-scene="earth"]')).toHaveAttribute("data-visible","true",{timeout:20_000});
   expect(await page.locator('.your-scholar-scene-video[data-scene="earth"]').evaluate(el=>el instanceof HTMLVideoElement && !el.paused && el.readyState>=2)).toBe(true);
   await page.screenshot({path:"test-artifacts/your-scholar-live-entrance.png"});
-  await page.getByRole("group",{name:"Choose background atmosphere"}).getByRole("button",{name:"Venus"}).click();
+  await expect(page.getByRole("group",{name:"Choose background atmosphere"})).toHaveCount(0);
+  await expect(page.locator(".your-scholar-scene")).toHaveAttribute("data-scene","venus",{timeout:12_000});
   await expect(page.locator('.your-scholar-scene-video[data-scene="venus"]')).toHaveAttribute("data-visible","true",{timeout:20_000});
+  await expect(page.locator('.your-scholar-scene-layer[data-scene="venus"]')).toHaveCSS("opacity","1");
   await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","0");
   await page.screenshot({path:"test-artifacts/your-scholar-live-venus.png"});
+  expect(errors).toEqual([]);
+});
+
+test("Continue visibly loads while saving before the next question appears",async({page})=>{
+  const {errors}=await fixture(page);
+  await page.route("**/api/personalization",async route=>{
+    if(route.request().method()==="PATCH")await new Promise(resolve=>setTimeout(resolve,700));
+    await route.fallback();
+  });
+  await open(page);
+  await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
+  const loading=page.locator('.your-scholar-next[data-loading="true"]');
+  await expect(loading).toBeVisible();
+  await expect(loading).toContainText("Opening next question");
+  expect(await loading.locator(".your-scholar-next-spinner").evaluate(el=>getComputedStyle(el).animationName)).toBe("ys-next-spin");
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","0");
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await expect(loading).toBeVisible();
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","2");
   expect(errors).toEqual([]);
 });
 
@@ -265,5 +284,29 @@ test("ready startup handoff releases the UI even if its animations stop",async({
   await expect(page.locator("[data-startup-mode]")).toHaveCount(0);
   await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
   await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
+  expect(errors).toEqual([]);
+});
+
+test("locked Plus navigation remains responsive and the selected menu pill settles cleanly",async({page})=>{
+  const {errors}=await fixture(page,{...makeProfile(),required:false,status:"SKIPPED"});
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto("/",{waitUntil:"domcontentloaded"});
+  await expect(page.locator(".scholar-shell")).toBeVisible({timeout:30_000});
+  const nav=page.locator(".scholar-desktop-sidebar nav");
+  for(const [label,title,view] of [["Practical Lab","Practical Lab","practicals"],["Python Workspace","Python Workspace","python"],["Derivation Library","Derivation Library","derivations"]]){
+    await nav.getByRole("button",{name:new RegExp(label)}).click();
+    await expect(page.locator("#main-scroll")).toHaveAttribute("data-active-view",view);
+    await expect(page.getByRole("heading",{name:`Unlock ${title}`})).toBeVisible();
+    await expect(nav.locator(".sg-nav-pill-motion")).toHaveCount(1);
+    await expect(nav.locator(".sg-nav-pill-motion [data-sg-glass]")).toHaveCount(0);
+    await expect(page.locator(".scholar-plus-gate-panel")).toHaveCSS("backdrop-filter","none");
+  }
+  await page.screenshot({path:"test-artifacts/locked-plus-navigation-lightweight.png"});
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole("button",{name:"Open navigation menu"}).click();
+  await page.locator('[data-slot="sheet-content"] nav').getByRole("button",{name:/Python Workspace/}).click();
+  await expect(page.locator("#main-scroll")).toHaveAttribute("data-active-view","python");
+  await expect(page.getByRole("heading",{name:"Unlock Python Workspace"})).toBeVisible();
+  await expect(page.locator(".scholar-plus-gate-panel")).toHaveCSS("backdrop-filter","none");
   expect(errors).toEqual([]);
 });

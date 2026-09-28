@@ -1,7 +1,7 @@
 export const BUILD_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260723_145606_ab143199-b593-4941-bb1b-9afca215416b.mp4";
 
-// User-supplied SpaceEdu footage, presented as optional atmosphere rather than a
-// journey between planets. The questionnaire never changes the chosen scene.
+// User-supplied SpaceEdu footage, crossfaded as a backdrop rather than a
+// journey between planets. Questionnaire progress does not control the scene.
 const SCENE_BASE = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/";
 export const SCHOLAR_SCENES = {
   earth: {
@@ -21,6 +21,8 @@ export const SCHOLAR_SCENES = {
   },
 } as const;
 export type ScholarScene = keyof typeof SCHOLAR_SCENES;
+export const SCHOLAR_SCENE_ORDER: ScholarScene[] = ["earth", "venus", "mars"];
+export const nextScholarScene = (scene: ScholarScene): ScholarScene => SCHOLAR_SCENE_ORDER[(SCHOLAR_SCENE_ORDER.indexOf(scene)+1)%SCHOLAR_SCENE_ORDER.length];
 
 export const CHAPTER_STORY = [
   { eyebrow: "01 / THE BEGINNING", title: "Made for\nyour world.", note: "A learning space that starts with you, not a template." },

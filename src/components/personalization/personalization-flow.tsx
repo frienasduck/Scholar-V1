@@ -14,7 +14,7 @@ import { ImportStage } from "./import-stage";
 import { PlanetJourney } from "./planet-journey";
 import { BuildBackdrop } from "./build-backdrop";
 import { SceneBackdrop } from "./scene-backdrop";
-import { CHAPTERS,CHAPTER_STORY,SCHOLAR_SCENES,currentChapter,type ScholarScene } from "./personalization-presentation";
+import { CHAPTERS,CHAPTER_STORY,currentChapter } from "./personalization-presentation";
 
 export function PersonalizationFlow({profile,onProfile,onEnter,startAt}:{profile:LearningProfileView;onProfile:(p:LearningProfileView)=>void;onEnter:()=>void;startAt?:number}) {
   const access=useScholarAccess();const router=useRouter();
@@ -24,13 +24,12 @@ export function PersonalizationFlow({profile,onProfile,onEnter,startAt}:{profile
   const systemReduced=useReducedMotion();
   const reduceMotion=reducedSetting || Boolean(systemReduced);
   const [direction,setDirection]=useState(1);
-  const [scene,setScene]=useState<ScholarScene>("earth");
-  const [requestedScenes,setRequestedScenes]=useState<ScholarScene[]>(["earth"]);
   const [value,setValue]=useState<Preferences>(()=>editablePreferences(profile.preferences));
   const [expiredExam]=useState(()=>profile.preferences.exam && profile.preferences.exam.date < new Date().toISOString().slice(0,10) ? profile.preferences.exam.name : "");
   const [stage,setStage]=useState(startAt ?? (profile.status==="NOT_STARTED" ? 0 : Math.min(profile.stage,11)));
   const [mode,setMode]=useState<"questions"|"analysis"|"reveal">(profile.status==="ANALYZING" ? "analysis" : "questions");
   const [busy,setBusy]=useState(false);const [uploading,setUploading]=useState(false);
+  const [transitioning,setTransitioning]=useState(false);
   const [error,setError]=useState("");const [feedback,setFeedback]=useState("");
   const [active,setActive]=useState("profile");const [message,setMessage]=useState("Checking your saved progress…");
   const [planAfter,setPlanAfter]=useState(false);
@@ -59,9 +58,9 @@ export function PersonalizationFlow({profile,onProfile,onEnter,startAt}:{profile
     const response=await fetch("/api/personalization",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,revision:profile.revision,stage:nextStage,...(parsed?.success ? {preferences:parsed.data} : {})}),signal:AbortSignal.timeout(12_000)});
     const data=await response.json();if(!response.ok)throw new Error(data.message || "Your answers could not be saved.");onProfile(data);return data as LearningProfileView;
   };
-  const advance=async(next:number,nextValue=value)=>{
-    if(busy || uploading)return;setBusy(true);setError("");
-    try{await save(stage===0 ? "begin" : "save",next,nextValue);setDirection(next<stage ? -1 : 1);setValue(nextValue);setStage(next);setMode("questions");setFeedback("");}catch(e){setError(e instanceof Error ? e.message : "Could not save. Please retry.");}finally{setBusy(false);}
+  const advance=async(next:number,nextValue=value,showTransition=true)=>{
+    if(busy || uploading)return;const forward=next>stage;const animate=forward&&showTransition;setBusy(true);setTransitioning(animate);setError("");
+    try{await Promise.all([save(stage===0 ? "begin" : "save",next,nextValue),animate ? new Promise<void>(resolve=>setTimeout(resolve,420)) : Promise.resolve()]);setDirection(forward ? 1 : -1);setValue(nextValue);setStage(next);setMode("questions");setFeedback("");}catch(e){setError(e instanceof Error ? e.message : "Could not save. Please retry.");}finally{setBusy(false);setTransitioning(false);}
   };
   const skip=async()=>{
     if(busy||uploading)return;setBusy(true);setError("");
@@ -84,15 +83,14 @@ export function PersonalizationFlow({profile,onProfile,onEnter,startAt}:{profile
   };
   const skipQuestion=()=>{
     const defaults:Partial<Preferences>=stage===1 ? {subjects:[],strong:[],weak:[],exam:null} : stage===2 ? {goals:[]} : stage===3 ? {strong:[],weak:[]} : stage===4 ? {challenges:[]} : stage===5 ? {style:DEFAULT_PREFERENCES.style,secondaryStyles:[]} : stage===6 ? {personality:"calm",guidance:"balanced"} : stage===7 ? {minutes:30,dailyGoal:30,days:[],studyWindow:"Varies"} : stage===8 ? {exam:null} : stage===9 ? {reasons:[]} : {};
-    void advance(stage+1,{...value,...defaults});
+    void advance(stage+1,{...value,...defaults},false);
   };
   const enter=()=>{onEnter();router.replace(planAfter ? "/plus" : "/");};
-  const chooseScene=(next:ScholarScene)=>{setScene(next);setRequestedScenes(current=>current.includes(next) ? current : [...current,next]);};
   const chapter=Math.max(0,currentChapter(stage));
   const story=CHAPTER_STORY[chapter];
   return <main className={`your-scholar ${reduceMotion ? "your-scholar-reduced" : ""} ${hidden ? "is-paused" : ""}`} data-startup-ready={startupReady} data-setup-stage={mode==="questions" ? stage : mode} data-chapter={Math.max(0,currentChapter(stage))}>
     <div className="your-scholar-atmosphere" aria-hidden="true"/>
-    {mode==="questions" ? <SceneBackdrop scene={scene} requested={requestedScenes} reduced={reduceMotion} hidden={hidden}/> : null}
+    {mode==="questions" ? <SceneBackdrop reduced={reduceMotion} hidden={hidden}/> : null}
     {mode!=="questions" || stage>=9 ? <BuildBackdrop playing={mode==="analysis"} reduced={reduceMotion}/> : null}
     {mode!=="analysis" ? <header className="your-scholar-header"><span className="your-scholar-wordmark"><span aria-hidden="true">✦</span> SCHOLAR</span><span className="your-scholar-eyebrow">Yours, from the start.</span><GlassButton variant="ghost" onClick={()=>void skip()} disabled={busy||uploading}>Skip setup for now</GlassButton></header> : null}
     {mode==="analysis" ? <>
@@ -108,7 +106,6 @@ export function PersonalizationFlow({profile,onProfile,onEnter,startAt}:{profile
             <p className="your-scholar-feature-note">{mode==="reveal" ? "All the things that matter, now closer together." : stage===0 ? "Not another template. Your own place to think, practice, and grow." : story.note}</p>
           </motion.div>
         </AnimatePresence>
-        {mode==="questions" ? <div className="your-scholar-scene-switch" role="group" aria-label="Choose background atmosphere"><span>SET THE ATMOSPHERE</span><div>{(Object.keys(SCHOLAR_SCENES) as ScholarScene[]).map(name=><button type="button" key={name} aria-pressed={scene===name} onClick={()=>chooseScene(name)}><i aria-hidden="true"/>{SCHOLAR_SCENES[name].label}</button>)}</div><small>Change the view, not your progress.</small></div> : null}
       </aside>
       <GlassSurface material="elevated" className="your-scholar-stage">
         {mode==="questions" ? <div className="your-scholar-progress" aria-label={`Setup ${Math.round(stage/11*100)}% complete`}><span style={{width:`${Math.max(3,stage/11*100)}%`}}/></div> : null}
@@ -121,7 +118,7 @@ export function PersonalizationFlow({profile,onProfile,onEnter,startAt}:{profile
           {expiredExam ? <p className="your-scholar-note">The saved date for {expiredExam} has passed. This new draft clears that exam; your other choices stay intact. You can add an upcoming exam later in setup.</p> : null}
           {stage===0 ? <div className="your-scholar-intro-details"><span>✧ Your priorities, up front</span><span>◎ LAM, tuned to you</span><span>▤ Your material, in reach</span><p>Your answers stay in your Scholar account. Every question is optional; you can edit them in Settings.</p></div> : stage<=9 ? <QuestionStage stage={stage} value={value} onChange={setValue} feedback={react} hasClass9={access.has("class_9_access")}/> : stage===10 ? <ImportStage profile={profile} onUploaded={async()=>{await reload();}} onBusy={setUploading}/> : <div className="your-scholar-plus"><GlassSurface material="premium"><p className="your-scholar-eyebrow">SCHOLAR PLUS</p><h2>Go deeper, when you're ready.</h2><p>{value.goals.some(g=>g.startsWith("JEE")) ? "JEE Focused Mode supports your competitive goals." : "More room for focused learning and supported AI tools."} Plus includes LAM AI, Class 9 access, supported premium study tools, and higher monthly generation/import limits.</p><p>Your original import bonus stays separate. Choosing Plus here does not start a payment or change access.</p><GlassButton aria-pressed={planAfter} onClick={()=>setPlanAfter(p=>!p)}>{planAfter ? "Plan review added after setup ✓" : "Review actual plans after setup"}</GlassButton></GlassSurface><p className="your-scholar-note">{access.has("lam_ai") ? "Your current plan already includes LAM AI." : "Free keeps standard LAM and supported study tools. LAM AI's full tutor experience remains Plus-gated."}</p></div>}
           <div className="your-scholar-feedback" role="status" aria-live="polite" aria-atomic="true">{feedback ? <GlassSurface material="control">✧ {feedback}</GlassSurface> : null}</div>
-          <footer className="your-scholar-actions">{stage>0 ? <GlassButton disabled={busy||uploading} onClick={()=>void advance(stage-1)}>Back</GlassButton> : null}<div className="your-scholar-action-spacer"/>{stage>0 && stage<11 ? <GlassButton variant="ghost" disabled={busy||uploading} onClick={skipQuestion}>{stage===10 ? "Use it later" : "Not sure · Skip"}</GlassButton> : null}<GlassButton variant="primary" className="your-scholar-next" disabled={busy||uploading} onClick={()=>stage===11 ? void build() : void advance(stage+1)}><span>{busy ? "Saving…" : stage===0 ? "Build my Scholar" : stage===11 ? "Continue Free · Build my Scholar" : "Continue"}</span><span className="your-scholar-next-arrow" aria-hidden="true">↗</span></GlassButton></footer>
+          <footer className="your-scholar-actions">{stage>0 ? <GlassButton disabled={busy||uploading} onClick={()=>void advance(stage-1)}>Back</GlassButton> : null}<div className="your-scholar-action-spacer"/>{stage>0 && stage<11 ? <GlassButton variant="ghost" disabled={busy||uploading} onClick={skipQuestion}>{stage===10 ? "Use it later" : "Not sure · Skip"}</GlassButton> : null}<GlassButton variant="primary" className="your-scholar-next" data-loading={transitioning} aria-busy={transitioning} disabled={busy||uploading} onClick={()=>stage===11 ? void build() : void advance(stage+1)}><span>{transitioning ? "Opening next question…" : busy ? "Saving…" : stage===0 ? "Build my Scholar" : stage===11 ? "Continue Free · Build my Scholar" : "Continue"}</span><span className="your-scholar-next-arrow" aria-hidden="true">{transitioning ? <span className="your-scholar-next-spinner"/> : "↗"}</span></GlassButton></footer>
           {stage>0 ? <p className="your-scholar-save-note">Continue saves this step. You can return after closing this tab.</p> : null}
         </motion.div> : <motion.div key="reveal" className="your-scholar-reveal" initial={{opacity:0,y:reduceMotion ? 0 : 18}} animate={{opacity:1,y:0}} transition={{duration:reduceMotion ? 0 : .55}} onAnimationComplete={()=>heading.current?.focus({preventScroll:true})}><span className="your-scholar-eyebrow">Your world is ready.</span><h1 ref={heading} tabIndex={-1}>Welcome to your Scholar{name ? `, ${name}` : ""}.</h1><p className="your-scholar-reveal-tagline">Built around how you learn.</p><p className="your-scholar-subtitle">{profile.result?.summary}</p><ul>{profile.result?.consequences.slice(0,5).map(item=><GlassSurface as="li" material="control" key={item}><span aria-hidden="true">✧</span>{item}</GlassSurface>)}</ul>{profile.result?.ai==="fallback" ? <p className="your-scholar-note">Your workspace is built from your preferences. Optional AI refinement was unavailable; nothing blocks your arrival.</p> : null}<div className="your-scholar-actions"><GlassButton variant="primary" onClick={enter}>Enter my Scholar</GlassButton><GlassButton disabled={busy} onClick={()=>void advance(1)}>Adjust preferences</GlassButton></div></motion.div>}
         </AnimatePresence>
