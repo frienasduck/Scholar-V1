@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter, JetBrains_Mono, Poppins, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import "@/components/liquid-glass/liquid-glass.css";
+import "@/components/launch-splash.css";
 import "katex/dist/katex.min.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
