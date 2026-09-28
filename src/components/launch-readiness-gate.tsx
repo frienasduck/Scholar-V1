@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -13,6 +14,7 @@ import { useReducedMotion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { LaunchSplash } from "@/components/launch-splash";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import {
   prepareScholarStartup,
   scheduleIdleStartupWork,
@@ -30,11 +32,19 @@ const INITIAL_PROGRESS: StartupReadinessProgress = {
 };
 
 const ScholarStartupReadyContext = createContext(true);
+const LaunchContentReadinessContext = createContext({
+  reportShellReady: (_ready: boolean) => {},
+  reportProfileReady: (_ready: boolean) => {},
+});
 const FIRST_LAUNCH_MINIMUM_MS = 1900;
 let launchShownInDocument = false;
 
 export function useScholarStartupReady(): boolean {
   return useContext(ScholarStartupReadyContext);
+}
+
+export function useLaunchContentReadiness() {
+  return useContext(LaunchContentReadinessContext);
 }
 
 export function LaunchReadinessGate({ children }: { children: ReactNode }) {
@@ -45,6 +55,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const systemReducedMotion = useReducedMotion();
   const reduceMotion = reduceMotionSetting || Boolean(systemReducedMotion);
   const devMode = useStore((state) => state.devMode);
+  const session = useScholarAccess();
   const mode = normaliseStartupMode(configuredMode);
   const [visible, setVisible] = useState(true);
   const [gateMounted, setGateMounted] = useState(true);
@@ -53,9 +64,16 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     mode,
   });
   const [result, setResult] = useState<StartupReadinessResult | null>(null);
+  const [startupSettled, setStartupSettled] = useState(false);
+  const [shellReady, setShellReady] = useState(false);
+  const [profileReady, setProfileReady] = useState(false);
+  const readinessReport = useMemo(() => ({ reportShellReady: setShellReady, reportProfileReady: setProfileReady }), []);
+  const requiresProfile = session.authenticated && Boolean(session.user);
   const openNowRef = useRef(false);
   const canOpenNowRef = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
+  const startedAtRef = useRef<number | null>(null);
+  const minimumDurationRef = useRef<number | null>(null);
 
   const reveal = useCallback(() => {
     setVisible(false);
@@ -69,18 +87,9 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    const startedAt = performance.now();
-    const minimumDuration = launchShownInDocument ? 0 : FIRST_LAUNCH_MINIMUM_MS;
+    startedAtRef.current = performance.now();
+    minimumDurationRef.current = launchShownInDocument ? 0 : FIRST_LAUNCH_MINIMUM_MS;
     let active = true;
-    let revealTimer: number | undefined;
-    const revealWhenReady = () => {
-      const remaining = Math.max(0, minimumDuration - (performance.now() - startedAt));
-      revealTimer = window.setTimeout(() => {
-        if (!active) return;
-        launchShownInDocument = true;
-        reveal();
-      }, remaining);
-    };
     controllerRef.current = controller;
     openNowRef.current = false;
     const previousBodyOverflow = document.body.style.overflow;
@@ -108,19 +117,18 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
       .then((readiness) => {
         if (!active) return;
         setResult(readiness);
-        revealWhenReady();
+        setStartupSettled(true);
       })
       .catch((error) => {
         if (!active) return;
         if (process.env.NODE_ENV === "development") {
           console.warn("[Scholar startup] readiness coordinator recovered", error);
         }
-        revealWhenReady();
+        setStartupSettled(true);
       });
 
     return () => {
       active = false;
-      window.clearTimeout(revealTimer);
       controller.abort("unmount");
       controllerRef.current = null;
       document.body.style.overflow = previousBodyOverflow;
@@ -129,6 +137,17 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     };
     // The startup gate intentionally runs once for the route and persisted mode present at launch.
   }, []);
+
+  useEffect(() => {
+    if (!visible || !startupSettled || !shellReady || (requiresProfile && !profileReady)) return;
+    const elapsed = performance.now() - (startedAtRef.current ?? performance.now());
+    const remaining = Math.max(0, (minimumDurationRef.current ?? FIRST_LAUNCH_MINIMUM_MS) - elapsed);
+    const timer = window.setTimeout(() => {
+      launchShownInDocument = true;
+      reveal();
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [visible, startupSettled, shellReady, profileReady, requiresProfile, reveal]);
 
   useEffect(() => {
     if (visible) return;
@@ -152,14 +171,17 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const completedCount = progress.tasks.filter((task) =>
     ["completed", "failed", "skipped", "timed-out"].includes(task.status),
   ).length;
+  const message = !startupSettled ? progress.message : !shellReady ? session.loading ? "Checking your Scholar session…" : "Opening your account’s workspace…" : requiresProfile && !profileReady ? "Opening your Scholar…" : "Your workspace is ready";
 
   return (
     <>
       <ScholarStartupReadyContext.Provider value={!visible}>
-        {children}
+        <LaunchContentReadinessContext.Provider value={readinessReport}>
+          {children}
+        </LaunchContentReadinessContext.Provider>
       </ScholarStartupReadyContext.Provider>
       {gateMounted && (
-        <LaunchSplash overlay visible={visible} reducedMotion={reduceMotion} progress={progress.progress} message={progress.message} modeLabel={mode}>
+        <LaunchSplash overlay visible={visible} reducedMotion={reduceMotion} progress={progress.progress} message={message} modeLabel={mode}>
           <div className="scholar-launch-controls">
             <span className="text-[11px] text-[#9fbbd9]">{completedCount} of {progress.tasks.length || 1} preparation steps</span>
             <button type="button" onClick={openNow} disabled={!progress.canOpenNow} className="scholar-launch-open">Open now</button>

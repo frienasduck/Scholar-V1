@@ -8,7 +8,7 @@ import { Onboarding } from "@/components/onboarding";
 import { AppShell } from "@/components/app-shell";
 import { PersonalizationProvider } from "@/components/personalization/personalization-provider";
 import { ScholarTransitionProvider } from "@/components/scholar-transition";
-import { LaunchReadinessGate } from "@/components/launch-readiness-gate";
+import { LaunchReadinessGate, useLaunchContentReadiness } from "@/components/launch-readiness-gate";
 import { SubscriptionProvider, useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
 function currentWorkspaceOwner(): string {
@@ -29,6 +29,7 @@ export function AppContent() {
 
 function ScholarContent() {
   const [workspaceError, setWorkspaceError] = useState(false);
+  const { reportShellReady } = useLaunchContentReadiness();
   const authed = useStore((state) => state.authed);
   const guestMode = useStore((state) => state.guestMode);
   const setAuthed = useStore((state) => state.setAuthed);
@@ -39,6 +40,12 @@ function ScholarContent() {
   const switchClass = useStore((state) => state.switchClass);
   const onboarded = useStore((state) => state.onboarded);
   const session = useScholarAccess();
+  const restoringWorkspace = (guestMode && !session.authenticated && currentWorkspaceOwner() !== "guest") || (session.authenticated && session.user?.email !== workspaceEmail);
+  const shellReady = workspaceError || (!session.loading && !restoringWorkspace && session.status !== "initializing");
+
+  useEffect(() => {
+    reportShellReady(shellReady);
+  }, [reportShellReady, shellReady]);
 
   useEffect(() => {
     if (!session.loading && session.status !== "error" && !session.authenticated && guestMode && currentWorkspaceOwner() !== "guest") {
@@ -68,7 +75,7 @@ function ScholarContent() {
   if (workspaceError) {
     return <div role="alert" className="grid min-h-dvh place-items-center bg-background p-6"><div className="max-w-md space-y-4"><h1 className="text-xl font-semibold">Your saved workspace is protected</h1><p>Scholar could not safely switch accounts because browser storage is full or unavailable. No previous account’s work has been discarded. Keep this browser’s data and contact support before clearing storage.</p><button className="rounded-xl border px-4 py-3" onClick={() => window.location.reload()}>Retry safely</button></div></div>;
   }
-  if ((guestMode && !session.authenticated && currentWorkspaceOwner() !== "guest") || (session.authenticated && session.user?.email !== workspaceEmail)) {
+  if (restoringWorkspace) {
     return <div role="status" className="grid min-h-dvh place-items-center bg-background">Opening your account’s workspace…</div>;
   }
   if (session.status === "initializing" && !guestMode) {

@@ -11,6 +11,7 @@
   font-family: var(--font-geist-sans), Arial, sans-serif;
   text-align: center;
 }
+.scholar-launch:not(.scholar-launch-overlay) { animation: scholar-launch-enter .55s ease-out both; }
 .scholar-launch-overlay { position: fixed; inset: 0; z-index: 10000; min-height: 0; height: 100dvh; transition: opacity cubic-bezier(.22,1,.36,1); }
 .scholar-launch-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .scholar-launch-sky::before {
@@ -70,6 +71,7 @@
 .scholar-launch-open:disabled { opacity: .42; cursor: not-allowed; }
 .scholar-launch-center details { max-height: 21vh; overflow: auto; }
 @keyframes scholar-launch-stars { to { opacity: .42; } }
+@keyframes scholar-launch-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scholar-launch-aura { to { opacity: .55; transform: translateX(-50%) scale(1.05); } }
 @keyframes scholar-launch-breathe { 50% { transform: translateY(-4px) scale(1.015); box-shadow: inset 0 2px 6px #fff9, 0 0 0 5px #9ed7ff0c, 0 0 55px #56a5ff9c, 0 26px 70px #030b24; } }
 @keyframes scholar-launch-shine { to { background-position: -220% 0; } }
@@ -94,8 +96,10 @@
   .scholar-launch-mode { margin-top: 9px; }
 }
 .scholar-launch-reduced *, .scholar-launch-reduced *::before, .scholar-launch-reduced *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+.scholar-launch-reduced { animation-duration: .01ms !important; }
 .scholar-launch-reduced .scholar-launch-progress-fill.is-indeterminate { width: 45%; }
 @media (prefers-reduced-motion: reduce) {
+  .scholar-launch { animation-duration: .01ms !important; }
   .scholar-launch *, .scholar-launch *::before, .scholar-launch *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .scholar-launch-progress-fill.is-indeterminate { width: 45%; }
 }

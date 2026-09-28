@@ -8,6 +8,7 @@ import { entryMode,type Preferences,type SetupStatus } from "@/lib/personalizati
 import type { Blueprint } from "@/lib/personalization/engine";
 import { GlassSurface } from "@/components/liquid-glass/glass-surface";
 import { GlassButton } from "@/components/liquid-glass/glass-button";
+import { useLaunchContentReadiness } from "@/components/launch-readiness-gate";
 import "./personalization.css";
 import "./personalization-experience.css";
 const PersonalizationFlow = dynamic(()=>import("./personalization-flow").then(m=>m.PersonalizationFlow));
@@ -20,6 +21,7 @@ const Context=createContext<ProfileContext>({profile:null,loading:false,error:""
 export const useLearningProfile=()=>useContext(Context);
 export function PersonalizationProvider({children}:{children:ReactNode}) {
   const access=useScholarAccess();
+  const {reportProfileReady}=useLaunchContentReadiness();
   const [profile,setProfile]=useState<LearningProfileView|null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -41,6 +43,7 @@ export function PersonalizationProvider({children}:{children:ReactNode}) {
     alive.current=true;const controller=new AbortController();void load(AbortSignal.any([controller.signal,AbortSignal.timeout(12_000)]));
     return()=>{alive.current=false;controller.abort();};
   },[load]);
+  useEffect(()=>{reportProfileReady(!loading);},[loading,reportProfileReady]);
   // Apply only a saved completed blueprint, once per revision, without changing provider or enabling voice.
   const applied=useRef("");
   useEffect(()=>{
