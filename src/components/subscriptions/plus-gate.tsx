@@ -4,6 +4,7 @@ import { ArrowLeft, LockKeyhole, Sparkles } from "lucide-react";
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { ScholarGlass } from "@/components/liquid-glass";
+import { GlassSurface } from "@/components/liquid-glass/glass-surface";
 
 export function PlusGate({ entitlement, title, description, anchor, children }: { entitlement: ScholarEntitlement; title: string; description: string; anchor?: string; children: React.ReactNode }) {
   const access = useScholarAccess();
@@ -17,7 +18,7 @@ export function PlusGate({ entitlement, title, description, anchor, children }: 
   return (
     <section className="relative min-h-[70vh] overflow-hidden rounded-[2rem] border border-white/10 bg-transparent p-5 sm:p-10">
       <div aria-hidden className="absolute inset-0">
-        <div className="absolute inset-4 rounded-3xl border border-white/10 bg-white/[.04] p-5 opacity-70 blur-md sm:inset-8 sm:p-8">
+        <div className="absolute inset-4 rounded-3xl border border-white/10 bg-white/[.04] p-5 opacity-70 sm:inset-8 sm:p-8">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-3">
               <div className="h-4 w-2/3 rounded-full bg-white/15" />
@@ -34,13 +35,10 @@ export function PlusGate({ entitlement, title, description, anchor, children }: 
         </div>
       </div>
       <div className="relative z-10 mx-auto grid min-h-[60vh] max-w-xl place-items-center text-center">
-        <ScholarGlass
-          variant="premium"
-          refraction="prominent"
-          block
+        <GlassSurface
+          material="elevated"
           radius={32}
-          className="w-full max-w-xl text-left"
-          innerClassName="flex-col items-center px-7 py-8 text-center sm:px-10 sm:py-10"
+          className="scholar-plus-gate-panel flex w-full max-w-xl flex-col items-center px-7 py-8 text-center sm:px-10 sm:py-10"
         >
           <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200/25 bg-cyan-200/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.18em] text-cyan-100"><Sparkles className="h-3 w-3" /> Scholar Plus</span>
           <span className="mx-auto mt-5 grid h-14 w-14 place-items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/10 text-cyan-200 shadow-[0_0_30px_rgba(103,232,249,.25)]"><LockKeyhole className="h-6 w-6" /></span>
@@ -78,7 +76,7 @@ export function PlusGate({ entitlement, title, description, anchor, children }: 
               innerClassName="justify-center gap-2 px-6 py-3 text-sm"
             ><ArrowLeft className="h-4 w-4" /> Back</ScholarGlass>
           </div>
-        </ScholarGlass>
+        </GlassSurface>
       </div>
     </section>
   );

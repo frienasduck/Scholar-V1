@@ -87,7 +87,6 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import type { ScholarEntitlement } from "@/lib/subscriptions/entitlements";
 import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
-import { ScholarGlass } from "@/components/liquid-glass";
 
 function ViewLoading() {
   return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
@@ -234,7 +233,7 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                         feature: item.id,
                       })
                     }
-                    className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all relative text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 relative text-muted-foreground hover:text-foreground hover:bg-muted/60"
                   >
                     <item.icon className="scholar-nav-icon h-4.5 w-4.5 shrink-0 text-amber-200/80" />
                     <span className="scholar-nav-label truncate flex-1 text-left">{item.label}</span>
@@ -254,7 +253,7 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                     onNavigate(item.id);
                   }}
                   className={cn(
-                    "scholar-nav-item group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all relative",
+                    "scholar-nav-item group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 relative",
                     isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                     item.highlight && !isActive && "bg-gradient-to-r from-red-500/10 to-fuchsia-500/10 text-white border border-red-500/20",
                     hasFinishedTask &&
@@ -262,23 +261,15 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                       "border border-cyan-300/25 bg-cyan-300/[0.07] shadow-[inset_0_0_18px_rgba(34,211,238,.08),0_0_14px_rgba(34,211,238,.11)]",
                   )}
                 >
-                  {/* Exactly one Tier 1 refractive surface per navigation list:
-                      the selected pill. Repeated nav rows stay lightweight. */}
+                  {/* The moving selection is a paint-cheap glass highlight. A
+                      refractive filter here repaints the entire scrolling menu. */}
                   {isActive && (
                     <motion.span
                       layoutId={`scholar-nav-selection-${selectionId}`}
                       className="sg-nav-pill-motion"
-                      transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 430, damping: 36, mass: 0.7 }}
+                      transition={reduceMotion ? { duration: 0 } : { duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
                       aria-hidden="true"
-                    >
-                      <ScholarGlass
-                        as="span"
-                        variant="navigation"
-                        radius={12}
-                        interactive
-                        className="sg-nav-pill"
-                      />
-                    </motion.span>
+                    />
                   )}
                   <item.icon className={cn("scholar-nav-icon h-4.5 w-4.5 shrink-0", isActive && "text-primary", item.highlight && !isActive && "text-red-400")} />
                   <span className={cn("scholar-nav-label truncate flex-1 text-left", item.highlight && !isActive && "font-bold tracking-wide")}>{item.label}</span>
@@ -680,7 +671,7 @@ export function AppShell() {
       if (`${window.location.pathname}${window.location.hash}` !== nextPath) window.history.pushState({ viewId: id, anchor }, "", nextPath);
     }
     const main = document.getElementById("main-scroll");
-    if (main) main.scrollTo({ top: 0, behavior: useStore.getState().settings.reduceMotion ? "auto" : "smooth" });
+    if (main) main.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
   useEffect(() => {
@@ -705,6 +696,7 @@ export function AppShell() {
   }, [navigate]);
 
   const View = VIEW_COMPONENTS[active] ?? DashboardView;
+  const lockedView = Boolean(VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement));
 
   // Per-view gradient background classes
   const viewBg: Record<string, string> = {
@@ -830,7 +822,7 @@ export function AppShell() {
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}
-            initial={settings.pageTransitions === false || settings.reduceMotion ? false : { opacity: 0, y: 8 }}
+            initial={settings.pageTransitions === false || settings.reduceMotion ? false : { opacity: 0, y: lockedView ? 0 : 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: settings.pageTransitions === false || settings.reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="w-full"
@@ -845,7 +837,7 @@ export function AppShell() {
                     <button type="button" onClick={() => setAuthed(false)} className="mt-6 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Create account or Sign in</button>
                   </div>
                 </section>
-              ) : VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement) ? (
+              ) : lockedView ? (
                 <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>
               ) : <View />}
             </ViewErrorBoundary>
