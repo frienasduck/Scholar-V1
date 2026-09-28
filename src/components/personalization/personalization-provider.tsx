@@ -9,6 +9,7 @@ import type { Blueprint } from "@/lib/personalization/engine";
 import { GlassSurface } from "@/components/liquid-glass/glass-surface";
 import { GlassButton } from "@/components/liquid-glass/glass-button";
 import "./personalization.css";
+import "./personalization-experience.css";
 const PersonalizationFlow = dynamic(()=>import("./personalization-flow").then(m=>m.PersonalizationFlow));
 export interface LearningProfileView {
   required:boolean;status:SetupStatus;stage:number;revision:number;preferences:Preferences;result:Blueprint|null;

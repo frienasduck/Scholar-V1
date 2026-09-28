@@ -3,16 +3,23 @@ import {DEFAULT_PREFERENCES,preferencesSchema} from "../src/lib/personalization/
 import {getCurriculum} from "../src/lib/curriculum-helper";
 import {buildBlueprint} from "../src/lib/personalization/engine";
 import type {LearningProfileView} from "../src/components/personalization/personalization-provider";
-test.use({baseURL:"http://127.0.0.1:3000",launchOptions:{executablePath:process.env.SCHOLAR_QA_BROWSER || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"}});
+import { BUILD_VIDEO,SCHOLAR_SCENES } from "../src/components/personalization/personalization-presentation";
+test.use({baseURL:process.env.SCHOLAR_QA_BASE_URL || "http://127.0.0.1:3000",actionTimeout:20_000,launchOptions:{executablePath:process.env.SCHOLAR_QA_BROWSER || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"}});
 test.setTimeout(180_000);
+test.afterEach(async({page},info)=>{
+  if(info.status!==info.expectedStatus && !page.isClosed())console.log("Startup handoff diagnostics",await page.evaluate(()=>{
+    const gate=document.querySelector<HTMLElement>("[data-startup-mode]");
+    return {visibility:document.visibilityState,ready:document.querySelector(".your-scholar")?.getAttribute("data-startup-ready"),gate:gate ? {progress:gate.dataset.startupProgress,opacity:getComputedStyle(gate).opacity,pointerEvents:getComputedStyle(gate).pointerEvents,animations:gate.getAnimations({subtree:true}).map(a=>({state:a.playState,time:a.currentTime}))} : null};
+  }));
+});
 const email="personalization@example.test";
 const makeProfile=():LearningProfileView=>({required:true,status:"NOT_STARTED",stage:0,revision:0,preferences:structuredClone(DEFAULT_PREFERENCES),result:null,bonus:{total:52428800,used:0,closed:false},jobStartedAt:null});
 async function fixture(page:Page,initial=makeProfile(),guest=false){
   const state={profile:initial,holdAnalysis:false,writes:0};
-  const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
+  const errors:string[]=[];page.on("pageerror",e=>{errors.push(e.message);console.log(e.stack);});
   await page.route("**/api/**",route=>route.fulfill({json:{ok:true,rooms:[],members:[],events:[],items:[],ebooks:[],files:[],memories:[],sessions:[],pendingPayment:null}}));
   await page.route(/\.mp4(?:\?.*)?$/,route=>route.fulfill({status:204,body:""}));
-  await page.route("**/api/auth/session",route=>route.fulfill({json:{authenticated:!guest,developerMode:false,plan:"FREE",entitlementsLoaded:true,user:guest?null:{id:"profile-owner",email,name:"Aisha Learner",role:"USER",coins:0,currentScholarClass:11},access:{plan:"FREE",source:"free",entitlementsLoaded:true,entitlements:[],storageLimitBytes:10485760,dailyQuizLimit:3,dailySlideshowLimit:1,monthlyEbookUploadLimit:3,monthlyMockExamLimit:3},usage:{day:"2026-09-27",quiz:{used:0,limit:3},slideshow:{used:0,limit:1}},config:{subscriptionsEnabled:true,checkoutConfigured:false},beta:{privateBeta:true,registrationEnabled:false}}}));
+  await page.route("**/api/auth/session",route=>route.fulfill({json:{authenticated:!guest,developerMode:false,plan:"FREE",entitlementsLoaded:true,user:guest?null:{id:"profile-owner",email,name:"Aisha Learner",role:"USER",coins:0,currentScholarClass:11},access:{plan:"FREE",source:"free",entitlementsLoaded:true,entitlements:[],storageLimitBytes:10485760,dailyQuizLimit:3,dailySlideshowLimit:1,monthlyEbookUploadLimit:3,monthlyMockExamLimit:3},usage:{day:"2026-09-27",quiz:{used:0,limit:3},slideshow:{used:0,limit:1}},config:{subscriptionsEnabled:true,checkoutConfigured:false},beta:{privateBeta:false,registrationEnabled:true}}}));
   await page.route("**/api/personalization",async route=>{
     if(route.request().method()==="PATCH"){
       const input=route.request().postDataJSON();state.writes++;state.profile={...state.profile,status:input.action==="skip"?"SKIPPED":"IN_PROGRESS",stage:input.stage??state.profile.stage,preferences:input.preferences??state.profile.preferences,revision:state.profile.revision+1,bonus:{...state.profile.bonus,closed:input.action==="skip" || state.profile.bonus.closed}};
@@ -31,13 +38,14 @@ async function fixture(page:Page,initial=makeProfile(),guest=false){
   },{email,guest});
   return {state,errors};
 }
-async function open(page:Page){await page.goto("/",{waitUntil:"domcontentloaded"});await expect(page.locator(".your-scholar")).toHaveAttribute("data-startup-ready","true",{timeout:30_000});await expect(page.locator("[data-startup-mode]")).toBeHidden({timeout:30_000});}
+async function ready(page:Page){await expect(page.locator(".your-scholar")).toHaveAttribute("data-startup-ready","true",{timeout:30_000});await expect(page.locator("[data-startup-mode]")).toBeHidden({timeout:5_000});}
+async function open(page:Page){await page.goto("/",{waitUntil:"domcontentloaded"});await ready(page);}
 async function next(page:Page){await page.getByRole("button",{name:"Continue",exact:true}).click();}
 async function noOverflow(page:Page){expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1)).toBe(true);}
 test("full personalized arrival, reactive feedback, PDF bonus, fallback, dashboard and settings",async({page})=>{
   const {state,errors}=await fixture(page);await page.setViewportSize({width:1440,height:900});await open(page);
   await page.screenshot({path:"test-artifacts/personalization-intro-desktop.png"});
-  await page.getByRole("button",{name:"Begin",exact:true}).click();
+  await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
   const subject=getCurriculum(11)[0];await page.getByRole("button",{name:subject.name,exact:false}).last().click();await next(page);
   await page.getByRole("button",{name:"JEE Main",exact:false}).click();await expect(page.locator(".your-scholar-feedback")).toContainText("Plus gates");await next(page);
   await page.getByRole("group",{name:"Priority subjects"}).getByRole("button").first().click();await expect(page.locator(".your-scholar-feedback")).toContainText("come first");await next(page);
@@ -45,12 +53,13 @@ test("full personalized arrival, reactive feedback, PDF bonus, fallback, dashboa
   await page.getByRole("group",{name:"Explanation preference"}).getByRole("button",{name:"Short and direct",exact:false}).click();await next(page);
   await page.getByRole("button",{name:"Exam Coach",exact:false}).click();await next(page);
   await page.getByLabel("Your daily target · minutes").fill("45");await next(page);await next(page);await next(page);
+  await expect(page.locator('input[type="file"]')).toBeHidden();await expect(page.getByRole("button",{name:"Choose a study PDF"})).toBeEnabled();
   await page.locator('input[type="file"]').setInputFiles({name:"notes.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-1.7 study notes")});
   await expect(page.getByRole("status").filter({hasText:"Imported and ready"})).toBeVisible();await expect(page.locator(".your-scholar-import-meter")).toContainText("50.0 MB available");
   await page.screenshot({path:"test-artifacts/personalization-import-desktop.png"});await next(page);
   await expect(page.getByText("SCHOLAR PLUS",{exact:true})).toBeVisible();await page.screenshot({path:"test-artifacts/personalization-plus-desktop.png"});
-  await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await expect(page.getByRole("heading",{name:"This is your Scholar."})).toBeVisible();
-  await page.screenshot({path:"test-artifacts/personalization-reveal-desktop.png"});await page.getByRole("button",{name:"Enter Scholar"}).click();
+  await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await expect(page.getByRole("heading",{name:"Welcome to your Scholar, Aisha."})).toBeVisible();
+  await page.screenshot({path:"test-artifacts/personalization-reveal-desktop.png"});await page.getByRole("button",{name:"Enter my Scholar"}).click();
   await expect(page.locator(".scholar-today")).toContainText(subject.name);await expect(page.locator(".scholar-today")).toContainText("45 min");await expect(page.locator(".scholar-today")).toContainText("My revision notes");
   expect(state.profile.status).toBe("COMPLETED");
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("scholar-lam-v1-class-11")??"{}").preferences.liveTutorPersonality)).toBe("exam");
@@ -58,8 +67,8 @@ test("full personalized arrival, reactive feedback, PDF bonus, fallback, dashboa
   await page.goto("/settings");await page.getByRole("tab",{name:"Learning Profile"}).click();await expect(page.locator(".learning-profile")).toContainText("45 minutes");expect(errors).toEqual([]);
 });
 test("saved drafts resume, skipped account bypasses, existing invitation dismisses permanently",async({page})=>{
-  const {state,errors}=await fixture(page);await open(page);await page.getByRole("button",{name:"Begin",exact:true}).click();await next(page);await next(page);
-  await page.reload();await expect(page.locator("[data-startup-mode]")).toBeHidden({timeout:30_000});await expect(page.getByRole("heading",{name:"Where should we put our energy?"})).toBeVisible();
+  const {state,errors}=await fixture(page);await open(page);await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();await next(page);await next(page);
+  await page.reload();await ready(page);await expect(page.getByRole("heading",{name:"Where should we put our energy?"})).toBeVisible();
   await page.getByRole("button",{name:"Skip setup for now"}).click();await expect(page.locator(".scholar-shell")).toBeVisible();await page.reload();await expect(page.locator(".scholar-shell")).toBeVisible();expect(state.profile.status).toBe("SKIPPED");
   state.profile={...makeProfile(),required:false};await page.reload();await expect(page.getByRole("button",{name:"Personalize Scholar",exact:true})).toBeVisible();await page.getByRole("button",{name:"Not now",exact:true}).click();await page.reload();await expect(page.getByRole("button",{name:"Personalize Scholar",exact:true})).toHaveCount(0);expect(errors).toEqual([]);
 });
@@ -73,13 +82,13 @@ test("Learning Profile edits rebuild real defaults without renewing the import b
   for(let stage=1;stage<=6;stage++)await next(page);
   await page.getByLabel("Your daily target · minutes").fill("60");await next(page);await next(page);await next(page);
   await expect(page.locator(".your-scholar-import-meter")).toContainText("closed");await next(page);
-  await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await page.getByRole("button",{name:"Enter Scholar"}).click();
+  await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await page.getByRole("button",{name:"Enter my Scholar"}).click();
   await expect(page.locator(".scholar-today")).toContainText("60 min");expect(state.profile.bonus).toEqual({total:52428800,used:100,closed:true});expect(errors).toEqual([]);
 });
 test("mobile save failure is recoverable and keyboard Skip keeps the account usable",async({page})=>{
   const {state,errors}=await fixture(page);await page.setViewportSize({width:390,height:844});await open(page);
   let fail=true;await page.route("**/api/personalization",async route=>{if(route.request().method()==="PATCH" && fail){fail=false;await route.fulfill({status:503,json:{message:"Your answers could not be saved. Check your connection and retry."}});}else await route.fallback();});
-  await page.getByRole("button",{name:"Begin",exact:true}).click();await expect(page.locator(".your-scholar-error")).toContainText("retry");await page.getByRole("button",{name:"Begin",exact:true}).click();
+  await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();await expect(page.locator(".your-scholar-error")).toContainText("retry");await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
   await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");await noOverflow(page);
   const skip=page.getByRole("button",{name:"Skip setup for now"});await skip.focus();await page.keyboard.press("Enter");await expect(page.locator(".scholar-shell")).toBeVisible();expect(state.profile.status).toBe("SKIPPED");expect(errors).toEqual([]);
 });
@@ -91,35 +100,36 @@ test("console stays clean and 200-percent-equivalent reflow keeps keyboard contr
   // 1440x900 at 200% browser zoom has a 720x450 CSS layout viewport.
   // This verifies equivalent reflow, not the operating system's browser zoom control.
   await page.setViewportSize({width:720,height:450});await open(page);await noOverflow(page);
-  const begin=page.getByRole("button",{name:"Begin",exact:true});await begin.focus();await page.keyboard.press("Enter");
+  const begin=page.getByRole("button",{name:"Build my Scholar",exact:true});await begin.focus();await page.keyboard.press("Enter");
   await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
   for(let stage=1;stage<=11;stage++){
     await noOverflow(page);
     const control=stage===11 ? page.getByRole("button",{name:"Continue Free · Build my Scholar"}) : page.getByRole("button",{name:"Continue",exact:true});
     await control.scrollIntoViewIfNeeded();await expect(control).toBeInViewport();await control.focus();await page.keyboard.press("Enter");
   }
-  await expect(page.getByRole("button",{name:"Enter Scholar"})).toBeVisible();await noOverflow(page);
-  await page.getByRole("button",{name:"Enter Scholar"}).click();await expect(page.locator(".scholar-today")).toBeVisible();
+  await expect(page.getByRole("button",{name:"Enter my Scholar"})).toBeVisible();await noOverflow(page);
+  await page.getByRole("button",{name:"Enter my Scholar"}).click();await expect(page.locator(".scholar-today")).toBeVisible();
   expect(errors).toEqual([]);expect(consoleErrors).toEqual([]);expect(httpErrors).toEqual([]);
 });
 test("an expired exam resumes safely without resetting unrelated answers or trapping the build",async({page})=>{
   const {state,errors}=await fixture(page,{...makeProfile(),status:"IN_PROGRESS",stage:11,preferences:{...DEFAULT_PREFERENCES,dailyGoal:45,style:"Short and direct",exam:{name:"Past exam",date:"2000-01-01",subjects:[]}}});
   await open(page);await expect(page.locator(".your-scholar-stage")).toContainText("your other choices stay intact");
-  await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await page.getByRole("button",{name:"Enter Scholar"}).click();
+  await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await page.getByRole("button",{name:"Enter my Scholar"}).click();
   await expect(page.locator(".scholar-today")).toContainText("45 min");expect(state.profile.preferences.exam).toBeNull();expect(state.profile.preferences.style).toBe("Short and direct");expect(errors).toEqual([]);
 });
 test("a failed build can be skipped without an endless analysis screen",async({page})=>{
   const {state,errors}=await fixture(page,{...makeProfile(),status:"IN_PROGRESS",stage:11});
   await page.route("**/api/personalization/analyze",route=>route.fulfill({contentType:"text/event-stream",body:'data: {"error":true,"message":"Your answers are saved. Retry the build."}\n\n'}));
-  await open(page);await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await expect(page.locator(".your-scholar-error")).toContainText("Retry");
+  await open(page);await page.getByRole("button",{name:"Continue Free · Build my Scholar"}).click();await expect(page.locator(".your-scholar-build-error")).toContainText("Retry");
   await page.getByRole("button",{name:"Skip setup for now"}).click();await expect(page.locator(".scholar-shell")).toBeVisible();expect(state.profile.status).toBe("SKIPPED");expect(state.profile.bonus.closed).toBe(true);expect(errors).toEqual([]);
 });
 const viewports=[[1920,1080],[1600,900],[1440,900],[1366,768],[1280,800],[1280,720],[1152,720],[1024,768],[1024,600],[1024,1366],[834,1194],[768,1024],[430,932],[412,915],[390,844],[375,812],[360,800],[320,568],[844,390],[812,375],[740,360]];
 test("every question, import and Plus stay usable at all 21 required viewports",async({page})=>{
+  test.setTimeout(360_000);
   const {state,errors}=await fixture(page,{...makeProfile(),preferences:{...DEFAULT_PREFERENCES,subjects:getCurriculum(11).map(s=>s.id)}});
   await page.setViewportSize({width:1920,height:1080});await open(page);
   for(const [width,height] of viewports){
-    await page.setViewportSize({width,height});await noOverflow(page);await page.getByRole("button",{name:"Begin",exact:true}).click();
+    await page.setViewportSize({width,height});await noOverflow(page);await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
     for(let stage=1;stage<=11;stage++){
       await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage",String(stage));await noOverflow(page);
       if(stage===8){await page.getByRole("button",{name:"Add an exam",exact:false}).click();await page.getByLabel("Exam name",{exact:true}).fill("Term assessment");await page.getByLabel("Approximate date").fill(new Date(Date.now()+30*86400000).toISOString().slice(0,10));}
@@ -133,13 +143,127 @@ test("every question, import and Plus stay usable at all 21 required viewports",
   expect(state.writes).toBeGreaterThan(400);
   expect(errors).toEqual([]);
 });
+
+test("provided build video plays, pauses for reveal and releases on arrival",async({page})=>{
+  test.skip(!process.env.SCHOLAR_QA_LIVE_MEDIA,"Opt-in check against the supplied remote video; normal regressions stay offline.");
+  const {state,errors}=await fixture(page,{...makeProfile(),status:"ANALYZING",stage:11,jobStartedAt:new Date().toISOString()});
+  await page.route(/\.mp4(?:\?.*)?$/,route=>route.continue());
+  await open(page);
+  await expect(page.locator(".your-scholar-build-backdrop")).toHaveAttribute("data-video-ready","true",{timeout:15_000});
+  const video=page.locator(`video[src="${BUILD_VIDEO}"]`);
+  const element=await video.elementHandle();
+  expect(await video.evaluate(el=>el instanceof HTMLVideoElement && !el.paused && el.readyState>=2 && el.muted && !el.controls)).toBe(true);
+  expect(await video.evaluate(el=>getComputedStyle(el).objectFit)).toBe("cover");
+  await page.screenshot({path:"test-artifacts/your-scholar-live-build-video.png"});
+  state.profile={...state.profile,status:"COMPLETED",result:{...buildBlueprint(DEFAULT_PREFERENCES),ai:"fallback"}};
+  await expect(page.getByRole("button",{name:"Enter my Scholar"})).toBeVisible({timeout:10_000});
+  expect(await video.evaluate(el=>el instanceof HTMLVideoElement && el.paused)).toBe(true);
+  await page.getByRole("button",{name:"Enter my Scholar"}).click();
+  await expect(page.locator(".your-scholar-build-backdrop")).toHaveCount(0);
+  expect(await element!.evaluate(el=>el instanceof HTMLVideoElement && el.paused && el.getAttribute("src")===null)).toBe(true);
+  expect(errors).toEqual([]);
+});
 test("planet resume and reduced motion remain readable at compact and landscape sizes",async({page})=>{
   const {state,errors}=await fixture(page,{...makeProfile(),status:"ANALYZING",stage:11,jobStartedAt:new Date().toISOString(),bonus:{total:52428800,used:100,closed:false}});
   await page.setViewportSize({width:1440,height:900});await open(page);
   for(const [width,height]of [[1440,900],[1024,600],[390,844],[320,568],[844,390]]){
     await page.setViewportSize({width,height});state.profile.jobStartedAt=new Date().toISOString();await expect(page.locator(".your-scholar-journey")).toBeVisible();await noOverflow(page);await page.screenshot({path:`test-artifacts/personalization-planet-${width}x${height}.png`});
   }
-  await page.emulateMedia({reducedMotion:"reduce"});expect(await page.locator(".your-scholar-planet").first().evaluate(el=>getComputedStyle(el).animationName)).toBe("none");
+  await page.emulateMedia({reducedMotion:"reduce"});expect(await page.locator(".your-scholar-orbit-loader").evaluate(el=>getComputedStyle(el).animationName)).toBe("none");
   state.profile={...state.profile,status:"COMPLETED",result:{...buildBlueprint(preferencesSchema.parse({...DEFAULT_PREFERENCES,dailyGoal:45})),ai:"fallback"}};
-  await expect(page.getByRole("button",{name:"Enter Scholar"})).toBeVisible({timeout:10_000});await noOverflow(page);expect(errors).toEqual([]);
+  await expect(page.getByRole("button",{name:"Enter my Scholar"})).toBeVisible({timeout:10_000});await noOverflow(page);expect(errors).toEqual([]);
+});
+
+test("cinematic interface stays responsive and no build video loads during early questions",async({page})=>{
+  const {errors}=await fixture(page);
+  await open(page);
+  await expect(page.locator('.your-scholar-scene-video[data-scene="earth"]')).toHaveAttribute("src",SCHOLAR_SCENES.earth.video);
+  expect(await page.locator(".your-scholar-stage").evaluate(el=>getComputedStyle(el).backgroundImage)).toContain("linear-gradient");
+  for(const [width,height] of [[1920,1080],[1440,900],[1024,600],[768,1024],[430,932],[375,812],[320,568],[844,390]]) {
+    await page.setViewportSize({width,height});await noOverflow(page);
+    await expect(page.getByRole("button",{name:"Build my Scholar",exact:true})).toBeEnabled();
+    expect(await page.locator(`video[src="${BUILD_VIDEO}"]`).count()).toBe(0);
+    await page.screenshot({path:`test-artifacts/your-scholar-cinematic-intro-${width}x${height}.png`});
+  }
+  await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
+  await expect(page.getByRole("list",{name:"Your Scholar journey"})).toBeVisible();
+  const sceneButtons=page.getByRole("group",{name:"Choose background atmosphere"});
+  await sceneButtons.getByRole("button",{name:"Venus"}).click();
+  await expect(sceneButtons.getByRole("button",{name:"Venus"})).toHaveAttribute("aria-pressed","true");
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
+  await expect(page.locator('.your-scholar-scene-video[data-scene="venus"]')).toHaveAttribute("src",SCHOLAR_SCENES.venus.video);
+  await page.getByRole("group",{name:"Curriculum"}).getByRole("button",{name:"State"}).click();
+  await expect(page.getByRole("group",{name:"Curriculum"}).getByRole("button",{name:"State"})).toHaveAttribute("aria-pressed","true");
+  expect(await page.getByRole("group",{name:"Curriculum"}).getByRole("button",{name:"State"}).evaluate(el=>getComputedStyle(el,"::before").animationName)).toBe("ys-choice-light");
+  for(const [width,height] of [[1440,900],[1024,600],[768,1024],[430,932],[375,812],[320,568],[844,390]]) {
+    await page.setViewportSize({width,height});await noOverflow(page);
+    expect(await page.locator(".your-scholar-stage").evaluate(el=>getComputedStyle(el).backdropFilter)).toContain("blur(");
+    if(width<=480)expect(await page.locator(".your-scholar-choice").first().evaluate(el=>getComputedStyle(el).backdropFilter)).toBe("none");
+    await page.getByRole("button",{name:"Continue",exact:true}).scrollIntoViewIfNeeded();
+    await expect(page.getByRole("button",{name:"Continue",exact:true})).toBeInViewport();
+    await page.screenshot({path:`test-artifacts/your-scholar-cinematic-question-${width}x${height}.png`});
+  }
+  await page.emulateMedia({reducedMotion:"reduce"});
+  await expect(page.locator(".your-scholar-scene-video")).toHaveCount(0);
+  expect(await page.locator(".your-scholar-scene").evaluate(el=>getComputedStyle(el).backgroundImage)).toContain("20260827_202133");
+  expect(errors).toEqual([]);
+});
+
+test("supplied live scene video plays and atmosphere controls never travel or advance setup",async({page})=>{
+  test.skip(!process.env.SCHOLAR_QA_LIVE_MEDIA,"Opt-in live media check; normal regressions stay offline.");
+  const {errors}=await fixture(page);
+  await page.route(/\.mp4(?:\?.*)?$/,route=>route.continue());
+  await page.setViewportSize({width:1440,height:900});await open(page);
+  await expect(page.locator('.your-scholar-scene-video[data-scene="earth"]')).toHaveAttribute("data-visible","true",{timeout:20_000});
+  expect(await page.locator('.your-scholar-scene-video[data-scene="earth"]').evaluate(el=>el instanceof HTMLVideoElement && !el.paused && el.readyState>=2)).toBe(true);
+  await page.screenshot({path:"test-artifacts/your-scholar-live-entrance.png"});
+  await page.getByRole("group",{name:"Choose background atmosphere"}).getByRole("button",{name:"Venus"}).click();
+  await expect(page.locator('.your-scholar-scene-video[data-scene="venus"]')).toHaveAttribute("data-visible","true",{timeout:20_000});
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","0");
+  await page.screenshot({path:"test-artifacts/your-scholar-live-venus.png"});
+  expect(errors).toEqual([]);
+});
+
+test("build is fullscreen, uncluttered and completes when video fails; personalized reveal stays editable",async({page})=>{
+  const prefs=preferencesSchema.parse({...DEFAULT_PREFERENCES,dailyGoal:75,studyWindow:"Evening",personality:"exam",goals:["JEE Main"]});
+  const {state,errors}=await fixture(page,{...makeProfile(),status:"ANALYZING",stage:11,preferences:prefs,jobStartedAt:new Date().toISOString()});
+  await page.route(/\.mp4(?:\?.*)?$/,route=>route.abort());
+  await open(page);
+  await expect(page.locator(".your-scholar-build-backdrop")).toBeVisible();
+  await expect(page.locator(".your-scholar-stage")).toHaveCount(0);
+  await expect(page.locator(".your-scholar-header")).toHaveCount(0);
+  await expect(page.locator(".your-scholar-orbit-loader")).toHaveCount(1);
+  await expect(page.locator(".your-scholar-build-backdrop")).toHaveAttribute("data-video-fallback","true");
+  await page.screenshot({path:"test-artifacts/your-scholar-build-fallback.png"});
+  state.profile={...state.profile,status:"COMPLETED",result:{...buildBlueprint(prefs),ai:"fallback"}};
+  await expect(page.getByRole("heading",{name:"Welcome to your Scholar, Aisha."})).toBeVisible({timeout:10_000});
+  await expect(page.getByText("Built around how you learn.",{exact:true})).toBeVisible();
+  await expect(page.locator(".your-scholar-reveal")).toContainText("75");
+  expect(await page.locator(".your-scholar-reveal li").count()).toBeLessThanOrEqual(5);
+  await page.screenshot({path:"test-artifacts/your-scholar-cinematic-reveal.png"});
+  await page.getByRole("button",{name:"Adjust preferences"}).click();
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
+  await expect(page.getByRole("heading",{name:"Your studies, your starting point."})).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("ready startup handoff releases the UI even if its animations stop",async({page})=>{
+  const {errors}=await fixture(page);
+  await page.addInitScript(()=>{
+    const observer=new MutationObserver(()=>{
+      const gate=document.querySelector<HTMLElement>("[data-startup-mode]");
+      if(gate?.style.opacity==="0" && gate.style.pointerEvents==="none"){
+        gate.getAnimations({subtree:true}).forEach(animation=>animation.cancel());
+        (window as Window & {gateExitCancelled?:boolean}).gateExitCancelled=true;
+        observer.disconnect();
+      }
+    });
+    observer.observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:["style"]});
+  });
+  await open(page);
+  expect(await page.evaluate(()=>(window as Window & {gateExitCancelled?:boolean}).gateExitCancelled)).toBe(true);
+  await expect(page.locator("[data-startup-mode]")).toHaveCount(0);
+  await page.getByRole("button",{name:"Build my Scholar",exact:true}).click();
+  await expect(page.locator(".your-scholar")).toHaveAttribute("data-setup-stage","1");
+  expect(errors).toEqual([]);
 });

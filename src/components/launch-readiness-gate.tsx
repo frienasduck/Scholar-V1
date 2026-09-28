@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Check, GraduationCap } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
@@ -43,10 +43,13 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const configuredMode = useStore((state) => state.settings.startupLoadingMode);
-  const reduceMotion = useStore((state) => state.settings.reduceMotion);
+  const reduceMotionSetting = useStore((state) => state.settings.reduceMotion);
+  const systemReducedMotion = useReducedMotion();
+  const reduceMotion = reduceMotionSetting || Boolean(systemReducedMotion);
   const devMode = useStore((state) => state.devMode);
   const mode = normaliseStartupMode(configuredMode);
   const [visible, setVisible] = useState(true);
+  const [gateMounted, setGateMounted] = useState(true);
   const [progress, setProgress] = useState<StartupReadinessProgress>({
     ...INITIAL_PROGRESS,
     mode,
@@ -124,6 +127,14 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     });
   }, [result, router, visible]);
 
+  useEffect(() => {
+    if (visible) return;
+    // Readiness is authoritative: a missed motion exit must never hide or
+    // intercept the ready workspace. CSS fades independently; removal is bounded.
+    const timer = window.setTimeout(() => setGateMounted(false), reduceMotion ? 120 : 500);
+    return () => window.clearTimeout(timer);
+  }, [visible, reduceMotion]);
+
   const modeDefinition = STARTUP_MODE_DEFINITIONS[mode];
   const completedCount = progress.tasks.filter((task) =>
     ["completed", "failed", "skipped", "timed-out"].includes(task.status),
@@ -134,15 +145,12 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
       <ScholarStartupReadyContext.Provider value={!visible}>
         {children}
       </ScholarStartupReadyContext.Provider>
-      <AnimatePresence>
-        {visible && (
-          <motion.div
-            key="scholar-launch-gate"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0.12 : 0.5, ease: [0.22, 1, 0.36, 1] }}
+        {gateMounted && (
+          <div
+            style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transition: `opacity ${reduceMotion ? 120 : 500}ms cubic-bezier(0.22,1,0.36,1)` }}
             className="fixed inset-0 z-[10000] grid place-items-center overflow-hidden bg-[#03050a]"
             role="status"
+            aria-hidden={!visible}
             aria-live="polite"
             aria-label={progress.message}
             data-startup-mode={mode}
@@ -224,9 +232,8 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
                 </details>
               ) : null}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </>
   );
 }
