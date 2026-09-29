@@ -343,12 +343,14 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
           </kbd>
         </Button>
 
+        <div id="scholar-lam-dock" className="scholar-lam-dock hidden min-w-0 flex-1 items-center justify-center lg:flex" />
+
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <FeedbackButton />
           <NotificationCenter />
           {guestMode && <Badge variant="outline" className="scholar-top-status border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
           {devMode && <Badge variant="outline" className="scholar-top-status text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
-          <div className="scholar-top-status hidden xl:contents">
+          <div className="scholar-top-status hidden 2xl:contents">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-500">
             <Flame className="h-4 w-4" />
             <span className="text-sm font-semibold tabular-nums">{streak}</span>

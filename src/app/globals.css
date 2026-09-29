@@ -868,11 +868,21 @@ body.immersive-mode .scholar-mobile-nav-shell {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .2), 0 12px 38px rgb(0 0 0 / .34), 0 0 28px rgb(99 102 241 / .08);
 }
 
-/* Laptop-only positioning offset for closed LAM capsule to clear topbar search bar */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  .lam-system-root[data-state="closed"] .lam-docked-capsule {
-    margin-left: 140px;
-  }
+.scholar-lam-dock { max-width: 25rem; }
+.scholar-lam-dock .lam-docked-capsule {
+  width: 100% !important;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  margin-top: 0;
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .17), 0 5px 16px rgb(0 0 0 / .2);
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .scholar-top-search { display: none; }
+  .scholar-lam-dock { max-width: 19rem; }
 }
 .lam-system-root[data-state="listening"] { --lam-state-light: 103 232 249; }
 .lam-system-root[data-state="thinking"] { --lam-state-light: 196 181 253; }
