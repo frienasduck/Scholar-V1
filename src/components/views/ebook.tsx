@@ -298,12 +298,11 @@ export function EBookView() {
       const pending = JSON.parse(
         sessionStorage.getItem("scholar:ebook:target") ?? "null",
       ) as { bookId?: string; page?: number } | null;
-      if (
-        pending?.bookId === "maths-pt1" ||
-        pending?.bookId === "chemistry-pt1"
-      ) {
+      sessionStorage.removeItem("scholar:ebook:target");
+      if (pending?.bookId && BOOKS.some((book) => book.id === pending.bookId)) {
         setActiveBookId(pending.bookId);
-        if (pending.page) setActivePage(pending.page);
+        const book = BOOKS.find((item) => item.id === pending.bookId)!;
+        if (pending.page && pending.page >= 1 && pending.page <= book.totalPages) setActivePage(pending.page);
         setView("reader");
         localStorage.setItem("scholar:ebook:last-book", pending.bookId);
       } else if (

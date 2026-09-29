@@ -917,6 +917,7 @@ function loadPersistedState(): Partial<AppState> | null {
             ...(Number(guest.schema ?? 0) < 7 ? { elamEnabled: false, mobileLamMode: "off" as const } : {}),
             appearance: migrateAppearance(guest.state.settings?.appearance),
           },
+          tasks: Array.isArray(guest.state.tasks) ? guest.state.tasks : [],
         };
       }
     }
@@ -1013,6 +1014,7 @@ function savePersistedState(state: AppState) {
             jeeMode: false,
           },
           settings: state.settings,
+          tasks: state.tasks,
           devMode: false,
         },
         schema: 2,

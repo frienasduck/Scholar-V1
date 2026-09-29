@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { takeChapterDestination } from "@/lib/chapter-navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
@@ -138,6 +139,16 @@ export function MockExamView() {
     duration: 30, numQuestions: 10, pattern: "mixed",
     chapterIds: [], examType: "subject",
   }));
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const target = takeChapterDestination("mock-exam", scholarClass);
+      if (!target) return;
+      const subject = CURRICULUM.find((item) => item.id === target.subjectId);
+      if (!subject?.chapters.some((item) => item.id === target.chapterId)) return;
+      setConfig((current) => ({ ...current, subject: subject.name, subjectId: subject.id, chapterIds: [target.chapterId], examType: "chapter" }));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [CURRICULUM, scholarClass]);
   const [generating, setGenerating] = useState(false);
   const [reviewQs, setReviewQs] = useState<ExamQuestion[] | null>(null);
   const [generationError, setGenerationError] = useState(false);

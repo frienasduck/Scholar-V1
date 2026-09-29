@@ -31,7 +31,7 @@ import {
 const DashboardView = dynamic(() => import("@/components/views/dashboard").then((module) => module.DashboardView), { loading: ViewLoading });
 const GroupStudyView = dynamic(() => import("@/components/views/group-study").then((module) => module.GroupStudyView), { loading: ViewLoading });
 const IntelligenceView = dynamic(() => import("@/components/views/intelligence").then((module) => module.IntelligenceView), { loading: ViewLoading });
-const ChapterCommandCenter = dynamic(() => import("@/components/views/chapter-command").then((module) => module.ChapterCommandCenter), { loading: ViewLoading });
+const ChapterCommandCenter = dynamic(() => import("@/components/chapter-command/workspace").then((module) => module.ChapterCommandCenter), { loading: ViewLoading });
 const AITutorView = dynamic(() => import("@/components/views/ai-tutor").then((module) => module.AITutorView), { loading: ViewLoading });
 const LiveTutorView = dynamic(() => import("@/components/views/live-tutor").then((module) => module.LiveTutorView), { loading: ViewLoading });
 const AIToolsView = dynamic(() => import("@/components/views/ai-tools").then((module) => module.AIToolsView), { loading: ViewLoading });

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { practiceChapterId, takeChapterDestination } from "@/lib/chapter-navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { useLearningProfile } from "@/components/personalization/personalization-provider";
@@ -61,6 +62,20 @@ export function PracticeView() {
   const [showPdfReview, setShowPdfReview] = useState(false);
   const addXP = useStore((s) => s.addXP);
   const pushActivity = useStore((s) => s.pushActivity);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const target = takeChapterDestination("practice", scholarClass);
+      if (!target) return;
+      const chapter = practiceChapterId(target.subjectId, target.chapterId);
+      const list = target.subjectId === "physics" ? PHYSICS_CHAPTERS : target.subjectId === "maths" ? MATHS_CHAPTERS : [];
+      if (!chapter || !list.some((item) => item.id === chapter && !item.soon && item.questions.length > 0)) return;
+      setActiveSubject(target.subjectId as SubjectTab);
+      setActiveChapter(chapter);
+      setFilter(target.filter === "mcq" || target.filter === "subjective" ? target.filter : "all");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scholarClass]);
 
   if (scholarClass !== 11) {
     return (

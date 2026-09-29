@@ -265,8 +265,10 @@ export function getDerivationChapterIds(): Record<string, string> {
 const EBOOK_CHAPTER_MAP: Record<string, { startPage: number; endPage: number; title: string }> = {
   p2: { startPage: 1, endPage: 45, title: "Units and Measurement" },
   p3: { startPage: 46, endPage: 90, title: "Motion in a Straight Line" },
-  m1: { startPage: 1, endPage: 17, title: "Mathematics Part 1 · Sets" },
-  m2: { startPage: 18, endPage: 37, title: "Mathematics Part 1 · Relations and Functions" },
+  m1: { startPage: 1, endPage: 22, title: "Mathematics Part 1 · Sets" },
+  m2: { startPage: 23, endPage: 37, title: "Mathematics Part 1 · Relations and Functions" },
+  c1: { startPage: 1, endPage: 26, title: "Chemistry Part 1 · Some Basic Concepts of Chemistry" },
+  c2: { startPage: 27, endPage: 60, title: "Chemistry Part 1 · Structure of Atom" },
 };
 
 export function getChapterEbookData(chapterId: string): ChapterEbookData {

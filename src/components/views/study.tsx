@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { takeChapterDestination } from "@/lib/chapter-navigation";
 import { openMathsEbook } from "@/lib/ebook-navigation";
 import { setLamPageContext } from "@/lib/lam-context";
 
@@ -119,6 +120,20 @@ export function StudyView() {
   const [aiNotes, setAiNotes] = useState<string | null>(null);
   const [aiNotesLoading, setAiNotesLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "notes" | "practice" | "flashcards" | "ai">("overview");
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const target = takeChapterDestination("study", scholarClass);
+      if (!target) return;
+      const subject = CURRICULUM.find((item) => item.id === target.subjectId);
+      const index = subject?.chapters.findIndex((item) => item.id === target.chapterId) ?? -1;
+      if (index < 0) return;
+      setSubjectId(target.subjectId);
+      setChapterIdx(index);
+      setActiveTab("overview");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [CURRICULUM, scholarClass]);
 
   // Keep subjectId in sync with the active curriculum (Class 9 ↔ Class 11 switch).
   // Without this, switching class leaves subjectId pointing to a subject that no
