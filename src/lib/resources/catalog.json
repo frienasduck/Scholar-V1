@@ -1,0 +1,4084 @@
+[
+  {
+    "id": "builtin-055ef437e0811b6ec2da",
+    "title": "General Chemistry · Overview of bonding",
+    "description": "Wikibooks contributors notes · General Chemistry · Overview of bonding. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Overview_of_bonding",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Overview of bonding by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "3243137",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Overview_of_bonding?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "50dc65d32e9fefe37fbe671531a7c0df51aa226ecb3e432638c078ddb416d19d",
+    "lastCheckedAt": "2026-10-02T06:09:19.892Z"
+  },
+  {
+    "id": "builtin-0663ad55d4c39c69966e",
+    "title": "Oscillations — NCERT textbook",
+    "description": "NCERT textbook · Oscillations — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph206.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Oscillations — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p14"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.382Z"
+  },
+  {
+    "id": "builtin-0b094c2c87189a2f4f50",
+    "title": "Classification of Elements and Periodicity in Properties — NCERT textbook",
+    "description": "NCERT textbook · Classification of Elements and Periodicity in Properties — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech103.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Classification of Elements and Periodicity in Properties — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.567Z"
+  },
+  {
+    "id": "builtin-0b0fdeefd5194b16dfbc",
+    "title": "Work, Energy and Power — NCERT Exemplar",
+    "description": "NCERT question bank · Work, Energy and Power — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep306.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Work, Energy and Power — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.318Z"
+  },
+  {
+    "id": "builtin-0fc5c2112ef3e101feee",
+    "title": "gravity force lab basics",
+    "description": "PhET · University of Colorado Boulder simulation · gravity force lab basics. Open the original source for complete material.",
+    "resourceType": "simulation",
+    "sourceType": "curated",
+    "canonicalUrl": "https://phet.colorado.edu/en/simulations/gravity-force-lab-basics",
+    "publisher": "PhET · University of Colorado Boulder",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "gravity force lab basics — PhET · University of Colorado Boulder. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:17.223Z"
+  },
+  {
+    "id": "builtin-17bf8ce923d7cb2705e3",
+    "title": "Thermodynamics — NCERT textbook",
+    "description": "NCERT textbook · Thermodynamics — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph204.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Thermodynamics — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.024Z"
+  },
+  {
+    "id": "builtin-19a53c28b34011be29a5",
+    "title": "System of Particles and Rotational Motion — NCERT Exemplar",
+    "description": "NCERT question bank · System of Particles and Rotational Motion — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep307.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "System of Particles and Rotational Motion — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.311Z"
+  },
+  {
+    "id": "builtin-1dbbacd450a3ba65716d",
+    "title": "Thermodynamics — NCERT Exemplar",
+    "description": "NCERT question bank · Thermodynamics — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep312.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Thermodynamics — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.741Z"
+  },
+  {
+    "id": "builtin-1e50c0fa785c39f696c8",
+    "title": "Statistics — NCERT textbook",
+    "description": "NCERT textbook · Statistics — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh113.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Statistics — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m15"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.792Z"
+  },
+  {
+    "id": "builtin-1f43d6b7c19f8828db01",
+    "title": "Mechanical Properties of Fluids — NCERT textbook",
+    "description": "NCERT textbook · Mechanical Properties of Fluids — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph202.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Mechanical Properties of Fluids — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p10"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.972Z"
+  },
+  {
+    "id": "builtin-1f8dd3c7b46f6e62d2e3",
+    "title": "The s-Block Elements — NCERT Exemplar",
+    "description": "NCERT question bank · The s-Block Elements — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep510.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "The s-Block Elements — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c10"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:33.356Z"
+  },
+  {
+    "id": "builtin-2381a56dfcc1191a9712",
+    "title": "States of Matter — NCERT Exemplar",
+    "description": "NCERT question bank · States of Matter — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep505.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "States of Matter — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.753Z"
+  },
+  {
+    "id": "builtin-2440ba15e530e609f7b4",
+    "title": "Hydrogen — NCERT Exemplar",
+    "description": "NCERT question bank · Hydrogen — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep509.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Hydrogen — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c9"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:33.111Z"
+  },
+  {
+    "id": "builtin-245754ec72b977f23b61",
+    "title": "Introduction to Three Dimensional Geometry — NCERT Exemplar",
+    "description": "NCERT question bank · Introduction to Three Dimensional Geometry — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep212.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Introduction to Three Dimensional Geometry — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:43.107Z"
+  },
+  {
+    "id": "builtin-26690cc146da3e83fc49",
+    "title": "Classification of Elements and Periodicity in Properties — NCERT Exemplar",
+    "description": "NCERT question bank · Classification of Elements and Periodicity in Properties — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep503.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Classification of Elements and Periodicity in Properties — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.512Z"
+  },
+  {
+    "id": "builtin-273dbb55b15ebda0dfff",
+    "title": "Limits and Derivatives — NCERT Exemplar",
+    "description": "NCERT question bank · Limits and Derivatives — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep213.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Limits and Derivatives — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:43.491Z"
+  },
+  {
+    "id": "builtin-2794667c8ff838a8a826",
+    "title": "Algebra · Chapter 17",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 17. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_17",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 17 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m11"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4441766",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_17?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "4d0fb74b3c88cc2fd14e112e58367726f3052c5e300b41af6b95cad46877b431",
+    "lastCheckedAt": "2026-10-02T06:09:20.183Z"
+  },
+  {
+    "id": "builtin-2a5a6c44fca016cb2af2",
+    "title": "Probability — NCERT textbook",
+    "description": "NCERT textbook · Probability — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh114.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Probability — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m16"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.841Z"
+  },
+  {
+    "id": "builtin-2b618612ddf51a85ceb0",
+    "title": "Limits and Derivatives — NCERT textbook",
+    "description": "NCERT textbook · Limits and Derivatives — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh112.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Limits and Derivatives — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.728Z"
+  },
+  {
+    "id": "builtin-2ce41f6f0f994fa7ad5e",
+    "title": "Physics Study Guide · Basic Units",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Basic Units. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Basic Units by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4601500",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "593700958ba8b2ce3da01d8efe989e78ec2e914155de3b056bc95d1ebb7738bc",
+    "lastCheckedAt": "2026-10-02T06:09:19.155Z"
+  },
+  {
+    "id": "builtin-2fc55cbf34e2e5fc0882",
+    "title": "Straight Lines — NCERT textbook",
+    "description": "NCERT textbook · Straight Lines — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh109.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Straight Lines — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m10"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.462Z"
+  },
+  {
+    "id": "builtin-350d6ca56ced8dcf2233",
+    "title": "General Chemistry · Redox Reactions · Oxidation and Reduction equations",
+    "description": "Wikibooks contributors notes · General Chemistry · Redox Reactions · Oxidation and Reduction equations. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Redox Reactions · Oxidation and Reduction equations by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4649358",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "cbb0f37c0857de3502da9b8760976d0e3792e6973deff7500d13aeaf6a05dbf8",
+    "lastCheckedAt": "2026-10-02T06:09:19.918Z"
+  },
+  {
+    "id": "builtin-3853a144d90087da6553",
+    "title": "Sets — NCERT textbook",
+    "description": "NCERT textbook · Sets — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh101.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Sets — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.008Z"
+  },
+  {
+    "id": "builtin-39033f26f998b9fa7d82",
+    "title": "Physics Study Guide · Periodic Motion",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Periodic Motion. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Periodic_Motion",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Periodic Motion by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p14"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "3253746",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Periodic_Motion?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "035bb1021fb02617e2347b45064ddb406b817bf6c3f0c875fa07f905ae3a84d5",
+    "lastCheckedAt": "2026-10-02T06:09:19.472Z"
+  },
+  {
+    "id": "builtin-39886a864fc54d771969",
+    "title": "General Chemistry · Chemical Equilibria · Equilibrium",
+    "description": "Wikibooks contributors notes · General Chemistry · Chemical Equilibria · Equilibrium. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Chemical Equilibria · Equilibrium by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4656780",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "4ac8135508bb4dd88adfc01fa71805f8379606a5f4a529541b520883bd318748",
+    "lastCheckedAt": "2026-10-02T06:09:19.952Z"
+  },
+  {
+    "id": "builtin-4637c7afb1da01e14ac6",
+    "title": "Sequences and Series — NCERT textbook",
+    "description": "NCERT textbook · Sequences and Series — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh108.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Sequences and Series — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m9"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.511Z"
+  },
+  {
+    "id": "builtin-467aa37cbc4d262c97ba",
+    "title": "Complex Numbers and Quadratic Equations — NCERT Exemplar",
+    "description": "NCERT question bank · Complex Numbers and Quadratic Equations — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep205.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Complex Numbers and Quadratic Equations — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:38.243Z"
+  },
+  {
+    "id": "builtin-4b337b73fbb091de6df5",
+    "title": "Principle of Mathematical Induction — NCERT Exemplar",
+    "description": "NCERT question bank · Principle of Mathematical Induction — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep204.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Principle of Mathematical Induction — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:38.170Z"
+  },
+  {
+    "id": "builtin-4c6cc92c0c35cbec9936",
+    "title": "Algebra · Chapter 15",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 15. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_15",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 15 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m9"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4482898",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_15?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "791d837802b0ffc9ac5d749bdb7ed47271ba5184e7fa8d9e38d29182977e991c",
+    "lastCheckedAt": "2026-10-02T06:09:20.111Z"
+  },
+  {
+    "id": "builtin-4da94bc422efef081596",
+    "title": "Motion in a Plane — NCERT Exemplar",
+    "description": "NCERT question bank · Motion in a Plane — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep304.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Motion in a Plane — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.085Z"
+  },
+  {
+    "id": "builtin-4e7f33a4d15d8c0988f8",
+    "title": "Motion in a Plane — NCERT textbook",
+    "description": "NCERT textbook · Motion in a Plane — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph103.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Motion in a Plane — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.690Z"
+  },
+  {
+    "id": "builtin-537c65bed013e7922464",
+    "title": "Physics Study Guide · Momentum",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Momentum. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Momentum by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      },
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4660423",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "66a986e1290dda835c8758c589cd4ebcb8691da94ab95510260164e39f1b121f",
+    "lastCheckedAt": "2026-10-02T06:09:19.340Z"
+  },
+  {
+    "id": "builtin-53c28e09399f121153c5",
+    "title": "Physical World — NCERT Exemplar",
+    "description": "NCERT question bank · Physical World — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep301.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Physical World — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.974Z"
+  },
+  {
+    "id": "builtin-5449a775bcc0db0be117",
+    "title": "forces and motion basics",
+    "description": "PhET · University of Colorado Boulder simulation · forces and motion basics. Open the original source for complete material.",
+    "resourceType": "simulation",
+    "sourceType": "curated",
+    "canonicalUrl": "https://phet.colorado.edu/en/simulations/forces-and-motion-basics",
+    "publisher": "PhET · University of Colorado Boulder",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "forces and motion basics — PhET · University of Colorado Boulder. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:15.942Z"
+  },
+  {
+    "id": "builtin-59b27a44d6f024506644",
+    "title": "Sequences and Series — NCERT Exemplar",
+    "description": "NCERT question bank · Sequences and Series — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep209.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Sequences and Series — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m9"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:39.395Z"
+  },
+  {
+    "id": "builtin-5a09a7da45a3a3df13ce",
+    "title": "Thermal Properties of Matter — NCERT textbook",
+    "description": "NCERT textbook · Thermal Properties of Matter — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph203.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Thermal Properties of Matter — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p11"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.981Z"
+  },
+  {
+    "id": "builtin-5a40abaa404d0a328ce0",
+    "title": "Mechanical Properties of Fluids — NCERT Exemplar",
+    "description": "NCERT question bank · Mechanical Properties of Fluids — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep310.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Mechanical Properties of Fluids — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p10"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.771Z"
+  },
+  {
+    "id": "builtin-5b495246a2e327e71caa",
+    "title": "Motion in a Straight Line — NCERT Exemplar",
+    "description": "NCERT question bank · Motion in a Straight Line — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep303.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Motion in a Straight Line — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.030Z"
+  },
+  {
+    "id": "builtin-5ba2ee51509d0a4de0cb",
+    "title": "Kinetic Theory — NCERT textbook",
+    "description": "NCERT textbook · Kinetic Theory — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph205.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Kinetic Theory — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.129Z"
+  },
+  {
+    "id": "builtin-63004e4763f72e4bcbd5",
+    "title": "Work, Energy and Power — NCERT textbook",
+    "description": "NCERT textbook · Work, Energy and Power — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph105.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Work, Energy and Power — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.016Z"
+  },
+  {
+    "id": "builtin-639fb983ac638443d415",
+    "title": "Linear Inequalities — NCERT textbook",
+    "description": "NCERT textbook · Linear Inequalities — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh105.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Linear Inequalities — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.239Z"
+  },
+  {
+    "id": "builtin-65d028af801fa95ad341",
+    "title": "Rotational motion — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-10-rotational-motion/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Rotational motion — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:13.074Z"
+  },
+  {
+    "id": "builtin-65e4e0b036a14202ee27",
+    "title": "Algebra · Chapter 14",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 14. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_14",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 14 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4448254",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_14?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "ab3b252a6854e83e79ded658057eb5c3a0027ec5419a882b9bdbb64e2d9081c6",
+    "lastCheckedAt": "2026-10-02T06:09:20.107Z"
+  },
+  {
+    "id": "builtin-67aadc47aa464564ddff",
+    "title": "The p-Block Elements (Group 13 & 14) — NCERT Exemplar",
+    "description": "NCERT question bank · The p-Block Elements (Group 13 & 14) — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep511.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "The p-Block Elements (Group 13 & 14) — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c11"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:33.284Z"
+  },
+  {
+    "id": "builtin-69942eb2140ddf425bcb",
+    "title": "balancing chemical equations",
+    "description": "PhET · University of Colorado Boulder simulation · balancing chemical equations. Open the original source for complete material.",
+    "resourceType": "simulation",
+    "sourceType": "curated",
+    "canonicalUrl": "https://phet.colorado.edu/en/simulations/balancing-chemical-equations",
+    "publisher": "PhET · University of Colorado Boulder",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "balancing chemical equations — PhET · University of Colorado Boulder. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:17.358Z"
+  },
+  {
+    "id": "builtin-6ce314505b5e94b773e3",
+    "title": "Chemistry — CBSE 2026–27 syllabus",
+    "description": "CBSE Academic syllabus · Chemistry — CBSE 2026–27 syllabus. Open the original source for complete material.",
+    "resourceType": "syllabus",
+    "sourceType": "curated",
+    "canonicalUrl": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Chemistry_SecP2_2026-27.pdf",
+    "publisher": "CBSE Academic",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Chemistry — CBSE 2026–27 syllabus — CBSE Academic. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": ""
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:16.241Z"
+  },
+  {
+    "id": "builtin-6d9732566da20880016c",
+    "title": "Chemical Bonding and Molecular Structure — NCERT Exemplar",
+    "description": "NCERT question bank · Chemical Bonding and Molecular Structure — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep504.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Chemical Bonding and Molecular Structure — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.666Z"
+  },
+  {
+    "id": "builtin-6eadb0eb1710382d763f",
+    "title": "Permutations and Combinations — NCERT Exemplar",
+    "description": "NCERT question bank · Permutations and Combinations — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep207.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Permutations and Combinations — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:38.932Z"
+  },
+  {
+    "id": "builtin-728bb521235ac9e13c3e",
+    "title": "Algebra · Chapter 20",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 20. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_20",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 20 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4440791",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_20?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "8cdfd94ec4ac7f3e812157de9f7d0d126983bdb033b9e53fd1aeeedc5bf8d566",
+    "lastCheckedAt": "2026-10-02T06:09:20.273Z"
+  },
+  {
+    "id": "builtin-75447ae4a1b034dbe054",
+    "title": "Relations and Functions — NCERT textbook",
+    "description": "NCERT textbook · Relations and Functions — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh102.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Relations and Functions — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.020Z"
+  },
+  {
+    "id": "builtin-75a5b8c0494ff7922d0c",
+    "title": "Gravitation — NCERT Exemplar",
+    "description": "NCERT question bank · Gravitation — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep308.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Gravitation — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.363Z"
+  },
+  {
+    "id": "builtin-77cd9cc44791e585c071",
+    "title": "Equilibrium — NCERT textbook",
+    "description": "NCERT textbook · Equilibrium — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech106.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Equilibrium — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.708Z"
+  },
+  {
+    "id": "builtin-77e12adb906db7444122",
+    "title": "Physics Study Guide · Normal Force and Friction",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Normal Force and Friction. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Normal_Force_and_Friction",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Normal Force and Friction by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4660436",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Normal_Force_and_Friction?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "458d10f6149f754879ce874e3914acad1c78c0a4eb8a9442196756a81ef0beab",
+    "lastCheckedAt": "2026-10-02T06:09:19.139Z"
+  },
+  {
+    "id": "builtin-790541e10dd96ea7b5d6",
+    "title": "Trigonometric Functions — NCERT textbook",
+    "description": "NCERT textbook · Trigonometric Functions — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh103.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Trigonometric Functions — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.126Z"
+  },
+  {
+    "id": "builtin-79eebc89b70e5a74cbdb",
+    "title": "Structure of Atom — NCERT textbook",
+    "description": "NCERT textbook · Structure of Atom — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech102.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Structure of Atom — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.433Z"
+  },
+  {
+    "id": "builtin-7c9c19741ad73e0ecfca",
+    "title": "Probability — NCERT Exemplar",
+    "description": "NCERT question bank · Probability — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep216.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Probability — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m16"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:45.190Z"
+  },
+  {
+    "id": "builtin-7da8568045cb00d1391b",
+    "title": "Hydrocarbons — NCERT textbook",
+    "description": "NCERT textbook · Hydrocarbons — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech203.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Hydrocarbons — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.924Z"
+  },
+  {
+    "id": "builtin-7e5de002ba7afdfab209",
+    "title": "General Chemistry · Limiting Reactants and Percent Yield",
+    "description": "Wikibooks contributors notes · General Chemistry · Limiting Reactants and Percent Yield. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Limiting_Reactants_and_Percent_Yield",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Limiting Reactants and Percent Yield by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4647708",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Limiting_Reactants_and_Percent_Yield?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "f3206b0db8916d6da763c7b1469265dd56f31b75f0fa8463e27ecc08f65fe06f",
+    "lastCheckedAt": "2026-10-02T06:09:19.764Z"
+  },
+  {
+    "id": "builtin-7e8f190ced2441d12528",
+    "title": "Newton's laws — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-2-newtons-laws/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Newton's laws — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:12.737Z"
+  },
+  {
+    "id": "builtin-7f0a516263c4444bc0d5",
+    "title": "Conic Sections — NCERT textbook",
+    "description": "NCERT textbook · Conic Sections — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh110.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Conic Sections — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m11"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.510Z"
+  },
+  {
+    "id": "builtin-7f357633305dd7854942",
+    "title": "Physics — CBSE 2026–27 syllabus",
+    "description": "CBSE Academic syllabus · Physics — CBSE 2026–27 syllabus. Open the original source for complete material.",
+    "resourceType": "syllabus",
+    "sourceType": "curated",
+    "canonicalUrl": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Physics_SecP2_2026-27.pdf",
+    "publisher": "CBSE Academic",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Physics — CBSE 2026–27 syllabus — CBSE Academic. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": ""
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:15.676Z"
+  },
+  {
+    "id": "builtin-829c96611f965f479dd1",
+    "title": "Structure of Atom — NCERT Exemplar",
+    "description": "NCERT question bank · Structure of Atom — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep502.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Structure of Atom — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.542Z"
+  },
+  {
+    "id": "builtin-836ea4d7fce4d4cf7f98",
+    "title": "Oscillations — NCERT Exemplar",
+    "description": "NCERT question bank · Oscillations — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep314.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Oscillations — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p14"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.128Z"
+  },
+  {
+    "id": "builtin-84ce1a64cbb778eb4eaf",
+    "title": "Sets — NCERT Exemplar",
+    "description": "NCERT question bank · Sets — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep201.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Sets — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:35.559Z"
+  },
+  {
+    "id": "builtin-85c990f7ef0975e0e101",
+    "title": "Trigonometric Functions — NCERT Exemplar",
+    "description": "NCERT question bank · Trigonometric Functions — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep203.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Trigonometric Functions — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:37.473Z"
+  },
+  {
+    "id": "builtin-889461b9dd28dc9cd54a",
+    "title": "Redox Reactions — NCERT Exemplar",
+    "description": "NCERT question bank · Redox Reactions — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep508.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Redox Reactions — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:33.012Z"
+  },
+  {
+    "id": "builtin-8932a1bfd15e91b049cb",
+    "title": "Mechanical Properties of Solids — NCERT textbook",
+    "description": "NCERT textbook · Mechanical Properties of Solids — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph201.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Mechanical Properties of Solids — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p9"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.797Z"
+  },
+  {
+    "id": "builtin-8ca6699f2213aaa34f26",
+    "title": "Physics Study Guide · Fluids",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Fluids. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Fluids",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Fluids by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p10"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4408318",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Fluids?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "c0f342c552a981f38818e021772f702cbe5afcdfe68bb700561e3a3d0421e124",
+    "lastCheckedAt": "2026-10-02T06:09:19.507Z"
+  },
+  {
+    "id": "builtin-90a3f14edb16b249acaf",
+    "title": "Conic Sections — NCERT Exemplar",
+    "description": "NCERT question bank · Conic Sections — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep211.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Conic Sections — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m11"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:42.050Z"
+  },
+  {
+    "id": "builtin-915dbfaa98164942d921",
+    "title": "Circular motion — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-3-circular-motion/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Circular motion — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p4"
+      },
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:12.728Z"
+  },
+  {
+    "id": "builtin-94d0496c8d5d2f31cb5f",
+    "title": "Physics Study Guide · Force",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Force. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Force by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4520172",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "bd37a007d1406f4cb467d9f1d58b2d3fa17535b8727433c2855ce19b39574fef",
+    "lastCheckedAt": "2026-10-02T06:09:19.199Z"
+  },
+  {
+    "id": "builtin-9774d045082537590736",
+    "title": "energy skate park basics",
+    "description": "PhET · University of Colorado Boulder simulation · energy skate park basics. Open the original source for complete material.",
+    "resourceType": "simulation",
+    "sourceType": "curated",
+    "canonicalUrl": "https://phet.colorado.edu/en/simulations/energy-skate-park-basics",
+    "publisher": "PhET · University of Colorado Boulder",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "energy skate park basics — PhET · University of Colorado Boulder. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:16.530Z"
+  },
+  {
+    "id": "builtin-98cf28cf1e556eba136d",
+    "title": "Physics Study Guide · Energy",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Energy. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Energy",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Energy by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4660427",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Energy?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "50dd655517a5ba208c1e0897eb597ac4612f985bef7e0ba27f831f77d8d7ca49",
+    "lastCheckedAt": "2026-10-02T06:09:19.325Z"
+  },
+  {
+    "id": "builtin-99a6a8526ca0e5c3b4fc",
+    "title": "Straight Lines — NCERT Exemplar",
+    "description": "NCERT question bank · Straight Lines — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep210.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Straight Lines — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m10"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:40.091Z"
+  },
+  {
+    "id": "builtin-9a3e68669e603675bba3",
+    "title": "Hydrocarbons — NCERT Exemplar",
+    "description": "NCERT question bank · Hydrocarbons — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep513.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Hydrocarbons — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:34.027Z"
+  },
+  {
+    "id": "builtin-9a9f117f2238f6e53f79",
+    "title": "Relations and Functions — NCERT Exemplar",
+    "description": "NCERT question bank · Relations and Functions — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep202.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Relations and Functions — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:36.688Z"
+  },
+  {
+    "id": "builtin-9f26d48e417e3891d43a",
+    "title": "Momentum and impulse — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-5-momentum-and-impulse/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Momentum and impulse — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      },
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:12.938Z"
+  },
+  {
+    "id": "builtin-a00aa08f35c275f26d8c",
+    "title": "Chemical Bonding and Molecular Structure — NCERT textbook",
+    "description": "NCERT textbook · Chemical Bonding and Molecular Structure — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech104.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Chemical Bonding and Molecular Structure — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.638Z"
+  },
+  {
+    "id": "builtin-a5634affcb7144869412",
+    "title": "Algebra · Chapter 24",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 24. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_24",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 24 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4463308",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_24?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "8b8571b4d740b652f9ceea6e91407a0450cfaf4ad39f38a125dba850d0d4b64e",
+    "lastCheckedAt": "2026-10-02T06:09:20.252Z"
+  },
+  {
+    "id": "builtin-a800266547234a7a05f0",
+    "title": "Laws of Motion — NCERT textbook",
+    "description": "NCERT textbook · Laws of Motion — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph104.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Laws of Motion — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.724Z"
+  },
+  {
+    "id": "builtin-abb5a9bcec8b4c1df96e",
+    "title": "Gravitation — NCERT textbook",
+    "description": "NCERT textbook · Gravitation — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph107.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Gravitation — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.681Z"
+  },
+  {
+    "id": "builtin-ae62d27d715cc446d5a8",
+    "title": "Introduction to Three Dimensional Geometry — NCERT textbook",
+    "description": "NCERT textbook · Introduction to Three Dimensional Geometry — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh111.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Introduction to Three Dimensional Geometry — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.686Z"
+  },
+  {
+    "id": "builtin-affffab1e58bfde32f22",
+    "title": "Maths — CBSE 2026–27 syllabus",
+    "description": "CBSE Academic syllabus · Maths — CBSE 2026–27 syllabus. Open the original source for complete material.",
+    "resourceType": "syllabus",
+    "sourceType": "curated",
+    "canonicalUrl": "https://cbseacademic.nic.in/web_material/CurriculumMain27/SecPart2/Maths_SecP2_2026-27.pdf",
+    "publisher": "CBSE Academic",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Maths — CBSE 2026–27 syllabus — CBSE Academic. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": ""
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:16.433Z"
+  },
+  {
+    "id": "builtin-b0edd6b13a596b0668ac",
+    "title": "Units and Measurements — NCERT textbook",
+    "description": "NCERT textbook · Units and Measurements — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph101.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Units and Measurements — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:01:21.315Z"
+  },
+  {
+    "id": "builtin-b10cdd75a76dcc07da44",
+    "title": "Physics Study Guide · Linear Motion",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Linear Motion. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Linear Motion by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p3"
+      },
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4608584",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "acd237a1638bca75737cc49ef5dc52bffec610a10c465b90a85fa1c9a17850a1",
+    "lastCheckedAt": "2026-10-02T06:09:19.187Z"
+  },
+  {
+    "id": "builtin-b11121f16e7262455d88",
+    "title": "Algebra · Chapter 16",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 16. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_16",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 16 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m7"
+      },
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m16"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4449886",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_16?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "191707d57681b49bc3b9c2b1ec787c05abf92fd063f555cde476cee968778faa",
+    "lastCheckedAt": "2026-10-02T06:09:20.117Z"
+  },
+  {
+    "id": "builtin-b2ef55478e6877db08fb",
+    "title": "Waves — NCERT textbook",
+    "description": "NCERT textbook · Waves — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph207.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Waves — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p15"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.359Z"
+  },
+  {
+    "id": "builtin-b34e68dfabb0b12c57c9",
+    "title": "Kinetic Theory — NCERT Exemplar",
+    "description": "NCERT question bank · Kinetic Theory — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep313.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Kinetic Theory — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p13"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.056Z"
+  },
+  {
+    "id": "builtin-b3a8e604f9807d3cbe3f",
+    "title": "Some Basic Concepts of Chemistry — NCERT textbook",
+    "description": "NCERT textbook · Some Basic Concepts of Chemistry — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech101.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Some Basic Concepts of Chemistry — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.306Z"
+  },
+  {
+    "id": "builtin-b68966c1f444e79741c7",
+    "title": "Statistics — NCERT Exemplar",
+    "description": "NCERT question bank · Statistics — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep215.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Statistics — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m15"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:44.944Z"
+  },
+  {
+    "id": "builtin-b98c782afe327fb4a96f",
+    "title": "Permutations and Combinations — NCERT textbook",
+    "description": "NCERT textbook · Permutations and Combinations — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh106.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Permutations and Combinations — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.269Z"
+  },
+  {
+    "id": "builtin-ba01ea502f32246e4715",
+    "title": "Units and Measurements — NCERT Exemplar",
+    "description": "NCERT question bank · Units and Measurements — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep302.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Units and Measurements — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.017Z"
+  },
+  {
+    "id": "builtin-ba883c363964d7af9d70",
+    "title": "Thermodynamics — NCERT textbook",
+    "description": "NCERT textbook · Thermodynamics — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech105.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Thermodynamics — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.639Z"
+  },
+  {
+    "id": "builtin-bbaddfd50d3d5f0ffcc1",
+    "title": "Binomial Theorem — NCERT textbook",
+    "description": "NCERT textbook · Binomial Theorem — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh107.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Binomial Theorem — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.423Z"
+  },
+  {
+    "id": "builtin-bbe3b7c50f6c29bd0f43",
+    "title": "Mechanical Properties of Solids — NCERT Exemplar",
+    "description": "NCERT question bank · Mechanical Properties of Solids — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep309.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Mechanical Properties of Solids — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p9"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.777Z"
+  },
+  {
+    "id": "builtin-c3ff7ac5a8be8fa3e20c",
+    "title": "Laws of Motion — NCERT Exemplar",
+    "description": "NCERT question bank · Laws of Motion — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep305.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Laws of Motion — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.264Z"
+  },
+  {
+    "id": "builtin-c5d54686f4d9b726b500",
+    "title": "Motion in a Straight Line — NCERT textbook",
+    "description": "NCERT textbook · Motion in a Straight Line — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph102.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Motion in a Straight Line — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p3"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.568Z"
+  },
+  {
+    "id": "builtin-c654091ca030d51a747c",
+    "title": "Redox Reactions — NCERT textbook",
+    "description": "NCERT textbook · Redox Reactions — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech201.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Redox Reactions — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.787Z"
+  },
+  {
+    "id": "builtin-c7ab4052df5573c1f885",
+    "title": "Waves — NCERT Exemplar",
+    "description": "NCERT question bank · Waves — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep315.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Waves — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p15"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.191Z"
+  },
+  {
+    "id": "builtin-ca67ea39f466451cd975",
+    "title": "Organic Chemistry – Some Basic Principles and Techniques — NCERT textbook",
+    "description": "NCERT textbook · Organic Chemistry – Some Basic Principles and Techniques — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kech202.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Organic Chemistry – Some Basic Principles and Techniques — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:29.868Z"
+  },
+  {
+    "id": "builtin-ccc5d52c31e9f75b847f",
+    "title": "System of Particles and Rotational Motion — NCERT textbook",
+    "description": "NCERT textbook · System of Particles and Rotational Motion — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/keph106.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "System of Particles and Rotational Motion — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:28.422Z"
+  },
+  {
+    "id": "builtin-cd83455696b6ffb957a4",
+    "title": "Organic Chemistry – Some Basic Principles and Techniques — NCERT Exemplar",
+    "description": "NCERT question bank · Organic Chemistry – Some Basic Principles and Techniques — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep512.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Organic Chemistry – Some Basic Principles and Techniques — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:33.468Z"
+  },
+  {
+    "id": "builtin-d0ee8a47b06fbf577ffc",
+    "title": "Physics Study Guide · Torque",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Torque. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Torque",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Torque by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4659690",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Torque?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "bb00e10932a5d380df67096181d6e7a3bfbd3f28269a753b86a8b277ba3b5a87",
+    "lastCheckedAt": "2026-10-02T06:09:19.464Z"
+  },
+  {
+    "id": "builtin-d1160035377d1b389b1c",
+    "title": "General Chemistry · Stoichiometry",
+    "description": "Wikibooks contributors notes · General Chemistry · Stoichiometry. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Stoichiometry by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "3778984",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "8b62527148df03fac516c42bb1461f0324cfcb9f67a964e79721ec8b215da9cd",
+    "lastCheckedAt": "2026-10-02T06:09:19.759Z"
+  },
+  {
+    "id": "builtin-d1435cf2f36d557cca2e",
+    "title": "General Chemistry · Gas Laws",
+    "description": "Wikibooks contributors notes · General Chemistry · Gas Laws. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Gas Laws by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4628040",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "13cffd88c99d14f171ee103dea467a7cb21be34093d46303714283da2b879713",
+    "lastCheckedAt": "2026-10-02T06:09:19.965Z"
+  },
+  {
+    "id": "builtin-d7b16910a1bb5d1a4813",
+    "title": "Complex Numbers and Quadratic Equations — NCERT textbook",
+    "description": "NCERT textbook · Complex Numbers and Quadratic Equations — NCERT textbook. Open the original source for complete material.",
+    "resourceType": "textbook",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/textbook/pdf/kemh104.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Complex Numbers and Quadratic Equations — NCERT textbook — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:30.208Z"
+  },
+  {
+    "id": "builtin-d7deafa389ec9b2e42d8",
+    "title": "Physics Study Guide · Waves",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Waves. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Waves by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p15"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4660422",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "5b801bdd0b93696412bc9659e046b20ca71fba409b3fcfccf77596046a16d11c",
+    "lastCheckedAt": "2026-10-02T06:09:19.497Z"
+  },
+  {
+    "id": "builtin-d7fac0448b737c44d8eb",
+    "title": "Thermal Properties of Matter — NCERT Exemplar",
+    "description": "NCERT question bank · Thermal Properties of Matter — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/physics/keep311.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Thermal Properties of Matter — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p11"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:31.743Z"
+  },
+  {
+    "id": "builtin-da5d74be9bbdff79e546",
+    "title": "Some Basic Concepts of Chemistry — NCERT Exemplar",
+    "description": "NCERT question bank · Some Basic Concepts of Chemistry — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep501.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Some Basic Concepts of Chemistry — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c1"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.256Z"
+  },
+  {
+    "id": "builtin-db7cc3c21731d9b3cf8a",
+    "title": "Physics Study Guide · Thermodynamics",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Thermodynamics. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Thermodynamics by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p12"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4408322",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "37bbf407d03027a88d5762c6d4fb0c3b6d5f0cd4a02c4956c5642cb0689d97dc",
+    "lastCheckedAt": "2026-10-02T06:09:19.720Z"
+  },
+  {
+    "id": "builtin-e2ff85880fd2cb6752a9",
+    "title": "Energy conservation — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-8-potential-energy-and-energy-conservation/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Energy conservation — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:13.560Z"
+  },
+  {
+    "id": "builtin-e522bef89668712871a0",
+    "title": "Physics Study Guide · Work",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Work. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Work",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Work by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4660429",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Work?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "baf3c10d2c81c2403165f1d582882db254ebab3785d2e435ea4f89c909842a05",
+    "lastCheckedAt": "2026-10-02T06:09:19.344Z"
+  },
+  {
+    "id": "builtin-e56096432856cb98a6b1",
+    "title": "Binomial Theorem — NCERT Exemplar",
+    "description": "NCERT question bank · Binomial Theorem — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep208.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Binomial Theorem — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:39.151Z"
+  },
+  {
+    "id": "builtin-ee2acf8c21a9bd40d378",
+    "title": "molecule shapes",
+    "description": "PhET · University of Colorado Boulder simulation · molecule shapes. Open the original source for complete material.",
+    "resourceType": "simulation",
+    "sourceType": "curated",
+    "canonicalUrl": "https://phet.colorado.edu/en/simulations/molecule-shapes",
+    "publisher": "PhET · University of Colorado Boulder",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "molecule shapes — PhET · University of Colorado Boulder. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:17.188Z"
+  },
+  {
+    "id": "builtin-ef25513dc9e82a97a782",
+    "title": "Equilibrium — NCERT Exemplar",
+    "description": "NCERT question bank · Equilibrium — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep507.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Equilibrium — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.892Z"
+  },
+  {
+    "id": "builtin-f0c735e71c0868ae9f72",
+    "title": "Mathematical Reasoning — NCERT Exemplar",
+    "description": "NCERT question bank · Mathematical Reasoning — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep214.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Mathematical Reasoning — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m14"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:44.043Z"
+  },
+  {
+    "id": "builtin-f18b723d695c00c78a0f",
+    "title": "Kinetic energy and work — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-7-kinetic-energy-and-work/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Kinetic energy and work — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:12.938Z"
+  },
+  {
+    "id": "builtin-f254d08b5f4eb311c835",
+    "title": "Angular momentum — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-11-angular-momentum/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Angular momentum — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p7"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:13.073Z"
+  },
+  {
+    "id": "builtin-f299ceb1f14f30177289",
+    "title": "Physics Study Guide · Gravity",
+    "description": "Wikibooks contributors notes · Physics Study Guide · Gravity. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Gravity",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Physics Study Guide · Gravity by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p8"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4660431",
+      "historyUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Gravity?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "acb424de84388443238e3ef4b5841cff4e66698e3acddc1aa3cddb44f2d67904",
+    "lastCheckedAt": "2026-10-02T06:09:19.358Z"
+  },
+  {
+    "id": "builtin-f3548997880aca4b2958",
+    "title": "Kinematics — lecture videos and worked examples",
+    "description": "MIT 8.01SC teaching materials. Undergraduate supplemental explanation, not a CBSE paper. Watch at the original source; no transcript or media copy is claimed.",
+    "resourceType": "video",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/pages/week-1-kinematics/",
+    "publisher": "MIT OpenCourseWare",
+    "language": "en",
+    "licenseType": "CC-BY-NC-SA · LINK_ONLY",
+    "licenseUrl": "https://ocw.mit.edu/pages/privacy-and-terms-of-use/",
+    "attributionText": "Kinematics — lecture videos and worked examples — MIT OpenCourseWare. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "trusted",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p3"
+      },
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "physics",
+        "chapterId": "p4"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:29:12.673Z"
+  },
+  {
+    "id": "builtin-f615c33c2381f0efb703",
+    "title": "Thermodynamics — NCERT Exemplar",
+    "description": "NCERT question bank · Thermodynamics — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep506.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Thermodynamics — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:32.893Z"
+  },
+  {
+    "id": "builtin-f69851ce613a0bfaf65a",
+    "title": "Linear Inequalities — NCERT Exemplar",
+    "description": "NCERT question bank · Linear Inequalities — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/mathematics/keep206.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Linear Inequalities — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:38.738Z"
+  },
+  {
+    "id": "builtin-f879c43d612b02d68860",
+    "title": "Algebra · Chapter 4",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 4. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_4",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 4 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m6"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4441798",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_4?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "c898886bd5f44b0a9a0de3f50e427c483b84590571579a6560a837ebcffd2ae0",
+    "lastCheckedAt": "2026-10-02T06:09:20.007Z"
+  },
+  {
+    "id": "builtin-f96aba21b9524150c412",
+    "title": "Algebra · Chapter 9",
+    "description": "Wikibooks contributors notes · Algebra · Chapter 9. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_9",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "Algebra · Chapter 9 by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "maths",
+        "chapterId": "m5"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4447250",
+      "historyUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_9?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "a6bf503d0c103d34da1c4b3899d7b1992f6a6549e635d5aadd27fbc7cd739531",
+    "lastCheckedAt": "2026-10-02T06:09:20.048Z"
+  },
+  {
+    "id": "builtin-fb44e7e1873034265225",
+    "title": "Environmental Chemistry — NCERT Exemplar",
+    "description": "NCERT question bank · Environmental Chemistry — NCERT Exemplar. Open the original source for complete material.",
+    "resourceType": "question-bank",
+    "sourceType": "curated",
+    "canonicalUrl": "https://ncert.nic.in/pdf/publication/exemplarproblem/classXI/chemistry/keep514.pdf",
+    "publisher": "NCERT",
+    "language": "en",
+    "licenseType": "LINK_ONLY",
+    "licenseUrl": null,
+    "attributionText": "Environmental Chemistry — NCERT Exemplar — NCERT. Copyright belongs to its publisher; Scholar links to the original and does not reproduce it.",
+    "canStoreCopy": false,
+    "canGenerateDerivatives": false,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "LINK_ONLY",
+    "qualityStatus": "verified-official",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c14"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus."
+    },
+    "lastCheckedAt": "2026-10-02T05:28:35.210Z"
+  },
+  {
+    "id": "builtin-fc7ab349d18f91d58b6a",
+    "title": "General Chemistry · Atomic Structure · History of Atomic Structure",
+    "description": "Wikibooks contributors notes · General Chemistry · Atomic Structure · History of Atomic Structure. Open the original source for complete material.",
+    "resourceType": "notes",
+    "sourceType": "curated",
+    "canonicalUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure",
+    "publisher": "Wikibooks contributors",
+    "language": "en",
+    "licenseType": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attributionText": "General Chemistry · Atomic Structure · History of Atomic Structure by Wikibooks contributors. Text licensed CC BY-SA 4.0. Source/history linked; Scholar formatting and derived aids are adaptations under the same license.",
+    "canStoreCopy": true,
+    "canGenerateDerivatives": true,
+    "visibility": "GLOBAL",
+    "ownerUserId": null,
+    "state": "READY",
+    "qualityStatus": "supplemental",
+    "mappings": [
+      {
+        "curriculumId": "cbse",
+        "grade": 11,
+        "subjectId": "chemistry",
+        "chapterId": "c2"
+      }
+    ],
+    "sourceMetadata": {
+      "review": "Curated for Scholar's existing Class 11 chapter taxonomy; verify against your school's current syllabus.",
+      "revision": "4603894",
+      "historyUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure?action=history",
+      "ingestionMode": "TEXT",
+      "modifications": "Navigation removed; headings and formula alt text retained. Source text not academically certified by Scholar."
+    },
+    "contentHash": "4c332d23dea65af727705f01ad9475b9d92644ccb6de96c351da22e1ba698179",
+    "lastCheckedAt": "2026-10-02T06:09:19.775Z"
+  }
+]

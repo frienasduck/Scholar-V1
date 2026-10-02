@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { retrieve } from "@/lib/resources/service";
+import { retrievalPrompt } from "@/lib/resources/engine";
+import { citationFooter, citationStream, groundStructured } from "@/lib/resources/grounding";
 import {
   generateScholarGroqJSON,
   generateScholarGroqText,
@@ -95,8 +98,16 @@ export async function POST(request: NextRequest) {
     scholarClass: body.scholarClass,
     jeeMode: body.jeeMode,
   });
+  let resourceSources: Awaited<ReturnType<typeof retrieve>> = [];
+  if (body.resourceContext) {
+    try {
+      resourceSources = await retrieve(sessionUser.id, { q: body.messages.filter(m => m.role === "user").at(-1)?.content.slice(0, 2000), grade: body.scholarClass, subjectId: body.resourceContext.subjectId, chapterId: body.resourceContext.chapterId }, body.resourceContext.resourceIds);
+      if (body.resourceContext.resourceIds?.length && !resourceSources.length) return errorResponse("This source has no permitted, readable text. Open the original source or wait for indexing; Scholar will not invent a source-grounded answer.", 409, "RESOURCE_TEXT_UNAVAILABLE");
+    } catch { return errorResponse("The resource index could not be safely retrieved. Please retry.", 503, "RESOURCE_INDEX_UNAVAILABLE"); }
+  }
+  const grounding = body.resourceContext ? retrievalPrompt(resourceSources) : "";
   const messages: ScholarGroqMessage[] = [
-    { role: "system", content: systemPrompt + (body.usage === "quiz_generation" ? "\nFor quiz generation: stay strictly within the requested chapter. Solve each question before constructing four distinct options. Include exactly one correct option matching the answer and explanation. State constants and rounding assumptions in numerical questions. Recalculate arithmetic and units; replace any question with inconsistent choices. Return only polished final explanations, never draft self-corrections or a nearest-option guess." : "") },
+    { role: "system", content: systemPrompt + "\n" + grounding + (body.usage === "quiz_generation" ? "\nFor quiz generation: stay strictly within the requested chapter. Solve each question before constructing four distinct options. Include exactly one correct option matching the answer and explanation. State constants and rounding assumptions in numerical questions. Recalculate arithmetic and units; replace any question with inconsistent choices. Return only polished final explanations, never draft self-corrections or a nearest-option guess." : "") },
     ...body.messages
       .filter((message) => message.role !== "system")
       .slice(-24)
@@ -130,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
   }
   if (wantsStream) {
-    return streamResponse(messages, body.temperature, signal, reservationKey, sessionUser.id, custom);
+    return streamResponse(messages, body.temperature, signal, reservationKey, sessionUser.id, custom, resourceSources);
   }
 
   try {
@@ -148,7 +159,8 @@ export async function POST(request: NextRequest) {
           }
           await recordUsage(reservationKey, sessionUser.id);
           if (monthlyReservationKey) await commitMonthlyUsage(sessionUser.id, monthlyReservationKey);
-          return NextResponse.json({ ok: true, data: validated?.success ? validated.data : value });
+          const grounded = groundStructured(validated?.success ? validated.data : value, resourceSources);
+          return NextResponse.json({ ok: true, data: grounded.data, citations: grounded.citations });
         } catch (error) {
           if (attempt || signal.aborted || !(error instanceof AIProviderError) || !["AI_SCHEMA_MISMATCH", "GROQ_INVALID_JSON"].includes(error.code)) throw error;
           repair ||= "Return valid JSON only. Escape newlines and backslashes correctly, close all brackets, and include every requested field.";
@@ -166,7 +178,8 @@ export async function POST(request: NextRequest) {
     const text = custom ? await completeCustom(messages, body.temperature, signal, custom) : await generateScholarGroqText(generation);
     await recordUsage(reservationKey, sessionUser.id);
     if (monthlyReservationKey) await commitMonthlyUsage(sessionUser.id, monthlyReservationKey);
-    return NextResponse.json({ ok: true, text });
+    const grounded = citationFooter(text, resourceSources);
+    return NextResponse.json({ ok: true, text: grounded.text, citations: grounded.citations });
   } catch (error) {
     await releaseUsage(reservationKey, sessionUser.id);
     if (monthlyReservationKey) await releaseMonthlyUsage(sessionUser.id, monthlyReservationKey);
@@ -226,6 +239,7 @@ function streamResponse(
   reservationKey: string | undefined,
   userId: string,
   custom: UserAISettings | null,
+  resourceSources: Awaited<ReturnType<typeof retrieve>> = [],
 ): Response {
   const encoder = new TextEncoder();
   const disconnected = new AbortController();
@@ -244,8 +258,15 @@ function streamResponse(
       };
 
       try {
-        if (custom) await streamCustom(messages, temperature, streamSignal, custom, (delta) => send({ delta }));
-        else await streamScholarGroqText({ messages, temperature, signal: streamSignal, maxTokens: 4_000 }, (delta) => send({ delta }));
+        let full = "";
+        const citationFilter = citationStream(resourceSources.map(s => s.citation.id));
+        const onDelta = (value: string) => { const delta = citationFilter.push(value); full += delta; if (delta) send({ delta }); };
+        if (custom) await streamCustom(messages, temperature, streamSignal, custom, onDelta);
+        else await streamScholarGroqText({ messages, temperature, signal: streamSignal, maxTokens: 4_000 }, onDelta);
+        const tail = citationFilter.finish(); full += tail; if (tail) send({ delta: tail });
+        const grounded = citationFooter(full, resourceSources);
+        if (grounded.text.startsWith(full) && grounded.text.length > full.length) send({ delta: grounded.text.slice(full.length) });
+        send({ citations: grounded.citations });
         // Usage is recorded only after the stream completes without error, so
         // aborted or failed generations never consume daily quota.
         await recordUsage(reservationKey, userId);

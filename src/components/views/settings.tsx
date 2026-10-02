@@ -81,6 +81,45 @@ import { CustomCommandsPanel } from "@/components/reminders/custom-commands-pane
 import { UserAISettings } from "@/components/ai/user-ai-settings";
 
 const SCHOLAR_UPDATE_LOG = [
+  {
+    version: "LAMTube AI Video",
+    date: "2 Oct 2026",
+    title: "Visual lessons, inside one unified LAMTube",
+    items: [
+      "Create chapter-aware narrated visual lessons with animated diagrams, equations, graphs and captions; choose lesson length, teaching style, pace, aspect ratio and an available English voice.",
+      "AI Video, its generator, advanced settings, library and player now share LAMTube's existing navigation, atmospheric background, typography and glass controls. The older /nigtube address remains compatible.",
+      "Seek, change playback speed, bookmark moments and answer optional interactive checks. Ask LAM about the current scene, save notes, organize private lessons, duplicate drafts, repair scenes or regenerate narration.",
+      "Generation uses resumable stages, private audio, ownership checks and success-based monthly accounting: Free accounts receive 10 full generations per month; verified Plus access has no monthly generation cap.",
+      "A clearly labelled silent preview is available without live generation. Real generation requires configured providers, a reachable database and the new database migration; optional background scheduling is not enabled automatically.",
+      "Reduced-motion support, lightweight timestamp-driven visuals, mobile layouts and readable controls preserve responsiveness without expensive glass filters over playback.",
+    ],
+  },
+  {
+    version: "Exam Ready · Early Beta",
+    date: "2 Oct 2026",
+    title: "An adaptive exam workspace with a clearer mission path",
+    items: [
+      "Exam Ready brings exam setup, confidence checks, a guided preparation path, chapter-aware LAM teaching, practice, recall, final review and mock exams into one workspace.",
+      "Notes, formulas, mistakes, supporting resources, focus timers and progress stay beside the lesson. Guest preparations remain local and do not pretend to have live AI or verified readiness evidence.",
+      "The workspace now fills the available screen beneath Scholar's header, with the sidebar open or closed. The menu marks it Early Beta and shows a dismissible warning about bugs and free access during beta.",
+      "Exam deadlines suggest a realistic study budget; manual choices are preserved and daily study blocks update the total. Invalid schedules are rejected.",
+      "Missions cover chapter concepts in order, keep completed work intact and adjust remaining time without restarting the same teaching repeatedly. Legacy plans retain their saved progress while missing coverage metadata is repaired.",
+      "Chapter-specific offline guidance replaces repeated unrelated demonstrations. Answer feedback uses readable paragraphs and explicit math formatting, with improved mobile tools and checkpoint review before advancement.",
+    ],
+  },
+  {
+    version: "Resource Intelligence & chapter guidance",
+    date: "2 Oct 2026",
+    title: "Real study sources, with the familiar Resources interface",
+    items: [
+      "The shared resource catalog includes 126 real sources: 28 attributed readable snapshots and 98 original-source links, with publisher, rights and chapter mappings rather than invented resource counts.",
+      "Restored the familiar Resources video background, study-library hero, tabs, filters and compact cards while keeping the imported catalog and new backend. Favorites, recent items and downloads work across library pages.",
+      "Private PDFs, pasted text and notes feed a shared ingestion and processing pipeline with source search, reading, attribution, extractive study aids and source-grounded LAM support. Restricted sources remain links rather than unauthorized copies.",
+      "Custom E-Book imports now integrate with resource processing, duplicate detection and private ownership checks, while retaining existing upload limits and onboarding allocation rules.",
+      "Chapter Command Centre guidance connects study, questions, revision, resources and LAM to the selected chapter across Scholar; related study screens reuse the same source context.",
+      "Added focused security and regression coverage plus implementation reports. Database migrations are included in this update but must be applied separately before database-backed features can operate.",
+    ],
+  },
   { version: "Public authentication", date: "27 Sep 2026", title: "A calmer welcome, open to everyone", items: ["Email sign-in and account creation are now public, with a focused Liquid Glass form and no learning questions before authentication.", "Google sign-in is available when configured. Existing accounts connect Google explicitly in Settings; matching email alone never merges accounts.", "Email verification and password reset use single-use links when the sender is configured. Your Scholar, Guest Mode, Developer Access and Free/Plus permissions stay separate."] },
   {
     version: "Scholar Plus system",
@@ -100,7 +139,7 @@ const SCHOLAR_UPDATE_LOG = [
     items: [
       "The shared mobile shell now reserves safe space for bottom navigation and responds to the software keyboard instead of covering active controls.",
       "Dialogs, drawers, toolbars and dense tab rows stay reachable on small phones and tablets without creating page-wide horizontal scrolling.",
-      "Dashboard, Files, E-Book, Quiz, Flashcards, Notes, Focus, Nigtube, Music, Settings, LAM AI and Group Study received targeted responsive repairs.",
+      "Dashboard, Files, E-Book, Quiz, Flashcards, Notes, Focus, LAMTube, Music, Settings, LAM AI and Group Study received targeted responsive repairs.",
       "The existing desktop interface, private-beta rules, Guest Mode, Group Study permissions, Follow Host and explicit microphone/camera consent remain unchanged.",
     ],
   },
@@ -181,8 +220,8 @@ const SCHOLAR_UPDATE_LOG = [
     date: "7 Aug 2026",
     title: "Scholar Plus Experience & Monetization Update",
     items: [
-      "Nigtube pre-roll: free students see a 10-second liquid-glass Scholar Plus promotion before videos; Scholar Plus members go straight to playback.",
-      "Ad-free Nigtube & Study Music for Scholar Plus — no video ads, no spoken promotions.",
+      "LAMTube pre-roll: free students see a 10-second liquid-glass Scholar Plus promotion before videos; Scholar Plus members go straight to playback.",
+      "Ad-free LAMTube & Study Music for Scholar Plus — no video ads, no spoken promotions.",
       "Study Music spoken promotion: a UK female voice (Microsoft preferred) welcomes free students once per session before the first track.",
       "Achievements, Mind Map and Concept Galaxy are now visible Scholar Plus benefits — clicking any of them opens Scholar Plus.",
       "Generation limits reworked: quiz and slideshow usage is now enforced server-side and recorded only after a successful generation, so failed requests never burn daily quota.",

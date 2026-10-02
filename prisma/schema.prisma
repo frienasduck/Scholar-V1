@@ -60,6 +60,54 @@ model User {
   learningProfile       LearningProfile?
   oauthAccounts         OAuthAccount[]
   authActionTokens      AuthActionToken[]
+  studyResources        StudyResource[]
+  examReadySessions     ExamReadySession[]
+  aiVideos              AIVideo[]
+}
+
+// Private, resumable timeline generations. Audio follows the existing byte-storage pattern.
+model AIVideo {
+  id         String   @id
+  userId     String
+  requestKey String   @unique
+  revision   Int      @default(0)
+  state      Json
+  leaseToken String?
+  leaseUntil DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audio      AIVideoAudio[]
+
+  @@index([userId, updatedAt])
+  @@index([leaseUntil])
+}
+
+model AIVideoAudio {
+  id        String   @id
+  videoId   String
+  digest    String
+  bytes     Bytes
+  duration  Float
+  createdAt DateTime @default(now())
+  video     AIVideo  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, digest])
+}
+
+// One bounded, versioned aggregate: plans/evidence/notes share an atomic revision.
+model ExamReadySession {
+  id         String   @id
+  userId     String
+  revision   Int      @default(0)
+  state      Json
+  leaseUntil DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
 }
 
 model OAuthAccount {
@@ -253,9 +301,113 @@ model CustomEbook {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource         StudyResource?
 
   @@index([userId, deletedAt, createdAt])
   @@unique([userId, importKey])
+}
+
+// Shared metadata/index for curated sources and account-private imports.
+// Original PDF bytes stay in the existing CustomEbook storage adapter.
+model StudyResource {
+  id                    String   @id @default(cuid())
+  identityKey           String   @unique
+  ownerUserId           String?
+  ebookId               String?  @unique
+  visibility            String   @default("PRIVATE")
+  title                 String
+  description           String   @default("")
+  resourceType          String
+  sourceType            String
+  canonicalUrl          String?
+  publisher             String
+  author                String?
+  language              String   @default("en")
+  licenseType           String   @default("PRIVATE_USER_UPLOAD")
+  licenseUrl            String?
+  attributionText       String
+  canStoreCopy          Boolean  @default(false)
+  canGenerateDerivatives Boolean @default(false)
+  contentHash           String?
+  state                 String   @default("DISCOVERED")
+  qualityStatus         String   @default("user-provided")
+  confidence            Float    @default(0)
+  sourceMetadata        Json     @default("{}")
+  ingestionVersion      Int      @default(1)
+  lastCheckedAt         DateTime?
+  deletedAt             DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  owner                 User?    @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  ebook                 CustomEbook? @relation(fields: [ebookId], references: [id], onDelete: Cascade)
+  mappings              ResourceMapping[]
+  chunks                ResourceChunk[]
+  artifacts             ResourceArtifact[]
+  job                   ResourceJob?
+
+  @@index([ownerUserId, deletedAt, updatedAt])
+  @@index([visibility, state, deletedAt])
+  @@index([contentHash])
+}
+
+model ResourceMapping {
+  id           String @id @default(cuid())
+  resourceId   String
+  curriculumId String @default("cbse")
+  grade        Int
+  subjectId    String
+  chapterId    String @default("")
+  topicId      String @default("")
+  relevance    Float  @default(1)
+  resource     StudyResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, curriculumId, grade, subjectId, chapterId, topicId])
+  @@index([curriculumId, grade, subjectId, chapterId])
+}
+
+model ResourceChunk {
+  id         String @id @default(cuid())
+  resourceId String
+  ordinal    Int
+  heading    String
+  text       String
+  page       Int?
+  timestamp  Int?
+  sourceUrl  String?
+  resource   StudyResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, ordinal])
+}
+
+model ResourceArtifact {
+  id         String @id @default(cuid())
+  resourceId String
+  type       String
+  sourceHash String
+  content    Json
+  references Json
+  generator  String
+  quality    String @default("source-derived")
+  createdAt  DateTime @default(now())
+  resource   StudyResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, type, sourceHash])
+}
+
+model ResourceJob {
+  id         String @id @default(cuid())
+  resourceId String @unique
+  state      String @default("QUEUED")
+  stage      String @default("EXTRACTING")
+  attempts   Int @default(0)
+  leaseToken String?
+  leaseUntil DateTime?
+  errorCode  String?
+  nextRunAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  resource   StudyResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([state, nextRunAt])
 }
 
 model CoinLedger {

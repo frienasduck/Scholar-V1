@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/lib/notifications/notification-api";
 import { useStore } from "@/lib/store";
+import { ResourceShelf } from "@/components/resources/resource-library";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { navigateTo } from "@/lib/nav-event";
 import { cn } from "@/lib/utils";
@@ -245,6 +246,7 @@ export function IntelligenceView() {
       </div>
 
       {/* Stat cards */}
+      <ResourceShelf grade={scholarClass} title="Recommended learning sources"/>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={Brain} label="Mastery estimate" value={snapshot.mastery.length ? `${masteryAvg}%` : "—"} sub={snapshot.mastery.length ? `${snapshot.mastery.length} topics tracked` : "Complete a quiz to begin"} accent="#6366f1" />
         <StatCard icon={AlertTriangle} label="Weak topics" value={snapshot.weakTopics.length} sub={snapshot.weakTopics.length ? `${snapshot.weakTopics.filter((w) => w.severity === "severe").length} severe` : "Radar is clear"} accent="#f97316" />

@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { takeChapterDestination } from "@/lib/chapter-navigation";
+import { readExamReadyMock, readExamReadyRun, saveExamReadyRun, returnFromExamReadyMock, type MockHandoff } from "@/lib/exam-ready/mock-adapter";
+import { examRequest } from "@/components/exam-ready/use-session";
 import { motion, AnimatePresence } from "framer-motion";
 import { askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
@@ -78,6 +80,17 @@ interface MockResult {
   at: number;
 }
 
+interface ExamReadyRun {
+  questions: ExamQuestion[] | null;
+  review: ExamQuestion[] | null;
+  responses: Record<string, string>;
+  startedAt: number;
+  index: number;
+  active: boolean;
+  result: MockResult | null;
+  config: ExamConfig;
+}
+
 interface GeneratedExamQuestion {
   id: string;
   question: string;
@@ -123,6 +136,7 @@ const LEADERBOARD_SEED = [
 // ============================================================================
 export function MockExamView() {
   const access = useScholarAccess();
+  const [examReady,setExamReady]=useState<MockHandoff|null>(null);
   const mastery = useStore((s) => s.mastery);
   const scholarClass = useStore((s) => s.user.scholarClass);
   const CURRICULUM = useCurriculum();
@@ -141,6 +155,8 @@ export function MockExamView() {
   }));
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
+      const handoff=readExamReadyMock(scholarClass,access.user?.id);
+      if(handoff){setExamReady(handoff);setReviewQs(null);const sub=CURRICULUM.find(s=>s.id===handoff.subjectId);setConfig(current=>({...current,subject:sub?.name??current.subject,subjectId:handoff.subjectId,chapterIds:handoff.chapterIds,duration:handoff.duration,numQuestions:handoff.numQuestions,pattern:handoff.pattern,examType:"chapter"}));return;}
       const target = takeChapterDestination("mock-exam", scholarClass);
       if (!target) return;
       const subject = CURRICULUM.find((item) => item.id === target.subjectId);
@@ -148,7 +164,7 @@ export function MockExamView() {
       setConfig((current) => ({ ...current, subject: subject.name, subjectId: subject.id, chapterIds: [target.chapterId], examType: "chapter" }));
     });
     return () => cancelAnimationFrame(frame);
-  }, [CURRICULUM, scholarClass]);
+  }, [CURRICULUM, scholarClass, access.user?.id]);
   const [generating, setGenerating] = useState(false);
   const [reviewQs, setReviewQs] = useState<ExamQuestion[] | null>(null);
   const [generationError, setGenerationError] = useState(false);
@@ -167,7 +183,31 @@ export function MockExamView() {
   const [examStartedAt, setExamStartedAt] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [evaluating, setEvaluating] = useState(false);
+  const [evaluationError, setEvaluationError] = useState("");
+  const submittingRef = useRef(false);
+  const [restoredRun, setRestoredRun] = useState("");
   const [result, setResult] = useState<MockResult | null>(null);
+
+  useEffect(() => {
+    if (!examReady?.owner) return;
+    const frame = requestAnimationFrame(() => {
+      const saved = readExamReadyRun<ExamReadyRun>(examReady);
+      if (saved && Array.isArray(saved.questions) && saved.questions.length <= 20 && saved.config?.duration > 0 && saved.startedAt > 0 && saved.startedAt <= Date.now() && saved.responses && typeof saved.responses === "object") {
+        setExamQs(saved.questions); setResponses(saved.responses); setExamIdx(Math.min(Math.max(0, saved.index), saved.questions.length - 1));
+        setExamStartedAt(saved.startedAt); setConfig(saved.config); setResult(saved.result); setExamActive(saved.active && !saved.result);
+        setRemaining(Math.max(0, saved.config.duration * 60 - Math.floor((Date.now() - saved.startedAt) / 1000)));
+      } else if (saved && Array.isArray(saved.review) && saved.review.length <= 20) {
+        setReviewQs(saved.review); setConfig(saved.config);
+      }
+      setRestoredRun(examReady.id);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [examReady]);
+
+  useEffect(() => {
+    if (!examReady || restoredRun !== examReady.id) return;
+    saveExamReadyRun(examReady, {questions:examQs, review:reviewQs, responses, startedAt:examStartedAt, index:examIdx, active:examActive || evaluating, result, config});
+  }, [examReady, restoredRun, examQs, reviewQs, responses, examStartedAt, examIdx, examActive, evaluating, result, config]);
 
   const [history, setHistory] = useState<MockResult[]>([]);
   useEffect(() => {
@@ -218,6 +258,7 @@ export function MockExamView() {
     setGenerating(true);
     setGenerationError(false);
     try {
+      if(examReady){const value=await examRequest(`/api/exam-ready/${examReady.id}/mock`,{type:"generate"});setReviewQs(value.questions);setConfig(current=>({...current,duration:value.config.duration,numQuestions:value.questions.length}));setReviewSource("ai");completeBackgroundTask(backgroundTaskId,"Exam Ready paper is ready for review.");return;}
       const types = buildTypeDistribution(config.numQuestions, config.pattern);
       const typeCount = {
         mcq: types.filter((type) => type === "mcq").length,
@@ -294,6 +335,7 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
   };
 
   const generateLocalPaper = () => {
+    if(examReady){toast.error("Use the Exam Ready paper to preserve your material restrictions and preparation evidence.");return;}
     const subject = CURRICULUM.find((item) => item.id === config.subjectId) ?? CURRICULUM[0];
     if (!subject) return;
     const selected = config.examType === "chapter" && config.chapterIds.length > 0
@@ -344,6 +386,7 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
   };
 
   const generateEbookPaper = async () => {
+    if(examReady){toast.error("Use the Exam Ready paper for this guided preparation. Imported materials are included through your source settings.");return;}
     setEbookGenerating(true);
     setGenerationError(false);
     try {
@@ -388,6 +431,7 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
     setExamActive(true);
     setExamStartedAt(Date.now());
     setResult(null);
+    setEvaluationError("");
     setReviewQs(null);
     profileSetJSON(scholarClass, "mock-exam-pending-review", []);
     toast.success(`Paper started! ${reviewQs.length} questions • ${config.duration} min`, { description: "Good luck — focus and pace yourself." });
@@ -402,12 +446,16 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
 
   // ===== Auto-evaluate =====
   const endExam = async (autoSubmit = false) => {
+    if (submittingRef.current || !examQs) return;
+    submittingRef.current = true;
+    setEvaluationError("");
     if (timerRef.current) clearInterval(timerRef.current);
     setExamActive(false);
     setEvaluating(true);
     if (autoSubmit) toast("Time's up — auto-submitting your paper…");
     try {
       if (!examQs) return;
+      if(examReady){const value=await examRequest(`/api/exam-ready/${examReady.id}/mock`,{type:"submit",responses});const marked=examQs.map(q=>{const verdict=value.marked.find((x:{id:string})=>x.id===q.id);return {...q,userAnswer:responses[q.id]??"",aiMarkedScore:verdict?.correct?q.marks:0,aiFeedback:verdict?.feedback??"Unanswered"};});const total=marked.reduce((n,q)=>n+q.marks,0),score=marked.reduce((n,q)=>n+(q.aiMarkedScore??0),0);const mr:MockResult={id:crypto.randomUUID(),config,questions:marked,score,total,percentage:Math.round(score/Math.max(1,total)*100),timeSpent:Math.floor((Date.now()-examStartedAt)/1000),predictedRank:0,band:"Exam Ready evidence",at:Date.now()};setResult(mr);const next=[mr,...history].slice(0,30);setHistory(next);saveHistory(scholarClass,next);toast.success("Mock evaluated. Return to Exam Ready for your preparation analysis.");return;}
       // MCQs are objectively marked. For descriptive, ask AI to mark against the model answer.
       const descriptive = examQs.filter((q) => q.type !== "mcq" && responses[q.id]?.trim());
       let aiMarks: Record<string, { score: number; feedback: string }> = {};
@@ -463,22 +511,27 @@ Return strict JSON: {"results":[{"index":number,"score":number,"feedback":string
       if (percentage >= 90) toast.success(`Outstanding! ${percentage}% • Rank ~${predictedRank}`, { description: "+15 XP · +5 coins" });
       else if (percentage >= 60) toast.success(`Mock complete: ${percentage}% • Rank ~${predictedRank}`, { description: "+15 XP · +5 coins" });
       else toast(`Mock complete: ${percentage}%`, { description: "Review your mistakes and try again — every mock counts." });
-    } catch {
-      toast.error("Could not evaluate paper.");
-    } finally { setEvaluating(false); }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not evaluate paper. Your answers are retained.";
+      setEvaluationError(message);
+      toast.error(message);
+    } finally { submittingRef.current = false; setEvaluating(false); }
   };
 
   // Timer
+  const endExamRef = useRef(endExam);
+  useEffect(() => { endExamRef.current = endExam; });
   useEffect(() => {
     if (!examActive) return;
-    timerRef.current = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) { endExam(true); return 0; }
-        return r - 1;
-      });
-    }, 1000);
+    const tick = () => {
+      const seconds = Math.max(0, config.duration * 60 - Math.floor((Date.now() - examStartedAt) / 1000));
+      setRemaining(seconds);
+      if (seconds === 0) void endExamRef.current(true);
+    };
+    tick();
+    timerRef.current = setInterval(tick, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [examActive, examQs]);
+  }, [examActive, examQs, config.duration, examStartedAt]);
 
   const fmtTime = (s: number) => {
     const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60;
@@ -502,7 +555,7 @@ Return strict JSON: {"results":[{"index":number,"score":number,"feedback":string
 **Date:** ${new Date(res.at).toLocaleString()}
 **Score:** ${res.score} / ${res.total} (${res.percentage}%) — ${res.band}
 **Time Spent:** ${fmtTime(res.timeSpent)}
-**Predicted Class Rank:** ~${res.predictedRank} of 60
+${res.band==="Exam Ready evidence"?"**Evaluation:** Practice evidence; no exam score or rank prediction.":`**Predicted Class Rank:** ~${res.predictedRank} of 60`}
 
 ## Configuration
 - Difficulty: ${res.config.difficulty}
@@ -519,12 +572,13 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
 **Feedback:** ${q.aiFeedback ?? "—"}`).join("\n\n")}
 
 > Generated by Scholar Mock Exam Center.`);
-    exportPDF({ title: `Mock Exam — ${res.config.subject}`, subtitle: `${res.percentage}% • ${res.band} • Rank ~${res.predictedRank}`, bodyHtml, accent: SUBJECT_OPTS.find((s) => s.id === res.config.subjectId)?.accent ?? "#6366f1", scholarClass });
+    exportPDF({ title: `Mock Exam — ${res.config.subject}`, subtitle: `${res.percentage}% • ${res.band}${res.band==="Exam Ready evidence"?"":` • Rank ~${res.predictedRank}`}`, bodyHtml, accent: SUBJECT_OPTS.find((s) => s.id === res.config.subjectId)?.accent ?? "#6366f1", scholarClass });
     toast.success("Exporting mock exam report…");
   };
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+      {examReady&&<div className="relative z-20 p-4 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border-b border-white/15"><span>Scholar Exam Ready · Your saved chapters, materials and format determine this paper.</span><Button onClick={()=>returnFromExamReadyMock(examReady.id)}>Return to Exam Ready</Button></div>}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .me-font-serif { font-family: 'Instrument Serif', serif; }
@@ -555,8 +609,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
             Mock Exam <em className="text-indigo-300">Center</em>
           </h1>
           <p className="text-white/70 mt-3 max-w-2xl">
-            Generate full CBSE-style mock papers, take them under timed conditions, get AI auto-evaluation
-            of descriptive answers, view rank prediction, and compete on the leaderboard.
+            {examReady ? "Check your preparation under timed conditions. Your saved chapters, format and source restrictions determine the paper. Return to Exam Ready to review real answer evidence, not predicted ranks." : "Generate full CBSE-style mock papers, take them under timed conditions, get AI auto-evaluation of descriptive answers, view rank prediction, and compete on the leaderboard."}
           </p>
         </motion.div>
 
@@ -579,7 +632,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
           <TabsList className="me-glass bg-transparent h-auto p-1 flex flex-wrap gap-1">
             <TabsTrigger value="generate" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Generate</TabsTrigger>
             <TabsTrigger value="past" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Past Mocks</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Leaderboard</TabsTrigger>
+            {!examReady && <TabsTrigger value="leaderboard" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Leaderboard</TabsTrigger>}
           </TabsList>
 
           {/* ===== GENERATE ===== */}
@@ -588,7 +641,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
             <div className="me-glass rounded-2xl p-5 md:p-6">
               <h3 className="text-white font-semibold flex items-center gap-2 mb-4"><Settings className="h-4 w-4 text-indigo-300" /> Exam Configuration</h3>
 
-              <div className="grid md:grid-cols-2 gap-5">
+              {!examReady ? <div className="grid md:grid-cols-2 gap-5">
                 {/* Subject */}
                 <div>
                   <label className="text-xs uppercase tracking-wider text-white/50 mb-2 block">Subject</label>
@@ -706,16 +759,16 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                     {config.chapterIds.length === 0 && <p className="text-[10px] text-amber-300/70 mt-1">⚠ Select at least 1 chapter, or switch to "Full Subject" scope.</p>}
                   </div>
                 )}
-              </div>
+              </div> : <p className="text-sm leading-6 text-white/70">This paper uses your saved preparation settings. Change chapters, available time or materials in Exam Ready before generating. All {examReady.chapterIds.length} selected chapters are included, across subjects when selected.</p>}
 
               <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/10">
                 <div className="min-w-0 text-xs text-white/50">
                   {config.numQuestions} questions • {config.duration} min • {config.difficulty} • {config.pattern}
                   {config.examType === "chapter" && config.chapterIds.length > 0 && <span className="text-indigo-300"> • {config.chapterIds.length} chapter{config.chapterIds.length === 1 ? "" : "s"}</span>}
                   {config.examType === "jee" && <span className="text-fuchsia-300"> • JEE mode</span>}
-                  {access.monthlyUsage ? <span className="mt-1 block text-cyan-200/80">{access.monthlyUsage.mockExams.remaining} of {access.monthlyUsage.mockExams.limit} AI generations remaining this month</span> : null}
+                  {!examReady && access.monthlyUsage ? <span className="mt-1 block text-cyan-200/80">{access.monthlyUsage.mockExams.remaining} of {access.monthlyUsage.mockExams.limit} AI generations remaining this month</span> : null}
                 </div>
-                <Button className="ml-3 bg-indigo-500 hover:bg-indigo-600 text-white" disabled={generating || access.monthlyUsage?.mockExams.remaining === 0 || (config.examType === "chapter" && config.chapterIds.length === 0)} onClick={generatePaper}>
+                <Button className="ml-3 bg-indigo-500 hover:bg-indigo-600 text-white" disabled={generating || (!examReady && access.monthlyUsage?.mockExams.remaining === 0) || (config.examType === "chapter" && config.chapterIds.length === 0)} onClick={generatePaper}>
                   {generating ? (
                     <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><Sparkles className="h-4 w-4 mr-2" /></motion.span> Generating…</>
                   ) : (
@@ -723,9 +776,9 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   )}
                 </Button>
               </div>
-              {access.monthlyUsage?.mockExams.remaining === 0 ? <button type="button" className="mt-3 text-xs font-semibold text-cyan-200 underline underline-offset-4" onClick={() => openScholarPlus({ source: "mock-exam", feature: "limits" })}>Monthly AI generation limit reached · View Scholar Plus</button> : null}
+              {!examReady && access.monthlyUsage?.mockExams.remaining === 0 ? <button type="button" className="mt-3 text-xs font-semibold text-cyan-200 underline underline-offset-4" onClick={() => openScholarPlus({ source: "mock-exam", feature: "limits" })}>Monthly AI generation limit reached · View Scholar Plus</button> : null}
 
-              <div className="mt-5 rounded-2xl border border-violet-300/20 bg-violet-500/[0.07] p-4">
+              {!examReady && <div className="mt-5 rounded-2xl border border-violet-300/20 bg-violet-500/[0.07] p-4">
                 <div className="mb-3 flex items-start gap-3">
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-400/15 text-violet-200"><BookOpen className="h-4 w-4" /></div>
                   <div><h4 className="text-sm font-semibold text-white">E-Book Question Mock Test</h4><p className="mt-0.5 text-xs leading-5 text-white/50">Build a paper only from questions printed in the bundled Mathematics and Chemistry e-books. No question wording is generated or rewritten.</p></div>
@@ -739,15 +792,15 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   <select aria-label="E-book mock exam book" value={ebookBookId} onChange={(event) => { const id = event.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((book) => book.id === id)?.chapters[0]?.id ?? ""); }} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>
                   <select aria-label="E-book mock exam chapter" value={ebookChapterId} onChange={(event) => setEbookChapterId(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>
                 </div>}
-              </div>
+              </div>}
 
               {generationError && (
                 <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
                   <p className="text-sm font-semibold text-amber-200">AI paper generation is unavailable.</p>
-                  <p className="text-xs text-white/60 mt-1">Generate using Scholar's local question bank.</p>
+                  <p className="text-xs text-white/60 mt-1">{examReady ? "Your preparation is preserved. Retry or return to Exam Ready; source restrictions remain active." : "Generate using Scholar's local question bank."}</p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Button size="sm" variant="outline" onClick={generatePaper} disabled={generating}>Retry AI</Button>
-                    <Button size="sm" variant="outline" onClick={generateLocalPaper}>Generate using Scholar's local question bank</Button>
+                    {!examReady && <Button size="sm" variant="outline" onClick={generateLocalPaper}>Generate using Scholar's local question bank</Button>}
                     <Button size="sm" variant="ghost" onClick={() => setGenerationError(false)}>Cancel</Button>
                   </div>
                 </div>
@@ -782,14 +835,14 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                         {q.options && (
                           <ul className="ml-6 space-y-0.5 text-xs text-white/60">
                             {q.options.map((opt, oi) => (
-                              <li key={oi} className={cn("flex gap-2", opt === q.answer && "text-emerald-300 font-medium")}>
+                              <li key={oi} className={cn("flex gap-2", !examReady && opt === q.answer && "text-emerald-300 font-medium")}>
                                 <span className="font-semibold">{String.fromCharCode(65 + oi)}.</span><ScholarAIContent content={opt} mode="compact" />
-                                {opt === q.answer && <span className="text-[10px] text-emerald-400">✓ correct</span>}
+                                {!examReady && opt === q.answer && <span className="text-[10px] text-emerald-400">✓ correct</span>}
                               </li>
                             ))}
                           </ul>
                         )}
-                        {!q.options && <div className="ml-6 mt-1 text-xs text-emerald-200/70"><span className="font-semibold">Model answer:</span><ScholarAIContent content={q.answer} mode="compact" /></div>}
+                        {!examReady && !q.options && <div className="ml-6 mt-1 text-xs text-emerald-200/70"><span className="font-semibold">Model answer:</span><ScholarAIContent content={q.answer} mode="compact" /></div>}
                       </div>
                     ))}
                   </div>
@@ -823,8 +876,8 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                       <p className="text-xs text-white/50 mt-0.5">{new Date(h.at).toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-white/50">Predicted Rank</p>
-                      <p className="text-lg font-bold text-white">~{h.predictedRank}<span className="text-xs text-white/50">/60</span></p>
+                      <p className="text-xs text-white/50">{examReady || h.band === "Exam Ready evidence" ? "Evaluation" : "Predicted Rank"}</p>
+                      <p className="text-lg font-bold text-white">{examReady || h.band === "Exam Ready evidence" ? "Answer evidence" : <>~{h.predictedRank}<span className="text-xs text-white/50">/60</span></>}</p>
                     </div>
                     <Button size="sm" variant="ghost" className="text-white/70" onClick={() => exportResult(h)}>
                       <Download className="h-3.5 w-3.5 mr-1.5" /> Export
@@ -877,7 +930,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
         </Tabs>
 
         {/* ===== EXAM RUNNER DIALOG ===== */}
-        <Dialog open={examActive || evaluating || !!result} onOpenChange={(o) => {
+        <Dialog open={examActive || evaluating || !!result || !!evaluationError} onOpenChange={(o) => {
           if (!o && examActive) {
             if (confirm("Submit your mock exam now? You cannot resume it later.")) endExam(false);
           }
@@ -976,6 +1029,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
             )}
 
             {/* Evaluating */}
+            {evaluationError && !evaluating && <div role="alert" className="space-y-4 p-5"><DialogTitle>Answers preserved</DialogTitle><DialogDescription>{evaluationError}</DialogDescription><Button onClick={() => endExam(false)}>Retry evaluation</Button>{examReady && <Button variant="outline" onClick={() => returnFromExamReadyMock(examReady.id)}>Return to preparation</Button>}</div>}
             {evaluating && !examActive && (
               <div className="py-16 text-center">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }} className="inline-block">
@@ -1015,12 +1069,12 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                       <p className="text-white font-semibold">{fmtTime(result.timeSpent)}</p>
                     </div>
                     <div className="bg-white/[0.04] rounded-xl p-3 border border-white/10">
-                      <p className="text-xs text-white/50">Rank</p>
-                      <p className="text-white font-semibold">~{result.predictedRank}/60</p>
+                      <p className="text-xs text-white/50">{examReady?"Evaluation":"Rank"}</p>
+                      <p className="text-white font-semibold">{examReady?"Answer evidence":`~${result.predictedRank}/60`}</p>
                     </div>
                     <div className="bg-white/[0.04] rounded-xl p-3 border border-white/10">
-                      <p className="text-xs text-white/50">XP</p>
-                      <p className="text-emerald-300 font-semibold">+15</p>
+                      <p className="text-xs text-white/50">{examReady?"Questions":"XP"}</p>
+                      <p className="text-emerald-300 font-semibold">{examReady?result.questions.length:"+15"}</p>
                     </div>
                   </div>
                 </div>
@@ -1057,8 +1111,8 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   <Button variant="outline" className="border-white/20 text-white hover:bg-white/10" onClick={() => exportResult()}>
                     <Download className="h-3.5 w-3.5 mr-1.5" /> Export
                   </Button>
-                  <Button className="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={() => { setResult(null); setExamQs(null); }}>
-                    Done
+                  <Button className="bg-indigo-500 hover:bg-indigo-600 text-white" onClick={() => { if(examReady){returnFromExamReadyMock(examReady.id);return;}setResult(null); setExamQs(null); }}>
+                    {examReady?"Review in Exam Ready":"Done"}
                   </Button>
                 </DialogFooter>
               </>

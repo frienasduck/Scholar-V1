@@ -10,7 +10,7 @@ type FixtureUser = typeof ordinary;
 let users: FixtureUser[] = [], restored: FixtureUser | null = null, expired = false, created = 0, deleted = 0, limited = false, broken = false;
 const values = new Map<string, string>();
 const cookieOptions: Record<string, unknown>[] = [];
-mock.module("next/headers", () => ({ cookies: async () => ({ get: (key: string) => values.has(key) ? { value: values.get(key) } : undefined, set: (key: string, value: string, options: Record<string, unknown>) => { values.set(key, value); cookieOptions.push(options); } }), headers: async () => new Headers() }));
+mock.module("next/headers", () => ({ cookies: async () => ({ get: (key: string) => values.has(key) ? { value: values.get(key) } : undefined, delete: (key: string) => { values.delete(key); }, set: (key: string, value: string, options: Record<string, unknown>) => { values.set(key, value); cookieOptions.push(options); } }), headers: async () => new Headers() }));
 const user = {
   findUnique: async ({ where }: { where: { id?: string; email?: string } }) => { if (broken) throw new Error("private database failure"); return users.find((u) => where.id ? u.id === where.id : u.email === where.email) ?? null; },
   create: async ({ data }: { data: Partial<FixtureUser> }) => { const row = { ...ordinary, ...data, id: `new-${users.length}` }; users.push(row); return row; },

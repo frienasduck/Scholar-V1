@@ -6,6 +6,7 @@ import { navigateTo } from "@/lib/nav-event";
 import { GlassSurface } from "@/components/liquid-glass/glass-surface";
 import { GlassButton } from "@/components/liquid-glass/glass-button";
 import type { StudyAction } from "@/lib/personalization/engine";
+import { ResourceShelf } from "@/components/resources/resource-library";
 export function ScholarToday() {
   const {profile,open}=useLearningProfile();const sessions=useStore(s=>s.sessions);
   const access=useScholarAccess();
@@ -31,5 +32,6 @@ export function ScholarToday() {
     {plan.exam ? <p>{plan.exam.name} · {plan.exam.date} · {examDays!>=0 ? `${examDays} days to prepare` : "Date passed — update your learning profile"}</p> : null}
     <div className="scholar-today-actions">{plan.actions.map((action,i)=><GlassButton key={action.tool} variant={i===0 ? "primary" : "secondary"} onClick={()=>start(action)}><span className="block">{action.title}<small>{action.reason}</small></span></GlassButton>)}</div>
     <GlassButton variant="ghost" className="mt-4" onClick={open}>Edit my learning profile</GlassButton>
+    <ResourceShelf grade={activeGrade} subjectId={priority?.id} title="Sources for your next useful step"/>
   </GlassSurface>;
 }

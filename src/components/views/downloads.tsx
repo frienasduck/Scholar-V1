@@ -209,7 +209,7 @@ function buildCatalog(curriculum: Subject[], scholarClass: 9 | 11): CatalogItem[
         sizeMB: 0.004,
         duration: `${50 + subjectIdx * 7}:00`,
         rating: 4.7,
-        description: `Downloadable viewing guide and metadata for the ${subject.name} Class ${scholarClass} lecture collection. Open Nigtube to stream lessons.`,
+        description: `Downloadable viewing guide and metadata for the ${subject.name} Class ${scholarClass} lecture collection. Open LAMTube to stream lessons.`,
       });
     }
   });
@@ -328,7 +328,7 @@ Let's begin. The key concepts we'll cover are:
       subject: subjectName,
       duration: item.duration,
       description: item.description,
-      note: "This is a video metadata file. In production, the actual video stream would be downloaded from the content CDN. For now, you can stream the corresponding lecture from the Nightube section.",
+      note: "This is a video metadata file. In production, the actual video stream would be downloaded from the content CDN. For now, you can stream the corresponding lecture from the LAMTube section.",
       generatedAt: new Date().toISOString(),
     };
     return { blob: new Blob([JSON.stringify(metaJson, null, 2)], { type: "application/json" }), filename: `${safeTitle}-meta.json`, mime: "application/json" };

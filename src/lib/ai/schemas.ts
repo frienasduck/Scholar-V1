@@ -23,6 +23,7 @@ export const chatMessageSchema = z.object({
 });
 
 export const aiRequestSchema = z.object({
+  resourceContext: z.object({ resourceIds: z.array(z.string().min(1).max(100)).max(4).optional(), subjectId: z.string().max(60).optional(), chapterId: z.string().max(60).optional() }).optional(),
   requestId: z.string().uuid().optional(),
   messages: z.array(chatMessageSchema).min(1).max(30),
   persona: z.string().trim().min(1).max(80).optional().default("default"),

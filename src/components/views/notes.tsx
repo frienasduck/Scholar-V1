@@ -1,4 +1,5 @@
 "use client";
+import { ResourceShelf } from "@/components/resources/resource-library";
 
 import { useStore, type Note } from "@/lib/store";
 import { askAI } from "@/lib/ai";
@@ -212,6 +213,7 @@ export function NotesView() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+        <div className="px-4 sm:px-6"><ResourceShelf type="notes" aid="summary" title="Study notes from real sources"/></div>
         {/* ===== Navbar ===== */}
         <nav className="flex items-center justify-between py-4 px-6">
           <div className="flex items-center gap-3">

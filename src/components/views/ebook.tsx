@@ -1,4 +1,5 @@
 "use client";
+import { ResourceLibrary } from "@/components/resources/resource-library";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -619,6 +620,7 @@ export function EBookView() {
           </div>
 
           <CustomEbookLibrary />
+          <ResourceLibrary type="textbook" title="Built-in chapter textbooks"/>
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">

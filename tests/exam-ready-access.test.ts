@@ -1,0 +1,14 @@
+import { expect, mock, test } from "bun:test";
+mock.module("server-only",()=>({}));
+mock.module("@/lib/v2/server-flags",()=>({isServerFlagEnabled:async()=>true}));
+mock.module("@/lib/subscriptions/entitlements",()=>({resolveUserEntitlements:async()=>({entitlements:["exam_prep"]})}));
+const {accessDecision}=await import("../src/lib/exam-ready/access");
+const now=Date.UTC(2026,9,2);
+test("temporary free without a fake deadline",()=>expect(accessDecision(true,true,false,undefined,now)).toEqual({allowed:true,source:"temporary_free",freeUntil:null}));
+test("disabled rollout overrides free and Plus",()=>expect(accessDecision(false,true,true,undefined,now).allowed).toBe(false));
+test("valid future expiry is shown exactly",()=>expect(accessDecision(true,true,false,"2026-11-01T00:00:00Z",now).freeUntil).toBe("2026-11-01T00:00:00.000Z"));
+test("expired promo denies Free",()=>expect(accessDecision(true,true,false,"2026-09-01T00:00:00Z",now).allowed).toBe(false));
+test("expired promo retains paid access",()=>expect(accessDecision(true,true,true,"2026-09-01T00:00:00Z",now).source).toBe("plus"));
+test("invalid promo deadline fails closed",()=>expect(accessDecision(true,true,false,"not-a-date",now).allowed).toBe(false));
+test("turning off free flag allows future Plus-only mode",()=>expect(accessDecision(true,false,false,undefined,now).source).toBe("unavailable"));
+test("Plus passes when temporary free is off",()=>expect(accessDecision(true,false,true,undefined,now).allowed).toBe(true));

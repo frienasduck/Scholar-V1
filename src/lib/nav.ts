@@ -27,7 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "group-study", label: "Group Study", icon: Users, group: "Learn", badge: "BETA" },
   { id: "intelligence", label: "Scholar Intelligence", icon: BrainCircuit, group: "Learn" },
   { id: "chapter-command", label: "Chapter Command Center", icon: LayoutGrid, group: "Learn" },
-  { id: "nigtube", label: "NIGTUBE", icon: PlayCircle, group: "Learn" },
+  { id: "nigtube", label: "LAMTube", icon: PlayCircle, group: "Learn" },
   { id: "levels", label: "Levels", icon: Trophy, group: "Learn" },
   { id: "lab", label: "Experiment Lab", icon: FlaskConical, group: "Learn" },
   { id: "ai-tutor", label: "AI Tutor", icon: Sparkles, group: "Learn" },
@@ -41,7 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   { id: "flashcards", label: "Flashcards", icon: Layers, group: "Revise" },
   { id: "quiz", label: "Quiz", icon: FileQuestion, group: "Revise" },
-  { id: "exam-prep", label: "Exam Prep", icon: PenLine, group: "Revise" },
+  { id: "exam-prep", label: "Scholar Exam Ready", icon: PenLine, group: "Revise", badge: "EARLY BETA" },
   { id: "planner", label: "Planner", icon: CalendarDays, group: "Revise" },
   { id: "focus", label: "Focus", icon: Timer, group: "Revise" },
   { id: "music", label: "Study Music", icon: Music, group: "Revise" },

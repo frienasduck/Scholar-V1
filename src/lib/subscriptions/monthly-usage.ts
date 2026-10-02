@@ -5,10 +5,11 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { ResolvedEntitlements } from "@/lib/subscriptions/entitlements";
 import { usageMonth } from "@/lib/subscriptions/usage-month";
+import { aiVideoMonthlyLimit } from "@/lib/lamtube/access";
 
 export { usageMonth } from "@/lib/subscriptions/usage-month";
 
-export type MonthlyFeature = "custom_ebook_upload" | "mock_exam_generation";
+export type MonthlyFeature = "custom_ebook_upload" | "mock_exam_generation" | "ai_video_generation";
 const RESERVATION_TTL_MS = 15 * 60 * 1000;
 
 export class MonthlyQuotaError extends Error {
@@ -19,10 +20,12 @@ export class MonthlyQuotaError extends Error {
 }
 
 function limitFor(feature: MonthlyFeature, access: ResolvedEntitlements) {
+  if (feature === "ai_video_generation") return aiVideoMonthlyLimit(access);
   return feature === "custom_ebook_upload" ? access.monthlyEbookUploadLimit : access.monthlyMockExamLimit;
 }
 
 function counterKey(feature: MonthlyFeature) {
+  if (feature === "ai_video_generation") return "ai_video_generation_monthly";
   return feature === "custom_ebook_upload" ? "custom_ebook_upload_monthly" : "mock_exam_generation_monthly";
 }
 
@@ -62,8 +65,8 @@ export async function reserveMonthlyUsage(input: { userId: string; feature: Mont
   });
 }
 
-export async function commitMonthlyUsage(userId: string, idempotencyKey: string) {
-  await db.$transaction(async (tx) => {
+export async function commitMonthlyUsage(userId: string, idempotencyKey: string, transaction?: Prisma.TransactionClient) {
+  const commit = async (tx: Prisma.TransactionClient) => {
     const event = await tx.usageEvent.findUnique({ where: { idempotencyKey } });
     if (!event || event.userId !== userId || event.status === "released") throw new Error("MONTHLY_RESERVATION_INVALID");
     if (event.status === "consumed") return;
@@ -74,7 +77,18 @@ export async function commitMonthlyUsage(userId: string, idempotencyKey: string)
       create: { userId, key: counterKey(event.feature as MonthlyFeature), day: event.periodDay, count: event.units },
       update: { count: { increment: event.units } },
     });
-  });
+  };
+  if (transaction) await commit(transaction);
+  else await db.$transaction(commit);
+}
+
+export async function getAIVideoUsage(userId: string, access: ResolvedEntitlements) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  const timezone = user?.timezone ?? "Asia/Kolkata";
+  const period = usageMonth(timezone);
+  const used = await db.$transaction(tx => effectiveUsed(tx, userId, "ai_video_generation", period));
+  const limit = aiVideoMonthlyLimit(access);
+  return { period, timezone, used, limit: Number.isFinite(limit) ? limit : null, remaining: Number.isFinite(limit) ? Math.max(0, limit - used) : null };
 }
 
 export async function releaseMonthlyUsage(userId: string, idempotencyKey: string) {

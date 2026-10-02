@@ -1,0 +1,27 @@
+import { beforeEach, expect, mock, test } from "bun:test";
+import { initialVideo, type VideoState } from "../src/lib/lamtube/model";
+import { previewVideo } from "../src/lib/lamtube/preview";
+mock.module("server-only",()=>({}));
+const demo=previewVideo();let state:VideoState;let lease:string|null=null;let aiCalls=0;let speechCalls=0;let commits=0;let refunds=0;let broken=false;let emptySources=false;
+mock.module("../src/lib/personalization/server",()=>({ProfileError:class extends Error{constructor(message:string,readonly status=409){super(message);}},checkGrade:async()=>{}}));
+mock.module("../src/lib/security/rate-limit",()=>({enforceRateLimit:async()=>{}}));
+mock.module("../src/lib/lamtube/store",()=>({
+  claimVideo:async()=>{if(lease)throw new Error("BUSY");lease=crypto.randomUUID();return lease;},
+  readVideo:async()=>structuredClone(state),
+  ensureReservation:async(_user:string,v:VideoState)=>{if(!v.charged)v.quotaKey??="reserved";},
+  releaseLease:async(_u:string,_id:string,token:string)=>{if(token===lease)lease=null;},
+  refundOrphan:async()=>{refunds++;},
+  saveVideo:async(_u:string,v:VideoState,token:string,complete=false)=>{if(token!==lease||v.revision!==state.revision)throw new Error("LEASE_FENCED");state={...structuredClone(v),charged:v.charged||complete,revision:v.revision+1};if(complete&&!v.charged)commits++;if(v.status==="failed")refunds++;lease=null;return structuredClone(state);},
+}));
+mock.module("../src/lib/resources/service",()=>({findResource:async()=>({canGenerateDerivatives:true,canStoreCopy:true,state:"READY",sourceMetadata:{}}),retrieve:async()=>emptySources?[]:[{citation:{id:"S1",resourceId:"r1",title:"Licensed source",publisher:"Publisher",url:null,heading:"Forces"},text:"Net force equals mass times acceleration."}]}));
+mock.module("../src/lib/ai/structured",()=>({completeJSON:async()=>{aiCalls++;if(broken)throw new Error("PROVIDER_DOWN");if(state.stage==="outline")return{summary:"Force and graph",scenes:demo.plans.map(p=>({title:p.title,goal:p.goal,chapterId:p.chapterId}))};const index=state.repair?.scene??state.plans.length;return{...demo.plans[index],sourceIds:["S1"]};}}));
+mock.module("../src/lib/lamtube/narration",()=>({narration:async(_u:string,_id:string,_token:string,text:string)=>{speechCalls++;if(broken)throw new Error("TTS_DOWN");return{id:`audio-${speechCalls}`,text,duration:7};}}));
+const {processVideo}=await import("../src/lib/lamtube/generate");
+beforeEach(()=>{state=initialVideo("v",demo.settings,0);lease=null;aiCalls=0;speechCalls=0;commits=0;refunds=0;broken=false;emptySources=false;});
+test("planning, per-scene generation, audio and assembly are separate saved stages",async()=>{await processVideo("u","v");expect(state.stage).toBe("outline");expect(aiCalls).toBe(0);await processVideo("u","v");expect(state.stage).toBe("scenes");expect(aiCalls).toBe(1);await processVideo("u","v");expect(state.plans).toHaveLength(1);expect(speechCalls).toBe(0);await processVideo("u","v");expect(state.stage).toBe("narration");expect(commits).toBe(0);while(state.status!=="ready")await processVideo("u","v");expect(aiCalls).toBe(3);expect(speechCalls).toBe(7);expect(commits).toBe(1);expect(state.timeline?.duration).toBe(49);});
+test("reloading/resuming a saved stage does not rerun completed planning",async()=>{for(let i=0;i<5;i++)await processVideo("u","v");const beforeAI=aiCalls;while(state.status!=="ready")await processVideo("u","v");expect(aiCalls).toBe(beforeAI);expect(state.clips.flat()).toHaveLength(7);});
+test("provider failure releases credit and retains successful earlier stages",async()=>{await processVideo("u","v");broken=true;await expect(processVideo("u","v")).rejects.toThrow();expect(state.status).toBe("failed");expect(state.sources).toHaveLength(1);expect(refunds).toBe(1);expect(commits).toBe(0);broken=false;await processVideo("u","v");expect(state.outline?.scenes).toHaveLength(2);});
+test("strict source gap stops before any AI teaching",async()=>{state.settings.strictSources=true;state.settings.resourceIds=["r1"];emptySources=true;await expect(processVideo("u","v")).rejects.toThrow("readable");expect(aiCalls).toBe(0);expect(commits).toBe(0);expect(refunds).toBe(1);});
+test("ready playback and cancelled jobs do not create another generation",async()=>{state.status="cancelled";await processVideo("u","v");expect(aiCalls).toBe(0);expect(commits).toBe(0);state={...demo,id:"v",charged:true};await processVideo("u","v");expect(aiCalls).toBe(0);expect(commits).toBe(0);});
+test("voice-only repair reuses scene plans without consuming a full credit",async()=>{state={...demo,id:"v",charged:true,status:"draft",stage:"narration",clips:[],repair:{kind:"voice",previousTimeline:demo.timeline!}};while(state.status!=="ready")await processVideo("u","v");expect(aiCalls).toBe(0);expect(speechCalls).toBe(7);expect(commits).toBe(0);});
+test("scene-only regeneration changes one plan and only its narration",async()=>{state={...demo,id:"v",charged:true,status:"draft",stage:"scenes",sources:[{citation:{id:"S1",resourceId:"r1",title:"Licensed source",publisher:"Publisher",url:null,heading:"Forces"},text:"Net force equals mass times acceleration."}],repair:{kind:"scene",scene:1,previousTimeline:demo.timeline!}};const first=structuredClone(state.clips[0]);while(state.status!=="ready")await processVideo("u","v");expect(aiCalls).toBe(1);expect(speechCalls).toBe(3);expect(state.clips[0]).toEqual(first);expect(commits).toBe(0);});

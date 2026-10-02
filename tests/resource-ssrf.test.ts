@@ -1,0 +1,22 @@
+import { beforeEach, expect, mock, test } from "bun:test";
+import { EventEmitter } from "node:events";
+let address = "8.8.8.8"; let redirect = ""; let size = 10; let requests = 0; let pinned = "";
+mock.module("node:dns/promises", () => ({ lookup: async () => [{ address, family: 4 }] }));
+mock.module("node:https", () => ({ request: (_url: URL, options: any, callback: (response: any) => void) => {
+  requests++; options.lookup("source.example", {}, (_error: unknown, ip: string) => { pinned = ip; });
+  const req = new EventEmitter() as any;
+  req.end = () => { const response = new EventEmitter() as any; response.statusCode = redirect ? 302 : 200;
+    response.headers = redirect ? { location: redirect } : { "content-length": String(size), "content-type": "text/html" };
+    response.destroy = () => {}; callback(response);
+    if (!options.head && !redirect && size < 50) queueMicrotask(() => { response.emit("data", Buffer.from("ok")); response.emit("end"); });
+  };
+  return req;
+} }));
+const { safeFetch, resolvePublicUrl } = await import("../src/lib/resources/safe-fetch");
+beforeEach(() => { address = "8.8.8.8"; redirect = ""; size = 10; requests = 0; pinned = ""; });
+test("DNS resolution of a public hostname to a private IP is blocked before HTTPS", async () => { address = "10.0.0.2"; await expect(safeFetch("https://source.example/test")).rejects.toThrow("Private network"); expect(requests).toBe(0); });
+test("redirect to cloud metadata/internal IP is revalidated and blocked", async () => { redirect = "https://169.254.169.254/latest/meta-data/"; await expect(safeFetch("https://source.example/test")).rejects.toThrow("Private network"); expect(requests).toBe(1); });
+test("HTTPS connects to the prevalidated IP rather than re-resolving DNS", async () => { expect((await safeFetch("https://source.example/test")).bytes.toString()).toBe("ok"); expect(pinned).toBe("8.8.8.8"); });
+test("oversized URL body is rejected by content length before buffering", async () => { size = 1_000_000; await expect(safeFetch("https://source.example/test", { maxBytes: 100 })).rejects.toThrow("size limit"); });
+test("redirect loops are bounded", async () => { redirect = "https://source.example/again"; await expect(safeFetch("https://source.example/test")).rejects.toThrow("Too many"); expect(requests).toBe(4); });
+test("already-aborted DNS deadline cannot reach HTTPS", async () => { await expect(resolvePublicUrl("https://source.example/test", AbortSignal.abort())).rejects.toThrow("timed out"); expect(requests).toBe(0); });

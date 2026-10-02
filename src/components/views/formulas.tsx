@@ -1,6 +1,7 @@
 "use client";
 
 import { useStore } from "@/lib/store";
+import { ResourceShelf } from "@/components/resources/resource-library";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { CURRICULUM } from "@/lib/curriculum";
 import { exportPDF } from "@/lib/pdf";
@@ -177,6 +178,7 @@ export function FormulaExplorerView() {
       </div>
 
       {/* Stat cards */}
+      <ResourceShelf grade={scholarClass} subjectId={activeSubject === "all" ? undefined : activeSubject} aid="formula-sheet" title="Formula references with source excerpts"/>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={SigmaIcon} label="Total Formulas" value={allFormulas.length} sub="across all subjects" accent="#6366f1" />
         <StatCard icon={BookOpen} label="Chapters with Formulas" value={chaptersWithFormulas} sub="of 75 total chapters" accent="#14b8a6" />

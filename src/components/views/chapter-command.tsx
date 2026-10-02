@@ -747,10 +747,10 @@ function QuizPanel({ data }: { data: ChapterCommandData }) {
 
 function VideoPanel({ data }: { data: ChapterCommandData }) {
   if (!data.videos.length) {
-    return <SectionCard title="Nightube Videos" icon={Video} accent="#f43f5e" empty={{ title: "No videos available yet", description: "Videos will appear here when added." }} onOpenAll={() => navigateTo("nigtube")} />;
+    return <SectionCard title="LAMTube Videos" icon={Video} accent="#f43f5e" empty={{ title: "No videos available yet", description: "Videos will appear here when added." }} onOpenAll={() => navigateTo("nigtube")} />;
   }
   return (
-    <SectionCard title={`Nightube Videos (${data.videos.length})`} icon={Video} accent="#f43f5e" onOpenAll={() => navigateTo("nigtube")}>
+    <SectionCard title={`LAMTube Videos (${data.videos.length})`} icon={Video} accent="#f43f5e" onOpenAll={() => navigateTo("nigtube")}>
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {data.videos.map((v) => (
           <button

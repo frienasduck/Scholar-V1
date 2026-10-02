@@ -55,7 +55,8 @@ describe("entitlement resolution fails closed", () => {
     expect(access.entitlementsLoaded).toBe(false);
     expect(access.plan).toBe("FREE");
     expect(access.source).toBe("free");
-    expect(access.entitlements).toEqual([]);
+    // LAM is a free capability; no paid entitlement survives a failed lookup.
+    expect(access.entitlements).toEqual(["lam_ai"]);
     expect(access.subscriptionId).toBeNull();
   });
 

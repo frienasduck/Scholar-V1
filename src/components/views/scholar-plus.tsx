@@ -28,7 +28,7 @@ const COMPARISON = [
   ["AI-generated quizzes and slideshows", "3 each per day", "Higher configured limits"],
   ["File storage", "30 MB", "Expanded storage"],
   ["Class 9 and advanced study labs", "Preview", "Included"],
-  ["Nigtube and Study Music", "Scholar-controlled ads may appear", "Ad-free"],
+  ["LAMTube and Study Music", "Scholar-controlled ads may appear", "Ad-free"],
 ] as const;
 
 export function ScholarPlusView() {
@@ -92,7 +92,7 @@ export function ScholarPlusView() {
     </section>
     <nav aria-label="Scholar Plus benefits" className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[.035] p-2 backdrop-blur-xl">{FEATURE_SECTIONS.map((section) => <a key={section.id} href={`#${section.id}`} className="min-h-10 shrink-0 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white">{section.title}</a>)}</nav>
     <section id="overview" className="scroll-mt-24">
-      <p className="text-xs font-semibold uppercase tracking-[.22em] text-cyan-200">What Plus changes</p><h2 className="mt-2 text-2xl font-semibold">A stronger Scholar, not a broken Free tier</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">Free keeps core learning, standard resources, Nigtube, Study Music, and limited generation. Plus adds premium intelligence, focused modes, collaboration hosting, richer resources, and higher cost-aware limits.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.22em] text-cyan-200">What Plus changes</p><h2 className="mt-2 text-2xl font-semibold">A stronger Scholar, not a broken Free tier</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">Free keeps core learning, standard resources, LAMTube, Study Music, and limited generation. Plus adds premium intelligence, focused modes, collaboration hosting, richer resources, and higher cost-aware limits.</p>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {FEATURE_SECTIONS.map((section) => (
           <article id={section.id} key={section.id} className="scroll-mt-24 rounded-3xl border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.02))] p-5 shadow-[inset_0_1px_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-6">

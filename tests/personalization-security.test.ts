@@ -1,8 +1,10 @@
 import {beforeEach,describe,expect,mock,test} from "bun:test";
 import type {LearningProfile,CustomEbook} from "@prisma/client";
-import {NextRequest} from "next/server";
+import {NextRequest,NextResponse} from "next/server";
 import {DEFAULT_PREFERENCES,BONUS_BYTES} from "../src/lib/personalization/schema";
 mock.module("server-only",()=>({}));
+const backgroundTasks: (()=>unknown)[]=[];
+mock.module("next/server",()=>({NextRequest,NextResponse,after:(task:()=>unknown)=>backgroundTasks.push(task)}));
 let actor:string|null="owner";let plus=false;let failBooks=false;let aiCalls=0;let analysisDenied=false;
 let pdfScripts=false;let normalReservations=0;let normalReleases=0;
 const profiles=new Map<string,LearningProfile>();const books=new Map<string,CustomEbook>();const events:string[]=[];
@@ -18,7 +20,7 @@ const bookDb={
   create:async({data}:{data:Record<string,unknown>})=>{if(failBooks)throw new Error("write failed");const book={id:crypto.randomUUID(),deletedAt:null,...data} as CustomEbook;books.set(book.id,book);return book;},
   findMany:async({where}:{where:{userId:string}})=>[...books.values()].filter(b=>b.userId===where.userId && !b.deletedAt),
 };
-const tx={learningProfile:profileDb,customEbook:bookDb,user:{findUniqueOrThrow:async()=>({currentScholarClass:11}),update:async()=>({})},$queryRaw:async()=>[]};
+const tx={learningProfile:profileDb,customEbook:bookDb,studyResource:{findFirst:async()=>null},user:{findUniqueOrThrow:async()=>({currentScholarClass:11}),update:async()=>({})},$queryRaw:async()=>[]};
 let queue=Promise.resolve();
 const db={...tx,practiceAttempt:{count:async()=>2},revisionItem:{count:async()=>3},$transaction:<T>(fn:(transaction:typeof tx)=>Promise<T>)=>{const next=queue.then(async()=>{const snapshot=new Map([...profiles].map(([k,v])=>[k,structuredClone(v)]));const stored=new Map(books);try{return await fn(tx);}catch(e){profiles.clear();for(const [k,v]of snapshot)profiles.set(k,v);books.clear();for(const [k,v]of stored)books.set(k,v);throw e;}});queue=next.then(()=>{},()=>{});return next;}};
 mock.module("../src/lib/db",()=>({db}));
@@ -37,7 +39,7 @@ const {storeBonusBook}=await import("../src/lib/personalization/server");
 const ebookRoute=await import("../src/app/api/ebooks/route");
 const request=(body:unknown)=>new NextRequest("http://localhost/api/personalization",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
 const bookData={title:"Notes",originalFileName:"notes.pdf",sizeBytes:100,pageCount:1,text:"Study material",pageTexts:["Study material"],pdfBytes:Buffer.from("%PDF-1.7")};
-beforeEach(()=>{actor="owner";plus=false;failBooks=false;aiCalls=0;analysisDenied=false;pdfScripts=false;normalReservations=0;normalReleases=0;profiles.clear();books.clear();events.length=0;queue=Promise.resolve();});
+beforeEach(()=>{actor="owner";plus=false;failBooks=false;aiCalls=0;analysisDenied=false;pdfScripts=false;normalReservations=0;normalReleases=0;profiles.clear();books.clear();events.length=0;backgroundTasks.length=0;queue=Promise.resolve();});
 describe("Personalization server boundaries",()=>{
   test("Guest cannot read or mutate profile",async()=>{actor=null;expect((await GET()).status).toBe(401);expect((await PATCH(request({action:"begin",revision:0}))).status).toBe(401);expect((await POST(request({revision:0}))).status).toBe(401);});
   test("first login absent profile is required; seeded existing account invited",async()=>{expect((await (await GET()).json()).required).toBe(true);profiles.set("owner",{...fresh("owner"),required:false});expect((await (await GET()).json()).required).toBe(false);});
@@ -63,9 +65,9 @@ describe("Personalization server boundaries",()=>{
   test("audit lifecycle contains event names not answers",async()=>{await PATCH(request({action:"begin",revision:0}));await(await POST(request({revision:1,useAI:false}))).text();expect(events).toEqual(["personalization_started","personalization_completed"]);});
   const uploadRequest=(contents="%PDF-1.7 actual PDF bytes",allocation="onboarding",key="import-ref-key-1")=>{const form=new FormData();form.set("file",new File([contents],"notes.pdf",{type:"application/pdf"}));form.set("allocation",allocation);form.set("sizeBytes","1");return new NextRequest("http://localhost/api/ebooks",{method:"POST",headers:{"x-idempotency-key":key,"x-scholar-import":"initial-setup"},body:form});};
   test("existing PDF route charges actual bytes, not client declared size or monthly allowance",async()=>{profiles.set("owner",{...fresh("owner"),status:"IN_PROGRESS"});const response=await ebookRoute.POST(uploadRequest());expect(response.status).toBe(201);expect(profiles.get("owner")!.bonusUsedBytes).toBe(Buffer.byteLength("%PDF-1.7 actual PDF bytes"));expect(normalReservations).toBe(0);});
-  test("existing parser blocks scripts; failure uses no bonus and no file",async()=>{profiles.set("owner",{...fresh("owner"),status:"IN_PROGRESS"});pdfScripts=true;expect((await ebookRoute.POST(uploadRequest())).status).toBe(422);expect(profiles.get("owner")!.bonusUsedBytes).toBe(0);expect(books.size).toBe(0);});
+  test("onboarding upload queues extraction with a private resource instead of blocking the request",async()=>{profiles.set("owner",{...fresh("owner"),status:"IN_PROGRESS"});const response=await ebookRoute.POST(uploadRequest());expect(response.status).toBe(201);const book=[...books.values()][0];expect(book.processingStatus).toBe("processing");expect(book.pageCount).toBe(0);expect((book as unknown as {resource:{create:{visibility:string;ownerUserId:string;job:unknown}}}).resource.create.visibility).toBe("PRIVATE");expect(backgroundTasks).toHaveLength(1);});
   test("fake PDF signature rejected and closed bonus does not reopen",async()=>{profiles.set("owner",{...fresh("owner"),status:"IN_PROGRESS"});expect((await ebookRoute.POST(uploadRequest("not a PDF"))).status).toBe(415);profiles.get("owner")!.bonusClosedAt=new Date();expect((await ebookRoute.POST(uploadRequest())).status).toBe(409);});
-  test("normal upload still uses and releases monthly reservation on parse failure",async()=>{pdfScripts=true;expect((await ebookRoute.POST(uploadRequest("%PDF-1.7 normal bytes","standard"))).status).toBe(422);expect(normalReservations).toBe(1);expect(normalReleases).toBe(1);});
+  test("normal upload releases monthly reservation if durable creation fails",async()=>{failBooks=true;expect((await ebookRoute.POST(uploadRequest("%PDF-1.7 normal bytes","standard"))).status).toBe(422);expect(normalReservations).toBe(1);expect(normalReleases).toBe(1);expect(backgroundTasks).toHaveLength(0);});
   test("PDF worker transfer does not erase the original uploaded E-Book",async()=>{const contents="%PDF-1.7 original study document";expect((await ebookRoute.POST(uploadRequest(contents,"standard"))).status).toBe(201);expect(Buffer.from([...books.values()][0].pdfBytes).toString()).toBe(contents);});
   test("successful upload replay returns persisted PDF after bonus closes without double charge",async()=>{profiles.set("owner",{...fresh("owner"),status:"IN_PROGRESS"});const first=await(await ebookRoute.POST(uploadRequest())).json();const used=profiles.get("owner")!.bonusUsedBytes;profiles.get("owner")!.bonusClosedAt=new Date();const replay=await(await ebookRoute.POST(uploadRequest())).json();expect(replay.ebook.id).toBe(first.ebook.id);expect(profiles.get("owner")!.bonusUsedBytes).toBe(used);});
 });

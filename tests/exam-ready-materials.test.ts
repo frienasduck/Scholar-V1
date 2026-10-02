@@ -1,0 +1,17 @@
+import { beforeEach, expect, mock, test } from "bun:test";
+import { createSession } from "../src/lib/exam-ready/planner";
+import type { Setup } from "../src/lib/exam-ready/model";
+import type { ResourceRecord } from "../src/lib/resources/types";
+mock.module("server-only",()=>({}));
+const records:ResourceRecord[]=[{id:"public",visibility:"GLOBAL",resourceType:"textbook"},{id:"mine",visibility:"PRIVATE",ownerUserId:"owner",resourceType:"notes"},{id:"long-video",visibility:"GLOBAL",resourceType:"video"}].map(r=>({...r,title:r.id,description:"Read Newton's laws",sourceType:"curated",canonicalUrl:null,publisher:"Scholar",language:"en",licenseType:"USER_PRIVATE",licenseUrl:null,attributionText:"",canStoreCopy:true,canGenerateDerivatives:true,ownerUserId:null,state:"READY",qualityStatus:"reviewed",mappings:[{curriculumId:"cbse",grade:11,subjectId:"physics",chapterId:"p5"}],...r}));
+let ids:string[]=[];
+mock.module("@/lib/resources/service",()=>({library:async()=>({resources:records,privateAvailable:true}),findResource:async(id:string,user:string)=>records.find(r=>r.id===id&&(r.visibility==="GLOBAL"||r.ownerUserId===user))??null,retrieve:async(_user:string,_query:unknown,selected:string[])=>{ids=selected;return selected.map((id,i)=>({citation:{id:`S${i+1}`,resourceId:id,title:id,publisher:"Scholar",url:null,heading:"Concept"},text:"Verified readable source excerpt."}));}}));
+const {selectMaterials,permittedResource}=await import("../src/lib/exam-ready/materials");
+const config:Setup={exam:"Physics",grade:11,board:"CBSE",examAt:Date.now()+86400000,minutes:120,format:"school",style:"step-by-step",chapters:[{subjectId:"physics",chapterId:"p5",confidence:1}],materials:"all",resourceIds:[],blocks:[],diagnostic:false};
+beforeEach(()=>{ids=[];});
+test("personal-only never passes global IDs to retrieval",async()=>{const r=await selectMaterials("owner",createSession("s",{...config,materials:"personal"}));expect(ids).toEqual(["mine"]);expect(r.restricted).toBe(true);});
+test("Scholar-only never passes private IDs to retrieval",async()=>{await selectMaterials("owner",createSession("s",{...config,materials:"scholar"}));expect(ids.includes("mine")).toBe(false);});
+test("custom can use only explicit IDs",async()=>{await selectMaterials("owner",createSession("s",{...config,materials:"custom",resourceIds:["mine"]}));expect(ids).toEqual(["mine"]);});
+test("foreign or removed selected source fails closed",async()=>{expect(selectMaterials("owner",createSession("s",{...config,resourceIds:["victim"]}))).rejects.toThrow();});
+test("emergency does not recommend a long video",async()=>{const r=await selectMaterials("owner",createSession("s",{...config,minutes:15}));expect(r.resources.some(r=>r.resourceType==="video")).toBe(false);});
+test("custom material policy rejects a newly discovered outside source",()=>{expect(permittedResource({...config,materials:"custom",resourceIds:["mine"]},records[0])).toBe(false);});

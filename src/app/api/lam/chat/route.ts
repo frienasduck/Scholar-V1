@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { retrieve } from "@/lib/resources/service";
+import { retrievalPrompt } from "@/lib/resources/engine";
+import { chapterContext, citationFooter, citationStream } from "@/lib/resources/grounding";
 import { z } from "zod";
 import { streamGroqText } from "@/lib/ai/groq";
 import { AIProviderError } from "@/lib/ai/errors";
@@ -101,7 +104,9 @@ export async function POST(request: NextRequest) {
     chapter: context.chapterTitle,
   }).catch(() => ({ text: "LAM AI memory is temporarily unavailable. Continue without it.", selectedMemoryIds: [], summary: { memories: 0, relevantMemories: 0, weakTopics: [], unresolvedMistakes: 0, dueRevision: 0 } })) : null;
   const retrieved = [context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `page ${context.sourcePageNumber}` : "", context.activeFileName ? `Active uploaded file: ${context.activeFileName}` : "", context.selectedText ? `Selected material:\n${context.selectedText}` : "", context.visibleText ? `Visible or extracted text:\n${context.visibleText}` : ""].filter(Boolean).join(" · ");
+  const resourceSources = await retrieve(access.user.id, { ...chapterContext(context.scholarClass, context.subjectTitle, context.chapterTitle), q: input.message.slice(0, 1000) }).catch(() => []);
   const system = [
+    resourceSources.length ? retrievalPrompt(resourceSources) : "No indexed resource text matched. Distinguish general knowledge; do not invent Scholar source citations.",
     "You are LAM (Learning Assistant and Mentor), Scholar's calm personal learning assistant. You are an AI, not a human.",
     `Active profile: ${context.profileName}, CBSE Class ${context.scholarClass}. Profile ID: ${input.profileId}. Never mix content or identity from another class.`,
     `Current Scholar view: ${context.currentView}; route: ${context.currentRoute}; subject: ${context.subjectTitle ?? "not supplied"}; chapter: ${context.chapterTitle ?? "not supplied"}.`,
@@ -149,6 +154,8 @@ export async function POST(request: NextRequest) {
       const configuredModel = process.env.GROQ_MODEL?.trim();
       if (!input.liveTutor && !custom) send({ type: "start", provider: "groq", model: configuredModel && configuredModel !== "llama-3.3-70b-versatile" ? configuredModel : "openai/gpt-oss-20b" });
       let full = "";
+      const citationFilter = citationStream(resourceSources.map(s => s.citation.id));
+      const onDelta = (delta: string) => { const value = citationFilter.push(delta); full += value; if (value) send({ type: "text-delta", value }); };
       let resolvedProvider = "groq";
       let resolvedModel = configuredModel && configuredModel !== "llama-3.3-70b-versatile" ? configuredModel : "openai/gpt-oss-20b";
       try {
@@ -164,7 +171,7 @@ export async function POST(request: NextRequest) {
             signal,
             preferLargeContext: Boolean(context.visibleText && context.visibleText.length > 6_000),
             onProviderResolved: (provider, model) => { resolvedProvider = provider; resolvedModel = model; send({ type: "start", provider, model }); },
-            onDelta: (value) => { full += value; send({ type: "text-delta", value }); },
+            onDelta,
           });
         } else if (custom) {
           await streamLiveTutorText({
@@ -175,11 +182,16 @@ export async function POST(request: NextRequest) {
             maxTokens: 4_000,
             signal,
             onProviderResolved: (provider, model) => send({ type: "start", provider, model }),
-            onDelta: (value) => { full += value; send({ type: "text-delta", value }); },
+            onDelta,
           });
         } else {
-          await streamGroqText({ messages, temperature: 0.3, maxTokens: 4_000, signal }, (value) => { full += value; send({ type: "text-delta", value }); });
+          await streamGroqText({ messages, temperature: 0.3, maxTokens: 4_000, signal }, onDelta);
         }
+        const tail = citationFilter.finish(); full += tail; if (tail) send({ type: "text-delta", value: tail });
+        const grounded = citationFooter(full, resourceSources);
+        if (grounded.text.startsWith(full) && grounded.text.length > full.length) send({ type: "text-delta", value: grounded.text.slice(full.length) });
+        for (const citation of grounded.citations) send({ type: "source", source: { label: `${citation.title} · ${citation.heading}${citation.page ? ` · page ${citation.page}` : ""}`, route: citation.url ?? context.currentRoute } });
+        full = grounded.text;
         if (retrieved) send({ type: "source", source: { label: [context.activeFileName ?? context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `Page ${context.sourcePageNumber}` : ""].filter(Boolean).join(" · "), route: context.currentRoute } });
         if (input.liveTutor && full.trim()) {
           await db.liveTutorMessage.upsert({

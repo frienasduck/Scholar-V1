@@ -18,7 +18,7 @@ export function ImportStage({profile,onUploaded,onBusy}:{profile:LearningProfile
       const response=await fetch("/api/ebooks",{method:"POST",headers:{"x-idempotency-key":key,"x-scholar-import":"initial-setup"},body:form,signal:AbortSignal.timeout(55_000)});
       const data=await response.json();if(!response.ok) throw new Error(data.message || "Your PDF could not be imported. No space was used.");
       setBooks(previous=>[...previous.filter(b=>b.id!==data.ebook.id),data.ebook]);retry.current=null;
-      setMessage(data.ebook.processingStatus==="needs_ocr" ? "Saved. This scanned PDF needs OCR; extracted text may be incomplete." : "Imported and ready in Custom E-Books. It stays available after setup.");
+      setMessage(data.ebook.processingStatus==="processing" ? "Saved privately. Extraction and chapter indexing continue in the background; you can continue setup." : data.ebook.processingStatus==="needs_ocr" ? "Saved. This scanned PDF needs OCR; extracted text may be incomplete." : "Imported and ready in Custom E-Books. It stays available after setup.");
       await onUploaded();
     }catch(e){setMessage(e instanceof Error && e.name!=="TimeoutError" ? e.message : "The connection interrupted. Retry this import to check its saved result without using space twice.");}
     finally {setBusy(false);onBusy(false);}
@@ -29,6 +29,6 @@ export function ImportStage({profile,onUploaded,onBusy}:{profile:LearningProfile
     {profile.bonus.closed ? <p>Your saved material is still in Custom E-Books. Rebuilding preferences doesn't renew the initial allowance.</p> : <><input ref={input} type="file" accept="application/pdf" aria-label="Import study PDF" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)void upload(file);e.target.value="";}}/><GlassButton variant="primary" disabled={busy || remaining===0} onClick={()=>input.current?.click()}>{busy ? "Reading your PDF…" : "Choose a study PDF"}</GlassButton><p className="your-scholar-note">Up to 4 MB and 500 pages per PDF. Notes, worksheets and textbooks are welcome. Scans may need OCR. No API keys needed.</p></>}
     <div role="status" aria-live="polite">{message}</div>
     {retry.current && !busy ? <GlassButton onClick={()=>{if(retry.current)void upload(retry.current.file,retry.current.key);}}>Retry this import</GlassButton> : null}
-    <ul>{books.map(book=><li key={book.id}>{book.title} · {book.processingStatus==="needs_ocr" ? "Needs OCR" : "Ready"}</li>)}</ul>
+    <ul>{books.map(book=><li key={book.id}>{book.title} · {book.processingStatus==="processing" ? "Processing in background" : book.processingStatus==="failed" ? "Processing failed · check Resources" : book.processingStatus==="needs_ocr" ? "Needs OCR" : "Ready"}</li>)}</ul>
   </div>;
 }

@@ -58,7 +58,7 @@ export const LAM_ACTION_REGISTRY: Record<LamActionType, LamActionDefinition> = {
   schedule_homework: { type: "schedule_homework", risk: "medium", confirmationRequired: false, description: "Schedule homework" },
   organize_study_day: { type: "organize_study_day", risk: "medium", confirmationRequired: false, description: "Organize the study day" },
   create_recurring_routine: { type: "create_recurring_routine", risk: "medium", confirmationRequired: false, description: "Create a recurring routine" },
-  prepare_nigtube_playlist: { type: "prepare_nigtube_playlist", risk: "medium", confirmationRequired: false, description: "Prepare a Nigtube playlist" },
+  prepare_nigtube_playlist: { type: "prepare_nigtube_playlist", risk: "medium", confirmationRequired: false, description: "Prepare a LAMTube playlist" },
   prepare_study_music_focus: { type: "prepare_study_music_focus", risk: "medium", confirmationRequired: false, description: "Prepare a Study Music focus session" },
 };
 

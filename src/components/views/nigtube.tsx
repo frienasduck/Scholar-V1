@@ -1,4 +1,7 @@
 "use client";
+import { ResourceShelf } from "@/components/resources/resource-library";
+import dynamic from "next/dynamic";
+const LamTubeWorkspace = dynamic(() => import("@/components/lamtube/workspace"), { loading: () => <p className="p-8 text-white/70" role="status">Opening LAMTube AI Video…</p> });
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -287,7 +290,8 @@ export function NigtubeView() {
   const [aiFlashcards, setAiFlashcards] = useState<{ q: string; a: string }[] | null>(null);
   const [aiQuiz, setAiQuiz] = useState<{ q: string; options: string[]; answer: number }[] | null>(null);
   const [watchLater, setWatchLater] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"home" | "trending" | "saved" | "history" | "playlists">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "trending" | "saved" | "history" | "playlists" | "ai-video">("home");
+  useEffect(() => { if (new URLSearchParams(window.location.search).has("aiVideo")) setActiveTab("ai-video"); }, []);
   const [watchHistory, setWatchHistory] = useState<string[]>([]);
   const [likedVideos, setLikedVideos] = useState<string[]>([]);
   const [showMiniPlayer, setShowMiniPlayer] = useState(false);
@@ -440,6 +444,18 @@ export function NigtubeView() {
     addCoins(1);
   }
 
+  function switchTab(tab: typeof activeTab) {
+    setActiveTab(tab);
+    if (tab === "ai-video") {
+      setSelectedVideo(null);
+      setShowMiniPlayer(false);
+      setAdMachine(idleAdMachine());
+    } else {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("aiVideo");
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }
   return (
     <div className="scholar-nigtube scholar-responsive-page relative -m-3 overflow-hidden bg-black sm:-m-4 lg:-m-6">
       <style>{`
@@ -484,19 +500,19 @@ export function NigtubeView() {
 
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
         {/* Navbar */}
-        <nav className="scholar-nigtube-nav flex items-center justify-between px-4 md:px-8 py-4 nt-font">
+        <nav aria-label="LAMTube" className="scholar-nigtube-nav flex flex-wrap items-center justify-between gap-y-3 px-4 md:px-8 py-4 nt-font">
           <div className="flex items-center gap-3">
             <div className="grid place-items-center h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-fuchsia-600 shadow-lg">
               <PlayCircle className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">NIGTUBE</h1>
+              <h1 className="text-xl font-bold text-white tracking-tight">LAMTube</h1>
               <p className="text-[10px] text-white/40 -mt-0.5">Study videos, reimagined</p>
             </div>
           </div>
 
           {/* Search */}
-          <div className="scholar-nigtube-search flex-1 max-w-md mx-4 nt-glass rounded-full px-4 py-2.5 flex items-center gap-2">
+          {activeTab !== "ai-video" && <div className="scholar-nigtube-search flex-1 max-w-md mx-4 nt-glass rounded-full px-4 py-2.5 flex items-center gap-2">
             <Search className="h-4 w-4 text-white/40" />
             <input
               value={search}
@@ -504,31 +520,35 @@ export function NigtubeView() {
               placeholder="Search videos, chapters, subjects..."
               className="flex-1 bg-transparent text-white text-sm outline-none placeholder-white/40"
             />
-          </div>
+          </div>}
 
           {/* Tabs */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="flex max-w-full items-center gap-1 overflow-x-auto nt-scroll">
             {[
               { id: "home", icon: Home, label: "Home" },
               { id: "trending", icon: TrendingUp, label: "Trending" },
               { id: "playlists", icon: ListVideo, label: "Playlists" },
               { id: "saved", icon: Bookmark, label: "Saved" },
               { id: "history", icon: History, label: "History" },
+              { id: "ai-video", icon: Sparkles, label: "AI VIDEO" },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-all ${
+                onClick={() => switchTab(tab.id as typeof activeTab)}
+                aria-label={tab.label}
+                aria-current={activeTab === tab.id ? "page" : undefined}
+                className={`flex shrink-0 items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-colors ${
                   activeTab === tab.id ? "nt-glass text-white" : "text-white/50 hover:text-white"
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
-                <span className="hidden lg:inline">{tab.label}</span>
+                <span className={tab.id === "ai-video" ? "whitespace-nowrap" : "hidden lg:inline"}>{tab.label}</span>
               </button>
             ))}
           </div>
         </nav>
 
+        {activeTab === "ai-video" ? <LamTubeWorkspace onBack={() => switchTab("home")}/> : <>
         {/* Subject filter */}
         <div className="scholar-scroll-rail px-4 md:px-8 pb-4 flex gap-2 overflow-x-auto nt-scroll">
           {(scholarClass === 11 ? SUBJECTS_CLASS11 : SUBJECTS_CLASS9).map((s) => (
@@ -544,10 +564,11 @@ export function NigtubeView() {
           ))}
         </div>
 
-        <div className="px-4 md:px-8"><FreeAdSlot entitlement="nigtube_ad_free" label="Nigtube" /></div>
+        <div className="px-4 md:px-8"><FreeAdSlot entitlement="nigtube_ad_free" label="LAMTube" /></div>
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto nt-scroll px-4 md:px-8 pb-8">
+          {!selectedVideo && <ResourceShelf grade={scholarClass} subjectId={({ Physics: "physics", Chemistry: "chemistry", Mathematics: "maths" } as Record<string, string>)[activeSubject]} type="video" title="Curated lecture sources"/>}
           {selectedVideo ? (
             /* ===== Video Player View ===== */
             <div className="max-w-6xl mx-auto">
@@ -944,6 +965,7 @@ export function NigtubeView() {
             </motion.div>
           )}
         </AnimatePresence>
+        </>}
       </div>
     </div>
   );

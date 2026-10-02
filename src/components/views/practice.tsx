@@ -1,4 +1,5 @@
 "use client";
+import { ResourceShelf } from "@/components/resources/resource-library";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { practiceChapterId, takeChapterDestination } from "@/lib/chapter-navigation";
@@ -58,6 +59,7 @@ export function PracticeView() {
   const {profile}=useLearningProfile();
   const [activeSubject, setActiveSubject] = useState<SubjectTab>(()=>(profile?.result?.grade===scholarClass ? profile.result.priorities.find(s=>s.id in SUBJECT_META)?.id as SubjectTab | undefined : undefined) ?? "maths");
   const [activeChapter, setActiveChapter] = useState<string | null>(null);
+  const resourceChapter = activeSubject === "physics" ? ({ ch1: "p2", ch2: "p3", ch3: "p4" } as Record<string, string>)[activeChapter ?? ""] : activeChapter ?? undefined;
   const [filter, setFilter] = useState<"all" | "mcq" | "subjective">("all");
   const [showPdfReview, setShowPdfReview] = useState(false);
   const addXP = useStore((s) => s.addXP);
@@ -120,6 +122,8 @@ export function PracticeView() {
         </motion.nav>
 
         <DevelopmentNotice>Practice Questions is still being expanded. More focused question sets are being added as soon as possible.</DevelopmentNotice>
+        <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="question-bank" aid="practice" title="Official question sources"/>
+        <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="notes" aid="practice" title="Explain, check, then practice with LAM"/>
 
         <div className="mt-8 mb-8">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-xs text-white/50 mb-5">

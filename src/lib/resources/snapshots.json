@@ -1,0 +1,918 @@
+[
+  {
+    "resourceId": "builtin-94d0496c8d5d2f31cb5f",
+    "revision": "4520172",
+    "retrievedAt": "2026-10-02T06:09:19.199Z",
+    "sections": [
+      {
+        "heading": "Physics Study Guide · Force",
+        "text": "Force\n\n\nA net force on a body causes a body to accelerate. Force is any interaction that, when unopposed, will change the motion of an object.\n\nLater, Albert Einstein proved that these laws are just a convenient approximation. These laws, however, greatly simplify calculations and are used when studying objects at velocities that are small compared with the speed of light.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force"
+      },
+      {
+        "heading": "Friction",
+        "text": "\n\nIt is the force that opposes relative motion or tendency of relative motion between two surfaces in contact represented by f. When two surfaces move relative to each other or they have a tendency to move relative to each other, at the point (or surface) of contact, there appears a force which opposes this relative motion or tendency of relative motion between two surfaces in contact. It acts on both the surfaces in contact with equal magnitude and opposite directions (Newton's 3rd law). Friction force tries to stop relative motion between two surfaces in contact, if it is there, and when two surfaces in contact are at rest relative to each other, the friction force tries to maintain this relative rest. Friction force can assume the magnitude (below a certain maximum magnitude called limiting static friction) required to maintain relative rest between two surfaces in contact. Because of this friction force is called a self adjusting force.\n\nEarlier, it was believed that friction was caused due to the roughness of the two surfaces in contact with each other. However, modern theory stipulates that the cause of friction is the Coulombic force between the atoms present in the surface of the regions in contact with each other.\n\nFormula: Limiting Friction = (Friction Coefficient)(Normal reaction)\n\nStatic Friction = the friction force that keeps an object at relative rest.\n\nKinetic Friction = sliding friction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force"
+      },
+      {
+        "heading": "Newton's First Law of Motion",
+        "text": "\n\n(The Law of Inertia)\n\nA static object with no net force acting on it remains at rest or if in movement it will maintain a constant velocity\nThis means, essentially, that acceleration does not occur without the presence of a force. The object tends to maintain its state of motion. If it is at rest, it remains at rest and if it is moving with a velocity then it keeps moving with the same velocity. This tendency of the object to maintain its state of motion is greater for larger mass. The \"mass\" is, therefore, a measure of the inertia of the object.\n\nIn a state of equilibrium, where the object is at rest or proceeding at a constant velocity, the net force in every direction must be equal to 0.\n\nAt a constant velocity (including zero velocity), the sum of forces is 0. If the sum of forces does not equal zero, the object will accelerate (change velocity over time).\n\nIt is important to note, that this law is applicable only in non-accelerated coordinate systems. It is so, because the perception of force in accelerated systems are different. A body under balanced force system in one frame of reference, for example a person standing in an accelerating lift, is acted upon by a net force in the earth's frame of reference. \n\nInertia is the tendency of an object to maintain its velocity i.e. to resist acceleration.\n\nInertia is not a force.\n\nInertia varies directly with mass.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force"
+      },
+      {
+        "heading": "Newton's Second Law of Motion",
+        "text": "\n\nThe time rate of change in momentum is proportional to the applied force and takes place in the direction of the force.\n\n'The acceleration of an object is proportional to the force acting upon it.\n\nThese two statements mean the same thing, and is represented in the following basic form (the system of measurement is chosen such that constant of proportionality is 1) :\n\n $\\vec{F}=\\frac{d}{dt}(m\\vec{v})$ \n\nThe product of mass and velocity i.e. mv is called the momentum. The net force on a particle is thus equal to rate change of momentum of the particle with time. Generally mass of the object under consideration is constant and thus can be taken out of the derivative.\n\n $\\vec{F}=m\\frac{d\\vec{v}}{dt}=m\\vec{a}$ \n\nForce is equal to mass times acceleration. This version of Newton's Second Law of Motion assumes that the mass of the body does not change with time, and as such, does not represent a general mathematical form of the Law. Consequently, this equation cannot, for example, be applied to the motion of a rocket, which loses its mass (the lost mass is ejected at the rear of the rocket) with the passage of time.\n\nAn example:\nIf we want to find out the downward force of gravity on an object on Earth, we can use the following formula:\n\n $‖\\vec{F}‖=m‖\\vec{g}‖$ \n\nHence, if we replace m with whatever mass is appropriate, and multiply it by 9.806 65 m/s2, it will give the force in newtons that the earth's gravity has on the object in question (in other words, the body's weight).",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force"
+      },
+      {
+        "heading": "Newton's Third Law of Motion",
+        "text": "\n\nForces occur in pairs equal in magnitude and opposite in direction\nThis means that for every force applied on a body A by a body B, body B receives an equal force in the exact opposite direction. This is because forces can only be applied by a body on another body. It is important to note here that the pair of forces act on two different bodies, affecting their state of motion. This is to emphasize that pair of equal forces do not cancel out.\n\nThere are no spontaneous forces.\n\nIt is very important to note that the forces in a \"Newton 3 pair\", described above, can never act on the same body. One acts on A, the other on B. A common error is to imagine that the force of gravity on a stationary object and the \"contact force\" upwards of the table supporting the object are equal by Newton's third law. This is not true. They may be equal - but because of the second law (their sum must be zero because the object is not accelerating), not because of the third.\n\nThe \"Newton 3 pair\" of the force of gravity (= earth's pull) on the object is the force of the object attracting the earth, pulling it upwards. The \"Newton 3 pair\" of the table pushing it up is that it, in its turn, pushes the table down.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force"
+      },
+      {
+        "heading": "Equations",
+        "text": "\n\nTo find Displacement\n\n $Δx=t{\\vec{v}}_{i}+\\frac{{t}^{2}\\vec{a}}{2}$ \n\nTo find Final Velocity\n\n ${\\vec{v}}_{f}={\\vec{v}}_{i}+t\\vec{a}$ \n\nTo find Final Velocity\n\n $({v}_{f}{)}^{2}=({v}_{i}{)}^{2}+2aΔx$ \n\nTo find Force when mass is changing\n\n $\\vec{F}=\\frac{d}{dt}(m\\vec{v})$ \n\nTo find Force when mass is a constant\n\n $\\vec{F}=m\\frac{d\\vec{v}}{dt}=m\\vec{a}$ \n\nVariables\n\n $\\vec{F}$ Force (N)\n $m\\text{ }$ Mass (kg)\n $\\vec{a}$ Acceleration (m/s2)\n $\\vec{p}$ Momentum (kg m/s)\n $t\\text{ }$ time (s)\n $\\vec{T}$ Tension (N)\n $\\vec{g}$ Acceleration due to gravity near the earth's surface ( $‖\\vec{g}‖=9.806\\text{ }65m/{s}^{2}$ see Physics Constants)\n\nDefinitions\n\nForce (F): Force is equal to rate change of momentum with time. (Newton’s second law). A vector. Units: newtons (N)\nThe newton (N): defined as the force it takes to accelerate one kilogram one metre per second squared (U.S. meter per second squared), that is, the push it takes to speed up one kilogram from rest to a velocity of 1 m/s in 1 second $1N=1kg\\cdot m/{s}^{2}$ \nMass (m) : Also called inertia. The tendency of an object to resist change in its motion, and its response to a gravitational field. A scalar. Units: kilograms (kg)\nAcceleration (a): Change in velocity (Δv) divided by time (t). A vector. Units: meters per second squared (U.S. meters per seconds squared) (m/s2)\nMomentum (p): Mass times velocity. Expresses the motion of a body and its resistance to changing that motion. A vector. Units: kg m/s\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Force"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-537c65bed013e7922464",
+    "revision": "4660423",
+    "retrievedAt": "2026-10-02T06:09:19.340Z",
+    "sections": [
+      {
+        "heading": "Linear momentum",
+        "text": "\n\nMomentum is equal to mass times velocity. It is the potential force of a moving object against another object if it collides with that other object.\n\n $\\vec{p}=m\\vec{v}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      },
+      {
+        "heading": "Angular momentum",
+        "text": "\n\nAngular momentum of an object revolving around an external axis $O$ is equal to the cross-product of the position vector with respect to $O$ and its linear momentum.\n\n $\\vec{L}=\\vec{r}\\times \\vec{p}=\\vec{r}\\times m\\vec{v}$ \n\nAngular momentum of a rotating object is equal to the moment of inertia times angular velocity.\n\n $\\vec{L}=I\\vec{ω}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      },
+      {
+        "heading": "Force and linear momentum, torque and angular momentum",
+        "text": "\n\nNet force is equal to the change in linear momentum over the change in time.\n\n $\\vec{F}=\\frac{Δ\\vec{p}}{Δt}$ \n\nNet torque is equal to the change in angular momentum over the change in time.\n\n $\\vec{τ}=\\frac{Δ\\vec{L}}{Δt}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      },
+      {
+        "heading": "Conservation of momentum",
+        "text": "\n\n $\\begin{matrix}{\\vec{p}}_{i}={\\vec{p}}_{f}\\\\{\\vec{L}}_{i}={\\vec{L}}_{f}\\end{matrix}$ \n\nLet us prove this law. \n\nWe'll take two particles $a,b$ . Their momentums are ${\\vec{p}}_{a},{\\vec{p}}_{b}$ . They are moving opposite to each other along the $x$ -axis and they collide.\nNow force is given by:\n\n $\\vec{F}=\\frac{d\\vec{p}}{dt}$ \nAccording to Newton's third law, the forces on each particle are equal and opposite.So,\n\n $\\frac{d{\\vec{p}}_{a}}{dt}=-\\frac{d{\\vec{p}}_{b}}{dt}$ \nRearranging, \n\n $\\frac{d\\vec{p}}{dt}+\\frac{d{\\vec{p}}_{b}}{dt}=0$ \nThis means that the sum of the momentums does not change with time. Therefore, the law is proved.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      },
+      {
+        "heading": "Variables",
+        "text": "p: momentum, (kg·m/s) \n\nm: mass, (kg)\n\nv: velocity (m/s)\n\nL: angular momentum, (kg·m2/s)\n\nI: moment of inertia, (kg·m2)\n\nω: angular velocity (rad/s)\n\nα: angular acceleration (rad/s2)\n\nF: force (N)\n\nt: time (s)\n\nr: position vector (m)\n\n Bold denotes a vector quantity.\n\n Italics denotes a scalar quantity.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      },
+      {
+        "heading": "Definition of terms",
+        "text": "\n\nMomentum (p): Mass times velocity. (kg·m/s)\n\nMass (m) : A quantity that describes how much material exists, or how the material responds in a gravitational field. Mass is a measure of inertia. (kg)\n\nVelocity (v): Displacement divided by time (m/s)\n\nAngular momentum (L): A vector quantity that represents the tendency of an object in circular or rotational motion to remain in this motion. (kg·m2/s)\n\nMoment of inertia (I): A scalar property of a rotating object. This quantity depends on the mass of the object and how it is distributed. The equation that defines this is different for differently shaped objects. (kg·m2)\n\nAngular speed (ω): A scalar measure of the rotation of an object. Instantaneous velocity divided by radius of motion (rad/s)\n\nAngular velocity (ω): A vector measure of the rotation of an object. Instantaneous velocity divided by radius of motion, in the direction of the axis of rotation. (rad/s)\n\nForce (F): mass times acceleration, a vector. Units: newtons (N)\n\nTime (t) : (s)\n\nIsolated system: A system in which there are no external forces acting on the system.\n\nPosition vector (r): a vector from a specific origin with a magnitude of the distance from the origin to the position being measured in the direction of that position. (m)",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      },
+      {
+        "heading": "Calculus-based Momentum",
+        "text": "\n\nForce is equal to the derivative of linear momentum with respect to time.\n\n $\\vec{F}=\\frac{d\\vec{p}}{dt}$ \n\nTorque is equal to the derivative of angular momentum with respect to time.\n\n $\\vec{τ}=\\frac{d\\vec{L}}{dt}$ \n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Momentum"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-e522bef89668712871a0",
+    "revision": "4660429",
+    "retrievedAt": "2026-10-02T06:09:19.344Z",
+    "sections": [
+      {
+        "heading": "Physics Study Guide · Work",
+        "text": "Work\n\n\nWork is equal to the scalar product of force and displacement.\n\n $W=\\vec{F}\\cdot \\vec{d}$ \n\nThe scalar product of two vectors is defined as the product of their lengths with the cosine of the angle between them.\nWork is equal to force times displacement times the cosine of the angle between the directions of force and displacement.\n\n $W=‖\\vec{F}‖\\text{ }‖\\vec{d}‖cos⁡θ$ \n\nWork is equal to change in kinetic energy plus change in potential energy for example the potential energy due to gravity. \n\n $W=ΔKE+Δ{PE}_{g}\\text{ }$ \n\nWork is equal to average power times time. \n\n $W=Pt\\text{ }$ \n\nThe Work done by a force taking something from point 1 to point 2 is\n\n ${W}_{1,2}={\\int }_{{\\vec{x}}_{1}}^{{\\vec{x}}_{2}}\\vec{F}\\cdot d\\vec{l}$ \n\nWork is in fact just a transfer of energy. When we 'do work' on an object, we transfer some of our energy to it. This means that the work done on an object is its increase in energy. Actually, the kinetic energy and potential energy is measured by calculating the amount of work done on an object. The gravitational potential energy (there are many types of potential energies) is measured as 'mgh'. mg is the weight/force and h is the distance. The product is nothing but the work done. Even kinetic energy is a simple deduction from the laws of linear motion. Try substituting for v^2 in the formula for kinetic energy.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Work"
+      },
+      {
+        "heading": "Definition of terms",
+        "text": "Work (W): Force times distance. Units: joules (J)\n\nForce (F): mass times acceleration (Newton’s classic definition). A vector. Units: newtons (N)\n\nWhen work is applied to an object or a system it adds or removes kinetic energy to or from that object or system. More precisely, a net force in one direction, when applied to an object moving opposite or in the same direction as the force, kinetic energy will be added or removed to or from that object. Note that work and energy are measured in the same unit, the joule (J).\n\nAdvanced work topics\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Work"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-98cf28cf1e556eba136d",
+    "revision": "4660427",
+    "retrievedAt": "2026-10-02T06:09:19.325Z",
+    "sections": [
+      {
+        "heading": "Physics Study Guide · Energy",
+        "text": "Energy\n\n\nKinetic energy is simply the capacity to do work by virtue of motion.\n\n(Translational) kinetic energy is equal to one-half of mass times the square of velocity. \n\n ${KE}_{T}=\\frac{1}{2}m‖\\vec{v}{‖}^{2}$ \n\n(Rotational) kinetic energy is equal to one-half of moment of inertia times the square of angular velocity.\n\n ${KE}_{R}=\\frac{1}{2}I{ω}^{2}$ \n\nTotal kinetic energy is simply the sum of the translational and rotational kinetic energies. In most cases, these energies are separately dealt with. It is easy to remember the rotational kinetic energy if you think of the moment of inertia I as the rotational mass. However, you should note that this substitution is not universal but rather a rule of thumb.\n\nPotential energy is simply the capacity to do work by virtue of position (or arrangement) relative to some zero-energy reference position (or arrangement).\n\nPotential energy due to gravity is equal to the product of mass, acceleration due to gravity, and height (elevation) of the object. \n\n ${PE}_{g}=-m\\vec{g}\\cdot \\vec{x}=mgy$ \n\nNote that this is simply the vertical displacement multiplied by the weight of the object. The reference position is usually the level ground but the initial position like the rooftop or treetop can also be used.\nPotential energy due to spring deformation is equal to one-half the product of the spring constant times the square of the change in length of the spring.\n\n ${PE}_{e}=\\frac{1}{2}k‖\\vec{x}-{\\vec{x}}_{e}{‖}^{2}=\\frac{1}{2}k‖Δ\\vec{x}{‖}^{2}$ \n\nThe reference point of spring deformation is normally when the spring is \"relaxed,\" i.e. the net force exerted by the spring is zero. It will be easy to remember that the one-half factor is inserted to compensate for finite '\"change in length\" since one would want to think of the product of force and change in length $(kΔ\\vec{x})\\cdot Δ\\vec{x}$ directly. Since the force actually varies with $Δ\\vec{x}$ , it is instructive to need a \"correction factor\" during integration.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Energy"
+      },
+      {
+        "heading": "Variables",
+        "text": "K: Kinetic energy (J)\n\nm: mass (kg)\n\nv: velocity (m/s)\n\nI: moment of inertia, (kg·m2)\n\nω: (\"omega\") angular momentum (rad/s) \n\nUg: Potential energy (J)\n\ng: local acceleration due to gravity (on the earth’s surface, 9.8 m/s2)\n\nh: height of elevation (m)\n\nUe: Potential energy (J)\n\nk: spring constant (N/m)\n\nΔx: change in length of spring (m)",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Energy"
+      },
+      {
+        "heading": "Definition of terms",
+        "text": "Energy: a theoretically indefinable quantity that describes potential to do work. SI unit for energy is the joule (J). Also common is the calorie (cal). \n\nThe joule: defined as the energy needed to push with the force of one newton over the distance of one meter. Equivalent to one newton-meter (N·m) or one watt-second (W·s).\n\n1 joule = 1 J = 1 newton • 1 meter = 1 watt • 1 second\n\nEnergy comes in many varieties, including Kinetic energy, Potential energy, and Heat energy.\n\nKinetic energy (K): The energy that an object has due to its motion. Half of velocity squared times mass. Units: joules (J)\n\nPotential energy due to gravity (UG): The energy that an object has stored in it by elevation from a mass, such as raised above the surface of the earth. This energy is released when the object becomes free to move. Mass times height time acceleration due to gravity. Units: joules (J) \n\nPotential energy due to spring compression (UE): Energy stored in spring when it is compressed. Units: joules (J)\n\nHeat energy (Q): Units: joules (J)\n\nSpring compression (Dx): The difference in length between the spring at rest and the spring when stretched or compressed. Units: meters (m)\n\nSpring constant (k): a constant specific to each spring, which describes its “springiness”, or how much work is needed to compress the spring. Units: newtons per meter (N/m) \n\nChange in spring length (Δx): The distance between the at-rest length of the spring minus the compressed or extended length of the spring. Units: meters (m)\n\nMoment of inertia (I): Describes mass and its distribution. (kg•m2)\n\nAngular momentum (ω): Angular velocity times mass (inertia). (rad/s)\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Energy"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-f299ceb1f14f30177289",
+    "revision": "4660431",
+    "retrievedAt": "2026-10-02T06:09:19.358Z",
+    "sections": [
+      {
+        "heading": "Newtonian Gravity",
+        "text": "\n\nNewtonian Gravity (simplified gravitation) is an apparent force (a.k.a. pseudoforce) that simulates the attraction of one mass to another mass. Unlike the three fundamental (real) forces of electromagnetism and the strong and weak nuclear forces, gravity is purely attractive. As a force it is measured in newtons. The distance between two objects is measured between their centers of mass.\n\n $F=G\\cdot \\frac{{m}_{1}{m}_{2}}{{r}^{2}}$ \n\nGravitational force is equal to the product of the universal gravitational constant and the masses of the two objects, divided by the square of the distance between their centers of mass.\n\n $g=G\\cdot \\frac{{m}_{1}}{{r}^{2}}$ \n\nThe value of the gravitational field which is equivalent to the acceleration due to gravity caused by an object at a point in space is equal to the first equation about gravitational force, with the effect of the second mass taken out.\n\n $U=-G\\cdot \\frac{Mm}{r}$ \n\nGravitational potential energy of a body to infinity is equal to the universal gravitational constant times the mass of a body from which the gravitational field is being created times the mass of the body whose potential energy is being measured over the distance between the two centers of mass. Therefore, the difference in potential energy between two points is the difference of the potential energy from the position of the center of mass to infinity at both points. Near the earth's surface, this approximates:\n\n $Δ{U}_{g}=mgh$ \n\nPotential energy due to gravity near the earth's surface is equal to the product of mass, acceleration due to gravity, and height (elevation) of the object.\n\nIf the potential energy from the body's center of mass to infinity is known, however, it is possible to calculate the escape velocity, or the velocity necessary to escape the gravitational field of an object. This can be derived based on utilizing the law of conservation of energy and the equation to calculate kinetic energy as follows:\n\n $\\begin{matrix} & {𝒌𝒆}_{initial}=ΔU\\\\\\\\ & {𝒌𝒆}_{initial}={U}_{infinity}-{U}_{initial}\\\\\\\\ & \\frac{1}{2}m{v}^{2}=G\\cdot \\frac{Mm}{r}\\\\\\\\ & {v}_{esc}=\\sqrt{\\frac{2GM}{r}}\\end{matrix}$ \n\n}}",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Gravity"
+      },
+      {
+        "heading": "Variables",
+        "text": "F: force (N)\n\nG: universal constant of gravitation, (6.67x10-11 N•m2/kg2)\n\nm1: mass of the first body\n\nm2: mass of the second body\n\nr: the distance between the point at which the force or field is being taken, and the center of mass of the first body\n\ng: acceleration due to gravity (on the earth’s surface, this is 9.8 m/s2)\n\nU: potential energy from the location of the center of mass to infinity (J)\n\nΔUg: Change in potential energy (J)\n\nm and M: mass (kg)\n\nh: height of elevation (m)\n\nvesc: escape velocity (m/s)",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Gravity"
+      },
+      {
+        "heading": "Definition of terms",
+        "text": "Universal constant of gravitation (G): This is a constant that is the same everywhere in the known universe and can be used to calculate gravitational attraction and acceleration due to gravity.\n\n6.67x10-11 N·m2/kg2 \n\nMass one (m1): One of two masses that are experiencing a mutual gravitational attraction. We can use this for the mass of the Earth (1023 kg).\n\nMass two (m2): One of two masses that are experiencing a mutual gravitational attraction. This symbol can represent the mass of an object on or close to earth. \n\nUnits: kilograms (kg)\n\nAcceleration due to gravity (g): This is nearly constant near the earth's surface because the mass and radius of the earth are essentially constant. At extreme altitudes the value can vary slightly, but it varies more significantly with latitude. This is also equal to the value of the gravitational field caused by a body at a particular point in space\n\n(9.8 m/s2)\n\nEscape velocity (vesc): The velocity necessary to completely escape the gravitational effects of a body.\n\nA black hole is a geometrically defined region of space time exhibiting such large centripetal gravitational effects that nothing such as particles and electromagnetic radiation such as light may escape from inside of it. That is the escape velocity upon the event horizon is equivalent to the speed of light. General relativity is a metric theory of gravitation generalizing space time and Newton's law of universal gravitational attraction as a geometric property of space time.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Gravity"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-d0ee8a47b06fbf577ffc",
+    "revision": "4659690",
+    "retrievedAt": "2026-10-02T06:09:19.464Z",
+    "sections": [
+      {
+        "heading": "Torque and Circular Motion",
+        "text": "\n\nCircular motion is the motion of a particle at a set distance (called radius) from a point. For circular motion, there needs to be a force that makes the particle turn. This force is called the 'centripetal force.' Please note that the centripetal force is not a new type of force-it is just a force causing rotational motion. To make this clearer, let us study the following examples:\n\nIf Stone ties a piece of thread to a small pebble and rotates it in a horizontal circle above his head, the circular motion of the pebble is caused by the tension force in the thread.\n\nIn the case of the motion of the planets around the sun (which is roughly circular), the force is provided by the gravitational force exerted by the sun on the planets.\n\nThus, we see that the centripetal force acting on a body is always provided by some other type of force -- centripetal force, thus, is simply a name to indicate the force that provides this circular motion.\nThis centripetal force is always acting inward toward the center. You will know this if you swing an object in a circular motion. If you notice carefully, you will see that you have to continuously pull inward.\nWe know that an opposite force should exist for this centripetal force(by Newton's 3rd Law of Motion). This is the centrifugal force, which exists only if we study the body from a non-inertial frame of reference(an accelerating frame of reference, such as in circular motion). This is a so-called 'pseudo-force', which is used to make the Newton's law applicable to the person who is inside a non-inertial frame. e.g. If a driver suddenly turns the car to the left, you go towards the right side of the car because of centrifugal force. The centrifugal force is equal and opposite to the centripetal force. It is caused due to inertia of a body.\n\n ${ω}_{\\text{avg}}=\\frac{ω+{ω}_{f}}{2}=\\frac{θ}{t}$ \nAverage angular velocity is equal to one-half of the sum of initial and final angular velocities assuming constant acceleration, and is also equal to the angle gone through divided by the time taken. \n\n $α=\\frac{Δω}{t}$ \nAngular acceleration is equal to change in angular velocity divided by time taken.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Torque"
+      },
+      {
+        "heading": "Angular momentum",
+        "text": "\n\n $\\vec{L}=\\vec{r}\\times \\vec{p}=m(\\vec{r}\\times \\vec{v})$ \n\nAngular momentum of an object revolving around an external axis $O$ is equal to the cross-product of the position vector with respect to $O$ and its linear momentum.\n\n $\\vec{L}=I\\vec{ω}$ \n\nAngular momentum of a rotating object is equal to the moment of inertia times angular velocity.\n\n $L=Iω$ \n\n $τ=Iα=\\frac{ΔL}{t}$ >\nRotational Kinetic Energy is equal to one-half of the product of moment of inertia and the angular velocity squared.\n\nIT IS USEFUL TO NOTE THAT\nThe equations for rotational motion are analogous to those for linear motion-just look at those listed above.\nWhen studying rotational dynamics, remember:\n\nthe place of force is taken by torque\n\nthe place of mass is taken by moment of inertia\n\nthe place of displacement is taken by angle\n\nthe place of linear velocity, momentum, acceleration, etc. is taken by their angular counterparts.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Torque"
+      },
+      {
+        "heading": "Definition of terms",
+        "text": "\n\nTorque ( $\\vec{τ}$ ): Force times distance. A vector. $N\\cdot m$ \n\nMoment of inertia ( $I$ ): Describes the object's resistance to torque — the rotational analog to inertial mass. $kg\\cdot {m}^{2}$ \n\nAngular momentum ( $\\vec{L}$ ): $kg\\cdot \\frac{{m}^{2}}{s}$ \n\nAngular velocity ( $\\vec{ω}$ ): $\\frac{\\text{rad}}{s}$ \n\nAngular acceleration ( $\\vec{α}$ ): $\\frac{\\text{rad}}{{s}^{2}}$ \n\nRotational kinetic energy ( ${K}_{r}$ ): $J=kg\\cdot {(\\frac{m}{s})}^{2}$ \n\nTime ( $t$ ): $s$ \n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Torque"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-2ce41f6f0f994fa7ad5e",
+    "revision": "4601500",
+    "retrievedAt": "2026-10-02T06:09:19.155Z",
+    "sections": [
+      {
+        "heading": "Time",
+        "text": "\n\nTime is defined as the duration between two events. In the international system of measurement (S.I.) the second (s) is the basic unit of time and it is defined as the time it takes a cesium (Cs) atom to perform 9,192,631,770 complete oscillations. The Earth revolves around its own axis in 86400 seconds with respect to the Sun; this is known as the mean solar day, and the 86400th part of one day is known as a second.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Length",
+        "text": "\n\nIn the international system of measurement (S.I.) the metre (m) ('meter' in the US) is the basic unit of length and is defined as the distance travelled by light in a vacuum in 1/299,792,458 second. This definition establishes that the speed of light in a vacuum is precisely 299,792,458 metres per second.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Mass",
+        "text": "\n\nIn the international system of measurement (S.I.) the kilogram (kg) is the basic unit of mass and was defined as the mass of a specific platinum-iridium alloy cylinder kept at the Bureau International des Poids et Mesures in Sèvres, France. A duplicate of the Sèvres cylinder is kept at the National Institute of Standards and Technology (NIST) in Gaithersburg, Maryland. See Wikipedia article.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Current",
+        "text": "\n\nIn the international system of measurement (S.I.) the ampere (A) is the basic measure of electrical current. It is defined as the constant current which, if maintained in two straight parallel conductors of infinite length, of negligible circular cross-section, and placed 1 metre (m) apart in vacuum, would produce between these conductors a force equal to 2×10-7 newton (N) per metre of length.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Unit of Thermodynamic Temperature",
+        "text": "\n\nThe kelvin (K), unit of thermodynamic temperature, is the fraction 1/273.16 of the thermodynamic temperature of the triple point of water.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Unit of Amount of Substance",
+        "text": "\n\n1. The mole (mol) is the amount of substance of a system that contains as many elementary entities as there are atoms in 0.012 kilograms (12 grams) of carbon 12. \n\n2. When the mole is used, the elementary entities must be specified and may be atoms, molecules, ions, electrons, other particles, or specified groups of such particles.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Luminous Intensity",
+        "text": "\n\nThe candela (cd) is the luminous intensity, in a given direction, of a source that emits monochromatic radiation of frequency 540 x 1012 hertz and that has a radiant intensity in that direction of 1/683 watt per steradian. (A steradian (sr) is the SI unit of solid angle, equal to the angle at the centre of a sphere subtended by a part of the surface equal in area to the square of the radius.)",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Charge",
+        "text": "\n\nThe SI unit of charge is the coulomb (C). It is equal to ampere times second:\n $1\\text{ }C=1\\text{ }A\\cdot s$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Force",
+        "text": "\n\nThe SI unit of force is the newton ( $N$ ), named after Sir Isaac Newton. It is equal to $1\\text{ }kg\\cdot m/{s}^{2}$ .",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Energy",
+        "text": "\n\nThe SI unit of energy is the joule (J).\nThe joule has base units of kg·m²/s² = N·m.\nA joule is defined as the work done or energy required to exert a force of one newton for a distance of one metre.\nSee Wikipedia article.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Pressure",
+        "text": "\n\nThe SI unit of pressure is the pascal (Pa).\nThe pascal has base units of $N/{m}^{2}$ or $kg/m\\cdot {s}^{2}$ . See Wikipedia article.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Prefixes",
+        "text": "\n\nPrefix\n\nyotta\n\nzetta\n\nexa\n\npeta\n\ntera\n\ngiga\n\nmega\n\nkilo\n\nhecto\n\ndeca\n\n \n\ndeci\n\ncenti\n\nmilli\n\nmicro\n\nnano\n\npico\n\nfemto\n\natto\n\nzepto\n\nyocto\n\nSymbol\n\nY\n\nZ\n\nE\n\nP\n\nT\n\nG\n\nM\n\nk\n\nh\n\nda\n\n \n\nd\n\nc\n\nm\n\nµ\n\nn\n\np\n\nf\n\na\n\nz\n\ny\n\n10n\n\n1024\n\n1021\n\n1018\n\n1015\n\n1012\n\n109\n\n106\n\n103\n\n102\n\n101\n\n100\n\n10-1\n\n10-2\n\n10-3\n\n10-6\n\n10-9\n\n10-12\n\n10-15\n\n10-18\n\n10-21\n\n10-24\n\n1000n\n\n10008\n\n10007\n\n10006\n\n10005\n\n10004\n\n10003\n\n10002\n\n10001\n\n \n\n \n\n \n\n \n\n \n\n1000-1\n\n1000-2\n\n1000-3\n\n1000-4\n\n1000-5\n\n1000-6\n\n1000-7\n\n1000-8\n\nAstronomical Measurements\n\n\nThe SI units are not always convenient to use, even with the larger (and smaller) prefixes. For astronomy, the following units are prevalent:",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Julian Year",
+        "text": "\n\nThe Julian year is defined by the IAU as exactly 365.25 days, a day being exactly 60*60*24 = 86,400 SI seconds. The Julian year is therefore equal to 31,557,600 seconds.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Astronomical Unit",
+        "text": "\n\nThe Astronomical Unit (au or ua), often used for measuring distances in the Solar system, is the average distance from the Earth to the Sun. In 2012 this was defined as exactly 149,597,870,700 metres. Previously it was 149,597,870,691 m, ± 30 m.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Light Year",
+        "text": "\n\nThe light year (ly) is defined as the distance light travels in a homogeneous isotopic non-attenuating medium (a vacuum) in one Julian year. Due to the word \"year\", the light year is often mistaken for a unit of time in popular culture. It is, however, a unit of length (distance), and is equal to exactly 9,460,730,472,580,800 m.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      },
+      {
+        "heading": "Parsec",
+        "text": "\n\nThe parsec (pc), or \"parallax second\", is the distance of an object that appears to move two arc-seconds against the background stars as the Earth moves around the sun, or by definition one arc-second of parallax angle. This angle is measured in reference to a line connecting the object and the Sun, and thus the apparent motion is one arc-second on either side of this \"central\" position. The parsec is approximately 3.26156 ly.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Basic_Units"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-b10cdd75a76dcc07da44",
+    "revision": "4608584",
+    "retrievedAt": "2026-10-02T06:09:19.187Z",
+    "sections": [
+      {
+        "heading": "Physics Study Guide · Linear Motion",
+        "text": "Kinematics is the description of motion. The motion of a point particle is fully described using three terms - position, velocity, and acceleration. For real objects (which are not mathematical points), translational kinematics describes the motion of an object's center of mass through space, while angular kinematics describes how an object rotates about its centre of mass. In this section, we focus only on translational kinematics.\nPosition, displacement, velocity, and acceleration are defined as follows.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Position",
+        "text": "\n\n\"Position\" is a relative term that describes the location of an object RELATIVE to some chosen stationary point that is usually described as the \"origin\". \n\nA vector is a quantity that has both magnitude and direction, typically written as a column of scalars. That is, a number that has a direction assigned to it. \n\nIn physics, a vector often describes the motion of an object. For example, Warty the Woodchuck goes 10 meters towards a hole in the ground. \n\nWe can divide vectors into parts called \"components\", of which the vector is a sum. For example, a two-dimensional vector is divided into x and y components.\n\nOne dimensional coordinate system\n\nTwo dimensional coordinate system\n\nThree dimensional coordinate system",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Displacement",
+        "text": "\n\n $Δ\\vec{x}≡{\\vec{x}}_{f}-{\\vec{x}}_{i}$ \n\nDisplacement answers the question, \"Has the object moved?\"\n\nNote the $≡$ symbol. This symbol is a sort of \"super equals\" symbol, indicating that not only does ${\\vec{x}}_{f}-{\\vec{x}}_{i}$ EQUAL the displacement $Δ\\vec{x}$ , but more importantly displacement is operationally defined by ${\\vec{x}}_{f}-{\\vec{x}}_{i}$ .\n\nWe say that ${\\vec{x}}_{f}-{\\vec{x}}_{i}$ operationally defines displacement, because ${\\vec{x}}_{f}-{\\vec{x}}_{i}$ gives a step by step procedure for determining displacement. \n\nNamely:\n\nMeasure where the object is initially.\n\nMeasure where the object is at some later time.\n\nDetermine the difference between these two position values.\n\nBe sure to note that displacement is not the same as distance travelled.\n\nFor example, imagine travelling one time along the circumference of a circle. If you end where you started, your displacement is zero, even though you have clearly travelled some distance. In fact, displacement is an average distance travelled. On your trip along the circle, your north and south motion averaged out, as did your east and west motion.\n\nClearly we are losing some important information. The key to regaining this information is to use smaller displacement intervals. For example, instead of calculating your displacement for your trip along the circle in one large step, consider dividing the circle into 16 equal segments. Calculate the distance you travelled along each of these segments, and then add all your results together. Now your total travelled distance is not zero, but something approximating the circumference of the circle. Is your approximation good enough? Ultimately, that depends on the level of accuracy you need in a particular application, but luckily you can always use finer resolution. For example, we could break your trip into 32 equal segments for a better approximation.\n\nReturning to your trip around the circle, you know the true distance is simply the circumference of the circle. The problem is that we often face a practical limitation for determining the true distance travelled. (The travelled path may have too many twists and turns, for example.) Luckily, we can always determine displacement, and by carefully choosing small enough displacement steps, we can use displacement to obtain a pretty good approximation for the true distance travelled. (The mathematics of calculus provides a formal methodology for estimating a \"true value\" through the use of successively better approximations.) In the rest of this discussion, I will replace $Δ$ with $δ$ to indicate that small enough displacement steps have been used to provide a good enough approximation for the true distance travelled.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Velocity",
+        "text": "\n\n ${\\vec{v}}_{av}≡\\frac{\\vec{{x}_{f}}-\\vec{{x}_{i}}}{{t}_{f}-{t}_{i}}≡\\frac{Δ\\vec{x}}{Δt}$ \n\n[Δ, delta, upper-case Greek D, is a prefix conventionally used to denote a difference.] Velocity answers the question \"Is the object moving now, and if so - how quickly?\"\n\nOnce again we have an operational definition: we are told what steps to follow to calculate velocity.\n\nNote that this is a definition for average velocity. The displacement Δx is the vector sum of the smaller displacements which it contains, and some of these may subtract out. By contrast, the distance travelled is the scalar sum of the smaller distances, all of which are non-negative (they are the magnitudes of the displacements). Thus the distance travelled can be larger than the magnitude of the displacement, as in the example of travel on a circle, above. Consequently, the average velocity may be small (or zero, or negative) while the speed is positive.\n\nIf we are careful to use very small displacement steps, so that they come pretty close to approximating the true distance travelled, then we can write the definition for instantaneous velocity as \n\n ${\\vec{v}}_{inst}≡\\frac{\\vec{δx}}{δt}$ \n\n[δ is the lower-case delta.] Or with the idea of limits from calculus, we have:\n\n ${\\vec{v}}_{inst}≡\\frac{d\\vec{x}}{dt}$ \n\n[d, like Δ and δ, is merely a prefix; however, its use definitely specifies that this is a sufficiently small difference so that the error--due to stepping (instead of smoothly changing) the quantity--becomes negligible.]",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Acceleration",
+        "text": "\n\n ${\\vec{a}}_{av}≡\\frac{\\vec{{v}_{f}}-\\vec{{v}_{i}}}{{t}_{f}-{t}_{i}}≡\\frac{Δ\\vec{v}}{Δt}$ \n\nAcceleration answers the question \"Is the object's velocity changing, and if so - how quickly?\"\n\nOnce again we have an operational definition. We are told what steps to follow to calculate acceleration.\n\nAgain, also note that technically we have a definition for average acceleration. As for displacement, if we are careful to use a series of small velocity changes, then we can write the definition for instantaneous acceleration as:\n\n ${\\vec{a}}_{inst}≡\\frac{δ\\vec{v}}{δt}$ \n\nOr with the help of calculus, we have:\n\n ${\\vec{a}}_{inst}≡\\frac{d\\vec{v}}{dt}=\\frac{{d}^{2}\\vec{x}}{d{t}^{2}}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Vectors",
+        "text": "\n\nNotice that the definitions given above for displacement, velocity and acceleration included little arrows over many of the terms. The little arrow reminds us that direction is an important part of displacement, velocity, and acceleration. These quantities are vectors. By convention, the little arrow always points right when placed over a letter. So for example, $\\vec{v}$ just reminds us that velocity is a vector, and does not imply that this particular velocity is rightward. \n\nWhy do we need vectors? As a simple example, consider velocity. It is not enough to know how fast one is moving. We also need to know which direction we are moving. Less trivially, consider how many different ways an object could be experiencing an acceleration (a change in its velocity). Ultimately, there are three distinct ways an object could accelerate:\n\nThe object could be speeding up.\n\nThe object could be slowing down.\n\nThe object could be traveling at constant speed, while changing its direction of motion.\n\nMore general accelerations are simply combinations of 1 and 3 or 2 and 3. \n\nImportantly, a change in the direction of motion is just as much an acceleration as is speeding up or slowing down. \n\nIn classical mechanics, no direction is associated with time (you cannot point to next Tuesday). So the definition of ${\\vec{a}}_{av}$ tells us that acceleration will point wherever the change in velocity $Δ\\vec{v}$ points. \n\nUnderstanding that the direction of $Δ\\vec{v}$ determines the direction of $\\vec{a}$ leads to three non-mathematical but very powerful rules of thumb:\n\nIf the velocity and acceleration of an object point in the same direction, the object's speed is increasing.\n\nIf the velocity and acceleration of an object point in opposite directions, the object's speed is decreasing.\n\nIf the velocity and acceleration of an object are perpendicular to each other, the object's initial speed stays constant (in that initial direction), while the speed of the object in the direction of the acceleration increases. Think of a bullet fired horizontally in a vertical gravitational field. Since velocity in the one direction remains constant, and the velocity in the other direction increases, the overall velocity (absolute velocity) also increases.\n\nAgain, more general motion is simply a combination of 1 and 3 or 2 and 3.\n\nUsing these three simple rules will dramatically help your intuition of what is happening in a particular problem. In fact, much of the first semester of college physics is simply the application of these three rules in different formats.\n\nEquations of motion (constant acceleration)\n\n\nA particle is said to move with constant acceleration if its velocity changes by equal amounts in equal intervals of time, no matter how small the intervals may be\n\n $\\frac{d\\vec{a}}{dt}=0\\text{ }\\frac{m}{{s}^{3}}$ \n\nSince acceleration is a vector, constant acceleration means that both direction and magnitude of this vector don't change during the motion. This means that average and instantaneous acceleration are equal. We can use that to derive an equation for velocity as a function of time by integrating the constant acceleration.\n\n $𝒗(t)=𝒗(0)+\\underset{0}{\\overset{t}{\\int }}𝒂\\text{ }dt$ \n\nGiving the following equation for velocity as a function of time.\n\n $𝒗(t)={𝒗}_{0}+𝒂t$ \n\nTo derive the equation for position we simply integrate the equation for velocity.\n\n $𝒙(t)=𝒙(0)+\\underset{0}{\\overset{t}{\\int }}𝒗(t)\\text{ }dt$ \n\nIntegrating again gives the equation for position.\n\n $𝒙(t)={𝒙}_{0}+{𝒗}_{0}t+\\frac{1}{2}𝒂{t}^{2}$ \n\nThe following are the equations of motion:\n\nEquations of Motion\n\nEquation\nDescription\n\n $\\vec{x}={\\vec{x}}_{0}+{\\vec{v}}_{0}t+\\frac{\\vec{a}{t}^{2}}{2}\\text{ }$ \nPosition as a function of time\n\n $\\vec{v}={\\vec{v}}_{0}+\\vec{a}t\\text{ }$ \nVelocity as a function of time\n\nThe following equations can be derived from the two equations above by combining them and eliminating variables.\n\n ${v}^{2}={v}_{0}^{2}+2\\vec{a}\\cdot (\\vec{x}-{\\vec{x}}_{0})\\text{ }$ \nEliminating time (very useful, see the section on Energy)\n\n $\\vec{x}={\\vec{x}}_{0}+\\frac{{\\vec{v}}_{0}t+\\vec{v}t}{2}$ \nEliminating acceleration\n\nSymbols\n\nSymbol\nDescription\n\n $\\vec{v}$ \nvelocity (at time t)\n\n $\\vec{{v}_{0}}$ \ninitial velocity\n\n $\\vec{a}$ \n(constant) acceleration\n\n $t\\text{ }$ \ntime (taken during the motion)\n\n $\\vec{x}$ \nposition (at time t)\n\n $\\vec{{x}_{0}}$ \ninitial position",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Acceleration in Three Dimensions",
+        "text": "\n\n(Needs content)\n\n \nA Wikibookian suggests that this book or chapter be merged into Physics Study Guide because:\nThis is because the module itself describes a small chapter already made in another module.\n\nPlease discuss whether or not this merge should happen on the discussion page.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "What does force in motion mean?",
+        "text": "\n\nForce means strength and power.\nMotion means movement.\nThat’s why we need forces and motions in our life.\nWe need calculation when we want to know how fast things go, travel and other things which have force and motion.\n...",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "How do we calculate the speed?",
+        "text": "\n\nIf you want to calculate the average speed, distance travelled or time taken you need to use this formula and remember it: \n\n $speed=\\frac{distance}{time\\text{ }taken}$ \n\nThis is an easy formula to use, you can find the distance travelled, time taken or average speed, you need at least 2 values to find the whole answer.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Is velocity the same thing as speed?",
+        "text": "\n\nVelocity is a vector quantity that refers to \"the rate at which an object changes its position\", whereas speed is a scalar quantity, which cannot be negative. Imagine a kid moving rapidly, one step forward and one step back, always returning to the original starting position. While this might result in a frenzy activity, it would result in a zero velocity, because the kid always returns to the original position, the motion would never result in a change in position, in other words $Δ\\vec{x}$ would be zero.\n\nSpeed is measured in the same physical units of measurement as velocity, but does not contain an element of direction. Speed is thus the magnitude component of velocity. Velocity contains both the magnitude and direction components. You can think of velocity as the displacement/duration, whereas speed can be though as distance/duration.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Acceleration",
+        "text": "\n\nWhen a car is speeding up we say that it is accelerating, when it slows down we say it is decelerating. it is a vector quantity.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "How do we calculate it?",
+        "text": "\n\nWhen we want to calculate it, the method goes like that: A lorry driver brakes hard, and slows from 25 m/s to 5 m/s in 5 seconds. What was the vehicle's acceleration? \n\n $acceleration=\\frac{change\\text{ }in\\text{ }velocity}{time\\text{ }taken}=\\frac{5-25}{5}=\\frac{-20}{5}=-4\\text{ }m{s}^{-2}$ \n\nWhat is initial velocity and final velocity?\nInitial velocity is the beginning before motion starts or in the middle of the motion, final velocity is when the motion stops.\n\nThere is another way to calculate it and it is like that \nThis equations which are written is the primary ones, which means that when you don’t have lets say final velocity, how will you calculate the equation?\n\nThis is the way you are going to calculate.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Observing motion",
+        "text": "\n\nWhen you want to know how fast an athletic person is running, what you need is a stopwatch in your hand, then when the person starts to run, you start the stopwatch and when the person who is sprinting stops at the end point, you stop the watch and see how fast he ran, and if you want to see if the athlete is wasting his energy, while he is running look at his movement, and you will know by that if he is wasting his energy or not.\n\nThis athletic person is running, and while he is running the scientist could know if he was wasting his energy if they want by the stop watch and looking at his momentum.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Measuring acceleration",
+        "text": "\n\nTake a slope, a trolley, some tapes and a stop watch, then put the tapes on the slope and take the trolley on the slope, and the stopwatch in your hand, as soon as you release the trolley, start timing the trolley at how fast it will move, when the trolley stops at the end then stop the timing.\nAfter wards, after seeing the timing , record it, then you let the slope a little bit high, and you will see, how little by little it will decelerate.\n\nNewton\n\n\nIsaac Newton was an English physicist, mathematician (described in his own day as a \"natural philosopher\") , astronomer and alchemist. Newton is one of the most influential scientists of all time, and he is known, among other things, for contributing to development of classical mechanics and for inventing, independently from Gottfried Leibniz, calculus.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Newton's laws of motion",
+        "text": "\n\nNewton is also known by his three laws of motion, which describe the relationship between a body and the forces acting upon it, and its motion in response to said forces.\n\nFirst Law (also known as the law of inertia) states that every body continues in its state of rest or state of uniform motion unless compelled to change that state by being subject to an external force. The moment of inertia is defined as the tendency of matter to resist any change in its state of motion or state of rest.\n\nSecond Law The vector sum of the external forces $F$ on an object is equal to the mass $m$ of that object multiplied by the acceleration vector $a$ of the object, or algebraically $F=ma$ .\n\nThird Law states that when one body exerts a force on a second body, the second body simultaneously exerts a force equal in magnitude and opposite in direction on the first body.\n\nSymbols\n\n\nSome useful symbols seen and that we will see:\n\nName\nSymbol\n\nDistance travelled\n $d$ or $s$ \n\nForce\n $F$ \n\nVelocity\n $\\vec{v}$ \n\nInitial velocity\n ${\\vec{v}}_{0}$ or ${\\vec{v}}_{i}$ \n\nFinal velocity\n ${\\vec{v}}_{f}$ \n\nChange in velocity\n $Δ\\vec{v}$ \n\nAcceleration\n $\\vec{a}$ \n\nMass\n $m$ \n\nNewton\n $N$ \n\nGravity\n $G$ \n\nWeight\n $W$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Force",
+        "text": "\n\nA force is any interaction that tends to change the motion of an object. In other words, a force can cause an object with mass to change its velocity. Force can also be described by intuitive concepts such as a push or a pull. A force has both magnitude and direction, making it a vector quantity. It is measured in the SI unit of newtons and represented by the symbol $F$ .",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "How to calculate the force?",
+        "text": "\n\nWhen we want to calculate the force, and we have the mass and acceleration, we can simply use the simple formula stated in the Newton's second law above, that is $F=ma$ , where $m$ is the mass (or the amount of matter in a body), and $a$ is the acceleration. Note that the Newton’s second law is defined as a numerical measure of inertia.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "What is inertia?",
+        "text": "\n\nInertia is the tendency of a body to maintain its state of rest or uniform motion, unless acted upon by an external force.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Robert Hooke",
+        "text": "\n\nRobert Hooke was an English polymath who played an important role in the scientific revolution, through both experimental and theoretical work.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      },
+      {
+        "heading": "Hooke's law",
+        "text": "\n\nHooke's law is a principle of physics that states that the force $F$ needed to extend or compress a spring by some distance $X$ is proportional to that distance, or algebraically $F=-kX$ , where $k$ is a constant factor characteristic of the spring, its stiffness.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Linear_Motion"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-d7deafa389ec9b2e42d8",
+    "revision": "4660422",
+    "retrievedAt": "2026-10-02T06:09:19.497Z",
+    "sections": [
+      {
+        "heading": "Physics Study Guide · Waves",
+        "text": "Waves\n\n\nWave is defined as the movement of any periodic motion like a spring, a pendulum, a water wave, an electric wave, a sound wave, a light wave, etc.\n\nA wave with constant amplitude.\nAny periodic wave that has amplitude varied with time, phase sinusoidally can be expressed mathematically as \n\nR(t , θ) = R Sin (ωt + θ)\nMinimum wave height (trough) at angle 0, π, 2π, ...\n\nF(R,t,θ) = 0 at θ = nπ\nMaximum wave height (peak or crest) at π/2, 3π/2, ...\n\nF(R,t,θ) = R at θ = (2n+1)π/2\nWavelength (distance between two crests) λ = 2π.\n\nλ = 2π - A circle or a wave\n2λ = 2(2π) - Two circles or two waves\nkλ = k2π - Circle k or k amount of waves\nWave Number,\n\nk\nVelocity (or Angular Velocity),\n\nω = 2πf\nTime Frequency,\n\nf = 1 / t\nTime\n\nt = 1 / f\n\nWave speed is equal to the frequency times the wavelength. It can be understood as how frequently a certain distance (the wavelength in this case) is traversed.\n\n $f=\\frac{v}{λ}$ \n\nFrequency is equal to speed divided by wavelength.\n\n $T=\\frac{1}{f}$ \n\nPeriod is equal to the inverse of frequency.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves"
+      },
+      {
+        "heading": "Definition of terms",
+        "text": "Wavelength (λ): The length of one wave, or the distance from a point on one wave to the same point on the next wave. Units: meters (m). In light, λ tells us the color.\n\nWave speed (v): the speed at which the wave pattern moves. Units: meters per second, (m/s)\n\nFrequency of oscillation (f) (or just frequency): the number of times the wave pattern repeats itself in one second. Units: seconds-1 = (1/s) = hertz (Hz) In sound, f tells us the pitch. The inverse of frequecy is the period of oscillation.\n\nPeriod of oscillation (T) (or just period): duration of time between one wave and the next one passing the same spot. Units: seconds (s). The inverse of the period is frequency. Use a capital, italic T and not a lowercase one, which is used for time.\n\nAmplitude (A): the maximum height of the wave measured from the average height of the wave (the wave’s center). Unit: meters (m)\n\nImage here\n\nThe wave’s extremes, its peaks and valleys, are called antinodes. At the middle of the wave are points that do not move, called nodes. \n\nExamples of waves: Water waves, sound waves, light waves, seismic waves, shock waves, electromagnetic waves …",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves"
+      },
+      {
+        "heading": "Oscillation",
+        "text": "\n\nA wave is said to oscillate, which means to move back and forth in a regular, repeating way. This fluctuation can be between extremes of position, force, or quantity.\nDifferent types of waves have different types of oscillations.\n\nLongitudinal waves: Oscillation is parallel to the direction of the wave. Examples: sound waves, waves in a spring.\n\nTransverse waves: Oscillation is perpendicular to direction of the wave. Example: light",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves"
+      },
+      {
+        "heading": "Interference",
+        "text": "\n\nWhen waves overlap each other it is called interference. This is divided into constructive and destructive interference. \n\nConstructive interference: the waves line up perfectly and add to each others’ strength.\n\nDestructive interference: the two waves cancel each other out, resulting in no wave.This happens when angle between them is 180 degrees.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves"
+      },
+      {
+        "heading": "Resonance",
+        "text": "\n\nIn real life, waves usually give a mishmash of constructive and destructive interference and quickly die out. However, at certain wavelengths standing waves form, resulting in resonance. These are waves that bounce back into themselves in a strengthening way, reaching maximum amplitude.\n\nResonance is a special case of forced vibration when the frequency of the impressed periodic force is equal to the natural frequency of the body so that it vibrates with increased amplitude, spontaneously.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Waves"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-8ca6699f2213aaa34f26",
+    "revision": "4408318",
+    "retrievedAt": "2026-10-02T06:09:19.507Z",
+    "sections": [
+      {
+        "heading": "Buoyancy",
+        "text": "\n\nBuoyancy is the force due to pressure differences on the top and bottom of an object under a fluid (gas or liquid).\n\nNet force = buoyant force - force due to gravity on the object",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Fluids"
+      },
+      {
+        "heading": "Bernoulli's Principle",
+        "text": "\n\nFluid flow is a complex phenomenon. An ideal fluid may be described as:\n\nThe fluid flow is steady i.e its velocity at each point is constant with time.\n\nThe fluid is incompressible. This condition applies well to liquids and in certain circumstances to gases.\n\nThe fluid flow is non-viscous. Internal friction is neglected. An object moving through this fluid does not experience a retarding force. We relax this condition in the discussion of Stokes' Law.\n\nThe fluid flow is irrotational. There is no angular momentum of the fluid about any point. A very small wheel placed at an arbitrary point in the fluid does not rotate about its center. Note that if turbulence is present, the wheel would most likely rotate and its flow is then not irrotational.\n\nAs the fluid moves through a pipe of varying cross-section and elevation, the pressure will change along the pipe. The Swiss physicist Daniel Bernoulli (1700-1782) first derived an expression relating the pressure to fluid speed and height. This result is a consequence of conservation of energy and applies to ideal fluids as described above.\n\nConsider an ideal fluid flowing in a pipe of varying cross-section. A fluid in a section of length $Δ{x}_{1}$ moves to the section of length $Δ{x}_{2}$ in time $Δt$ .\nThe relation given by Bernoulli is:\n\n $P+\\frac{1}{2}ρ{v}^{2}+ρgh=\\text{constant}$ \n\nwhere:\n\n $P$ is pressure at cross-section\n $h$ is height of cross-section\n $ρ$ is density\n $v$ is velocity of fluid at cross-section\nIn words, the Bernoulli relation may be stated as:\n\nAs we move along a streamline the sum of the pressure ( $P$ ), the kinetic energy per unit volume and the potential energy per unit volume remains a constant.\n\n(To be concluded)\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Fluids"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-39033f26f998b9fa7d82",
+    "revision": "3253746",
+    "retrievedAt": "2026-10-02T06:09:19.472Z",
+    "sections": [
+      {
+        "heading": "Hooke's law",
+        "text": "\n\n $\\vec{F}=-k\\vec{x}$ \n\n $k$ is the spring constant and $x$ is the displacement (the force is the restoring force)\n\nFor this equation to be approximately accurate, $x$ needs to be below the spring's elastic limit. If $x$ is more than the spring's elastic limit, the spring will exhibit \"plastic behaviour\" meaning that it will not return to its original position.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Periodic_Motion"
+      },
+      {
+        "heading": "Potential energy",
+        "text": "\n\npotential energy stored in a compressed recoiled spring \n\n $U=-\\underset{0}{\\overset{{x}_{f}}{\\int }}-k\\vec{x}\\cdot d\\vec{x}=\\frac{1}{2}k{{x}_{f}}^{2}$ \n\n $T$ is the period, $m$ is the mass, and $k$ is the spring constant. \n\n $T=2π\\sqrt{\\frac{m}{k}}$ \n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Periodic_Motion"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-db7cc3c21731d9b3cf8a",
+    "revision": "4408322",
+    "retrievedAt": "2026-10-02T06:09:19.720Z",
+    "sections": [
+      {
+        "heading": "Physics Study Guide · Thermodynamics",
+        "text": "Introduction\n\n\nThermodynamics deals with the movement of heat and its conversion to mechanical and electrical energy among others.\n\nLaws of Thermodynamics\n",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      },
+      {
+        "heading": "First Law",
+        "text": "\n\nThe First Law is a statement of conservation of energy law:\n\n $ΔU=Q-W$ \n\nThe First Law can be expressed as the change in internal energy of a system ( $ΔU$ ) equals the amount of energy added to a system (Q), such as heat, minus the work expended by the system on its surroundings (W).\n\nIf Q is positive, the system has gained energy (by heating).\n\nIf W is positive, the system has lost energy from doing work on its surroundings.\n\nAs written the equations have a problem in that neither Q or W are state functions or quantities which can be known by direct measurement without knowing the history of the system.\n\nIn a gas, the first law can be written in terms of state functions as\n\n $dU=Tds-pdV$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      },
+      {
+        "heading": "Zero-th Law",
+        "text": "\n\nAfter the first law of Thermodynamics had been named, physicists realised that there was another more fundamental law, which they termed the 'zero-th'.\n\nThis is that:\n\nIf two bodies are at the same temperature, there is no resultant heat flow between them.\n\nAn alternate form of the 'zero-th' law can be described:\n\nIf two bodies are in thermal equilibrium with a third, all are in thermal equilibrium with each other.\n\nThis second statement, in turn, gives rise to a definition of Temperature (T): \n\nTemperature is the only thing that is the same between two otherwise unlike bodies that are in thermal equilibrium with each other.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      },
+      {
+        "heading": "Second Law",
+        "text": "\n\nThis law states that heat will never flow from a cold object to a hot object.\n\n $S={k}_{B}\\cdot ln(Ω)$ \n\nwhere ${k}_{B}$ is the Boltzmann constant ( ${k}_{B}=1.380658\\cdot 1{0}^{-23}{\\text{ kg m}}^{2}{\\text{ s}}^{-2}{\\text{ K}}^{-1}$ ) and $Ω$ is the partition function, i. e. the number of all possible states in the system.\n\nThis was the statistical definition of entropy, there is also a \"macroscopic\" definition:\n\n $S=\\int \\frac{dQ}{T}$ \n\nwhere T is the temperature and dQ is the increment in energy of the system.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      },
+      {
+        "heading": "Third Law",
+        "text": "\n\nThe third law states that a temperature of absolute zero cannot be reached.\n\nTemperature Scales\n\n\nThere are several different scales used to measure temperature. Those you will most often come across in physics are degrees Celsius and kelvins.\n\nCelsius temperatures use the symbol Θ. The symbol for degrees Celsius is °C.\nKelvin temperatures use the symbol T. The symbol for kelvins is K.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      },
+      {
+        "heading": "The Celsius Scale",
+        "text": "\n\nThe Celsius scale is based on the melting and boiling points of water.\n\nThe temperature for freezing water is 0 °C.\nThis is called the freezing point\n\nThe temperature of boiling water is 100 °C.\nThis is called the steam point.\n\nThe Celsius scale is sometimes known as 'Centigrade', but the CGPM chose degrees Celsius from among the three names then in use way back in 1948, and centesimal and centigrade should no longer be used. See Wikipedia for more details.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      },
+      {
+        "heading": "The Kelvin Scale",
+        "text": "\n\nThe Kelvin scale is based on a more fundamental temperature than the melting point of ice. This is absolute zero (equivalent to −273.15 °C), the lowest possible temperature anything could be cooled to—where the kinetic energy of any system is at its minimum.\nThe Kelvin scale was developed from an observation on how the pressure and volume of a sample of gas changes with temperature- PV/T is a constant. If the temperature ( T)was reduced, then the pressure ( P) exerted by Volume (V) the Gas would also reduce, in direct proportion. This is a simple experiment and can be carried out in most school labs. Gases were assumed to exert no pressure at -273 degree Celsius. ( In fact all gases will have condensed into liquids or solids at a somewhat higher temperature) \n\nAlthough the Kelvin scale starts at a different point to Celsius, its units are of exactly the same size.\n\nTherefore:\n\nTemperature in kelvins (K) = Temperature in degrees Celsius (°C) + 273.15\n\nSpecific Latent Heat\n\n\nEnergy is needed to break bonds when a substance changes state. This energy is sometimes called the latent heat. Temperature remains constant during changes of state.\n\nTo calculate the energy needed for a change of state, the following equation is used:\n\nHeat transferred, ΔQ (J) = Mass, m (kg) x specific latent heat capacity, L (J/kg)\n\nThe specific latent heat, L, is the energy needed to change the state of 1 kg of the substance without changing the temperature.\n\nThe latent heat of fusion refers to melting.\nThe latent heat of vapourisation refers to boiling.\n\nSpecific Heat Capacity\n\n\nThe specific heat capacity is the energy needed to raise the temperature of a given mass by a certain temperature.\n\nThe change in temperature of a substance being heated or cooled depends on the mass of the substance and on how much energy is put in. However, it also depends on the properties of that given substance. How this affects temperature variation is expressed by the substance's specific heat capacity (c). This is measured in J/(kg·K) in SI units.\n\nChange in internal energy, ΔU (J) = mass, m (kg) x specific heat capacity, c (J/(kg·K)) x temperature change, ΔT (K)\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Thermodynamics"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-d1160035377d1b389b1c",
+    "revision": "3778984",
+    "retrievedAt": "2026-10-02T06:09:19.759Z",
+    "sections": [
+      {
+        "heading": "General Chemistry · Stoichiometry",
+        "text": "← Formulas and Numbers ·Chemical equations →\n\nThe word stoichiometry derives from two Greek words: stoicheion (meaning \"element\") and metron (meaning \"measure\"). Stoichiometry deals with calculations about the masses (sometimes volumes) of reactants and products involved in a chemical reaction. It is a very mathematical part of chemistry, so be prepared for lots of calculator use.\n\n Wikipedia has related information at\nStoichiometry.\n\nJeremias Benjaim Richter (1762-1807) was the first to lay down the principles of stoichiometry. In 1792 he wrote: \n\"Die stöchyometrie (Stöchyometria) ist die Wissenschaft die quantitativen oder Massenverhältnisse zu messen, in welchen die chymischen Elemente gegen einander stehen.\" [Stoichiometry is the science of measuring the quantitative proportions or mass ratios in which chemical elements stand to one another.]",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Your Tool: Dimensional Analysis",
+        "text": "\n\nLuckily, almost all of stoichiometry can be solved relatively easily using dimensional analysis. Dimensional analysis is just using units, instead of numbers or variables, to do math, usually to see how they cancel out. For instance, it is easy to see that:\n\n $grams\\times \\frac{moles}{grams}\\times \\frac{atoms}{moles}=atoms$ \n\nIt is this principle that will guide you through solving most of the stoichiometry problems (chemical reaction problems) you will see in General Chemistry. Before you attempt to solve a problem, ask yourself: what do I have now? where am I going? As long as you know how many (units) per (other units), this will make stoichiometry significantly easier.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Moles to Mass",
+        "text": "\n\nWhere can you find the molar mass of these elements? The periodic table. You should always have one on hand—don't expect to get very far without one!\n\nHow heavy is 1.5 mol of lead? How many moles in 22.34g of water? Calculating the mass of a sample from the number of moles it contains is quite simple. We use the molar mass (mass of one mole) of the substance to convert between mass and moles. When writing calculations, we denote the molar mass of a substance by an upper case \"M\" (e.g. M(Ne) means \"the molar mass of neon\"). As always, \"n\" stands for the number of moles and \"m\" indicates the mass of a substance. To find the solutions to the two questions we just asked, let's apply some dimensional analysis:\n\n $1.5molPb\\times \\frac{207.2gPb}{1molPb}=310.8gPb$ \n\nCan you see how the units cancel to give you the answer you want? All you needed to know was that you had 1.5 mol Pb (lead), and that 1 mol Pb weighs 207.2 grams. Thus, multiplying 1.5 mol Pb by 207.2 g Pb and dividing by 1 mol Pb gives you 310.8 g Pb, your answer.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Mass to Moles",
+        "text": "\n\nBut we had one more question: \"How many moles in 22.34g of water?\" This is just as easy:\n\n $22.34g{H}_{2}O\\times \\frac{1mol{H}_{2}O}{18g{H}_{2}O}=1.24mol{H}_{2}O$ \n\nWhere did the 18 g H2O come from? We looked at the periodic table and simply added up the atomic masses of two hydrogens and an oxygen to get the molecular weight of water. This turned out to be 18, and since all the masses on the periodic table are given with respect to 1 mole, we knew that 1 mol of water weighed 18 grams. This gave us the relationship above, which is really just (again) watching units cancel out!",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Calculating Molar Masses",
+        "text": "\n\nBefore we can do these types of calculations, we first have to know the molar mass. Fortunately, this is not difficult, as the molar mass is exactly the same as the atomic weight of an element. A table of atomic weights can be used to find the molar mass of elements (this information is often included in the periodic table). For example, the atomic weight of oxygen is 16.00 amu, so its molar mass is 16.00 g/mol.\n\nFor species with more than one element, we simply add up the atomic weights of each element to obtain the molar mass of the compound. For example, sulfur trioxide gas is made up of sulfur and oxygen, whose atomic weights are 32.06 and 16.00 respectively.\n\n $\\begin{matrix}{\\text{M(SO}}_{3}\\text{)} & = & 32.06+3\\times 16.00\\\\\\text{ } & = & 80.06\\text{g}/\\text{mol}\\end{matrix}$ \n\nThe procedure for more complex compounds is essentially the same. Aluminium carbonate, for example, contains aluminium, carbon, and oxygen. To find the molar mass, we have to be careful to find the total number of atoms of each element. Three carbonate ions each containing three oxygen atoms gives a total of nine oxygens. The atomic weights of aluminium and carbon are 26.98 and 12.01 respectively.\n\n $\\begin{matrix}\\text{M}({\\text{Al}}_{2}({\\text{CO}}_{3}{)}_{3}) & = & 2\\times 26.98+3\\times 12.01+9\\times 16.00\\\\\\text{ } & = & 233.99\\text{g}/\\text{mol}\\end{matrix}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Empirical Formulae",
+        "text": "\n\nThe empirical formula of a substance is the simplest ratio of the number of moles of each element in a compound. The empirical formula is ambiguous, e.g. the formula CH could represent CH, C2H2, C3H3 etc. These latter formulae are called molecular formulae. It follows that the molecular formula is always a whole number multiple of the empirical formula for a compound.\n\nCalculating the empirical formula is easy if the relative amounts of each element in the compound are known. For example, if a sample contains 1.37 mol oxygen and 2.74 mol hydrogen, we can calculate the empirical formula. A good strategy to use is to divide all amounts given by the smallest non-integer amount, then multiply by whole numbers until the simplest ratio is found. We can make a table showing the successive ratios.\n\nHydrogen\n\nOxygen\n\n2.74\n1.37\ndivide by 1.37\n\n2\n1\nANSWER\n\nThe empirical formula of the compound is H2O.\n\nHere's another example. A sample of piperonal contains 1.384 mol carbon, 1.033 mol hydrogen and 0.519 mol oxygen.\n\nCarbon\n\nHydrogen\n\nOxygen\n\n1.384\n1.033\n0.519\ndivide by 0.519\n\n2.666\n2\n1\nmultiply by 3\n\n8\n6\n3\nANSWER\n\nThe empirical formula of piperonal is C8H6O3.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Converting from Masses",
+        "text": "\n\nOften, we are given the relative composition by mass of a substance and asked to find the empirical formula. These masses must first be converted to moles using the techniques outlined above. For example, a sample of ethanol contains 52.1% carbon, 13.2% hydrogen, and 34.7% oxygen by mass. Hypothetically, 100g of this substance will contain 52.1 g carbon, 13.2 g hydrogen and 34.7 g oxygen. Dividing these by their respective molar masses gives the amount in moles of each element (as we learned above). These are 4.34 mol, 13.1 mol, and 2.17 mol respectively.\n\nCarbon\n\nHydrogen\n\nOxygen\n\n4.34\n13.1\n2.17\ndivide by 2.17\n\n2\n6\n1\nANSWER\n\nThe empirical formula of ethanol is C2H6O.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Molecular Formula",
+        "text": "\n\nBeware:\nIn the case of H2O, the whole number multiple is 1, so its empirical formula is the same as its molecular formula. This is not always the case!\n\nAs mentioned above, the molecular formula for a substance equals the count of atoms of each type in a molecule. This is always a whole number multiple of the empirical formula. To calculate the molecular formula from the empirical formula, we need to know the molar mass of the substance. For example, the empirical formula for benzene is CH, and its molar mass is 78.12 g/mol. Divide the actual molar mass by the mass of the empirical formula, 13.02 g/mol, to determine the multiple of the empirical formula, \"n\". The molecular formula equals the empirical formula multiplied by \"n\".\n\n $\\begin{matrix}\\text{M(CH)} & = & 13.02\\text{ g/mol}\\\\\\text{M(benzene)} & = & 78.12\\text{ g/mol}\\\\\\text{M(benzene)}/\\text{M(CH)} & =(78.12\\text{ }g/mol)/(13.02\\text{ }g/mol) & =6\\end{matrix}$ \n\nThis shows that the molecular formula for benzene is 6 times the empirical formula of CH. The molecular formula for benzene is C6H6.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Solving Mass-Mass Equations",
+        "text": "\n\nA typical mass-mass equation will give you an amount in grams and ask for another answer in grams.\n\nTo solve a mass-mass equation, follow these rules\n\nBalance the equation if it is not already.\n\nConvert the given quantity to moles.\n\nMultiply by the molar ratio of the demanded substance over the given substance.\n\nConvert the demanded substance into grams.\n\nFor example, given the equation $C{u}^{2+}+2AgN{O}_{3}\\rightarrow Cu(N{O}_{3}{)}_{2}+2A{g}^{+}$ , find out how many grams of silver (Ag) will result from 43.0 grams of copper (Cu) reacting.\n\nConvert the given quantity to moles.\n\n $43.0gCu\\times \\frac{1molCu}{63.55gCu}$ \n\nMultiply by the molar ratio of the demanded substance and the given substance.\n\n $43.0gCu\\times \\frac{1molCu}{63.55gCu}\\times \\frac{2molAg}{1molCu}$ \n\nConvert the demanded substance to grams.\n\n $43.0gCu\\times \\frac{1molCu}{63.55gCu}\\times \\frac{2molAg}{1molCu}\\times \\frac{107.86gAg}{1molAg}=1.46\\times 1{0}^{2}gAg$ \n\n Information \nNotice how dimensional analysis applies to this technique. All units will cancel except for the desired one (grams of silver, in this case).",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      },
+      {
+        "heading": "Summary",
+        "text": "\n\nTo solve a stoichiometric problem, you need to know what you already have and what you want to find. Everything in between is basic algebra.\n\nKey Terms\nMolar mass: mass (in grams) of one mole of a substance.\n\nEmpirical formula: the simplest ratio of the number of moles of each element in a compound\n\nMolecular formula: the actual ratio of the number of moles of each element in a compound\n\nIn general, all you have to do is keep track of the units and how they cancel, and you will be on your way!\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Stoichiometry"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-7e5de002ba7afdfab209",
+    "revision": "4647708",
+    "retrievedAt": "2026-10-02T06:09:19.764Z",
+    "sections": [
+      {
+        "heading": "Limiting Reactants",
+        "text": "\n\nWhen chemical reactions occur, the reactants undergo change to create the products. The coefficients of the chemical equation show the relative amounts of substance needed for the reaction to occur. Consider the combustion of propane:\n\n ${\\text{C}}_{3}{\\text{H}}_{8}+5{\\text{O}}_{2}\\rightarrow 3{\\text{CO}}_{2}+4{\\text{H}}_{2}\\text{O}$ \n\nFor every one mole of propane, there must be five moles of oxygen. For every one mole of propane combusted, there will be three moles of carbon dioxide and four moles of water produced (along with much heat). If a propane grill is burning, there will be a very large amount of oxygen available to react with the propane gas. In this case, oxygen is the excess reactant. There is so much oxygen that the exact amount doesn't matter—it will not run out.\n\nOn the other hand, there is not an unlimited amount of propane. It will run out far before the oxygen runs out, making it a limiting reactant. The amount of propane available will decide how far the reaction will go.\n\nExample\n2H2 + O2 → 2H2O\n\nIf there are three moles of hydrogen, and one mole of oxygen, which is the limiting reactant? How much product is created?\n\nTwice as much hydrogen than oxygen is required. However, there is more than twice as much hydrogen. Thus hydrogen is the excess reactant and oxygen is the limiting reactant. If the reaction proceeds to completion, all of the oxygen will be used up, and one mole of hydrogen will remain. You can imagine this situation like this:\n\n3H2 + O2 → 2H2O + H2\n\nThe reactant that is left over after the reaction is complete is called the \"excess reactant\". Often, you will want to figure out how much of the excess reactant is left after the reaction is complete. to do this, first use mole ratios to determine how much excess reactant is used up in the reaction. \n\nHere are the ratios that need to be used:\n\n $(\\frac{\\text{moles of limiting reactant}}{1})∗(\\frac{\\text{coefficient of product}}{\\text{coefficient of limiting reactant}})=\\text{moles of excess remaining}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Limiting_Reactants_and_Percent_Yield"
+      },
+      {
+        "heading": "Percent Yield",
+        "text": "\n\nUsually, less product is made than theoretically possible. The actual yield is lower than the theoretical yield. To compare the two, one can calculate percent yield, which is $\\frac{actualyield}{theoreticalyield}\\times 100$ .\n\nThe percent yield tells us how far the reaction actually went.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Limiting_Reactants_and_Percent_Yield"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-fc7ab349d18f91d58b6a",
+    "revision": "4603894",
+    "retrievedAt": "2026-10-02T06:09:19.775Z",
+    "sections": [
+      {
+        "heading": "Why Is The History Of The Atom So Important?",
+        "text": "\n\nIt is fundamental to the understanding of science that science is understood to be a process of trial and improvement and represents the best known at the time, not an unerring oracle of truth. Development of an idea and refinement through testing is shown more in the understanding of atomic structure.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "The Greek Theorists",
+        "text": "\n\nA bust of Democritus (or Democrites), who came up with the idea of indivisible atoms.\nThe earliest known proponent of anything resembling modern atomic theory was the ancient Greek thinker Democritus. He proposed the existence of indivisible atoms as a response to the arguments of Parmenides and the paradoxes of Zeno.\n\nParmenides argued against the possibility of movement, change, and plurality on the premise that something cannot come from nothing. Zeno attempted to prove Parmenides' point by a series of paradoxes based on difficulties with infinite divisibility.\n\nIn response to these ideas, Democritus posited the existence of indestructible atoms that exist in a void. Their indestructibility provided a retort to Zeno, and the void allowed him to account for plurality, change, and movement. It remained for him to account for the properties of atoms, and how they related to our experiences of objects in the world.\n\nDemocritus proposed that atoms possessed few actual properties, with size, shape, and mass being the most important. All other properties, he argued, could be explained in terms of the three primary properties. A smooth substance, for instance, might be composed of primarily smooth atoms, while a rough substance is composed of sharp ones. Solid substances might be composed of atoms with numerous hooks, by which they connect to each other, while the atoms of liquid substances possess far fewer points of connection.\n\nDemocritus proposed 5 points to his theory of atoms. [1] These are:\n\nAll matter is composed of atoms, which are bits of matter too small to be seen. These atoms CANNOT be further split into smaller portions.\n\nThere is a void, which is empty space between atoms.\n\nAtoms are completely solid.\n\nAtoms are homogeneous, with no internal structure.\n\nAtoms are different in their size, their shape, and their weight.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "Alchemy",
+        "text": "\n\nAlthough alchemy was futile, the alchemists did come up with several useful methods, including distillation (shown here).\nA fire, shown by Lavoisier to be a chemical reaction and not an element.\nEmpedocles proposed that there were four elements, air, earth, water, and fire and that everything else was a mixture of these. This belief was very popular in the medieval ages and introduced the science of alchemy. Alchemy was based on the belief that since everything was made of only four elements, you could transmute a mixture into another mixture of the same type. For example, it was believed that lead could be made into gold.\n\nAlchemy's problem was exposed by Antoine Lavoisier when he heated metallic tin in a sealed flask. A grayish ash appeared on the surface of the melting tin, which Lavoisier heated until no more ash formed. After the flask cooled, he inverted it and opened it underwater. He discovered the water rose one-fifth of the way into the glass, leading Lavoisier to conclude that air itself is a mixture, with one-fifth of it having combined with the tin, yet the other four-fifths did not, showing that air was not an element.\n\nLavoisier repeated the experiment again, substituting mercury for tin, and found that the same happened. Yet after heating gently, he found that the ash released the air, showing that the experiment could be reversed. He concluded that the ash was a compound of the metal and oxygen, which he proved by weighing the metal and the ash, and showing that their combined weight was greater than that of the original metal.\n\nLavoisier then stated that combustion was not an element, but instead was a chemical reaction of a fuel and oxygen.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "John Dalton",
+        "text": "\n\nModern atomic theory was born with Dalton when he published his theories in 1803. His theory consists of five important points, which are considered to be mostly true today: (from Wikipedia)\n\nElements are composed of tiny particles called atoms.\n\nAll atoms of a given element are identical.\n\nThe atoms of a given element are different from those of any other element; the atoms of different elements can be distinguished from one another by their respective relative weights.\n\nAtoms of one element can combine with atoms of other elements to form chemical compounds; a given compound always has the same relative numbers of types of atoms.\n\nAtoms cannot be created, divided into smaller particles, nor destroyed in the chemical process; a chemical reaction simply changes the way atoms are grouped together.\n\nWe now know that elements have different isotopes, which have slightly different weights. Also, nuclear reactions can divide atoms into smaller parts (but nuclear reactions aren't really considered chemical reactions). Otherwise, his theory still stands today.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "Dmitri Mendeleev",
+        "text": "\n\nIn the late 1800's, Russian scientist Dmitri Mendeleev was credited with creating one of the first organized periodic tables. Organizing each element by atomic weight, he cataloged each of the 56 elements discovered at the time. Aside from atomic weight, he also organized his table to group the elements according to known properties. \n\nWhile writing a series of textbooks, Mendeleev realized he was running out of space to treat each element individually. He began to regularly \"linewrap\" the elements onto the next line, and create what is now called the periodic table of the elements. Using his table, he predicted the existence of later-discovered elements, such as \"eka-aluminum\" and \"eka-silicon\" (gallium and germanium) according to patterns found earlier. His predictions were a success, proving his table to be exceptionally accurate. Later theories, those of the electrons around the atom, explain why elements in the same period, or group, have similar chemical properties. Chemists would later organise each element by atomic number, not atomic weight, giving rise to the modern Periodic Table of Elements.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "Discovery of the Electron",
+        "text": "\n\nCathode rays are actually made of electrons.\nIn the year 1889 the British physicist J.J. Thomson discovered the electron. Thomson conducted a number of experiments using cathode ray tube. Cathode rays are constructed by sealing two electrodes in a glass tube connected to a voltage supplier and a vacuum pump removing the air from it. When the electrodes are attached to high voltage of about 15000v and low pressure, a beam of radiation is emitted from the negative electrode(cathode)moving towards the positive electrode(anode). These beams are said to be green rays called cathode rays.\n(1) The ray is said to be taken towards Faraday's tube(gold leaf electroscope) and was charged by induction and deflect positively charged gold leaf electroscope\n(2) a freely moving paddle wheel was placed on the path of the rays and it was able to move it suggesting that it has momentum\n(3) The ray was placed in a magnetic and electric field moving towards the north and positive pole respectively \nThomson discovered that cathode rays travel in straight lines except, when they are bent by electric or magnetic fields. The cathode rays bent away from a negatively charged plate, Thomson concluded that these rays are made of negatively charged particles; today we call them electrons. Thomson found that he could produce cathode rays using electrodes of various materials. He then concluded that electrons were found in all atoms and are over a thousand times smaller than protons.\nThompson used an apparatus to determine the charge to mass ratio(e/m)after the ray emerge he placed a magnetic field of a known magnetic influence and the rays bent towards the north to a particular position then he added an electric field to return the ray back to it original position and recorded the charges used by the electric field so he divided them to get the ratio of about -1.7*10^8kg",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "The \"Plum Pudding\" Atomic Model",
+        "text": "\n\nSoon after the discovery of the electron, Thomson began speculating on the nature of the atom. He suggested a \"plum pudding\" model. In this model the bits of \"plum\" were the electrons which were floating around in a \"pudding\" of positive charge to match that of the electrons and make an electrically neutral atom. A modern illustration of this idea would be a chocolate chip cookie, with the chips representing negatively charged electrons and the dough representing positive charge.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "Rutherford",
+        "text": "\n\nThe results of the gold foil experiment disproved the \"plum pudding\" model: the alpha particles should have passed through (top), but a few of them deflected at large angles (bottom).\nErnest Rutherford is known for his famous gold foil experiment in 1911. Alpha particles, which are heavy and positively charged (actually, helium nuclei, but that's beside the point), were fired at a very thin layer of gold. Most of the alpha particles passed straight through, as expected. According to the plum pudding model all of the particles should have slowed as they passed through the \"pudding\", but none should have been deflected. Surprisingly, a few alpha particles were deflected back the way they came. He stated that it was \"as if you fired a 15-inch shell at a piece of tissue paper and it came back and hit you.\"\n\nThe result of the experiment allowed Rutherford to conclude that the plum pudding model is wrong.\n\nAtoms have a nucleus, very small and dense, containing the positive charge and most of the atom's mass.\n\nThe atom consists of mostly empty space.\n\nThe electrons are attracted to the nucleus, but remain far outside it.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "Niels Bohr",
+        "text": "\n\nThe Bohr model of the atom has shells with numbered spherical energy levels - the larger numbers mean larger spheres and higher energy levels. The wave exiting the picture on the left has come from an electron jump, resulting in a photon. (Level sizes not to scale.)\nBohr created his own model of the atom, improving on Rutherford's. Bohr used an equation developed by Rydberg that provided a mathematical relationship between the visible spectral lines of the hydrogen atom. The equation requires that the wavelengths emitted from the hydrogen atom be related to the difference of two integers. Bohr theorized that these integers represent \"shells\" or \"orbits\" in which electrons travel around the nucleus, each with a certain energy level. The energy of an orbit is proportional to its distance from the nucleus. An atom will absorb and release photons that have a specific amount of energy. The energy is the result of an electron jumping to a different shell. Starting with Rydberg's equation, along with Planck and Einstein's work on the relationship between light and energy, Bohr was able to derive an equation to calculate the energy of each orbit in the hydrogen atom. The Bohr model depicts the atom as a nucleus with electrons orbiting around it at specific distances. This model is also referred to as the Planetary Model.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      },
+      {
+        "heading": "Robert Millikan",
+        "text": "\n\nRobert Millikan is credited for the \"Oil Drop Experiment\", in which the value of the electron charge was determined. He created a mechanism where he could spray oil drops that would settle into a beam of X rays. The beam of X rays caused the oil drops to become charged with electrons. The oil droplets were in between a positively charged plate and a negatively charged plate which, when proper electric voltage was applied, caused the oil droplet to remain still. Robert Millikan measured the diameter of each individual oil drop using a microscope. \n\nMillikan was able to calculate the mass of each oil droplet because he knew the density of the oil ( $volume∗density=mass$ ). Using the mass of each oil droplet and the equation for the force of gravitational attraction (which he rearranged from $Force=mG$ to ${m}_{droplet}G=Ee$ , where ${m}_{droplet}$ is the mass of each individual oil droplet, $G$ is the acceleration due to gravity, and $Ee$ is the electrical force which equals force in the first equation), Millikan was able to find the value of the charge of the electron, $e$ . \n\nThe X rays, however, did not always produce an oil drop with only one negative charge. Thus, the values Millikan obtained may have looked like this:\n\n $-8.0∗1{0}^{-19}$ coulomb\n\n $-6.4∗1{0}^{-19}$ coulomb\n\n $-4.8∗1{0}^{-19}$ coulomb\n\n $-3.2∗1{0}^{-19}$ coulomb\n\nMillikan found that these values all had a common divisor: $-1.6∗1{0}^{-19}$ coulomb. He concluded that different values occurred because the droplets acquired charges of -5, -4, -3, and -2, as in this example. Thus, he stated that the common divisor, $-1.6∗1{0}^{-19}$ coulomb, was the charge of the electron.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Atomic_Structure/History_of_Atomic_Structure"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-39886a864fc54d771969",
+    "revision": "4656780",
+    "retrievedAt": "2026-10-02T06:09:19.952Z",
+    "sections": [
+      {
+        "heading": "General Chemistry · Chemical Equilibria · Equilibrium",
+        "text": "← Chemical Equilibria ·Chemical Equilibria/Le Chatelier's Principle →\n\nChemical equilibrium occurs when a reversible reaction is occurring backwards and forwards at the same time by the same amount. It is the balancing point of a chemical reaction, when it seems to stop happening. Although some reactions (like the combustion of propane) occur to completion (no backwards reaction), most reactions occur in both the forward and backward direction. One reaction will occur at a faster rate than the other, causing a net result. As the reaction progresses, the forward reaction slows down and the backward reaction speeds up. When the rates are equal, equilibrium has occurred. The reaction appears to have stopped, and the total amount of products and reactants remains stable.\n\n Information \nChemical reactions never really stop, but they no longer make any progress once the forwards and backwards reactions are occurring at the same rate. This is equilibrium.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "The Equilibrium Constant",
+        "text": "\n\nThe ratio of products to reactants, or ${K}_{eq}$ is known as the equilibrium constant. For the generic reaction mA + nB → xC + yD, the equilibrium constant is\n\n ${K}_{eq}=\\frac{[C{]}^{x}[D{]}^{y}}{[A{]}^{m}[B{]}^{n}}$ \n\nwhere [X] detonates the activity of X. The activity of X is:\n\nits concentration if X is a gas or in a solution\n\n1 if X is a pure solid or pure liquid\n\nIn other words, pure solids and liquids don't affect the equilibrium constant, as long as there is enough for the reaction to proceed. Their activity is 1, so they don't need to be written in the equilibrium constant.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Kp and Kc",
+        "text": "\n\nThere are two types of ${K}_{eq}$ . One is ${K}_{c}$ , and the activities are concentrations. You are already familiar with this expression; it is the normally-used ${K}_{eq}$ . For gaseous reactions, you may use the concentration equilibrium. You may also use partial pressures instead of concentrations. This expression is denoted ${K}_{p}$ . The activities are partial pressures instead of concentrations. This can only be used when all products and reactants are in the gaseous phase.\n\nTo convert between ${K}_{p}$ and ${K}_{c}$ , there is an equation:\n\n ${K}_{p}={K}_{c}(RT{)}^{Δn}$ \n\nR is the Universal Gas Constant and T is the temperature at which the reaction is occurring. $Δn$ is the change (in moles) of gas molecules between products and reactants. It may be zero (in which case Kp = Kc).",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Examples",
+        "text": "\n\nExample 1\n15.0 moles of X and 20.0 moles of Y are put into an empty 2.0 liter container. They react, and eventually reach equilibrium with 7.0 moles of Z according to the hypothetical equation:\n\n $\\text{X}+2\\text{Y}\\rightarrow \\text{Z}$ \n\nCalculate the equilibrium constant.\n\nSolution: Because the container was originally empty and at equilibrium, all 7.0 moles of Z are produced by the reaction. Therefore, 7.0 moles of X and 14.0 moles of Y are consumed in the reaction, so at equilibrium there remain 8.0 moles of X, 6.0 moles of Y, and 7.0 moles of Z. Divide these values by 2.0 liters to determine the concentration, then substitute into the equilibrium expression:\n\n ${K}_{eq}=\\frac{[Z]}{[X][Y{]}^{2}}=\\frac{[3.5]}{[4.0][3.0{]}^{2}}=0.097$ \n\nExample 2\n5.00 moles of hydrogen are put into an empty 1.00-L container with 5.00 moles of iodine, where they react according to this equation:\n\n ${\\text{H}}_{2}+{\\text{I}}_{2}\\rightarrow 2\\text{HI}$ \n\nThe equilibrium constant is 51.5 at the temperature of the reaction. Calculate the number of moles of HI that will form.\n\nSolution: Suppose 2y moles of HI forms. Then, y moles of H2 and I2 are consumed. Therefore, at equilibrium, there are 2y moles of HI, and (5.00 - y) moles of both H2 and I2. Dividing by 1.00 liters (to find concentration) and writing an equilibrium expression gives:\n\n $51.5=\\frac{[2y{]}^{2}}{[5.00-y][5.00-y]}$ \n\nSolving this equation gives y = 3.91 (reject the other solution, as it is greater than 5.00). At equilibrium, there are 7.82 mol of HI.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Calculations With K",
+        "text": "\n\nThe exact value of K doesn't really matter. What is important is its magnitude.\n\nK > 1\n\nReactions favors products\n\nK < 1 \n\nReaction favors reactants\n\nIf the reaction favors products, it will occur in the forward (left-to-right) direction. If K is very large, the reaction will occur mostly to completion, using up almost all the reactants.\n\nIf the reaction favors reactants, it will occur in the reverse (right-to-left) direction. If K is very small, the reaction will use up almost all the products and make them into reactants. The reverse reaction is favored.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Reaction Arithmetic",
+        "text": "\n\nIf you reverse the reaction (changing the direction of the arrow, or flipping the left and right sides), the new value of Keq will be its reciprocal.\n\nA → B\n(K = x)\n\nB → A\n(K = 1/x)\n\nIf you add two reactions, their equilibrium constants are multiplied.\n\nA → B \n G → H\n(K = x) \n (K = y)\n\nA + G → B + H\n(K = xy)\n\nThese basic principles can help you determine an unknown equilibrium constant by combining known constants.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Q",
+        "text": "\n\nKeq is only used when a reaction is in equilibrium. To find it, write its concentration (or partial pressure) expression, then plug in all the measured values. The resulting K can be used to predict other equilibrium positions.\n\nIf a reaction is not at equilibrium, you can still plug in the measured concentrations. Instead of calling this value Keq, it is called Q.\n\n Q > K \n\nThe products must decrease and the reactants will increase.\n\n Q = K \n\nThere is equilibrium.\n\n Q < K \n\nThe reactants must decrease and the products will increase.\n\nSo, if you know the equilibrium constant for a reaction, and you know all the concentrations, you can predict what direction the reaction will proceed.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "I-C-E Charts",
+        "text": "\n\nLet's say you know K for a reaction, and you know some concentrations. You can calculate the final (equilibrium) concentrations using an \"Initial-Change-Equilibrium\" chart. Here is an example.\n\n ${\\text{CO}}_{(g)}+{\\text{H}}_{2}{\\text{O}}_{(g)}\\rightarrow {\\text{CO}}_{2(g)}+{\\text{H}}_{2(g)}$ \n\nAt 25°C, Kc = 23.2 for this reaction.\n\nFirst, write the equilibrium expression:\n\n ${K}_{c}=\\frac{[{H}_{2}][C{O}_{2}]}{[CO][{H}_{2}O]}$ \n\nIn a sealed container of 2.00 L: 3 molar H2O, 4 molar CO, 1 molar H2 have been added. (Write the ICE chart):\n\nCO\n\nH2O\n\nCO2\n\nH2\n\nInitial\n\n2\n\n1.5\n\n0\n\n0.5\n\nChange\n\n-x\n\n-x\n\n+x\n\n+x\n\nEquilibrium\n\n2-x\n\n1.5-x\n\nx\n\n0.5+x\n\nNow, plug in the \"equilibrium\" values into the K expression. Substitute all known values and solve for x. Then, substitute x for the final values to determine the equilibrium concentrations.\n\nBy substituting everything into the K expression, we have:\n\n $23.3=\\frac{(0.5+x)\\times (x)}{(2-x)\\times (1.5-x)}$ \n\nSolving this will require the use of the quadratic equation. It may be easier to use approximations or a graphing calculator. When solved, $x=1.34$ (disregard values of x that would give negative concentrations). By substituting x into the \"equilibrium\" values in the ICE chart, we can determine the concentrations of all substances when the reaction reaches equilibrium.\n\nCO\n\nH2O\n\nCO2\n\nH2\n\n0.66 M\n\n0.16 M\n\n1.34 M\n\n1.84 M\n\nTo check your answer, you could substitute these values into the equilibrium expression and see if it equals 23.3 (the given Keq value).\n\n Information \nThis was a fairly simple example. There were no coefficients in the reaction, so no exponents in the expression.\n\nThe purpose of doing this is to see the final concentrations of the substances involved in a chemical reaction. Unless Keq is incredibly large, not all the reactants will be consumed.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Shifts in Equilibrium",
+        "text": "\n\nLe Chatelier's principle states that a system will adapt to minimize a change. If reactants are added, they will be consumed and products will form. Likewise, if products are added, they will be consumed (by the reverse reaction) and reactants will form. \n\nThe only change in a system that will affect the value of Keq is temperature. The value of Keq is never changed by the concentrations or pressures of the substances.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Special Constants",
+        "text": "\n\n ${K}_{a}=\\frac{[{H}^{+}][{A}^{-}]}{[HA]}$ \n\nAcids and bases have special ionization constants, which show how they react with water. The acid ionization constant, or Ka, tells how strong an acid is.\n\n ${K}_{b}=\\frac{[{\\text{OH}}^{-}][\\text{BH}]}{[\\text{B}]}$ \n\nThe base ionization constant, Kb, similarly tells how strong a base is.\n\n ${K}_{sp}=\\frac{[{A}^{+}][{B}^{-}]}{[AB]}$ \n\nThe solubility product Ksp shows how much an ionic substance will dissociate when dissolved.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      },
+      {
+        "heading": "Relation to E",
+        "text": "\n\nThere is a special relation between the standard potential of a redox reaction and the equilibrium constant\n $E=\\frac{0.0592log⁡K}{n}$ , where n is the number of moles of electrons transferred.\nThis is a significant equation, because this allows us to calculate the hard to measure K from the easy to measure E.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Chemical_Equilibria/Equilibrium"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-d1435cf2f36d557cca2e",
+    "revision": "4628040",
+    "retrievedAt": "2026-10-02T06:09:19.965Z",
+    "sections": [
+      {
+        "heading": "Gas Laws",
+        "text": "\n\nAs the result of many different science experiments, several gas laws have been discovered. These laws relate the various state variables of a gas.\nTemplate:Text Box\nThese gas laws can be used to compare two different gases, or determine the properties of a gas after one of its state variables have changed.\n\n $\\frac{V}{n}=\\text{constant}$ \n\n $\\frac{{n}_{1}}{{V}_{1}}=\\frac{{n}_{2}}{{V}_{2}}$ \n\nAvogadro's Law states that equal volumes of all ideal gases (at the same temperature and pressure) contain the same number of molecules.\n\n $P\\times V=\\text{constant}$ \n\n ${P}_{1}\\times {V}_{1}={P}_{2}\\times {V}_{2}$ \n\nBoyle's Law states that equal pressure is inversely proportional to volume (when the temperature is constant).\n\n $\\frac{V}{T}=\\text{constant}$ \n\n $\\frac{{V}_{1}}{{T}_{1}}=\\frac{{V}_{2}}{{T}_{2}}$ \n\nCharles's Law states that volume is proportional to temperature (when the pressure is constant). Remember that temperature must be measured in Kelvin.\n\n $\\frac{P}{T}=\\text{constant}$ \n\n $\\frac{{P}_{1}}{{T}_{1}}=\\frac{{P}_{2}}{{T}_{2}}$ \n\nAmontons's Law states that pressure is proportional to temperature (when the volume is constant).",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Combined Gas Law",
+        "text": "\n\nCombining Charles' Law, Boyle's Law, and Amontons's Law gives us the combined gas law.\n\n $\\frac{P\\times V}{T}=\\text{constant}$ \n\nFor a gas with constant molar mass, the three other state variables are interrelated.\n\n $\\frac{{P}_{1}\\times {V}_{1}}{{T}_{1}}=\\frac{{P}_{2}\\times {V}_{2}}{{T}_{2}}$ \n\nThe Combined Gas Law can be used for any comparisons between gases.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Ideal Gas Law",
+        "text": "\n\nWhen Avogadro's Law is considered, all four state variables can be combined into one equation. Furthermore, the \"constant\" that is used in the above gas laws becomes the Universal Gas Constant (R).\n\nTo better understand the Ideal Gas Law, you should first see how it is derived from the above gas laws.\n\n $V∝n$ and $V∝\\frac{T}{P}$ \n\nThis is simply a restatement of Avogadro's Law and the Combined Gas Law.\n\n $V∝\\frac{n\\times T}{P}$ \n\nWe can now combine the laws together.\n\n $\\frac{V}{\\frac{n\\times T}{P}}=R$ \n\nLet R be a constant, and write the proportion in the form of an equation.\n\n $\\frac{P\\times V}{n\\times T}=R$ \n\nRearranging the fraction gives one form of the ideal gas law.\n\nThe ideal gas law is the most useful law, and it should be memorized. If you know the ideal gas law, you do not need to know any other gas laws, for it is a combination of all the other laws. If you know any three of the four state variables of a gas, the unknown can be found with this law. If you have two gases with different state variables, they can be compared.\n\nThere are three ways of writing the ideal gas law, but all of them are simply algebraic rearrangements of each other.\n\n $PV=nRT$ \n\nThis is the most common form.\n\n $\\frac{PV}{nT}=R$ \n\nThis form is useful for predicting the effects of changing a state variable. To maintain a constant value of R, any change in the numerator must result in a proportional change in the denominator, and vice versa. If, for example, the pressure is decreased in a constant-volume container, you can use this form to easily predict that the temperature must decrease.\n\n $\\frac{{P}_{1}{V}_{1}}{{n}_{1}{T}_{1}}=\\frac{{P}_{2}{V}_{2}}{{n}_{2}{T}_{2}}$ \n\nBecause R is the same constant for all gases, this equation can be used to relate two gases to each other.\n\n Rules for Using the Ideal Gas Law\n\nAlways convert the temperature to kelvins (K).\n\nAlways convert mass to moles (mol).\n\nAlways convert volume to liters (L).\n\nIt is preferable to convert pressure to kilopascals (kPa). R, the Universal Gas Constant, would be 8.314 (L·kPa)/(mol·K).\n\n Information \nRules for Using the Ideal Gas Law\nAlways convert the temperature to kelvins (K).\n\nAlways convert mass to moles (mol).\n\nAlways convert volume to liters (L).\n\nIt is preferable to convert pressure to kilopascals (kPa). R, the Universal Gas Constant, would be 8.314 (L·kPa)/(mol·K).",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Kinetic Molecular Theory",
+        "text": "\n\n Wikipedia has related information at\nKinetic theory.\n\nThe Kinetic Molecular Theory attempts to explain the gas laws. It describes the behavior of microscopic gas molecules to explain the macroscopic behavior of gases. According to this theory, an ideal gas is composed of continually moving molecules of negligible volume. The molecules move in straight lines unless they collide into each other or the walls of their container.\n\n $P=\\frac{F}{A}$ \n\nThe pressure of the gas on the container is explained as the force the molecules exert on the walls of its container or on other molecules during a collision. Pressure is equal to the average force of collisions divided by the total surface area of the container.\n\n $T=\\frac{2}{3{k}_{B}}K$ \n\nThe temperature of the gas is proportional to the average kinetic energy of the molecules. $K$ denotes the average kinetic energy of the molecules, and ${k}_{B}$ is the Boltzmann constant (1.388 x 10-23).\n\nThe gas laws are now explained by the microscopic behavior of gas molecules:\n\nBoyle's Law: The pressure of a gas is inversely proportional to its volume. A container's volume and surface area are obviously proportional. Based on the pressure equation, an increase in volume (and thus surface area) will decrease pressure.\n\nCharles' Law: the volume of a gas is proportional to its temperature. As the volume (and surface area) increases, the pressure will decrease unless the force also increase. When pressure is constant, the volume and temperature must be proportional. The temperature equation above explains why: the energy of the molecules (and their collision force) is proportional to temperature.\n\nGay-Lussac's Law: The temperature of a gas is directly proportional to its pressure. An increase in temperature will increase the kinetic energy of the molecules (shown by the temperature equation). Greater kinetic energy causes the molecules to move faster. Their collisions with the container will have more force, which increases pressure.\n\nAvogadro's Law: Equal volumes of all ideal gases (at the same temperature and pressure) contain the same number of molecules. According to the Kinetic Molecular Theory, the size of individual molecules is negligible compared to distances between molecules. Even though different gases have different sized molecules, the size difference is negligible, and the volumes are the same.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Derivation of Ideal Gas Law",
+        "text": "\n\nSuppose there are $N$ molecules, each with mass $m$ , in a cubic container with side length $s$ . Even though the molecules are moving in all directions, we may assume, on average, that one-third of the molecules are moving along the x-axis, one third along the y-axis, and one third along the z-axis. We may assume this because the motion of the molecules is random, so no direction is preferred.\n\nSuppose the average speed of the molecules is $u$ . Let a specific wall of the container be labeled A. Because the collisions in Kinetic Molecular Theory are perfectly elastic, the speed after a collision is $-u$ . Therefore, the average change in momentum (the product of mass and velocity) per collision is $2mu$ .\nEach molecule, on average, travels a distance of $2s$ between two consecutive collisions with wall A. Therefore, it will collide $u/2s$ times per second with wall A.\n\n $2mu\\times \\frac{u}{2s}=\\frac{m{u}^{2}}{s}$ \n\nThe average change in momentum per molecule per second.\n\n $\\frac{Nm{u}^{2}}{3s}$ \n\nTherefore, this is the total change in momentum per second for the $(1/3)N$ molecules that collide into wall A. This is the momentum per second that was exerted onto wall A. Because force equals the change in momentum over time, this value is the force exerted on wall A.\n\n $\\frac{Nm{u}^{2}}{3s}\\times \\frac{1}{{s}^{2}}=\\frac{Nm{u}^{2}}{3{s}^{3}}$ \n\nPressure is defined as force per unit area, so this is the pressure $P$ of the gas.\n\n $PV=\\frac{Nm{u}^{2}}{3}$ \n\nBecause the volume of the container is $V={s}^{3}$ , we can rearrange the equation.\n\n $K=\\frac{1}{2}m{u}^{2}$ \n\nThe kinetic energy of a single particle is given by this equation.\n\n $PV=\\frac{2}{3}NK$ \n\nSubstitute kinetic energy into the $PV$ equation.\n\n $PV=N{k}_{B}T$ \n\nSubstitute the temperature equation (from the previous section).\n\n $PV={N}_{A}n{k}_{B}T$ \n\nAvogadro's number ${N}_{A}$ is equal to the number of molecules per mole.\n\n $R={k}_{B}{N}_{A}$ \n\nBy definition, the ideal gas constant is equal to the Boltzmann constant times Avogadro's number.\n\n $PV=nRT$ \n\nThe ideal gas law is derived from the Kinetic Molecular Theory.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Deviations from the Ideal Gas Law",
+        "text": "\n\nIn an ideal gas, there are no intermolecular attractions, and the volume of the gas particles is negligible. However, there is no real gas that can perfectly fits this behavior, so the Ideal Gas Law only approximates the behavior of gases. This approximation is very good at high temperatures and low pressures.\n\nAt high temperature the molecules have high kinetic energy, so intermolecular attractions are minimized. At low pressure the gas occupies more volume, making the size of the individual molecules negligible. These two factors make the gas behave ideally.\n\nAt low temperature or high pressure, the size of the individual molecules and intermolecular attractions becomes significant, and the ideal gas approximation becomes inaccurate.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Eudiometers and Water Vapor",
+        "text": "\n\nHelpful Hint!\n\nIn calculations for a gas above a liquid, the vapor pressure of the liquid must be considered.\n\nA eudiometer is a device that measures the downward displacement of a gas. The apparatus for this procedure involves an inverted container or jar filled with water and submerged in a water basin. The lid of the jar has an opening for a tube through which the gas to be collected can pass. As the gas enters the inverted container, it forces water to leave the jar (displacing it downward). To fill the entire container with gas, there must enough gas pumped into the container to expel all of the water.\n\nGas is created by burning a substance that releases methane. The eudiometer on the right was full of water before the gas was created. By measuring the change in volume, the amount of gas can be calculated.\nAs seen in this diagram, the downward displacement involves water. Therefore, in the container where the gas is collected, there is unwanted water vapor. To account for the water vapor, subtract the pressure of water vapor from the pressure of the gases in the container to find the pressure of the collected gas. This is simply a restatement of Dalton's Law of Partial Pressure:\n\n ${P}_{\\text{total}}={P}_{\\text{water vapor}}+{P}_{\\text{gas}}$ \n\nThe pressure of water vapour can be found on this webpage.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      },
+      {
+        "heading": "Gas Laws Practice Questions",
+        "text": "\n\nBetween the Combined Gas Law and the Ideal Gas Law, which one accounts for chemical change? Explain.\n\nCalculate the density of hydrogen at a temperature of 298 K and pressure of 100.0 kPa.\n\nWhat volume does 5.3 moles of oxygen take up at 313 K and 96.0 kPa?\n\nHydrogen and sulfur chemically combine to form the gas hydrogen sulfide, according to the reaction: $H{A}_{2}(g)+S(s)⟶H{A}_{2}S(g)$ . How many liters of hydrogen are required to form 7.4 L of hydrogen sulfide (at STP: 273 K, 101.3 kPa)?\n\nAnswers to Gas Laws Practice Questions\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Gas_Laws"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-350d6ca56ced8dcf2233",
+    "revision": "4649358",
+    "retrievedAt": "2026-10-02T06:09:19.918Z",
+    "sections": [
+      {
+        "heading": "Redox",
+        "text": "\n\nRedox reactions are chemical reactions in which elements are oxidized and reduced.\n\n Information \n• Losing electrons is oxidation.\n• Gaining electrons is reduction.\n\nSpecifically, at the most basic level one element gets oxidized by losing, or donating, electrons to the oxidizing agent. In doing so, the oxidizing agent gets reduced by accepting the electrons lost, or donated, by the reducing agent (i.e. the element getting oxidized).\n\nIf it seems as though there are two separate things going on here, you are correct: redox reactions can be split into two half-reactions, one dealing with oxidation, the other, reduction.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations"
+      },
+      {
+        "heading": "Mnemonic",
+        "text": "\n\nOil Rig\n\nOxidation Is Loss. Reduction Is Gain\n\nAlternatively:\n\nLEO GER\n\nLose Electrons Oxidation. Gain Electrons Reduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations"
+      },
+      {
+        "heading": "Example",
+        "text": "\n\n $\\text{Fe}+{\\text{Cu}}^{2+}\\rightarrow {\\text{Fe}}^{2+}+\\text{Cu}$ \n\nThis is the complete reaction. Iron is oxidized, thus it is the reducing agent. Copper is reduced, making it the oxidizing agent.\n\n $\\text{Fe}\\rightarrow {\\text{Fe}}^{2+}+2{e}^{-}$ \n\nThis is the oxidation half-reaction.\n\n ${\\text{Cu}}^{2+}+2{e}^{-}\\rightarrow \\text{Cu}$ \n\nThis is the reduction half-reaction.\n\nWhen the two half-reactions are summed, the result is:\n\nHelpful Hint!\n\nIf you cancel out the electrons on both sides, you get the original equation.\n\n $\\begin{matrix}\\text{Fe} & \\rightarrow {\\text{Fe}}^{2+}+2{e}^{-}\\\\{\\text{Cu}}^{2+}+2{e}^{-} & \\rightarrow \\text{Cu}\\\\\\text{HLINE TBD}\\text{Fe}+{\\text{Cu}}^{2+}+2{e}^{-} & \\rightarrow \\text{Cu}+{\\text{Fe}}^{2+}+2{e}^{-}\\\\\\end{matrix}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations"
+      },
+      {
+        "heading": "Balancing Redox Equations",
+        "text": "\n\nIn a redox reaction, all electrons must cancel out. If you are adding two half-reactions with unequal numbers of electrons, then the equations must be multiplied by a common denominator. This process is similar to balancing regular equations, but now you are trying to balance the electrons between two half-reactions.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations"
+      },
+      {
+        "heading": "Example",
+        "text": "\n\n $\\begin{matrix}{\\text{Fe}}^{2+} & \\rightarrow {\\text{Fe}}^{3+}+{e}^{-}\\\\{\\text{H}}_{2}{\\text{O}}_{2}+2{e}^{-} & \\rightarrow 2{\\text{OH}}^{-}\\\\\\text{HLINE TBD}{\\text{Fe}}^{2+}+{\\text{H}}_{2}{\\text{O}}_{2}+2{e}^{-} & \\rightarrow 2{\\text{OH}}^{-}+{\\text{Fe}}^{3+}+{e}^{-}\\\\\\end{matrix}$ \n\nThe electrons don't completely cancel out. There is one electron more on the left. However, if you double all terms in the first half-reaction, then add it to the second half-reaction, the electrons will cancel out completely. That means the half-reactions for this redox reaction are actually:\n\n $\\begin{matrix}2{\\text{Fe}}^{2+} & \\rightarrow 2{\\text{Fe}}^{3+}+2{e}^{-}\\\\{\\text{H}}_{2}{\\text{O}}_{2}+2{e}^{-} & \\rightarrow 2{\\text{OH}}^{-}\\\\\\text{HLINE TBD}2{\\text{Fe}}^{2+}+{\\text{H}}_{2}{\\text{O}}_{2} & \\rightarrow 2{\\text{OH}}^{-}+2{\\text{Fe}}^{3+}\\\\\\end{matrix}$",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations"
+      },
+      {
+        "heading": "Balancing Redox Equations in an Acidic or Basic Solution",
+        "text": "\n\nIf a reaction occurs in an acidic or basic environment, the redox equation is balanced as follows:\n\nWrite the oxidation and reduction half reactions, but with the whole compound, not just the element that is reduced/oxidized.\n\nBalance both reactions for all elements except oxygen and hydrogen.\n\nIf the oxygen atoms are not balanced in either reaction, add water molecules to the side missing the oxygen.\n\nIf the hydrogen atoms are not balanced, add hydrogen ions until the hydrogen atoms are balanced.\n\nMultiply the half reactions by the appropriate number (so that they have equal numbers of electrons).\n\nAdd the two equations to cancel out the electrons, as in the previous method, and the equation is balanced!\n\nIf the reaction occurs in a basic environment, proceed as if it is in an acid environment, but, after step 4, for each hydrogen ion added, add a hydroxide ion to both sides of the equation. Then, combine the hydroxide ions and hydrogen ions to form water. Then, cancel all the water molecules that appear on both sides.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Redox_Reactions/Oxidation_and_Reduction_equations"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-f879c43d612b02d68860",
+    "revision": "4441798",
+    "retrievedAt": "2026-10-02T06:09:20.007Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 4",
+        "text": "Chapter 4: Inequalities\n\n← Chapter 3 · Chapter 5 →\n← Chapter 3 · Algebra · Chapter 5 →\n\nIntroduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_4"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nAn Introduction to Inequalities\n\nInterval notation and Graphing Intervals\n\nSolving Inequalities\n\nCompound Inequalities",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_4"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-77e12adb906db7444122",
+    "revision": "4660436",
+    "retrievedAt": "2026-10-02T06:09:19.139Z",
+    "sections": [
+      {
+        "heading": "The Normal Force",
+        "text": "\n\nWhy is it that we stay steady in our chairs when we sit down? According to the first law of motion, if an object is translationally in equilibrium (velocity is constant), the sum of all the forces acting on the object must be equal to zero. For a person sitting on a chair, it can thus be postulated that a normal force is present balancing the gravitational force that pulls the sitting person down. However, it should be noted that only some of the normal force can cancel the other forces to zero like in the case of a sitting person. In Physics, the term normal as a modifier of the force implies that this force is acting perpendicular to the surface at the point of contact of the two objects in question. Imagine a person leaning on a vertical wall. Since the person does not stumble or fall, he/she must be in equilibrium. Thus, the component of his/her weight along the horizontal is balanced or countered (opposite direction) by an equal amount of force -- this force is the normal force on the wall. So, on a slope, the normal force would not point upwards as on a horizontal surface but rather perpendicular to the slope surface.\n\nThe normal force can be provided by any one of the four fundamental forces, but is typically provided by electromagnetism since microscopically, it is the repulsion of electrons that enables interaction between surfaces of matter. There is no easy way to calculate the normal force, other than by assuming first that there is a normal force acting on a body in contact with a surface (direction perpendicular to the surface). If the object is not accelerating (for the case of uniform circular motion, the object is accelerating) then somehow, the magnitude of the normal force can be solved. In most cases, the magnitude of the normal force can be solved together with other unknowns in a given problem.\n\nSometimes, the problem does not warrant the knowledge of the normal force(s). It is in this regard that other formalisms (e.g. Lagrange method of undetermined coefficients) can be used to eventually solve the physical problem.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Normal_Force_and_Friction"
+      },
+      {
+        "heading": "Friction",
+        "text": "\n\nWhen there is relative motion between two surfaces, there is a resistance to the motion. This force is called friction. Friction is the reason why people may have trouble accepting Newton's first law of Motion, that an object tends to keep its state of motion. Friction acts opposite to the direction of the original force The frictional force is equal to the frictional coefficient times the normal force\n\nIn order to set a body into a state of motion, the forward force or the thrust force exerted upon the body must be greater in magnitude than the maximum frictional value encountered upon the surface with which the body is in contact with. If the thrust force does not exceed in magnitude over the maximum frictional value or limiting value of motion then the body shall not be set into motion. \n\nFriction is caused due to attractive forces between the molecules near the surfaces of the objects. If two steel plates are made really flat and polished and cleaned and made to touch in a vacuum, it bonds together. It would look as if the steel was just one piece.The bonds are formed as in a normal steel piece. This is called cold welding. And this is the main cause of friction.\n\nThe above equation is an empirical one — in general, the frictional coefficient is not constant. However, for a large variety of contact surfaces, there is a well characterized value. This kind of friction is called Coulomb friction. There is a separate coefficient for both static and kinetic friction. This is because once an object is pushed on, it will suddenly jerk once you apply enough force and it begins to move.\n\nAlso, the frictional coefficient varies greatly depending on what two substances are in contact, and the temperature and smoothness of the two substances. For example, the frictional coefficients of glass on glass are very high. When you have similar materials, in most cases you don't have Coulomb friction.\n\nFor static friction, the force of friction actually increases proportionally to the force applied, keeping the body immobile. Once, however, the force exceeds the maximum frictional force, the body will begin to move. The maximum frictional force is calculated as follows:\n\n $|{\\vec{F}}_{f}|\\le {μ}_{s}|\\vec{N}|$ \n\nThe static frictional force is less than or equal to the coefficient of static friction times the normal force. Once the frictional force equals the coefficient of static friction times the normal force, the object will break away and begin to move.\n\nOnce it is moving, the frictional force then obeys:\n\n $|{\\vec{F}}_{f}|={μ}_{k}|\\vec{N}|$ \n\nThe kinetic frictional force is equal to the coefficient of kinetic friction times the normal force. As stated before, this always opposes the direction of motion.",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Normal_Force_and_Friction"
+      },
+      {
+        "heading": "Variables",
+        "text": "\n\nSymbol\nUnits\nDefinition\n\n ${\\vec{F}}_{f}$ \n $N\\text{ }$ \nForce of friction\n\n $μ\\text{ }$ \nnone\nCoefficient of friction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Normal_Force_and_Friction"
+      },
+      {
+        "heading": "Definition of Terms",
+        "text": "Normal force (N): The force on an object perpendicular to the surface it rests on utilized in order to account for the body's lack of movement. Units: newtons (N)\n\nForce of friction (Ff): The force placed on a moving object opposite its direction of motion due to the inherent roughness of all surfaces. Units: newtons (N)\n\nCoefficient of friction (μ): The coefficient that determines the amount of friction. This varies tremendously based on the surfaces in contact. There are no units for the coefficient of either static or kinetic friction\n\nIt's important to note that in real life we often have to deal with viscous and turbulent friction - they appear when you move the body through the matter. \n\nViscous friction is proportional to velocity and takes place at approximately low speeds. Turbulent friction is proportional to ${V}^{2}$ and takes place at higher velocities.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Physics_Study_Guide/Normal_Force_and_Friction"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-f96aba21b9524150c412",
+    "revision": "4447250",
+    "retrievedAt": "2026-10-02T06:09:20.048Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 9",
+        "text": "Chapter 9: Quadratic Functions\n\n← Chapter 8 · Chapter 10 →\n← Chapter 8 · Algebra · Chapter 10 →\n\nIntroduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_9"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nGraphing Quadratic Functions\n\nFactoring Quadratics\n\nCompleting the Square\n\nComplex Numbers\n\nQuadratic Formula\n\nQuadratic Inequalities\n\nQuadratic Systems",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_9"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-65e4e0b036a14202ee27",
+    "revision": "4448254",
+    "retrievedAt": "2026-10-02T06:09:20.107Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 14",
+        "text": "Chapter 14: Trigonometry\n\n← Chapter 13 · Chapter 15 →\n← Chapter 13 · Algebra · Chapter 15 →\n\nIntroduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_14"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nPythagoras' Theorem\n\nRight Triangle Trigonometry\n\nThe Law of Sines\n\nThe Law of Cosines\n\nAngles and their Measure\n\nThe Unit Circle\n\nTrigonometric Identities\n\nSum and Difference Identities\n\nDouble Angle, Half Angle, and Reduction Formulas\n\nSum-to-Product and Product-to-Sum Formulas\n\nGraphs of Trigonometric Functions\n\nInverse Trigonometric Functions\n\nSolving Trigonometric Equations",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_14"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-4c6cc92c0c35cbec9936",
+    "revision": "4482898",
+    "retrievedAt": "2026-10-02T06:09:20.111Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 15",
+        "text": "Chapter 15: Sequences and Series\n\n← Chapter 14 · Chapter 16 →\n← Chapter 14 · Algebra · Chapter 16 →",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_15"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nMappings and Discrete Functions\n\nMathematical Induction\n\nRecursive Formulas\n\nIntroduction to Sequences and Series\n\nArithmetic Progression (AP)\n\nGeometric Progression (GP)\n\nHarmonic Progression (HP)\n\nQuadratic Progression (QP)\n\nPolynomial Fitting\n\nGenerating Functions",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_15"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-b11121f16e7262455d88",
+    "revision": "4449886",
+    "retrievedAt": "2026-10-02T06:09:20.117Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 16",
+        "text": "Chapter 16: Probability and Counting\n\n← Chapter 15 · Chapter 17 →\n← Chapter 15 · Algebra · Chapter 17 →\n\nIntroduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_16"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nProbability and Samples\n\nCounting Principles\n\nBinomial Coefficients\n\nPermutations and Combinations\n\nThe Stars and Bars Method\n\nTwo-Event Probability\n\nIndependent and Dependent Events\n\nConditional Probability\n\nExperimental Probability\n\nBinomial Distribution\n\nNormal Distribution\n\nThe Central Limit Theorem\n\nHypothesis Testing",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_16"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-2794667c8ff838a8a826",
+    "revision": "4441766",
+    "retrievedAt": "2026-10-02T06:09:20.183Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 17",
+        "text": "Chapter 17: Conic Sections\n\n← Chapter 16 · Chapter 18 →\n← Chapter 16 · Algebra · Chapter 18 →\n\nIntroduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_17"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nThe Distance Formula\n\nLoci of Points\n\nConic Sections\n\nCircles\n\nEllipses\n\nParabolas\n\nHyperbolas\n\nRotation of Axes\n\nNonlinear Systems",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_17"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-055ef437e0811b6ec2da",
+    "revision": "3243137",
+    "retrievedAt": "2026-10-02T06:09:19.892Z",
+    "sections": [
+      {
+        "heading": "Introduction to Bonding",
+        "text": "\n\nPut simply, chemical bonding join atoms together to form more complex structures (like molecules or crystals). Bonds can form between atoms of the same element, or between atoms of different elements. There are several types of chemical bonding which have different properties and give rise to different structures.\n\nIn many cases, atoms try to react to form valence shells containing eight electrons. The octet rule describes this, but it also has many exceptions\n\nIonic bonding occurs between positive ions (cations) and negative ions (anions). In an ionic solid, the ions arrange themselves into a rigid crystal lattice. NaCl (common salt) is an example of an ionic substance. In ionic bonding there is an attractive force established between large numbers of positive cations and negative anions, such that a neutral lattice is formed. This attraction between oppositely-charged ions is collective in nature and called ionic bonding.\n\nCovalent bonds are formed when the orbitals of two non-metal atoms physically overlap and share electrons with each other. There are two types of structures to which this can give rise: molecules and covalent network solids. Methane (CH4) and water (H2O) are examples of covalently bonded molecules, and glass is a covalent network solid.\n\nMetallic bonding occur between atoms that have few electrons compared to the number of accessible orbitals. This is true for the vast majority of chemical elements. In a metallically bonded substance, the atoms' outer electrons are able to freely move around - they are delocalised to form an 'electron pool'. Iron is a metallically bonded substance.\n\nChemical bonding is one of the most crucial concepts in the study of chemistry. In fact, the properties of materials are basically defined by the type and number of atoms they contain and how they are bonded together.\n\nSo far, you have seen examples of intramolecular bonds. These bonds connect atoms into molecules or whole crystals. There are also intermolecular bonds that connect molecules into large substances. These are also called intermolecular forces, or IMF. IMF are weaker than intramolecular bonds, and as they do not permanently join two molecules or ions, it is generally considered incorrect to refer to them as bonds. Sometimes, a substance will not have both IMF and intramolecular bonds. In the case of ionic crystals (like salt) or covalent networks (like diamond), the solid is made out of a network of intramolecular bonds connecting all the component atoms or ions in a repeating pattern, with no separate units to be attracted to each other by IMF. In the case of metallic bonding, the atoms are all interconnected into one large piece of metal, but the electrons move freely rather than being confined to the static bonds of a crystal lattice or covalent network.\n\n<div",
+        "sourceUrl": "https://en.wikibooks.org/wiki/General_Chemistry/Overview_of_bonding"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-728bb521235ac9e13c3e",
+    "revision": "4440791",
+    "retrievedAt": "2026-10-02T06:09:20.273Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 20",
+        "text": "Chapter 20: Complex Numbers\n\n← Chapter 19 · Chapter 21 →\n← Chapter 19 · Algebra · Chapter 21 →",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_20"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nArithmetic with Complex Numbers\n\nPowers of Complex Numbers\n\nComplex Number Algebra\n\nMore about the Quadratic Formula\n\nMore about Polynomials",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_20"
+      }
+    ]
+  },
+  {
+    "resourceId": "builtin-a5634affcb7144869412",
+    "revision": "4463308",
+    "retrievedAt": "2026-10-02T06:09:20.252Z",
+    "sections": [
+      {
+        "heading": "Algebra · Chapter 24",
+        "text": "Chapter 24: Limits of Functions\n\n← Chapter 23 · Chapter 25 →\n← Chapter 23 · Algebra · Chapter 25 →\n\nIntroduction",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_24"
+      },
+      {
+        "heading": "Sections",
+        "text": "\n\nLimits\n\nOne-Sided Limits\n\nLimit Properties\n\nLimits at Infinity\n\nLimits of Sequences\n\nContinuity\n\nThe Definition of a Limit\n\nDerivatives\n\nAnti-Derivatives and Integrals",
+        "sourceUrl": "https://en.wikibooks.org/wiki/Algebra/Chapter_24"
+      }
+    ]
+  }
+]

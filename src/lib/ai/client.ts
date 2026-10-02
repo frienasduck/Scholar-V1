@@ -78,6 +78,7 @@ export interface AIClientMessage {
 }
 
 export interface AIClientRequest {
+  resourceContext?: { resourceIds?: string[]; subjectId?: string; chapterId?: string };
   requestId?: string;
   messages: AIClientMessage[];
   persona?: string;

@@ -8,7 +8,7 @@ import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { useStore } from "@/lib/store";
 
 const BENEFITS = [
-  { icon: Volume2, label: "Ad-free Nigtube & Study Music" },
+  { icon: Volume2, label: "Ad-free LAMTube & Study Music" },
   { icon: Brain, label: "Higher AI generation limits" },
   { icon: Crown, label: "Advanced Scholar Plus tools" },
 ];

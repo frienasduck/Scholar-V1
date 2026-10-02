@@ -107,8 +107,8 @@ function access(overrides: Partial<Parameters<typeof hasCapability>[0]> = {}): P
 }
 
 describe("entitlement capabilities", () => {
-  test("free signed-in user only has the quota-limited custom E-Book capability", () => {
-    expect(capabilitiesForAccess(access())).toEqual(["custom_ebook_upload"]);
+  test("free signed-in user retains free LAM and the quota-limited custom E-Book capability", () => {
+    expect(capabilitiesForAccess(access())).toEqual(["lam_ai", "custom_ebook_upload"]);
   });
 
   test("plus user gets all premium capabilities", () => {

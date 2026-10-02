@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
+import { ResourceShelf } from "@/components/resources/resource-library";
 import { CURRICULUM } from "@/lib/curriculum";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { useUserName } from "@/lib/use-user-name";
@@ -434,6 +435,7 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
       <div className="absolute inset-0 z-0 bg-black/55" />
 
       <div className="relative z-10 rh-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+        <ResourceShelf grade={scholarClass} aid="summary" title="Source-backed revision notes"/>
         {/* HERO */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
           <div className="flex items-center gap-3 mb-3">

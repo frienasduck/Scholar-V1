@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { ResourceSearchCommands } from "@/components/resources/resource-search-commands";
 import { ScholarFooter } from "@/components/scholar-footer";
 import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -147,7 +148,6 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
 
 const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title: string; description: string; anchor?: string }> = {
   levels: { entitlement: "levels", title: "Levels", description: "Unlock Scholar progression, advanced rewards, and full level insights." },
-  "exam-prep": { entitlement: "exam_prep", title: "Exam Prep", description: "Build complete exam-focused revision plans and advanced preparation material." },
   assignments: { entitlement: "assignments", title: "Assignments", description: "Create, manage, and improve assignments with Scholar’s advanced workflow." },
   practicals: { entitlement: "practical_lab", title: "Practical Lab", description: "Explore practical procedures, observations, and interactive laboratory guidance." },
   derivations: { entitlement: "derivation_library", title: "Derivation Library", description: "Study complete derivations with guided steps and focused practice." },
@@ -282,7 +282,7 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                     />
                   )}
                   {item.badge && !badge && (
-                    <span className="scholar-nav-badge text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">{item.badge}</span>
+                    <span className={cn("scholar-nav-badge shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full", item.id === "exam-prep" ? "border border-cyan-300/30 bg-cyan-300/10 text-cyan-100" : "bg-red-500 text-white animate-pulse")}>{item.badge}</span>
                   )}
                   {plusLocked && <span className="scholar-nav-badge rounded-full border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-cyan-200">Plus</span>}
                   {badge && (
@@ -378,11 +378,13 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
 }
 
 function CommandPalette({ open, onOpenChange, onNavigate }: { open: boolean; onOpenChange: (o: boolean) => void; onNavigate: (id: string) => void }) {
+  const [resourceQuery, setResourceQuery] = useState("");
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search views, actions…" />
+      <CommandInput placeholder="Search views, actions and study sources…" value={resourceQuery} onValueChange={setResourceQuery}/>
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+        {open && <ResourceSearchCommands query={resourceQuery} onNavigate={() => { onNavigate("resources"); onOpenChange(false); }}/>}
         <CommandGroup heading="Navigate">
           {NAV_ITEMS.filter((item) => !item.preview).map((item) => (
             <CommandItem
@@ -435,7 +437,7 @@ function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpen
 }
 
 function Footer({ active }: { active: string }) {
-  if (active === "live-tutor") return null;
+  if (active === "live-tutor" || active === "exam-prep") return null;
   return <ScholarFooter compact={["ebook", "mock-exam", "subscription-payment", "ai-tutor"].includes(active)} />;
 }
 
@@ -476,7 +478,8 @@ export function AppShell() {
   const appearanceLabUnlocked = access.has("appearance_lab");
   const [active, setActive] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
-    const segment = window.location.pathname.split("/").filter(Boolean)[0];
+    const pathSegment = window.location.pathname.split("/").filter(Boolean)[0];
+    const segment = pathSegment === "lamtube" ? "nigtube" : pathSegment;
     return segment && VIEW_COMPONENTS[segment] ? segment : "dashboard";
   });
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -673,7 +676,7 @@ export function AppShell() {
     setMobileOpen(false);
     setMobileNavOpen(false);
     if (updateHistory) {
-      const nextPath = `${id === "dashboard" ? "/" : `/${id}`}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
+      const nextPath = `${id === "dashboard" ? "/" : `/${id === "nigtube" ? "lamtube" : id}`}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
       if (`${window.location.pathname}${window.location.hash}` !== nextPath) window.history.pushState({ viewId: id, anchor }, "", nextPath);
     }
     const main = document.getElementById("main-scroll");
@@ -682,7 +685,8 @@ export function AppShell() {
 
   useEffect(() => {
     const onPopState = () => {
-      const segment = window.location.pathname.split("/").filter(Boolean)[0];
+      const pathSegment = window.location.pathname.split("/").filter(Boolean)[0];
+      const segment = pathSegment === "lamtube" ? "nigtube" : pathSegment;
       navigate(segment && VIEW_COMPONENTS[segment] ? segment : "dashboard", false);
     };
     window.addEventListener("popstate", onPopState);
@@ -824,7 +828,7 @@ export function AppShell() {
           ) : null}
         </AnimatePresence>
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" || active === "exam-prep" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}

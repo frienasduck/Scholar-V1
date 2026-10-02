@@ -1,4 +1,5 @@
 "use client";
+import { ResourceShelf } from "@/components/resources/resource-library";
 
 import { useStore } from "@/lib/store";
 import { CURRICULUM } from "@/lib/curriculum";
@@ -321,6 +322,7 @@ export function StudyView() {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
+        <ResourceShelf grade={scholarClass} subjectId={subjectId} chapterId={chapter.id} title="Your chapter source path"/>
         {/* Navbar */}
         <motion.nav
           initial={{ opacity: 0, y: -10 }}

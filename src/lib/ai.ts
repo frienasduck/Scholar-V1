@@ -76,6 +76,7 @@ function makeAbort(timeoutMs = DEFAULT_TIMEOUT_MS, externalSignal?: AbortSignal)
 }
 
 type AIOptions = {
+  resourceContext?: { resourceIds?: string[]; subjectId?: string; chapterId?: string };
   temperature?: number;
   history?: ChatMessage[];
   timeoutMs?: number;
@@ -94,6 +95,7 @@ export async function askAI(
   const abort = makeAbort(opts.timeoutMs, opts.signal);
   try {
     return await requestAIText({
+      resourceContext: opts.resourceContext,
       messages,
       persona,
       mode: opts.mode ?? "chat",
@@ -121,6 +123,7 @@ export async function askAIJSON<T = unknown>(
   const abort = makeAbort(opts.timeoutMs, opts.signal);
   try {
     return await requestAIData<T>({
+      resourceContext: opts.resourceContext,
       messages,
       persona,
       mode: opts.mode ?? "json",
