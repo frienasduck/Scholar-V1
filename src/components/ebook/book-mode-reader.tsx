@@ -89,6 +89,7 @@ type BookModeReaderProps = {
   currentPage: number;
   totalPages: number;
   imageUrl: (page: number, source: "scan" | "text") => string;
+  renderPage?: (page: number) => ReactNode;
   chapters: BookModeChapter[];
   searchPages: BookModeSearchPage[];
   bookmarks: BookModeBookmark[];
@@ -130,6 +131,7 @@ export function BookModeReader({
   currentPage,
   totalPages,
   imageUrl,
+  renderPage,
   chapters,
   searchPages,
   bookmarks,
@@ -697,7 +699,7 @@ export function BookModeReader({
                 width: pageWidth,
               }}
             >
-              <img
+              {renderPage ? renderPage(pageNumber) : <img
                 src={imageUrl(pageNumber, source)}
                 alt={`${title} page ${pageNumber}`}
                 draggable={false}
@@ -705,7 +707,7 @@ export function BookModeReader({
                   "max-h-[calc(100dvh-11rem)] select-none object-contain sm:max-h-[calc(100dvh-8rem)]",
                   fit === "width" ? "h-auto w-full" : "h-full w-auto",
                 )}
-              />
+              />}
               {preferences.pageNumbers && (
                 <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
                   {pageNumber}
@@ -739,18 +741,18 @@ export function BookModeReader({
                         : "right center",
                   }}
                 >
-                  <img
+                  {renderPage ? renderPage(currentPage) : <img
                     src={imageUrl(currentPage, source)}
                     alt=""
                     className="max-h-[calc(100dvh-8rem)] w-auto rounded-lg bg-white shadow-[0_18px_60px_rgba(0,0,0,.7)]"
-                  />
+                  />}
                   <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-transparent to-black/55" />
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
           <div className="hidden" aria-hidden="true">
-            {[-2, -1, 1, 2]
+            {!renderPage && [-2, -1, 1, 2]
               .map((offset) => currentPage + offset)
               .filter(
                 (pageNumber) => pageNumber >= 1 && pageNumber <= totalPages,

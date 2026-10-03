@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ResourceSearchCommands } from "@/components/resources/resource-search-commands";
+import { LamTubeBackgroundJobs } from "@/components/lamtube/background-jobs";
 import { ScholarFooter } from "@/components/scholar-footer";
 import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +11,7 @@ import { NAV_ITEMS, NAV_GROUPS } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { migrateLegacyStorage } from "@/lib/profile-storage";
 import { FloatingMusicWidget } from "@/components/views/music-widget";
+import { StudyMusicQuickAccess } from "@/components/study-music/player";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { BackgroundTaskNotifications } from "@/components/background-task-notifications";
 import {
@@ -346,6 +348,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
         <div id="scholar-lam-dock" className="scholar-lam-dock hidden min-w-0 flex-1 items-center justify-center lg:flex" />
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <StudyMusicQuickAccess />
           <FeedbackButton />
           <NotificationCenter />
           {guestMode && <Badge variant="outline" className="scholar-top-status border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
@@ -757,6 +760,7 @@ export function AppShell() {
 
   return (
     <div className="scholar-shell flex h-dvh w-full overflow-hidden" data-mobile-nav-open={mobileNavOpen ? "true" : "false"}>
+      <LamTubeBackgroundJobs />
       {/* Ambient glass environment. Glass needs something coherent to refract:
           deep graphite with a few very soft fields instead of neon gradients. */}
       <div className="sg-environment" aria-hidden="true" />
@@ -835,7 +839,7 @@ export function AppShell() {
             initial={settings.pageTransitions === false || settings.reduceMotion ? false : { opacity: 0, y: lockedView ? 0 : 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: settings.pageTransitions === false || settings.reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full"
+            className={cn("w-full", active !== "live-tutor" && active !== "exam-prep" && "scholar-footer-view")}
           >
             <ViewErrorBoundary viewName={active}>
               {guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (
@@ -941,7 +945,7 @@ export function AppShell() {
       <ReminderScheduler scholarClass={user.scholarClass} />
 
       {/* Floating music widget — persistent across navigation */}
-      <FloatingMusicWidget />
+      <FloatingMusicWidget currentView={active} />
 
       {/* PWA install prompt */}
       <PWAInstallPrompt />

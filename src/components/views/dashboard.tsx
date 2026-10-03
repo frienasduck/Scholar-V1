@@ -32,7 +32,7 @@ import {
 import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
-import { ScholarToday } from "@/components/personalization/scholar-today";
+import { ScholarToday, ScholarTodaySources } from "@/components/personalization/scholar-today";
 
 // ===== Daily Challenge — pending state in localStorage =====
 // XP is NOT awarded on click. Instead, the user is redirected to the
@@ -760,6 +760,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             </div>
           </div>
         </div>
+        <div className="mt-8"><ScholarTodaySources /></div>
       </div>
     </div>
   );

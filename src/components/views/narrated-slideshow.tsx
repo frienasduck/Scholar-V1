@@ -459,12 +459,13 @@ async function askAIJSONWithTimeout(message: string, timeoutMs: number): Promise
     const scholarClass = state.user.scholarClass ?? 9;
     const jeeMode = state.user.jeeMode ?? false;
 
-    const res = await fetch("/api/ai", {
+    const res = await fetch("/api/ai/slideshow", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: [{ role: "user", content: message }],
         persona: "default",
+        feature: "slideshow_generation_plus",
         temperature: 0.55,
         json: true,
         scholarClass,

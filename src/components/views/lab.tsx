@@ -23,7 +23,7 @@ import {
 } from "@/components/views/lab-interactive";
 import { Construction, Gauge } from "lucide-react";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
-import { openScholarPlus } from "@/lib/subscriptions/promo";
+import { PlusFeaturePreview } from "@/components/subscriptions/plus-feature-preview";
 
 // ===== Lab completion persistence (profile-scoped) =====
 const LAB_COMPLETED_KEY = "lab-completed-experiments";
@@ -1979,10 +1979,6 @@ export function LabView() {
   }, [search, activeCategory]);
 
   function openExperiment(exp: Experiment) {
-    if (isInteractive(exp) && !access.has("premium_experiments")) {
-      openScholarPlus({ source: "experiments", feature: "experiments" });
-      return;
-    }
     setSelectedExp(exp);
     setShowLanding(false);
     setAiExplanation(null);
@@ -2012,7 +2008,7 @@ export function LabView() {
         : "The student is browsing the Experiment Lab.";
       const reply = await askAI(
         `${context}\n\nStudent question: ${question}\n\nAnswer as a friendly lab assistant. Keep it concise and educational. Use markdown for formulas or key points.`,
-        "dr-meera"
+        "dr-meera", { feature: selectedExp && isInteractive(selectedExp) ? "premium_experiments" : undefined }
       );
       setAiChat((prev) => [...prev, { role: "ai", text: reply }]);
     } catch {
@@ -2028,7 +2024,7 @@ export function LabView() {
     try {
       const explanation = await askAI(
         `Explain the science behind this Class ${scholarClass} experiment in a student-friendly way.\n\nExperiment: ${exp.title}\nSubject: ${exp.subject}\nDescription: ${exp.description}\n\nInclude:\n1. What happens and why\n2. Key concept/formula\n3. Real-world application\n4. CBSE exam tip\n5. Common mistake to avoid\n\nUse markdown with clear headings.`,
-        "dr-meera"
+        "dr-meera", { feature: isInteractive(exp) ? "premium_experiments" : undefined }
       );
       setAiExplanation(explanation);
     } catch {
@@ -2155,6 +2151,7 @@ export function LabView() {
 
   // ===== Experiment View =====
   if (selectedExp) {
+    if (isInteractive(selectedExp) && !access.has("premium_experiments")) return <PlusFeaturePreview entitlement="premium_experiments" title={selectedExp.title} description={selectedExp.description} onBack={() => { setSelectedExp(null); setShowLanding(false); }} />;
     return (
       <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
         <style>{`
@@ -2391,13 +2388,14 @@ export function LabView() {
                 const cat = CATEGORIES.find((c) => c.id === exp.category);
                 const isCompleted = completedExps.includes(exp.id);
                 return (
-                  <motion.div
+                  <motion.button
                     key={exp.id}
+                    type="button"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     onClick={() => openExperiment(exp)}
-                    className="lab-glass rounded-2xl overflow-hidden cursor-pointer group hover:scale-[1.02] transition-all"
+                    className="lab-glass rounded-2xl overflow-hidden cursor-pointer group text-left hover:scale-[1.02] transition-transform focus-visible:outline-2 focus-visible:outline-cyan-200"
                   >
                     {/* Thumbnail */}
                     <div className="relative aspect-video grid place-items-center overflow-hidden" style={{ background: `linear-gradient(135deg, ${exp.color}15, ${exp.color}05)` }}>
@@ -2408,6 +2406,7 @@ export function LabView() {
                         </div>
                       )}
                       {isInteractive(exp) && !access.has("premium_experiments") ? <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-cyan-200/20 bg-black/55 px-2 py-1 text-[10px] font-semibold text-cyan-100 backdrop-blur-xl"><LockKeyhole className="h-3 w-3" />PLUS</span> : null}
+                      {!isInteractive(exp) && <span className="absolute right-2 top-2 rounded-full border border-white/15 bg-black/65 px-2 py-1 text-[10px] text-slate-200">Coming Soon</span>}
                       <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] lab-font">{exp.duration}</span>
                       <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] lab-font" style={{ background: `${exp.color}30`, color: exp.color }}>
                         {exp.difficulty}
@@ -2421,7 +2420,7 @@ export function LabView() {
                       <h3 className="text-sm font-medium text-white lab-font line-clamp-1">{exp.title}</h3>
                       <p className="text-xs text-white/40 lab-font mt-1 line-clamp-2">{exp.description}</p>
                     </div>
-                  </motion.div>
+                  </motion.button>
                 );
               })}
             </div>

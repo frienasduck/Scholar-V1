@@ -68,9 +68,9 @@ test("last interrupted attempt becomes a visible retryable failure", async () =>
 test("soft-deleted resource can never be acquired by a worker", async () => { resource.deletedAt = new Date(); expect(await processResourceJob()).toBe(false); expect(chunkRows).toHaveLength(0); });
 test("transient extraction retries with backoff and stops after three attempts", async () => {
   addPdf(); transient = true;
-  await processResourceJob(); expect(job.state).toBe("QUEUED"); expect(job.attempts).toBe(1); expect(job.nextRunAt.getTime()).toBeGreaterThan(Date.now());
+  await processResourceJob(); expect(job.state).toBe("QUEUED"); expect(resource.ebook.processingStatus).toBe("processing"); expect(job.attempts).toBe(1); expect(job.nextRunAt.getTime()).toBeGreaterThan(Date.now());
   job.nextRunAt = new Date(0); await processResourceJob(); expect(job.state).toBe("QUEUED"); expect(job.attempts).toBe(2);
-  job.nextRunAt = new Date(0); await processResourceJob(); expect(job.state).toBe("FAILED"); expect(job.attempts).toBe(3); expect(await processResourceJob()).toBe(false); expect(monthlyRefundCount).toBe(0);
+  job.nextRunAt = new Date(0); await processResourceJob(); expect(job.state).toBe("FAILED"); expect(resource.ebook.processingStatus).toBe("failed"); expect(job.attempts).toBe(3); expect(await processResourceJob()).toBe(false); expect(monthlyRefundCount).toBe(0);
 });
 test("classification and indexing stages are actually persisted", async () => {
   await processResourceJob(); expect(stages).toEqual(["EXTRACTING", "CLASSIFYING", "INDEXING", "READY"]);

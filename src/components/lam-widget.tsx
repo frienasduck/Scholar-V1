@@ -26,6 +26,9 @@ import { useLamRenderQuality } from "@/lib/lam/render-quality";
 import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
 import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 import { aiErrorMessage } from "@/lib/ai/client";
+import { proposeStudyPlan, planningContext, isPlanningDateReply, type ProposedStudyPlan } from "@/lib/lam/study-plan";
+import { StudyPlanProposal } from "@/components/lam/study-plan-proposal";
+import { useCurriculum } from "@/lib/use-curriculum";
 import { consumeSSEChunk } from "@/lib/ai/sse";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
@@ -123,6 +126,9 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const [selectedText, setSelectedText] = useState("");
   const [runtimeContext, setRuntimeContext] = useState<LamRuntimeContext>(() => getLamPageContext());
   const [pendingAction, setPendingAction] = useState<LamAction | null>(null);
+  const curriculum = useCurriculum();
+  const [studyPlan, setStudyPlan] = useState<ProposedStudyPlan | null>(null);
+  const pendingPlanning = useRef("");
   const reminderProfile = useReminderProfile(user.scholarClass);
   const lastCreatedReminderIdRef = useRef<string | null>(null);
   const pendingDisambiguationRef = useRef<{ op: ReminderLamAction["op"]; matches: SmartReminder[]; userCommand: string } | null>(null);
@@ -364,6 +370,11 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     if (isSleepPhrase(content)) { setInput(""); stopSpeech(); recognitionRef.current?.abort(); setOpen(false); return; }
     setInput(""); setInterim(""); setError(""); setOpen(true);
     addMessage({ id: uid(), role: "user", content, inputMode, createdAt: now() });
+    const isDateReply = Boolean(pendingPlanning.current && isPlanningDateReply(content));
+    const planningMessage = isDateReply ? pendingPlanning.current : content;
+    const proposed = proposeStudyPlan(planningMessage, planningContext(planningMessage, { subject: runtimeContext.subjectTitle, chapter: runtimeContext.chapterTitle, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, examDateText: isDateReply ? content : undefined }, curriculum));
+    pendingPlanning.current = proposed?.clarification ? planningMessage : "";
+    if (proposed) { if (proposed.plan) { setStudyPlan(proposed.plan); addMessage({ id: uid(), role: "assistant", content: "Your study plan is ready for review. Nothing has been added to Planner yet.", createdAt: now() }); } else addMessage({ id: uid(), role: "assistant", content: proposed.clarification || "Please clarify your exam date.", createdAt: now() }); setStatus("completed"); return; }
     const local = parseLocalCommand(content);
     if (local?.type === "navigate") { executeAction(local); return; }
     if (local?.type === "start-focus") { setPendingAction(local); return; }
@@ -492,7 +503,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
       reader?.releaseLock();
       if (abortRef.current === controller) abortRef.current = null;
     }
-  }, [addMessage, commit, context, conversation, executeAction, files, input, notes, prefs.followUpListeningEnabled, prefs.responseDetail, prefs.voiceRepliesEnabled, profileId, reminderProfile, speak, state.conversations, status, stopSpeech, user]);
+  }, [addMessage, commit, context, conversation, curriculum, runtimeContext, executeAction, files, input, notes, prefs.followUpListeningEnabled, prefs.responseDetail, prefs.voiceRepliesEnabled, profileId, reminderProfile, speak, state.conversations, status, stopSpeech, user]);
 
   const stopCapturedAudio = useCallback(() => {
     recognitionGenerationRef.current += 1;
@@ -757,6 +768,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
               {message.role === "assistant" && message.sources?.length ? <div className="mt-2 flex flex-wrap gap-1">{message.sources.map((source) => <button key={`${message.id}-${source.label}`} onClick={() => { if (source.route === "lam:history") setHistoryOpen(true); else if (source.route?.startsWith("/")) navigateTo(source.route.split("/").filter(Boolean)[0] || "dashboard"); else navigateTo(context.currentView, context.sourcePageNumber ? { page: context.sourcePageNumber } : undefined); }} className="flex items-center gap-1 rounded-full bg-cyan-300/10 px-2 py-1 text-[10px] text-cyan-100 hover:bg-cyan-300/15"><BookOpen className="h-3 w-3" />{source.label}</button>)}</div> : null}
               {message.role === "assistant" && message.content && <div className="mt-2 flex flex-wrap gap-1 opacity-90 sm:opacity-60 sm:group-hover:opacity-100"><button onClick={() => navigator.clipboard.writeText(message.content)} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Copy response"><Copy className="h-3 w-3" /></button><button onClick={() => speak(message.content)} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Read response aloud"><Volume2 className="h-3 w-3" /></button><button onClick={() => void send("Explain that more simply with one small example.")} className="rounded-full border border-white/8 px-2 py-1 text-[10px] hover:bg-white/10">Explain simply</button><button onClick={() => setPendingAction({ type: "create-note", title: `LAM · ${context.chapterTitle ?? context.activeFileName ?? context.currentView}`, content: message.content })} className="rounded-full border border-white/8 px-2 py-1 text-[10px] hover:bg-white/10">Save to notes</button><button onClick={() => setPendingAction({ type: "create-quiz", subject: context.subjectTitle, chapter: context.chapterTitle })} className="rounded-full border border-white/8 px-2 py-1 text-[10px] hover:bg-white/10">Quiz me</button></div>}
             </motion.article>)}
+            {studyPlan && <StudyPlanProposal key={studyPlan.id} plan={studyPlan} onClose={() => setStudyPlan(null)} />}
             {pendingAction && <div className="rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-amber-200">Confirm Scholar action</p><p className="mt-2 text-sm">{pendingDescription}</p><div className="mt-3 flex gap-2"><button onClick={() => { setPendingAction(null); commit((previous) => ({ ...previous, actionHistory: [{ id: uid(), action: pendingAction.type, result: "cancelled" as const, at: now() }, ...previous.actionHistory] })); }} className="rounded-xl border border-white/15 px-3 py-2 text-xs">Cancel</button><button onClick={() => executeAction(pendingAction)} className="rounded-xl bg-amber-200 px-3 py-2 text-xs font-semibold text-slate-950"><Check className="mr-1 inline h-3 w-3" />Confirm</button></div></div>}
             {status === "suspended" && prefs.wakeWordEnabled && <button onClick={() => void requestMicrophoneAndListen(true)} className="w-full rounded-2xl border border-amber-300/20 bg-amber-300/8 p-3 text-left text-sm text-amber-50"><Mic className="mr-2 inline h-4 w-4" />Tap to resume Hands-Free LAM</button>}
             {error && <div role="alert" className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-xs text-rose-100">{error}</div>}

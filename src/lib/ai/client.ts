@@ -86,7 +86,7 @@ export interface AIClientRequest {
   temperature?: number;
   scholarClass: 9 | 11;
   jeeMode: boolean;
-  feature?: "aisig" | "homework_scanner" | "workspace_ai" | "lam_ai";
+  feature?: "aisig" | "homework_scanner" | "workspace_ai" | "lam_ai" | "slideshow_generation_plus" | "premium_experiments";
   usage?: "quiz_generation" | "slideshow_generation";
 }
 
@@ -116,7 +116,7 @@ export function aiErrorMessage(value: unknown, fallback: string): string {
 }
 
 export async function requestAIText(request: AIClientRequest, signal: AbortSignal): Promise<string> {
-  const response = await fetch("/api/ai", {
+  const response = await fetch(request.feature === "slideshow_generation_plus" ? "/api/ai/slideshow" : "/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...request, requestId: request.requestId ?? crypto.randomUUID(), mode: request.mode ?? "chat" }),
@@ -129,7 +129,7 @@ export async function requestAIText(request: AIClientRequest, signal: AbortSigna
 }
 
 export async function requestAIData<T>(request: AIClientRequest, signal: AbortSignal): Promise<T> {
-  const response = await fetch("/api/ai", {
+  const response = await fetch(request.feature === "slideshow_generation_plus" ? "/api/ai/slideshow" : "/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...request, requestId: request.requestId ?? crypto.randomUUID(), mode: request.mode ?? "json" }),

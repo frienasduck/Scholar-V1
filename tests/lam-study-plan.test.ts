@@ -1,0 +1,34 @@
+import { expect, test } from "bun:test";
+import { parseExamDate, proposeStudyPlan, planningContext, isPlanningDateReply, dateParts } from "../src/lib/lam/study-plan";
+const now = new Date("2026-10-03T12:00:00Z");
+test("November 25 respects the named month and current year", () => { const parsed = parseExamDate("Create a plan for my Physics test on November 25", now); expect(parsed.date?.toISOString()).toBe("2026-11-25T03:30:00.000Z"); });
+test("day-first, explicit year and time are respected", () => { expect(parseExamDate("exam on 25 November 2027 at 3:30 pm", now).date?.toISOString()).toBe("2027-11-25T10:00:00.000Z"); });
+test("past explicit years and invalid calendar dates ask for clarification", () => { expect(parseExamDate("exam on November 25 2025", now).clarification).toContain("past"); expect(parseExamDate("exam on February 30", now).clarification).toContain("invalid"); });
+test("missing year uses next upcoming occurrence explicitly", () => { expect(parseExamDate("exam on January 5", now).date?.getUTCFullYear()).toBe(2027); });
+test("relative dates and next weekday", () => { expect(dateParts(parseExamDate("exam in 2 weeks", now).date!, "Asia/Kolkata").day).toBe(17); expect(dateParts(parseExamDate("test next Friday", now).date!, "Asia/Kolkata").day).toBe(9); });
+test("partial dates and missing dates are honest", () => { expect(dateParts(parseExamDate("exam on the 2nd", now).date!, "Asia/Kolkata").month).toBe(11); expect(parseExamDate("my exam", now).clarification).toContain("When"); });
+test("timezone calculation and DST ambiguity safety", () => { expect(parseExamDate("exam on November 25 2026 at 9 am", now, "America/New_York").date?.toISOString()).toBe("2026-11-25T14:00:00.000Z"); expect(parseExamDate("exam on March 14 2027 at 2:30 am", now, "America/New_York").clarification).toContain("does not exist"); });
+test("ordinary request produces ordered future tasks, not side effects", () => { const result = proposeStudyPlan("Create a plan for my Physics test on November 25", { chapter: "Laws of Motion", weakTopics: ["Friction"] }, now); expect(result?.plan?.tasks).toHaveLength(6); expect(result?.plan?.tasks[0].note).toContain("Friction"); const tasks = result!.plan!.tasks; expect(tasks.map(task => `${task.date} ${task.time}`)).toEqual(tasks.map(task => `${task.date} ${task.time}`).sort()); });
+test("planning does not intercept general chat or navigation", () => { expect(proposeStudyPlan("open planner", {}, now)).toBeNull(); expect(proposeStudyPlan("explain Newton's laws", {}, now)).toBeNull(); });
+test("switching requested subjects cannot reuse an unrelated chapter", () => { const context = planningContext("Physics test plan on November 25", { subject: "Mathematics", chapter: "Sets" }, [{ name: "Physics", chapters: [{ title: "Laws of Motion" }] }]); expect(context.chapter).toBeUndefined(); expect(context.chapters).toEqual(["Laws of Motion"]); });
+test("a clarified date replaces an earlier invalid or past date without losing subject", () => { const result = proposeStudyPlan("Create a plan for my Physics test on 2025-11-25", { examDateText: "November 25 2026 at 10 am" }, now); expect(result?.plan?.examAt).toBe("2026-11-25T04:30:00.000Z"); expect(result?.plan?.subject).toBe("Physics"); });
+test("spoken relative dates and weekend ambiguity are handled", () => { expect(dateParts(parseExamDate("exam in five days", now).date!, "Asia/Kolkata").day).toBe(8); expect(parseExamDate("test this weekend", now).clarification).toContain("Which day"); });
+test("study-only requests support chapter deadlines and multi-day plans", () => {
+  const curriculum = [{ name: "Physics", chapters: [{ title: "Laws of Motion" }] }];
+  const message = "I want to finish Laws of Motion before Sunday";
+  const result = proposeStudyPlan(message, planningContext(message, {}, curriculum), now);
+  expect(result?.plan?.subject).toBe("Physics");
+  expect(result?.plan?.tasks[0].note).toContain("Laws of Motion");
+  expect(result?.plan?.deadlineKind).toBe("study");
+  const multiDay = proposeStudyPlan("Plan Maths for the next 6 days", {}, now)!.plan!;
+  expect(dateParts(new Date(multiDay.examAt), "Asia/Kolkata").day).toBe(9);
+});
+test("two-hour Maths plan tonight respects total time and future deadline", () => { const result = proposeStudyPlan("Give me a two-hour Maths plan tonight", {}, now)!.plan!; expect(result.tasks).toHaveLength(6); expect(result.tasks.every(task => task.note.includes("20 minutes"))).toBe(true); expect(result.assumptions.some(item => item.includes("120 requested"))).toBe(true); expect(result.tasks.every(task => task.date === "2026-10-03")).toBe(true); });
+test("a declared upcoming test can produce a plan without a special command", () => { expect(proposeStudyPlan("Chemistry test tomorrow", {}, now)?.plan?.subject).toBe("Chemistry"); expect(proposeStudyPlan("I have 4 chapters and 3 hours today", {}, now)?.plan?.tasks).toHaveLength(6); });
+test("clarification recognizes spoken dates and does not lose the pending subject", () => { expect(isPlanningDateReply("Sunday at 6 pm")).toBe(true); expect(isPlanningDateReply("in five days")).toBe(true); expect(isPlanningDateReply("explain force")).toBe(false); });
+test("long-horizon plans use disclosed evening windows, not arbitrary midnight fractions", () => {
+  const plan = proposeStudyPlan("Create a plan for my Physics test on November 25", {}, now)!.plan!;
+  expect(plan.tasks.every(task => task.time === "18:00")).toBe(true);
+  expect(plan.tasks[5].date).toBe("2026-11-24");
+  expect(plan.assumptions.some(item => item.includes("6:00 PM"))).toBe(true);
+});

@@ -1,5 +1,10 @@
 "use client";
 import { ResourceShelf } from "@/components/resources/resource-library";
+import { AIVideoFeedCard } from "@/components/lamtube/feed-card";
+import { useVideoLibrary, videoScope } from "@/lib/lamtube/library";
+import { selectFeedVideos } from "@/lib/lamtube/feed";
+import type { VideoState } from "@/lib/lamtube/model";
+import "@/components/lamtube/lamtube.css";
 import dynamic from "next/dynamic";
 const LamTubeWorkspace = dynamic(() => import("@/components/lamtube/workspace"), { loading: () => <p className="p-8 text-white/70" role="status">Opening LAMTube AI Video…</p> });
 
@@ -260,6 +265,8 @@ const VIDEOS_JEE: Video[] = [
 
 // ===== NIGTUBE View =====
 export function NigtubeView() {
+  const aiScope = useStore((s) => videoScope(s.authed && !s.guestMode, s.user.email, s.user.username));
+  const aiLibrary = useVideoLibrary(aiScope);
   const scholarClass = useStore((s) => s.user.scholarClass);
   const jeeMode = useStore((s) => s.user.jeeMode);
   const { name: myName } = useUserName();
@@ -304,6 +311,13 @@ export function NigtubeView() {
   const addXP = useStore((s) => s.addXP);
   const pushActivity = useStore((s) => s.pushActivity);
   const addCoins = useStore((s) => s.addCoins);
+  const aiFeed = selectFeedVideos(aiLibrary.videos, scholarClass, activeSubject, search, activeTab);
+  function openAIVideo(video: VideoState) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("aiVideo", video.id);
+    window.history.replaceState(window.history.state, "", url);
+    switchTab("ai-video");
+  }
 
   const filtered = useMemo(() => {
     let list = activeVideos;
@@ -363,13 +377,13 @@ export function NigtubeView() {
     try {
       if (mode === "summary") {
         const summary = await askAI(
-          `Summarize this CBSE Class 9 educational video for a student. Title: "${selectedVideo.title}". Subject: ${selectedVideo.subject}. Chapter: ${selectedVideo.chapter}. Description: ${selectedVideo.description}. Provide a concise summary with key points and important formulas/concepts to remember. Use markdown.`,
+          `Summarize this CBSE Class ${scholarClass} educational video for a student. Title: "${selectedVideo.title}". Subject: ${selectedVideo.subject}. Chapter: ${selectedVideo.chapter}. Description: ${selectedVideo.description}. Provide a concise summary with key points and important formulas/concepts to remember. Use markdown.`,
           "default"
         );
         setAiSummary(summary);
       } else if (mode === "flashcards") {
         const result = await askAI(
-          `Based on this CBSE Class 9 video, generate 5 flashcards. Title: "${selectedVideo.title}". Chapter: ${selectedVideo.chapter}. Format: Q: <question> | A: <answer>. One per line.`,
+          `Based on this CBSE Class ${scholarClass} video, generate 5 flashcards. Title: "${selectedVideo.title}". Chapter: ${selectedVideo.chapter}. Format: Q: <question> | A: <answer>. One per line.`,
           "default"
         );
         const cards = result.split("\n").filter((l) => l.includes("Q:") && l.includes("A:")).map((l) => {
@@ -379,7 +393,7 @@ export function NigtubeView() {
         setAiFlashcards(cards.length > 0 ? cards : [{ q: "No flashcards generated", a: "Try again" }]);
       } else if (mode === "quiz") {
         const result = await askAI(
-          `Based on this CBSE Class 9 video, generate 3 MCQ quiz questions. Title: "${selectedVideo.title}". Chapter: ${selectedVideo.chapter}. Format as JSON array: [{"q":"question","options":["a","b","c","d"],"answer":0}]. The "answer" is the index of the correct option.`,
+          `Based on this CBSE Class ${scholarClass} video, generate 3 MCQ quiz questions. Title: "${selectedVideo.title}". Chapter: ${selectedVideo.chapter}. Format as JSON array: [{"q":"question","options":["a","b","c","d"],"answer":0}]. The "answer" is the index of the correct option.`,
           "default",
           { temperature: 0.4 }
         );
@@ -391,7 +405,7 @@ export function NigtubeView() {
         }
       } else if (mode === "notes") {
         const result = await askAI(
-          `Create detailed study notes from this CBSE Class 9 video. Title: "${selectedVideo.title}". Chapter: ${selectedVideo.chapter}. Description: ${selectedVideo.description}. Include: key definitions, formulas, important points, and a summary. Use markdown with headings.`,
+          `Create detailed study notes from this CBSE Class ${scholarClass} video. Title: "${selectedVideo.title}". Chapter: ${selectedVideo.chapter}. Description: ${selectedVideo.description}. Include: key definitions, formulas, important points, and a summary. Use markdown with headings.`,
           "default"
         );
         setAiNotes(result);
@@ -518,19 +532,20 @@ export function NigtubeView() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search videos, chapters, subjects..."
-              className="flex-1 bg-transparent text-white text-sm outline-none placeholder-white/40"
+              aria-label="Search LAMTube videos"
+              className="min-w-0 flex-1 bg-transparent text-white text-sm outline-none placeholder-white/40"
             />
           </div>}
 
           {/* Tabs */}
-          <div className="flex max-w-full items-center gap-1 overflow-x-auto nt-scroll">
+          <div className="nt-navigation-tabs flex max-w-full items-center gap-1 overflow-x-auto nt-scroll">
             {[
               { id: "home", icon: Home, label: "Home" },
+              { id: "ai-video", icon: Sparkles, label: "AI VIDEO" },
               { id: "trending", icon: TrendingUp, label: "Trending" },
               { id: "playlists", icon: ListVideo, label: "Playlists" },
               { id: "saved", icon: Bookmark, label: "Saved" },
               { id: "history", icon: History, label: "History" },
-              { id: "ai-video", icon: Sparkles, label: "AI VIDEO" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -542,7 +557,7 @@ export function NigtubeView() {
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
-                <span className={tab.id === "ai-video" ? "whitespace-nowrap" : "hidden lg:inline"}>{tab.label}</span>
+                <span className="whitespace-nowrap">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -555,7 +570,7 @@ export function NigtubeView() {
             <button
               key={s}
               onClick={() => setActiveSubject(s)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              className={`shrink-0 min-h-11 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 activeSubject === s ? "bg-white text-black" : "nt-glass text-white/70 hover:text-white"
               }`}
             >
@@ -568,7 +583,6 @@ export function NigtubeView() {
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto nt-scroll px-4 md:px-8 pb-8">
-          {!selectedVideo && <ResourceShelf grade={scholarClass} subjectId={({ Physics: "physics", Chemistry: "chemistry", Mathematics: "maths" } as Record<string, string>)[activeSubject]} type="video" title="Curated lecture sources"/>}
           {selectedVideo ? (
             /* ===== Video Player View ===== */
             <div className="max-w-6xl mx-auto">
@@ -581,7 +595,7 @@ export function NigtubeView() {
 
               {/* YouTube Embed — the iframe only mounts at "playing", so the
                   pre-roll ad never has video audio running underneath it. */}
-              <div className="nt-glass-strong rounded-2xl overflow-hidden mb-4">
+              <div className="rounded-2xl overflow-hidden mb-4 bg-black border border-white/10">
                 <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                   {isPlaying(adMachine) ? (
                     <iframe
@@ -899,7 +913,7 @@ export function NigtubeView() {
                           Watch. Learn. <span className="text-fuchsia-400">Ace it.</span>
                         </h1>
                         <p className="text-sm text-white/60 nt-font max-w-md">
-                          CBSE Class 9 video lessons with AI summaries, flashcards, quizzes, and notes. Every video is mapped to your syllabus.
+                          CBSE Class {scholarClass} video lessons with AI summaries, flashcards, quizzes, and notes. Every video is mapped to your syllabus.
                         </p>
                         <div className="flex flex-wrap gap-2 mt-4">
                           <span className="px-3 py-1 rounded-full bg-white/5 text-xs text-white/60 nt-font">+2 XP per video</span>
@@ -912,13 +926,14 @@ export function NigtubeView() {
                     </motion.div>
                   )}
 
-                  {filtered.length === 0 ? (
+                  {filtered.length === 0 && aiFeed.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                       <PlayCircle className="h-12 w-12 text-white/20 mb-4" />
                       <p className="text-white/40 nt-font">No videos found. Try a different search.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {aiFeed.map((video) => <AIVideoFeedCard key={video.id} video={video} onOpen={openAIVideo} />)}
                       {filtered.map((video, i) => (
                         <motion.div
                           key={video.id}
@@ -935,6 +950,7 @@ export function NigtubeView() {
               )}
             </>
           )}
+          {!selectedVideo && <div className="mt-8"><ResourceShelf grade={scholarClass} subjectId={({ Physics: "physics", Chemistry: "chemistry", Mathematics: "maths" } as Record<string, string>)[activeSubject]} type="video" title="Curated lecture sources"/></div>}
         </div>
 
         {/* Floating Mini Player */}
@@ -944,7 +960,7 @@ export function NigtubeView() {
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              className="fixed bottom-4 right-4 z-50 nt-glass-strong rounded-2xl overflow-hidden w-80 shadow-2xl"
+              className="nt-mini-player fixed bottom-4 right-4 z-50 rounded-2xl overflow-hidden w-80 shadow-2xl bg-neutral-950 border border-white/15"
             >
               <div className="relative aspect-video">
                 <iframe

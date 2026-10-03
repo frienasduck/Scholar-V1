@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BookOpen, FileText, Loader2, LockKeyhole, Sparkles, Trash2, Upload } from "lucide-react";
+import { FileText, Loader2, LockKeyhole, Trash2, Upload } from "lucide-react";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UploadedBookReader, type UploadedBook } from "./uploaded-book-reader";
 import { toast } from "@/lib/notifications/notification-api";
 import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { setLamPageContext } from "@/lib/lam-context";
@@ -25,16 +25,18 @@ function AccountEbookLibrary() {
   const [ebooks, setEbooks] = useState<EbookSummary[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [busy, setBusy] = useState(false);
-  const [active, setActive] = useState<(EbookSummary & { text: string }) | null>(null);
+  const [active, setActive] = useState<UploadedBook | null>(null);
+  const [libraryError, setLibraryError] = useState("");
 
   const refresh = useCallback(async () => {
     if (!access.authenticated) return;
-    const response = await fetch("/api/ebooks", { cache: "no-store" });
-    if (!response.ok) return;
+    const response = await fetch("/api/ebooks", { cache: "no-store", signal: AbortSignal.timeout(12_000) }).catch(() => null);
+    if (!response || !response.ok) { if (mounted.current) setLibraryError("Your private library is temporarily unavailable. Retry shortly; saved books have not been removed."); return; }
     const value = await response.json();
     if (!mounted.current) return;
     setEbooks(value.ebooks ?? []);
     setUsage(value.usage ?? null);
+    setLibraryError("");
   }, [access.authenticated]);
 
   useEffect(() => { void refresh(); }, [refresh]);
@@ -49,7 +51,7 @@ function AccountEbookLibrary() {
     try {
       const form = new FormData();
       form.set("file", file);
-      const response = await fetch("/api/ebooks", { method: "POST", body: form, headers: { "x-idempotency-key": crypto.randomUUID() } });
+      const response = await fetch("/api/ebooks", { method: "POST", body: form, headers: { "x-idempotency-key": crypto.randomUUID() }, signal: AbortSignal.timeout(55_000) });
       const value = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(value.message || "Scholar could not upload this PDF.");
       if (!mounted.current) return;
@@ -65,12 +67,14 @@ function AccountEbookLibrary() {
 
   const open = useCallback(async (ebook: EbookSummary) => {
     if (ebook.processingStatus === "processing" || ebook.processingStatus === "failed") { toast.error(ebook.processingStatus === "processing" ? "This PDF is still being processed." : "Extraction failed. Open Resources to retry or remove the file."); return; }
-    const response = await fetch(`/api/ebooks/${encodeURIComponent(ebook.id)}`, { cache: "no-store" });
+    try {
+    const response = await fetch(`/api/ebooks/${encodeURIComponent(ebook.id)}`, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
     if (!response.ok) return toast.error("This E-Book could not be opened.");
     const value = await response.json();
     if (!mounted.current) return;
-    setActive({ ...ebook, text: value.ebook.text || "No selectable text was found in this PDF." });
+    setActive({ ...ebook, ...value.ebook, pageTexts: Array.isArray(value.ebook.pageTexts) ? value.ebook.pageTexts : [] });
     setLamPageContext({ ebookTitle: ebook.title, activeFileId: ebook.id, activeFileName: ebook.originalFileName, visibleText: String(value.ebook.text || "").slice(0, 8_000) });
+    } catch { if (mounted.current) toast.error("This E-Book could not be opened. Please retry."); }
   },[]);
 
   useEffect(()=>{
@@ -88,6 +92,7 @@ function AccountEbookLibrary() {
   return (
     <>
       <section id="custom-ebooks" className="eb-glass mb-6 overflow-hidden rounded-2xl p-4 sm:p-5">
+        {libraryError && <p role="alert" className="mb-3 text-sm text-amber-200">{libraryError} <button className="underline" onClick={() => void refresh()}>Retry</button></p>}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-cyan-200" /><h2 className="font-semibold text-white">Upload your own E-Book</h2></div>
@@ -103,13 +108,7 @@ function AccountEbookLibrary() {
         {usage?.remaining === 0 && access.plan === "FREE" ? <button className="mt-3 text-xs font-semibold text-cyan-200 underline decoration-cyan-200/30 underline-offset-4" onClick={() => openScholarPlus({ source: "ebooks", feature: "ebooks" })}>Upgrade for 20 uploads each month</button> : null}
         {ebooks.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{ebooks.map((ebook) => <article key={ebook.id} className="rounded-xl border border-white/10 bg-black/20 p-3"><button className="flex w-full min-w-0 items-start gap-3 text-left" onClick={() => void open(ebook)}><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[.06]"><FileText className="h-5 w-5 text-indigo-200" /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold text-white">{ebook.title}</span><span className="mt-0.5 block text-xs text-white/45">{ebook.processingStatus === "processing" ? "Processing…" : ebook.processingStatus === "failed" ? "Processing failed" : `${ebook.pageCount} pages`} · {(ebook.sizeBytes / 1024 / 1024).toFixed(1)} MB</span>{ebook.processingStatus === "needs_ocr" ? <span className="mt-1 block text-[11px] text-amber-200">Scanned pages need OCR</span> : null}</span></button><div className="mt-2 flex justify-end"><button aria-label={`Delete ${ebook.title}`} className="grid h-10 w-10 place-items-center rounded-lg text-white/35 hover:bg-white/[.06] hover:text-red-200" onClick={async () => { if (!confirm(`Remove “${ebook.title}”?`)) return; await fetch(`/api/ebooks/${ebook.id}`, { method: "DELETE" }); await refresh(); }}><Trash2 className="h-4 w-4" /></button></div></article>)}</div> : <p className="mt-4 rounded-xl border border-dashed border-white/10 p-4 text-center text-xs text-white/40">Your uploaded E-Books will appear here.</p>}
       </section>
-      <Dialog open={Boolean(active)} onOpenChange={(openValue) => { if (!openValue) { setActive(null); setLamPageContext({}); } }}>
-        <DialogContent className="max-h-[min(88dvh,760px)] max-w-3xl overflow-hidden border-white/15 bg-[#070b12]/95 text-white backdrop-blur-2xl">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-cyan-200" />{active?.title}</DialogTitle><DialogDescription>{active?.pageCount} pages · extracted document text</DialogDescription></DialogHeader>
-          <div className="max-h-[55dvh] overflow-y-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/25 p-4 text-sm leading-7 text-white/75">{active?.text}</div>
-          <div className="flex flex-col gap-2 sm:flex-row"><a className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 px-4 text-sm font-semibold" href={active ? `/api/ebooks/${active.id}?file=1` : "#"} target="_blank" rel="noreferrer"><FileText className="h-4 w-4" />Open original PDF</a><button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-black" onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "live-tutor" } }))}><Sparkles className="h-4 w-4" />Ask LAM AI about this book</button></div>
-        </DialogContent>
-      </Dialog>
+      {active && <UploadedBookReader key={active.id} book={active} onClose={() => { setActive(null); setLamPageContext({}); }} />}
     </>
   );
 }

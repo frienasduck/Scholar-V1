@@ -122,8 +122,6 @@ export function PracticeView() {
         </motion.nav>
 
         <DevelopmentNotice>Practice Questions is still being expanded. More focused question sets are being added as soon as possible.</DevelopmentNotice>
-        <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="question-bank" aid="practice" title="Official question sources"/>
-        <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="notes" aid="practice" title="Explain, check, then practice with LAM"/>
 
         <div className="mt-8 mb-8">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-xs text-white/50 mb-5">
@@ -230,6 +228,10 @@ export function PracticeView() {
             </motion.div>
           )}
         </AnimatePresence>
+        <div className="mt-8 space-y-6">
+          <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="question-bank" aid="practice" title="Official question sources"/>
+          <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="notes" aid="practice" title="Explain, check, then practice with LAM"/>
+        </div>
       </div>
 
       {/* PDF Import Review overlay */}

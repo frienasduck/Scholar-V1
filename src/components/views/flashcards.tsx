@@ -7,7 +7,7 @@ import { ResourceShelf } from "@/components/resources/resource-library";
 
 export function FlashcardsView() {
   const scholarClass = useStore((s) => s.user.scholarClass);
-  return <><ResourceShelf grade={scholarClass} type="notes" aid="flashcards" title="Review from source-linked cards"/>{scholarClass === 11 ? <Class11FlashcardsView/> : <Class9FlashcardsView/>}</>;
+  return <>{scholarClass === 11 ? <Class11FlashcardsView/> : <Class9FlashcardsView/>}<div className="relative mt-8"><ResourceShelf grade={scholarClass} type="notes" aid="flashcards" title="Review from source-linked cards"/></div></>;
 }
 
 export default FlashcardsView;

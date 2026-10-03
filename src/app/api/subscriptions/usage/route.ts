@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
-import { resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
+import { resolveUserEntitlements, requireEntitlement } from "@/lib/subscriptions/entitlements";
 import { consumeGeneration, getUsage } from "@/lib/subscriptions/usage";
 import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
   }
   const parsed = schema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "INVALID_USAGE_KEY" }, { status: 400 });
+  if (parsed.data.key === "slideshow_generation") { const access = await requireEntitlement("slideshow_generation_plus"); if (!access.ok) return access.response; }
   try {
     const result = await consumeGeneration(user.id, parsed.data.key, await resolveUserEntitlements(user.id));
     return NextResponse.json({ ok: true, ...result });

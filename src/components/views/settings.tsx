@@ -79,8 +79,45 @@ import {
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { CustomCommandsPanel } from "@/components/reminders/custom-commands-panel";
 import { UserAISettings } from "@/components/ai/user-ai-settings";
+import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
+  {
+    version: "Platform refinement · connectors & reliability",
+    date: "3 Oct 2026",
+    title: "Connected materials, clearer Plus previews and reliable study flows",
+    items: [
+      "Plugins & Connections introduces Google Drive with narrow per-file permission, encrypted server-only credentials, private PDF/Google Doc imports and revocation. Requires connector OAuth configuration and the PluginConnection migration before live use.",
+      "Locked tools now explain their capabilities through shared glass previews. Implemented experiments show Plus access rather than Coming Soon; Slideshow generation is protected by server entitlements while saved decks remain viewable.",
+      "Uploaded PDFs reuse Scholar's immersive E-Book reader, page rendering, search, bookmarks and reading progress, with page-specific LAM and practice. Scanned pages explicitly require OCR rather than claiming extracted content.",
+      "LAM recognizes normal exam-planning requests, resolves named and relative dates, and proposes an ordered plan for explicit approval before adding it to Planner. Background videos reveal only when ready and pause when hidden; streaming scroll no longer repeatedly restarts smooth animation.",
+      "Canvas carries an Early Beta badge, and LAM reuses its existing lightweight opening animation with reduced-motion support. The shared footer now follows the supplied glass reference: a central orb, luminous curved rim, responsive link columns and statement card. Section backgrounds fade out into the footer's fading atmosphere without fading text, controls or reading content. Compact reading layouts retain their smaller footer.",
+    ],
+  },
+  {
+    version: "Study Music 2.0",
+    date: "3 Oct 2026",
+    title: "Find your flow — a personal, persistent study soundtrack",
+    items: [
+      "A contained official YouTube player now follows internal Scholar navigation, with safe desktop dragging, corner snapping, remembered positions, phone-friendly controls, queue, shuffle, repeat and volume. Minimizing controls keeps music playing with the compact official video visible. First-click startup no longer loses its play request to cue events. Hiding the browser tab pauses YouTube; native ambience can continue.",
+      "Preview supported YouTube links and save them to My Songs with real title, channel and thumbnail metadata. Manage favorites, playlists, queue order and recent listening; guests keep a separate device-local library. Private account sync requires the new StudyMusicLibrary migration.",
+      "The corrected catalog contains 16 verified creator videos. Unavailable and mislabeled entries were replaced; thumbnail fallbacks and honest duration labels prevent broken artwork and invented timings.",
+      "25/5, 50/10, 90/15 and custom focus sessions survive section changes and recover after refresh. Native rain, brown noise, white noise and ocean-like textures have independent mixer controls. Focus view, temporary soundtrack assembly and global quick controls keep study tools close by.",
+      "Curated-resource discovery shelves were moved below each section's primary experience without removing imported learning resources.",
+    ],
+  },
+  {
+    version: "LAMTube · mobile & background generation",
+    date: "3 Oct 2026",
+    title: "Keep studying while your visual lesson is being made",
+    items: [
+      "AI lesson processing now runs in bounded server batches and resumes from Scholar's shared shell, rather than depending on the generator screen staying open. Saved stages resume when you return after closing Scholar.",
+      "A new progress screen shows five creation stages, actual saved progress, gentle motion and a Continue in background action. Recoverable shared-AI cooldowns pause and resume without losing completed work.",
+      "Your newest generated lesson appears first in LAMTube's video grid, with in-progress cards, private playback and the existing search, subject, saved and history filters.",
+      "Mobile navigation has readable scrollable tabs, single-column creation settings and libraries, larger playback targets and a mini-player positioned above the phone menu. Heavy glass filters were removed from embedded playback.",
+      "Standard PostgreSQL DATABASE_URL configurations are accepted alongside DB_DATABASE_URL. A legacy SQLite URL is not compatible; database-backed generation still requires PostgreSQL, its migration and configured narration access.",
+    ],
+  },
   {
     version: "LAMTube AI Video",
     date: "2 Oct 2026",
@@ -397,6 +434,8 @@ function CinematicVideoBg() {
 }
 
 export function SettingsView() {
+  const [settingsTab, setSettingsTab] = useState("account");
+  useEffect(() => { if (new URLSearchParams(location.search).has("drive") || location.hash === "#plugins-connections") setSettingsTab("connections"); }, []);
   const user = useStore((s) => s.user);
   const settings = useStore((s) => s.settings);
   const updateUser = useStore((s) => s.updateUser);
@@ -701,7 +740,7 @@ export function SettingsView() {
 
         {/* Tabs — liquid glass */}
         <div className="relative z-10 flex-1 px-4 pb-8 max-w-5xl mx-auto w-full">
-          <Tabs defaultValue="account" className="w-full">
+          <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
             <TabsList className="scholar-settings-tabs asme-glass grid grid-cols-2 min-[480px]:grid-cols-3 lg:grid-cols-5 h-auto w-full rounded-2xl p-1.5 gap-1 mb-4 [&>button]:min-w-0 [&>button]:min-h-11 [&>button]:px-2 [&>button]:whitespace-normal">
               <TabsTrigger value="personalization" className="asme-tab rounded-full text-xs px-3 py-2">Learning Profile</TabsTrigger>
               <TabsTrigger value="account" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
@@ -719,6 +758,7 @@ export function SettingsView() {
               <TabsTrigger value="lam" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Bot className="h-3.5 w-3.5" />LAM
               </TabsTrigger>
+              <TabsTrigger value="connections" className="asme-tab rounded-full text-xs px-3 py-2">Plugins &amp; Connections</TabsTrigger>
               <TabsTrigger value="privacy" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Shield className="h-3.5 w-3.5" />Privacy
               </TabsTrigger>
@@ -737,6 +777,7 @@ export function SettingsView() {
             </TabsList>
 
             {/* ===== Account ===== */}
+            <TabsContent value="connections"><PluginConnections /></TabsContent>
             <TabsContent value="personalization"><LearningProfileSettings /></TabsContent>
             <TabsContent value="account" className="mt-2">
               <AccountSecurity />

@@ -106,6 +106,7 @@ import {
 } from "@/lib/slideshow-pipeline";
 import { cn } from "@/lib/utils";
 import { NarratedSlideshowMaker } from "@/components/views/narrated-slideshow";
+import { PlusGate } from "@/components/subscriptions/plus-gate";
 import {
   beginBackgroundTask,
   completeBackgroundTask,
@@ -125,7 +126,7 @@ async function askAIJSONWithTimeout(
 ): Promise<any | null> {
   // Keep the shared deadline/error contract. A provider failure must not turn
   // into null and then be presented as a successfully generated AI deck.
-  return askAIJSON(message, persona, { ...opts, timeoutMs: Math.min(timeoutMs, 60_000) });
+  return askAIJSON(message, persona, { ...opts, feature: "slideshow_generation_plus", timeoutMs: Math.min(timeoutMs, 60_000) });
 }
 
 // ============================================================================
@@ -1423,6 +1424,7 @@ No markdown fences.`;
       )}
 
       {/* Input mode tabs */}
+      <PlusGate entitlement="slideshow_generation_plus" title="Slideshow Maker" description="Build a structured presentation from your notes, a chapter, a PDF, or an idea. Saved presentations remain available on every plan.">
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2">
         {INPUT_MODES.filter(
           (item) => item.id !== "ebook" || scholarClass === 11,
@@ -2264,6 +2266,7 @@ No markdown fences.`;
       )}
 
       {/* Saved library modal */}
+      </PlusGate>
       <AnimatePresence>
         {libraryOpen &&
           typeof document !== "undefined" &&

@@ -94,6 +94,17 @@ export async function POST(request: NextRequest) {
   }
 
   const context = input.pageContext;
+  let uploadedResourceId: string | undefined;
+  if (context.activeFileId && context.ebookTitle) {
+    const ebook = await db.customEbook.findFirst({ where: { id: context.activeFileId, userId: access.user.id, deletedAt: null }, select: { title: true, originalFileName: true, processingStatus: true, pageTexts: true, resource: { select: { id: true, sourceMetadata: true } } } });
+    if (!ebook || !["ready", "needs_ocr"].includes(ebook.processingStatus)) return NextResponse.json({ ok: false, error: "The uploaded E-Book is unavailable or not ready." }, { status: 404 });
+    const metadata = ebook.resource?.sourceMetadata as { grade?: number } | undefined;
+    if (metadata?.grade && metadata.grade !== context.scholarClass) return NextResponse.json({ ok: false, error: "Switch to this E-Book's class profile first." }, { status: 403 });
+    const pages = ebook.pageTexts as string[];
+    context.ebookTitle = ebook.title; context.activeFileName = ebook.originalFileName;
+    context.visibleText = pages[(context.sourcePageNumber ?? 1) - 1]?.slice(0, 8000) || "No reliable extracted text on this page. OCR is required; do not invent page content.";
+    uploadedResourceId = ebook.resource?.id;
+  }
   const learningProfile = await db.learningProfile.findUnique({where:{userId:access.user.id},select:{status:true,preferences:true}}).catch(()=>null);
   const saved = learningProfile?.status === "COMPLETED" ? savedPreferencesSchema.safeParse(learningProfile.preferences) : null;
   const learning = saved?.success && saved.data.grade === context.scholarClass ? saved.data : null;
@@ -104,8 +115,11 @@ export async function POST(request: NextRequest) {
     chapter: context.chapterTitle,
   }).catch(() => ({ text: "LAM AI memory is temporarily unavailable. Continue without it.", selectedMemoryIds: [], summary: { memories: 0, relevantMemories: 0, weakTopics: [], unresolvedMistakes: 0, dueRevision: 0 } })) : null;
   const retrieved = [context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `page ${context.sourcePageNumber}` : "", context.activeFileName ? `Active uploaded file: ${context.activeFileName}` : "", context.selectedText ? `Selected material:\n${context.selectedText}` : "", context.visibleText ? `Visible or extracted text:\n${context.visibleText}` : ""].filter(Boolean).join(" · ");
-  const resourceSources = await retrieve(access.user.id, { ...chapterContext(context.scholarClass, context.subjectTitle, context.chapterTitle), q: input.message.slice(0, 1000) }).catch(() => []);
+  const resourceSources = await retrieve(access.user.id, { ...chapterContext(context.scholarClass, context.subjectTitle, context.chapterTitle), q: input.message.slice(0, 1000) }, uploadedResourceId ? [uploadedResourceId] : undefined).catch(() => []);
+  let timezone = access.user.timezone || "Asia/Kolkata";
+  try { new Intl.DateTimeFormat("en-IN", { timeZone: timezone }); } catch { timezone = "Asia/Kolkata"; }
   const system = [
+    `Current server time: ${new Date().toISOString()}. User timezone: ${timezone}. Local date/time: ${new Date().toLocaleString("en-IN", { timeZone: timezone, dateStyle: "full", timeStyle: "short" })}. Resolve relative dates against this time. Never claim a plan was saved unless Scholar confirms the action.`,
     resourceSources.length ? retrievalPrompt(resourceSources) : "No indexed resource text matched. Distinguish general knowledge; do not invent Scholar source citations.",
     "You are LAM (Learning Assistant and Mentor), Scholar's calm personal learning assistant. You are an AI, not a human.",
     `Active profile: ${context.profileName}, CBSE Class ${context.scholarClass}. Profile ID: ${input.profileId}. Never mix content or identity from another class.`,

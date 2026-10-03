@@ -16,7 +16,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ ebo
   if (request.nextUrl.searchParams.get("file") === "1") {
     return new Response(ebook.pdfBytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${ebook.originalFileName.replace(/["\\\r\n]/g, "")}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox", "Cross-Origin-Resource-Policy": "same-origin" } });
   }
-  return NextResponse.json({ ebook: { id: ebook.id, title: ebook.title, originalFileName: ebook.originalFileName, sizeBytes: ebook.sizeBytes, pageCount: ebook.pageCount, processingStatus: ebook.processingStatus, text: ebook.text, pageTexts: ebook.pageTexts, createdAt: ebook.createdAt } }, { headers: { "Cache-Control": "private, no-store" } });
+  const resource = await db.studyResource.findFirst({ where: { ebookId: ebook.id, ...privateScope(user.id) }, select: { id: true } });
+  return NextResponse.json({ ebook: { id: ebook.id, resourceId: resource?.id, title: ebook.title, originalFileName: ebook.originalFileName, sizeBytes: ebook.sizeBytes, pageCount: ebook.pageCount, processingStatus: ebook.processingStatus, text: ebook.text, pageTexts: ebook.pageTexts, createdAt: ebook.createdAt } }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ ebookId: string }> }) {

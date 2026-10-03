@@ -24,5 +24,10 @@ export async function extractPdf(bytes: Uint8Array) {
     }
     return { pageCount: pages.length, pages, text: pages.map((p, i) => `Page ${i + 1}\n${p}`).join("\n\n"), needsOcr: pages.filter(p => p.length < 30).length >= Math.max(1, Math.ceil(pages.length * .2)) };
     })()]);
+  } catch (error) {
+    const name = error instanceof Error ? error.name : "";
+    if (name === "PasswordException") throw new Error("PDF_PASSWORD_PROTECTED");
+    if (name === "InvalidPDFException" || name === "FormatError") throw new Error("PDF_CORRUPT");
+    throw error;
   } finally { clearTimeout(timeout!); void task.destroy().catch(() => undefined); }
 }

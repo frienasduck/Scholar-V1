@@ -246,7 +246,6 @@ export function IntelligenceView() {
       </div>
 
       {/* Stat cards */}
-      <ResourceShelf grade={scholarClass} title="Recommended learning sources"/>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={Brain} label="Mastery estimate" value={snapshot.mastery.length ? `${masteryAvg}%` : "—"} sub={snapshot.mastery.length ? `${snapshot.mastery.length} topics tracked` : "Complete a quiz to begin"} accent="#6366f1" />
         <StatCard icon={AlertTriangle} label="Weak topics" value={snapshot.weakTopics.length} sub={snapshot.weakTopics.length ? `${snapshot.weakTopics.filter((w) => w.severity === "severe").length} severe` : "Radar is clear"} accent="#f97316" />
@@ -285,6 +284,7 @@ export function IntelligenceView() {
           <ExamsPanel exams={snapshot.exams} now={snapshot.now} />
         </TabsContent>
       </Tabs>
+      <ResourceShelf grade={scholarClass} title="Recommended learning sources"/>
     </div>
   );
 }

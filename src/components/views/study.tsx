@@ -322,7 +322,6 @@ export function StudyView() {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
-        <ResourceShelf grade={scholarClass} subjectId={subjectId} chapterId={chapter.id} title="Your chapter source path"/>
         {/* Navbar */}
         <motion.nav
           initial={{ opacity: 0, y: -10 }}
@@ -847,6 +846,8 @@ export function StudyView() {
             </AnimatePresence>
           </div>
         </div>
+
+        <div className="mt-8"><ResourceShelf grade={scholarClass} subjectId={subjectId} chapterId={chapter.id} title="Your chapter source path"/></div>
 
         {/* Explain dialog */}
         <Dialog open={!!explainOpen} onOpenChange={(o) => !o && setExplainOpen(null)}>

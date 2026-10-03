@@ -39,7 +39,7 @@ export async function readVideo(
 export async function listVideos(userId: string) {
   const rows = await db.$queryRaw<
     Row[]
-  >`SELECT "state","revision" FROM "AIVideo" WHERE "userId"=${userId} AND "deletedAt" IS NULL ORDER BY "updatedAt" DESC LIMIT 100`;
+  >`SELECT "state","revision" FROM "AIVideo" WHERE "userId"=${userId} AND "deletedAt" IS NULL ORDER BY "createdAt" DESC LIMIT 100`;
   return rows.map((r) => publicVideo(decode(r)));
 }
 export async function insertVideo(

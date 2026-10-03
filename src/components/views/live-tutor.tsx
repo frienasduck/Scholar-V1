@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, BookOpen, BrainCircuit, Check, CircleStop, Copy, Eye, FileText, History, Loader2, MemoryStick, Mic, Plus, Settings2, Sparkles, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { PersonalityBackground } from "@/components/live-tutor/personality-background";
 import { LamResponse } from "@/components/lam/lam-response";
-import { getLamPageContext, type LamRuntimeContext } from "@/lib/lam-context";
+import { consumeLamDraft, getLamPageContext, type LamRuntimeContext } from "@/lib/lam-context";
 import { parseLocalCommand, type LamAction } from "@/lib/lam/commands";
 import { microphoneErrorMessage, requestMicrophoneStream, stopMediaStream } from "@/lib/lam/microphone";
 import { loadLamState, updateLamPreferences } from "@/lib/lam/storage";
@@ -14,6 +14,11 @@ import { navigateTo } from "@/lib/nav-event";
 import { useStore } from "@/lib/store";
 import { aiErrorMessage } from "@/lib/ai/client";
 import { consumeSSEChunk } from "@/lib/ai/sse";
+import { proposeStudyPlan, planningContext, isPlanningDateReply, type ProposedStudyPlan } from "@/lib/lam/study-plan";
+import { StudyPlanProposal } from "@/components/lam/study-plan-proposal";
+import { useCurriculum } from "@/lib/use-curriculum";
+import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
+import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 import "@/components/live-tutor/live-tutor.css";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
@@ -52,6 +57,10 @@ function actionCopy(action: LamAction) {
 }
 
 export function LiveTutorView() {
+  const curriculum = useCurriculum();
+  const [studyPlan, setStudyPlan] = useState<ProposedStudyPlan | null>(null);
+  const openingRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { const node = openingRef.current; const mark = node?.querySelector<HTMLElement>(".lt-scholar-mark"); if (mark && node) return animateLamWakeReveal(mark, Array.from(node.querySelectorAll<HTMLElement>(".lt-nav-tab,.lt-nav-beta")), resolveScholarAnimationQuality()); }, []);
   const user = useStore((state) => state.user);
   const addNote = useStore((state) => state.addNote);
   const profileId = `class-${user.scholarClass}`;
@@ -70,6 +79,8 @@ export function LiveTutorView() {
   const [prepared, setPrepared] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [draft, setDraft] = useState("");
+  useEffect(() => { const pending = consumeLamDraft(); if (pending) setDraft(pending.prompt); }, []);
+  const pendingPlanning = useRef("");
   const [streaming, setStreaming] = useState("");
   const [resolvedModel, setResolvedModel] = useState("");
   const [providers, setProviders] = useState<LiveTutorProviderStatus[]>([]);
@@ -86,6 +97,7 @@ export function LiveTutorView() {
   const chunksRef = useRef<Blob[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const switchTimer = useRef<number | null>(null);
+  const interacted = useRef(false);
 
   const messages = messagesByPersona[personality];
   const copy = PERSONALITY_COPY[personality];
@@ -102,12 +114,14 @@ export function LiveTutorView() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]);
     const prepare = async () => {
       setStatus("recalling");
       const requests = await Promise.allSettled([
-        fetch("/api/lam/live/providers", { cache: "no-store" }).then((response) => response.json()),
-        fetch("/api/lam/live/memory", { cache: "no-store" }).then((response) => response.json()),
-        fetch(`/api/lam/live/sessions?profileId=${encodeURIComponent(profileId)}`, { cache: "no-store" }).then((response) => response.json()),
+        fetch("/api/lam/live/providers", { cache: "no-store", signal }).then((response) => response.json()),
+        fetch("/api/lam/live/memory", { cache: "no-store", signal }).then((response) => response.json()),
+        fetch(`/api/lam/live/sessions?profileId=${encodeURIComponent(profileId)}`, { cache: "no-store", signal }).then((response) => response.json()),
       ]);
       if (cancelled) return;
       const [providerResult, memoryResult, sessionResult] = requests;
@@ -124,12 +138,13 @@ export function LiveTutorView() {
           const latest = sessions.find((session) => session.personality === persona);
           if (latest) { nextChats[persona] = latest.messages; nextIds[persona] = latest.id; }
         }
-        setHistory(sessions); setMessagesByPersona(nextChats); setSessionIds(nextIds);
+        setHistory(sessions);
+        if (!interacted.current) { setMessagesByPersona(nextChats); setSessionIds(nextIds); }
       }
-      setPrepared(true); setStatus("idle");
+      setPrepared(true); if (!interacted.current) setStatus("idle");
     };
     void prepare();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [profileId]);
 
   useEffect(() => {
@@ -138,7 +153,7 @@ export function LiveTutorView() {
     return () => window.removeEventListener("scholar:ai-settings-changed", refreshProviders);
   }, []);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages.length, streaming]);
+  useEffect(() => { const node = scrollRef.current; if (node && (!streaming || node.scrollHeight - node.scrollTop - node.clientHeight < 180)) node.scrollTo({ top: node.scrollHeight, behavior: streaming ? "instant" : "smooth" }); }, [messages.length, streaming]);
   useEffect(() => () => { abortRef.current?.abort(); recognitionRef.current?.abort(); if (recorderRef.current?.state === "recording") recorderRef.current.stop(); stopMediaStream(streamRef.current); window.speechSynthesis?.cancel(); if (switchTimer.current) window.clearTimeout(switchTimer.current); }, []);
 
   const switchPersonality = useCallback((value: LiveTutorPersonality) => {
@@ -171,7 +186,13 @@ export function LiveTutorView() {
 
   const sendMessage = useCallback(async (raw: string, inputMode: "text" | "voice" = "text") => {
     const message = raw.trim(); if (!message || busy) return;
+    interacted.current = true;
     const persona = personality; setError(""); setDraft(""); window.speechSynthesis?.cancel();
+    const isDateReply = Boolean(pendingPlanning.current && isPlanningDateReply(message));
+    const planningMessage = isDateReply ? pendingPlanning.current : message;
+    const proposed = proposeStudyPlan(planningMessage, planningContext(planningMessage, { subject: context.subjectTitle, chapter: context.chapterTitle, weakTopics: memorySummary?.weakTopics.filter(item => !context.subjectTitle || item.subject === context.subjectTitle).map(item => item.topic || item.chapter), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, examDateText: isDateReply ? message : undefined }, curriculum));
+    pendingPlanning.current = proposed?.clarification ? planningMessage : "";
+    if (proposed) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); if (proposed.plan) { setStudyPlan(proposed.plan); append(persona, { id: uid(), role: "assistant", content: "I’ve prepared a study plan for review. Nothing has been added to Planner yet; use Add to Planner when the dates and coverage look right.", createdAt: now() }); } else { append(persona, { id: uid(), role: "assistant", content: proposed.clarification || "Please clarify your exam date.", createdAt: now() }); } setStatus("idle"); return; }
     const action = parseLocalCommand(message);
     if (action) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); setPendingAction(action); setStatus("waiting-confirmation"); return; }
     if (/\b(create|make|generate) (a )?(quiz|questions?)\b/i.test(message)) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); setPendingAction({ type: "create-quiz", subject: context.subjectTitle, chapter: context.chapterTitle }); setStatus("waiting-confirmation"); return; }
@@ -233,7 +254,7 @@ export function LiveTutorView() {
       append(persona, { id: `${turnId}:assistant`, role: "assistant", content: full, createdAt: now(), sources }); setStreaming(""); setStatus("complete"); speak(full);
     } catch (caught) { if (controller.signal.aborted && !timedOut) return; setStreaming(""); setStatus("error"); setError(timedOut ? "LAM took too long. Please retry or ask a shorter question." : caught instanceof Error ? caught.message : "LAM could not complete this turn."); }
     finally { window.clearTimeout(deadline); await reader?.cancel().catch(() => undefined); reader?.releaseLock(); if (abortRef.current === controller) abortRef.current = null; }
-  }, [append, busy, context, messages, mode, model, patchPreferences, personality, prefs.responseDetail, profileId, provider, sessionIds, speak, user.name, user.scholarClass]);
+  }, [append, busy, context, curriculum, memorySummary, messages, mode, model, patchPreferences, personality, prefs.responseDetail, profileId, provider, sessionIds, speak, user.name, user.scholarClass]);
 
   const startRecording = useCallback((stream: MediaStream) => {
     const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
@@ -273,7 +294,7 @@ export function LiveTutorView() {
   const newConversation = () => { if (!window.confirm(`Start a new ${copy.label} conversation? Other personality sessions are kept.`)) return; setMessagesByPersona((current) => ({ ...current, [personality]: [] })); setSessionIds((current) => ({ ...current, [personality]: uid() })); setResolvedModel(""); setError(""); setPanel(null); };
   const quick = (item: { label: string; mode: LiveTutorMode }) => { setMode(item.mode); patchPreferences({ liveTutorMode: item.mode }); void sendMessage(item.label); };
 
-  return <section className={`lt-root lt-${personality} ${switching ? "is-switching" : ""}`} data-personality={personality} aria-label="LAM AI">
+  return <section ref={openingRef} className={`lt-root lt-${personality} ${switching ? "is-switching" : ""}`} data-personality={personality} aria-label="LAM AI">
     <PersonalityBackground personality={personality} /><div className="lt-environment-scrim" aria-hidden="true" />
     <nav className="lt-nav" aria-label="LAM AI navigation"><span className="lt-nav-brand"><span className="lt-scholar-mark"><BrainCircuit /></span>Scholar<span className="lt-nav-beta">LAM AI · BETA</span></span><span className="lt-nav-div" /><div className="lt-nav-tabs" role="group" aria-label="Personality">{LIVE_TUTOR_PERSONALITIES.map((item) => <button key={item} className="lt-nav-tab" aria-pressed={personality === item} onClick={() => switchPersonality(item)}>{PERSONALITY_COPY[item].shortLabel}</button>)}</div><span className="lt-nav-div" /><button className="lt-nav-new" onClick={newConversation} aria-label="New conversation"><Plus /></button></nav>
     {(listening || status === "transcribing" || status === "speaking") ? <div className="lt-voice-pill" data-state={status} role="status"><span className="lt-voice-dot" />{status === "listening" ? "Listening" : status === "transcribing" ? "Processing…" : "LAM is speaking…"}</div> : null}
@@ -284,6 +305,7 @@ export function LiveTutorView() {
       {status === "thinking" && !streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb"><Sparkles /></span>{copy.label}</div><div className="lt-bubble"><span className="lt-thinking"><span /><span /><span /></span></div></article> : null}
     </div></div> : prepared ? <div className="lt-empty-state"><span className="lt-empty-orb"><Sparkles /></span><h1 className="lt-empty-title">{copy.idleHeading}</h1><p className="lt-empty-sub">{copy.idleSubcopy}</p><div className="lt-empty-chips">{QUICK[personality].map((item) => <button key={item.label} className="lt-empty-chip" onClick={() => quick(item)}>{item.label}</button>)}</div></div> : null}</div>
 
+    {studyPlan && <div className="lt-confirm max-h-[65dvh] overflow-y-auto"><StudyPlanProposal key={studyPlan.id} plan={studyPlan} onClose={() => setStudyPlan(null)} /></div>}
     {pendingAction ? <div className="lt-confirm"><h4>{actionCopy(pendingAction).title}</h4><p>{actionCopy(pendingAction).detail}</p><div className="lt-confirm-actions"><button className="lt-btn lt-btn-primary" onClick={executeAction}><Check />Approve</button><button className="lt-btn lt-btn-ghost" onClick={() => { setPendingAction(null); setStatus("idle"); }}>Cancel</button></div></div> : null}
     {error ? <div className="lt-error" role="alert">{error}<button onClick={() => setError("")} aria-label="Dismiss error"><X /></button></div> : null}
 
@@ -305,6 +327,6 @@ export function LiveTutorView() {
       </div> : null}
     </div></aside>
 
-    {!prepared ? <div className="lt-prep" role="dialog" aria-label="Preparing LAM AI memory"><div className="lt-prep-card"><div className="lt-prep-title"><span className="lt-prep-spinner" />Preparing LAM AI…</div><div className="lt-prep-step done"><span className="chk"><Check /></span>Verifying your Scholar session</div><div className="lt-prep-step done"><span className="chk"><Check /></span>Reading recent learning activity</div><div className="lt-prep-step"><span className="chk" />Restoring personality sessions</div></div></div> : null}
+    {!prepared ? <div className="lt-preparing-status" role="status"><span className="lt-prep-spinner" />Restoring saved context… You can start typing.</div> : null}
   </section>;
 }

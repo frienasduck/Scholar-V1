@@ -32,10 +32,12 @@ export async function GET() {
     db.customEbook.findMany({
       where: { userId: user.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      select: { id: true, title: true, originalFileName: true, sizeBytes: true, pageCount: true, processingStatus: true, createdAt: true, allocation: true },
+      select: { id: true, title: true, originalFileName: true, sizeBytes: true, pageCount: true, processingStatus: true, createdAt: true, allocation: true, resource: { select: { id: true, job: { select: { stage: true, errorCode: true } } } } },
     }),
     getMonthlyUsage(user.id, access),
   ]);
+  const pending = ebooks.find(book => book.processingStatus === "processing" && book.resource);
+  if (pending?.resource) after(() => processResourceJob(pending.resource!.id, user.id).catch(() => false));
   return NextResponse.json({ ebooks, usage: usage.ebookUploads, period: usage.period, timezone: usage.timezone }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
@@ -89,7 +91,8 @@ export async function POST(request: NextRequest) {
       await checkGrade(user.id, importGrade);
       const originalFileName = safeName(file.name);
       const ebook = await storeBonusBook(user.id,key,digest,{title:safeName(requestedTitle || originalFileName.replace(/\.pdf$/i,"")).slice(0,120),originalFileName,sizeBytes:bytes.byteLength,pageCount:0,text:"",pageTexts:[],pdfBytes:Buffer.from(bytes),processingStatus:"processing",resource:{create:pdfResource(user.id,safeName(requestedTitle || originalFileName.replace(/\.pdf$/i,"")),digest,importGrade)}});
-      after(() => processResourceJob(undefined, user.id).catch(() => false));
+      const resource = await db.studyResource.findFirst({ where: { ebookId: ebook.id, ownerUserId: user.id }, select: { id: true } });
+      if (resource) after(() => processResourceJob(resource.id, user.id).catch(() => false));
       await recordAudit("onboarding_import_used",{actorUserId:user.id});
       return NextResponse.json({ok:true,ebook:{id:ebook.id,title:ebook.title,pageCount:ebook.pageCount,sizeBytes:ebook.sizeBytes,processingStatus:ebook.processingStatus}},{status:201});
     } catch(error) {
@@ -125,7 +128,8 @@ export async function POST(request: NextRequest) {
     } });
     createdId = ebook.id;
     await commitMonthlyUsage(user.id, idempotencyKey);
-    after(() => processResourceJob(undefined, user.id).catch(() => false));
+    const resource = await db.studyResource.findFirst({ where: { ebookId: ebook.id, ownerUserId: user.id }, select: { id: true } });
+    if (resource) after(() => processResourceJob(resource.id, user.id).catch(() => false));
     return NextResponse.json({ ok: true, ebook: { id: ebook.id, title: ebook.title, pageCount: ebook.pageCount, sizeBytes: ebook.sizeBytes, processingStatus: ebook.processingStatus } }, { status: 201 });
   } catch (error) {
     if (createdId) await db.customEbook.deleteMany({ where: { id: createdId, userId: user.id } }).catch(() => undefined);

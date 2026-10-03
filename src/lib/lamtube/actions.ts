@@ -17,6 +17,7 @@ import { processVideo, teachingPolicy } from "./generate";
 import { contextAt, clamp } from "./timeline";
 import { validateSettings } from "./settings";
 export const actionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("start") }).strict(),
   z.object({ action: z.literal("step") }).strict(),
   z.object({ action: z.literal("retry") }).strict(),
   z.object({ action: z.literal("cancel") }).strict(),
@@ -72,6 +73,10 @@ export const actionSchema = z.discriminatedUnion("action", [
 ]);
 export type VideoAction = z.infer<typeof actionSchema>;
 export async function act(userId: string, id: string, action: VideoAction) {
+  if (action.action === "start") {
+    const { queueVideo } = await import("./jobs");
+    return queueVideo(userId, id);
+  }
   if (action.action === "cancel") return cancelVideo(userId, id);
   if (action.action === "step" || action.action === "retry") {
     const v = await readVideo(userId, id);

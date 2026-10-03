@@ -5,7 +5,7 @@ import { findResource, retrieve } from "@/lib/resources/service";
 import { retrievalPrompt } from "@/lib/resources/engine";
 import { checkGrade, ProfileError } from "@/lib/personalization/server";
 import { AIProviderError } from "@/lib/ai/errors";
-import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import {
   claimVideo,
   readVideo,
@@ -82,18 +82,20 @@ async function gather(userId: string, v: VideoState) {
       422
     );
 }
-export async function processVideo(userId: string, id: string) {
+export async function processVideo(userId: string, id: string, timeoutMs = 48000) {
   const token = await claimVideo(userId, id);
   let v: VideoState | null = null;
   let saved = false;
   try {
     v = await readVideo(userId, id);
     if (["ready", "cancelled"].includes(v.status)) return v;
+    if (v.retryAt && v.retryAt > Date.now()) return v;
     await checkGrade(userId, v.settings.grade);
     await ensureReservation(userId, v);
     v.status = "generating";
     v.error = null;
-    const signal = AbortSignal.timeout(48000);
+    v.retryAt = null;
+    const signal = AbortSignal.timeout(Math.max(1, timeoutMs));
     if (["outline", "scenes"].includes(v.stage)) {
       await enforceRateLimit(userId, "ai-generation-burst", 20, 60000);
       await enforceRateLimit(userId, "ai-generation", 90, 60 * 60000);
@@ -201,9 +203,13 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
     return result;
   } catch (error) {
     if (v) {
-      v.status = "failed";
+      const coolingDown = error instanceof RateLimitError;
+      v.status = coolingDown ? "generating" : "failed";
+      v.retryAt = coolingDown ? Date.now() + error.retryAfterSeconds * 1000 : null;
       v.error =
-        error instanceof ProfileError || error instanceof AIProviderError
+        coolingDown
+          ? "Generation is waiting for the shared AI rate limit. Saved stages will resume automatically after the cooldown."
+          : error instanceof ProfileError || error instanceof AIProviderError
           ? error.message
           : "Generation stopped safely. Retry to reuse completed stages; no successful-generation credit was consumed.";
       try {

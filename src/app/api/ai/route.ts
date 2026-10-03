@@ -67,8 +67,9 @@ export async function POST(request: NextRequest) {
     try {
       await enforceRateLimit(sessionUser.id, "ai-generation-burst", 20, 60 * 1000);
       await enforceRateLimit(sessionUser.id, "ai-generation", 90, 60 * 60 * 1000);
-      if (body.feature) {
-        const required = await requireEntitlement(body.feature);
+      const requiredFeature = body.usage === "slideshow_generation" ? "slideshow_generation_plus" : body.feature;
+      if (requiredFeature) {
+        const required = await requireEntitlement(requiredFeature);
         if (!required.ok) return required.response;
       }
       if (body.jeeMode) {

@@ -32,6 +32,12 @@ export function ScholarToday() {
     {plan.exam ? <p>{plan.exam.name} · {plan.exam.date} · {examDays!>=0 ? `${examDays} days to prepare` : "Date passed — update your learning profile"}</p> : null}
     <div className="scholar-today-actions">{plan.actions.map((action,i)=><GlassButton key={action.tool} variant={i===0 ? "primary" : "secondary"} onClick={()=>start(action)}><span className="block">{action.title}<small>{action.reason}</small></span></GlassButton>)}</div>
     <GlassButton variant="ghost" className="mt-4" onClick={open}>Edit my learning profile</GlassButton>
-    <ResourceShelf grade={activeGrade} subjectId={priority?.id} title="Sources for your next useful step"/>
   </GlassSurface>;
+}
+
+export function ScholarTodaySources() {
+  const { profile } = useLearningProfile();
+  const activeGrade = useStore(s => s.user.scholarClass);
+  if (!profile?.result || profile.result.grade !== activeGrade) return null;
+  return <ResourceShelf grade={activeGrade} subjectId={profile.result.priorities[0]?.id} title="Sources for your next useful step"/>;
 }

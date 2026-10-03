@@ -282,7 +282,7 @@ const CV_STYLE = `
 @media(max-width:1100px){.cv-header-title{min-width:140px}.cv-title-button{max-width:170px}.cv-search{display:none}.cv-action span{display:none}.cv-action{width:34px;padding:0}.cv-main{grid-template-columns:minmax(0,1fr) 230px}}
 @media(max-width:767px){
  .cv-root{height:calc(100dvh - 11.25rem - env(safe-area-inset-bottom));min-height:520px}.cv-shell{padding:5px;gap:5px;grid-template-rows:54px minmax(0,1fr)}
- .cv-header{border-radius:12px;padding:0 8px;gap:5px}.cv-header-title{min-width:0;flex:1}.cv-title-button{max-width:145px}.cv-badge,.cv-save,.cv-head-actions .cv-hide-mobile{display:none}
+ .cv-header{border-radius:12px;padding:0 8px;gap:5px}.cv-header-title{min-width:0;flex:1;gap:5px}.cv-title-button{max-width:145px;min-width:0}.cv-badge,.cv-save,.cv-head-actions .cv-hide-mobile{display:none}.cv-beta-badge{display:inline-flex;flex-shrink:0;font-size:9px;padding:3px 5px}
  .cv-main{display:block}.cv-stage{height:100%;border-radius:12px}.cv-panel{position:absolute;z-index:50;right:6px;top:6px;bottom:6px;width:min(88vw,320px);box-shadow:-18px 0 50px rgba(0,0,0,.45)}
  .cv-inspector-close{display:grid;place-items:center;position:absolute;z-index:3;right:7px;top:7px;width:32px;height:32px;border-radius:8px;color:#a1a1aa;background:#161919;border:1px solid rgba(255,255,255,.08)}.cv-panel-tabs{padding-right:43px}
  .cv-panel-toggle{display:grid}.cv-toolrail{left:50%;top:auto;bottom:8px;transform:translateX(-50%);flex-direction:row;max-height:none;max-width:calc(100% - 70px);overflow-x:auto;padding:5px}
@@ -1750,6 +1750,7 @@ export function CanvasView() {
         <header className="cv-header" aria-label="Canvas project controls">
           <div className="cv-header-title">
             <Grid3X3 size={16} className="text-teal-400 shrink-0" />
+            <span className="cv-badge cv-beta-badge" title="Canvas is in early beta; report issues through Feedback">Early Beta</span>
             <button className="cv-title-button" onClick={changeProjectTitle} title="Rename Canvas project">{project.title}</button>
             <button className="cv-badge" onClick={changeSubject}>{project.subject}</button>
           </div>

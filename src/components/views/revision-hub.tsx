@@ -435,7 +435,6 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
       <div className="absolute inset-0 z-0 bg-black/55" />
 
       <div className="relative z-10 rh-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
-        <ResourceShelf grade={scholarClass} aid="summary" title="Source-backed revision notes"/>
         {/* HERO */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
           <div className="flex items-center gap-3 mb-3">
@@ -757,6 +756,8 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
             )}
           </TabsContent>
         </Tabs>
+
+        <div className="mt-8"><ResourceShelf grade={scholarClass} aid="summary" title="Source-backed revision notes"/></div>
 
         {/* SESSION DIALOG */}
         <Dialog open={!!activeTopic} onOpenChange={(o) => { if (!o) setActiveTopic(null); }}>

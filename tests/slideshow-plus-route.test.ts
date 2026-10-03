@@ -1,0 +1,14 @@
+import { beforeEach, expect, mock, test } from "bun:test";
+import { NextRequest } from "next/server";
+mock.module("server-only", () => ({}));
+let plan: "FREE" | "PLUS" = "FREE";
+const generate = mock(async (request: NextRequest) => Response.json({ body: await request.json() }));
+mock.module("@/lib/subscriptions/entitlements", () => ({ requireEntitlement: async (feature: string) => { expect(feature).toBe("slideshow_generation_plus"); return plan === "PLUS" ? { ok: true } : { ok: false, response: Response.json({ error: "PLUS_REQUIRED" }, { status: 403 }) }; } }));
+mock.module("@/app/api/ai/route", () => ({ POST: generate }));
+mock.module("@/lib/resources/http", () => ({ mutationOrigin: (request: Request) => request.headers.get("origin") === "http://localhost:3000" }));
+const { POST } = await import("../src/app/api/ai/slideshow/route");
+beforeEach(() => { plan = "FREE"; generate.mockClear(); });
+const request = (body: unknown = {}, origin = "http://localhost:3000") => new NextRequest("http://localhost:3000/api/ai/slideshow", { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify(body) });
+test("Free direct API requests cannot generate slides even if client removes feature", async () => { expect((await POST(request({ messages: [{ role: "user", content: "make slides" }] }))).status).toBe(403); expect(generate).not.toHaveBeenCalled(); });
+test("verified Plus request forwards with non-spoofable entitlement", async () => { plan = "PLUS"; const response = await POST(request({ feature: "lam_ai", messages: [{ role: "user", content: "slides" }] })); expect(response.status).toBe(200); expect((await response.json()).body.feature).toBe("slideshow_generation_plus"); });
+test("cross-origin slideshow requests are rejected before generation", async () => { plan = "PLUS"; expect((await POST(request({}, "https://other.example"))).status).toBe(403); expect(generate).not.toHaveBeenCalled(); });

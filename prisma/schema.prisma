@@ -44,6 +44,7 @@ model User {
   auditEvents           AuditEvent[]             @relation("AuditActor")
   targetedAuditEvents   AuditEvent[]             @relation("AuditTarget")
   sessions              Session[]
+  pluginConnections     PluginConnection[]
   entitlements          Entitlement[]
   usageEvents           UsageEvent[]
   adImpressions         AdImpression[]
@@ -63,6 +64,16 @@ model User {
   studyResources        StudyResource[]
   examReadySessions     ExamReadySession[]
   aiVideos              AIVideo[]
+  studyMusicLibrary     StudyMusicLibrary?
+}
+
+// Account-owned bounded music metadata only; never stores YouTube audio/video.
+model StudyMusicLibrary {
+  userId    String   @id
+  stateJson String
+  revision  Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Private, resumable timeline generations. Audio follows the existing byte-storage pattern.
@@ -136,6 +147,16 @@ model OAuthAttempt {
   createdAt    DateTime @default(now())
 
   @@index([expiresAt])
+}
+
+model PluginConnection {
+  userId          String
+  provider        String
+  encryptedTokens String
+  status          String   @default("CONNECTED")
+  updatedAt       DateTime @default(now()) @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, provider])
 }
 
 model AuthActionToken {

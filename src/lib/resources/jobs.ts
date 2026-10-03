@@ -90,7 +90,7 @@ export async function processResourceJob(resourceId?: string, ownerUserId?: stri
       const claim = await tx.resourceJob.updateMany({ where: { id: job.id, state: "RUNNING", leaseToken }, data: { state: permanent || job.attempts >= 2 ? "FAILED" : "QUEUED", stage: "FAILED", errorCode: code, leaseToken: null, leaseUntil: null, nextRunAt: new Date(Date.now() + 30_000 * (job.attempts + 1)) } });
       if (!claim.count) return;
       await tx.studyResource.updateMany({ where: { id: resource.id, ...privateScope(resource.ownerUserId!) }, data: { state: permanent ? "REJECTED" : "FAILED" } });
-      if (resource.ebookId) await tx.customEbook.updateMany({ where: { id: resource.ebookId, deletedAt: null }, data: { processingStatus: "failed" } });
+      if (resource.ebookId) await tx.customEbook.updateMany({ where: { id: resource.ebookId, deletedAt: null }, data: { processingStatus: permanent || job.attempts >= 2 ? "failed" : "processing" } });
       // Refund only definitively invalid PDFs, exactly once under the job lease.
       if (permanent && resource.ebook && !metadata.refunded && !metadata.legacy) {
         if (resource.ebook.allocation === "onboarding") {

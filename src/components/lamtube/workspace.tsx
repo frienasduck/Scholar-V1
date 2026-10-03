@@ -12,7 +12,6 @@ import {
   Plus,
   Sparkles,
   Upload,
-  X,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getCurriculum } from "@/lib/curriculum-helper";
@@ -37,17 +36,12 @@ import { navigateTo } from "@/lib/nav-event";
 import { useRouter } from "next/navigation";
 import { VideoDetail } from "./video-detail";
 import { videoRequest } from "@/lib/lamtube/client";
+import { useVideoLibrary, retainLibraryVideo, refreshVideoLibrary, videoScope } from "@/lib/lamtube/library";
+import { GenerationProgress } from "./generation-progress";
 import "./lamtube.css";
-type Usage = {
-  used: number;
-  limit: number | null;
-  remaining: number | null;
-  period: string;
-  timezone: string;
-};
 export default function LamTubeWorkspace({ onBack }: { onBack: () => void }) {
   const scope = useStore((s) =>
-    s.authed && !s.guestMode ? s.user.email || s.user.username : "guest"
+    videoScope(s.authed && !s.guestMode, s.user.email, s.user.username)
   );
   const grade = useStore((s) => s.user.scholarClass);
   return <Workspace key={`${scope}:${grade}`} onBack={onBack} />;
@@ -55,6 +49,8 @@ export default function LamTubeWorkspace({ onBack }: { onBack: () => void }) {
 function Workspace({ onBack }: { onBack: () => void }) {
   const router = useRouter();
   const authed = useStore((s) => s.authed && !s.guestMode);
+  const scope = useStore((s) => videoScope(s.authed && !s.guestMode, s.user.email, s.user.username));
+  const library = useVideoLibrary(scope);
   const grade = useStore((s) => s.user.scholarClass);
   const curriculum = useMemo(() => getCurriculum(grade), [grade]);
   const [mode, setMode] = useState<"create" | "library" | "watch">("create");
@@ -68,9 +64,10 @@ function Workspace({ onBack }: { onBack: () => void }) {
       chapters: [{ id: chapter.id, title: chapter.title }],
     });
   });
-  const [videos, setVideos] = useState<VideoState[]>([]);
-  const [selected, setSelected] = useState<VideoState | null>(null);
-  const [usage, setUsage] = useState<Usage | null>(null);
+  const { videos, usage } = library;
+  const [opened, setSelected] = useState<VideoState | null>(null);
+  const saved = videos.find((v) => v.id === opened?.id);
+  const selected = saved && saved.revision >= (opened?.revision ?? 0) ? saved : opened;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
@@ -93,24 +90,21 @@ function Workspace({ onBack }: { onBack: () => void }) {
   };
   const retain = useCallback((v: VideoState) => {
     setSelected(v);
-    if (v.id !== "preview")
-      setVideos((old) => [v, ...old.filter((x) => x.id !== v.id)]);
-  }, []);
+    retainLibraryVideo(scope, v);
+  }, [scope]);
   const loadLibrary = useCallback(
     async (signal?: AbortSignal) => {
       if (!authed) return;
       setLoading(true);
       try {
-        const data = await videoRequest("/api/lamtube", undefined, signal);
-        setVideos(data.videos);
-        setUsage(data.usage);
+        await refreshVideoLibrary(scope, signal);
       } catch (e) {
         if (!signal?.aborted) setError((e as Error).message);
       } finally {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [authed]
+    [authed, scope]
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -190,19 +184,8 @@ function Workspace({ onBack }: { onBack: () => void }) {
     setRunning(true);
     setError("");
     try {
-      let current: VideoState;
-      let first = true;
-      do {
-        const data = await videoRequest(
-          `/api/lamtube/${id}`,
-          { action: first ? "retry" : "step" },
-          controller.signal
-        );
-        first = false;
-        current = data.video;
-        retain(current);
-      } while (current.status === "generating" && !controller.signal.aborted);
-      void loadLibrary();
+      const data = await videoRequest(`/api/lamtube/${id}`, { action: "retry" }, controller.signal);
+      retain(data.video);
     } catch (e) {
       if (!controller.signal.aborted) {
         setError((e as Error).message);
@@ -358,9 +341,9 @@ function Workspace({ onBack }: { onBack: () => void }) {
             : "Checking monthly allowance…"}
         </span>
       </div>
-      {error && (
+      {(error || library.error) && (
         <p className="lt-notice" role="alert">
-          {error}{" "}
+          {error || library.error}{" "}
           <button
             className="lt-button"
             onClick={() => {
@@ -840,7 +823,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
             </div>
           )}
           <p className="lt-footnote">
-            Showing the 100 most recently updated lessons. Unlimited Plus
+            Showing the 100 newest lessons. Unlimited Plus
             generation remains subject to normal storage and abuse protection.
           </p>
         </section>
@@ -862,87 +845,9 @@ function Workspace({ onBack }: { onBack: () => void }) {
               onError={setError}
             />
           ) : (
-            <section className="lt-panel lt-job" aria-live="polite">
-              <Clapperboard size={35} />
-              <h2>{selected.title}</h2>
-              <p>
-                {selected.status === "failed"
-                  ? "Your work is safe. A stage needs attention."
-                  : selected.status === "cancelled"
-                  ? "Generation paused by you."
-                  : "Building an actual visual lesson."}
-              </p>
-              <progress
-                value={generationProgress(selected)}
-                max={100}
-                aria-label="Persisted generation progress"
-              />
-              <strong>
-                {generationProgress(selected)}% · {selected.stage}
-              </strong>
-              <ol className="lt-stages">
-                {[
-                  "sources",
-                  "outline",
-                  "scenes",
-                  "narration",
-                  "assemble",
-                  "complete",
-                ].map((stage) => (
-                  <li key={stage} data-active={selected.stage === stage}>
-                    {stage}
-                  </li>
-                ))}
-              </ol>
-              <p>
-                {selected.plans.length} scene plans saved ·{" "}
-                {selected.clips.flat().length} narration phrases cached
-              </p>
-              {selected.error && (
-                <p className="lt-notice" role="alert">
-                  {selected.error}
-                </p>
-              )}
-              <div className="lt-action-row">
-                {selected.status === "draft" && !selected.outline && (
-                  <button
-                    className="lt-button"
-                    disabled={running}
-                    onClick={() => {
-                      setSettings(selected.settings);
-                      setMode("create");
-                    }}
-                  >
-                    Edit draft settings
-                  </button>
-                )}
-                <button
-                  className="lt-button lt-primary"
-                  disabled={running}
-                  onClick={() => void run(selected.id)}
-                >
-                  {running ? (
-                    <Loader2 className="animate-spin" size={17} />
-                  ) : (
-                    <Play size={17} />
-                  )}{" "}
-                  {running
-                    ? "Working on the current stage…"
-                    : "Resume saved generation"}
-                </button>
-                <button
-                  className="lt-button"
-                  onClick={() => void cancel(selected)}
-                >
-                  <X size={16} /> Cancel safely
-                </button>
-              </div>
-              <small>
-                No fabricated countdown. This progress reflects saved work. If
-                you leave, return to resume; an optional configured worker can
-                continue it in the background.
-              </small>
-            </section>
+            <GenerationProgress video={selected} busy={running} onRun={() => void run(selected.id)}
+              onCancel={() => void cancel(selected)} onBackground={onBack}
+              onEdit={() => { setSettings(selected.settings); setMode("create"); }} />
           )}
         </>
       )}

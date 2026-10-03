@@ -56,7 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "downloads", label: "Downloads", icon: Download, group: "Extra" },
   { id: "assignments", label: "Assignments", icon: ClipboardList, group: "Extra" },
   { id: "workspace", label: "Study Workspace", icon: LayoutGrid, group: "Extra" },
-  { id: "canvas", label: "Canvas", icon: Pencil, group: "Extra" },
+  { id: "canvas", label: "Canvas", icon: Pencil, group: "Extra", badge: "EARLY BETA" },
   { id: "toolbox", label: "Toolbox", icon: Wrench, group: "Extra" },
   { id: "practicals", label: "Practical Lab", icon: FlaskRound, group: "Extra" },
   { id: "python", label: "Python Workspace", icon: Code2, group: "Extra" },

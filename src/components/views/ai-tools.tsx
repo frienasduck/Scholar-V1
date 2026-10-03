@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { PlusGate } from "@/components/subscriptions/plus-gate";
+import { ReadyVideoBackground } from "@/components/ready-video-background";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 
 import { askAI, askAIJSON, type ChatMessage } from "@/lib/ai";
@@ -65,7 +66,7 @@ const TOOLS: ToolMeta[] = [
   { id: "life-saver", name: "Life Saver Button", blurb: "Panicking? Tap once, get calm + a plan.", icon: LifeBuoy, accent: "#ef4444", gradient: "from-red-500 to-rose-500" },
   { id: "study-companion", name: "Study Companion", blurb: "Casual mini-chat with a friendly AI.", icon: Users, accent: "#06b6d4", gradient: "from-cyan-500 to-sky-500" },
   { id: "aisig", name: "AISIG", blurb: "AI Study Image Generator — turn ideas into educational images.", icon: ImageIcon, accent: "#7c3aed", gradient: "from-violet-500 to-purple-500" },
-  { id: "slideshow-maker", name: "AI Slideshow Maker", blurb: "Turn topics, notes, or chapters into beautiful editable slide decks.", icon: Presentation, accent: "#06b6d4", gradient: "from-cyan-500 to-violet-500", highlight: true, badge: "NEW" },
+  { id: "slideshow-maker", name: "AI Slideshow Maker", blurb: "Turn topics, notes, or chapters into beautiful editable slide decks. Included with Scholar Plus.", icon: Presentation, accent: "#06b6d4", gradient: "from-cyan-500 to-violet-500", highlight: true, badge: "PLUS" },
 ];
 
 // ===== Shared bits =====
@@ -1584,17 +1585,7 @@ export function AIToolsView() {
         <style>{BLOOM_CSS}</style>
 
         {/* Video background — optimized: preload metadata only, lazy load */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          poster="/backgrounds/scholar-poster.svg"
-          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-        >
-          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4" />
-        </video>
+        <ReadyVideoBackground src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" />
         <div className="absolute inset-0 z-0 bg-black/60" />
 
         {/* Content */}
@@ -1654,17 +1645,7 @@ export function AIToolsView() {
   return (
     <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
       {/* Video background — optimized: preload metadata only */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        poster="/backgrounds/scholar-poster.svg"
-        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-      >
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
-      </video>
+      <ReadyVideoBackground src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" />
       <div className="absolute inset-0 z-0 bg-black/50" />
 
       <style>{BLOOM_CSS}</style>

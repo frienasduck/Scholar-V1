@@ -225,6 +225,8 @@ export type VideoState = {
   quotaKey: string | null;
   charged: boolean;
   error: string | null;
+  /** Persisted cooldown; old lessons without this field remain compatible. */
+  retryAt?: number | null;
   createdAt: number;
   updatedAt: number;
   watch: WatchState;

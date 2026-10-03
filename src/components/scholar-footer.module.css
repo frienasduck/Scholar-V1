@@ -1,0 +1,251 @@
+.footer {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  margin: 112px clamp(12px, 1.5vw, 28px) 20px;
+  color: #edf0ff;
+  font-size: 14px;
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+.atmosphere {
+  position: absolute;
+  inset: -100px 0 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 35%, #6456be2b, transparent 52%), radial-gradient(ellipse at 88% 58%, #465abe24, transparent 45%);
+  /* Fade only the decorative atmosphere; keep the orb and glass shell crisp. */
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 45px, #0001 90px, #0008 160px, #000 240px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 45px, #0001 90px, #0008 160px, #000 240px);
+}
+
+.atmosphere span {
+  position: absolute;
+  width: 55%;
+  height: 160px;
+  border: 1px solid #bbc5ff30;
+  border-radius: 50% 50% 0 50%;
+  background: linear-gradient(165deg, #b493ed42, #698ed02b 22%, #111b3020 55%, transparent 72%);
+  box-shadow: inset 0 2px 4px #b9c6ff40;
+  transform: rotate(17deg);
+  left: -13%;
+  top: 22px;
+}
+
+.atmosphere span + span {
+  left: auto;
+  right: -10%;
+  top: 55px;
+  transform: rotate(-13deg);
+}
+
+.shell {
+  position: relative;
+  padding-top: 94px;
+  border-radius: 52px;
+}
+
+.shell::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 57px 0 0;
+  border-radius: 50px;
+  background: radial-gradient(ellipse at 50% 0, #a58eff12, transparent 40%), radial-gradient(ellipse at 0 100%, #4972f526, transparent 33%), linear-gradient(145deg, #131c2d88, #0a0e1bc2);
+  box-shadow: 0 22px 55px #03061355, inset 0 -1px 0 #c8d7ff40;
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+}
+
+.rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px #a7a6ff38);
+}
+
+.orb {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 82px;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid #e3e8ffdc;
+  background: radial-gradient(circle at 35% 18%, #fff 0, #e8d8ffda 9%, transparent 34%), radial-gradient(circle at 73% 73%, #8fd8ff 0, transparent 36%), radial-gradient(circle at 38% 70%, #5143a3 0, #7a60c388 25%, transparent 54%), linear-gradient(130deg, #f2a4df, #bbb0ff 42%, #3a55ae 74%, #aee5ff);
+  box-shadow: inset 4px 1px 7px #ffffff9c, inset -5px -3px 8px #e5eaffb0, 0 0 22px #a5a3ff70, 0 20px 34px #615bea50;
+  pointer-events: none;
+}
+
+.orb span {
+  position: absolute;
+  inset: 16px -13px 9px 29px;
+  border-radius: 50%;
+  border-left: 1px solid #ebceff8c;
+  background: linear-gradient(125deg, #cbaaf73b, transparent 48%, #638cff66);
+  transform: rotate(-25deg);
+}
+
+.main {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr));
+  gap: 28px;
+  align-items: start;
+  padding: 24px clamp(24px, 4vw, 64px) 38px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #f2f4ff;
+  font-size: clamp(30px, 2.5vw, 43px);
+  font-weight: 600;
+  letter-spacing: -.055em;
+  line-height: 1.1;
+}
+
+.wordmark svg {
+  width: 29px;
+  height: 29px;
+  color: #b6a0f7;
+  stroke-width: 1.5;
+  fill: #b6a0f71c;
+}
+
+.brand p {
+  margin-top: 16px;
+  color: #b5bed5;
+  line-height: 1.8;
+  font-size: 15px;
+}
+
+.shortcuts { display: flex; gap: 12px; margin-top: 24px; }
+.shortcuts a {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #b0c1f636;
+  border-radius: 50%;
+  color: #e0e5f8;
+  background: radial-gradient(circle at 50% 0, #cbd8ff22, transparent 75%), #7483b40d;
+  box-shadow: inset 0 1px 2px #e1e8ff30, 0 4px 9px #03061438;
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+.shortcuts svg { width: 18px; height: 18px; }
+.shortcuts a:hover { transform: translateY(-3px); background-color: #a6b0ff20; border-color: #c2caff77; }
+
+.group { min-width: 0; }
+.group h2 { margin-bottom: 11px; font-size: 15px; line-height: 1.5; font-weight: 500; color: #ececf8; }
+.group ul { list-style: none; padding: 0; margin: 0; }
+.group a {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 36px;
+  color: #b5bed5;
+  line-height: 1.5;
+  transition: color 180ms ease;
+}
+.group a:hover, .bottom a:hover { color: #f8f4ff; }
+.footer a:focus-visible { outline: 2px solid #b8baff; outline-offset: 5px; border-radius: 5px; }
+.beta { border-radius: 20px; padding: 2px 9px; font-size: 10px; white-space: nowrap; color: #c5b6ff; background: #8a6bea24; }
+
+.statement {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  grid-column: 1 / -1;
+  justify-self: end;
+  overflow: hidden;
+  min-height: 100px;
+  width: 310px;
+  max-width: 100%;
+  padding: 24px 30px;
+  border-radius: 28px;
+  border: 1px solid #a9baff5c;
+  background: radial-gradient(ellipse at 100% 100%, #776fe14a, transparent 60%), linear-gradient(145deg, #d8dfff12, #0e112555 65%);
+  box-shadow: inset 0 1px 1px #dde2ff20, inset -1px -1px 14px #737ee929, 0 12px 28px #04081840;
+}
+.statement::after { content: ""; position: absolute; width: 100px; height: 190px; border-radius: 50%; right: -65px; bottom: -90px; transform: rotate(40deg); border: 1px solid #bbbdff75; box-shadow: -7px 0 13px #859af431; background: linear-gradient(90deg, #9bb6ff29, transparent); pointer-events: none; }
+.statement > svg { width: 27px; height: 27px; flex-shrink: 0; color: #b8a5ff; }
+.statement p { position: relative; margin: 0; font-size: 16px; line-height: 1.8; }
+
+.bottom {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px clamp(24px, 4vw, 64px);
+  border-top: 1px solid #a8b9e51c;
+  color: #a9b5d1;
+  font-size: 12px;
+  line-height: 1.7;
+  background: linear-gradient(90deg, #718bd714, transparent 40%, #8d79dc0b);
+  border-radius: 0 0 52px 52px;
+}
+.bottom p { margin: 0; }
+.bottom nav { display: flex; flex-wrap: wrap; gap: 20px; }
+.bottom a { display: inline-flex; align-items: center; min-height: 32px; }
+.signature { display: inline-flex; align-items: center; gap: 10px; }
+.signature svg { width: 16px; height: 16px; color: #b7abef; }
+
+.compact { margin-top: 28px; }
+.compact .shell { padding-top: 0; border: 1px solid #afbcf336; border-radius: 26px; }
+.compact .shell::before { inset: 0; border-radius: inherit; }
+.compact .bottom { border-top: 0; border-radius: inherit; }
+
+@container (min-width: 1100px) {
+  .main { grid-template-columns: 1.3fr .9fr .95fr 1.1fr 1.1fr 1.9fr; gap: 24px; }
+  .statement { grid-column: auto; width: auto; justify-self: stretch; min-height: 144px; margin-top: 10px; padding: 24px; gap: 15px; }
+  .statement p { font-size: 15px; }
+}
+
+@media (min-width: 1024px) { .footer { padding-bottom: 0; } }
+
+@container (max-width: 899px) {
+  .main { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 20px; }
+  .brand { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; }
+  .brand p { grid-row: 2; margin-top: 12px; }
+  .shortcuts { grid-column: 2; grid-row: 1 / 3; align-self: center; margin: 0; }
+  .statement { justify-self: stretch; width: auto; min-height: 90px; }
+}
+
+@media (max-width: 600px) {
+  .footer { margin-top: 88px; margin-inline: 12px; font-size: 13px; }
+  .compact { margin-top: 28px; }
+}
+
+@container (max-width: 600px) {
+  .shell { padding-top: 70px; border-radius: 32px; border: 1px solid #b8c2ff66; box-shadow: inset 0 1px 4px #d2d5ff33, 0 14px 34px #03061355; }
+  .shell::before { inset: 0; border-radius: inherit; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .rim { display: none; }
+  .orb { top: -32px; width: 68px; }
+  .main { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 20px; padding: 10px 24px 28px; }
+  .brand { display: block; padding-bottom: 8px; }
+  .brand p { font-size: 14px; }
+  .shortcuts { margin-top: 20px; }
+  .group h2 { font-size: 14px; margin-bottom: 8px; }
+  .group a { min-height: 40px; }
+  .statement { padding: 20px 24px; border-radius: 22px; }
+  .statement p { font-size: 15px; }
+  .bottom { padding: 20px 24px; gap: 10px; border-radius: 0 0 32px 32px; }
+  .bottom a { min-height: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer a { transition: none; }
+  .shortcuts a:hover { transform: none; }
+}

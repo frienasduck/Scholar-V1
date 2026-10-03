@@ -1,6 +1,39 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Crossfade decorative section backgrounds into the shared footer, not the
+   foreground UI. Scoped to views that actually render a footer; videos inside
+   cards, lesson players, PDF readers and canvas content are never selected. */
+.scholar-footer-view > :is(div, section, article) {
+  background-color: transparent;
+}
+
+.scholar-footer-view > :is(div, section, article) > .fixed.inset-0.z-0 {
+  position: absolute;
+}
+
+.scholar-footer-view > :is(div, section, article) > :is(
+  .fixed.inset-0.z-0,
+  .absolute.inset-0:not(.z-10):not(.z-20):not(.z-30),
+  video.absolute,
+  img.absolute[aria-hidden="true"]
+) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 280px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 280px), transparent 100%);
+}
+
+@media (max-width: 600px) {
+  .scholar-footer-view > :is(div, section, article) > :is(
+    .fixed.inset-0.z-0,
+    .absolute.inset-0:not(.z-10):not(.z-20):not(.z-30),
+    video.absolute,
+    img.absolute[aria-hidden="true"]
+  ) {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 200px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 200px), transparent 100%);
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
