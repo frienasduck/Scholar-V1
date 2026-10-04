@@ -76,7 +76,7 @@ function makeAbort(timeoutMs = DEFAULT_TIMEOUT_MS, externalSignal?: AbortSignal)
 }
 
 type AIOptions = {
-  resourceContext?: { resourceIds?: string[]; subjectId?: string; chapterId?: string };
+  resourceContext?: { resourceIds?: string[]; subjectId?: string; chapterId?: string; pageStart?: number; pageEnd?: number };
   temperature?: number;
   history?: ChatMessage[];
   timeoutMs?: number;

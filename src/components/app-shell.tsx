@@ -92,6 +92,7 @@ import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
 import { FeedbackButton } from "@/components/feedback/feedback-button";
 import { NotificationCenter } from "@/components/notifications/notification-center";
+import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
 
 function ViewLoading() {
   return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
@@ -843,14 +844,7 @@ export function AppShell() {
           >
             <ViewErrorBoundary viewName={active}>
               {guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (
-                <section className="mx-auto grid min-h-[55vh] max-w-lg place-items-center text-center">
-                  <div className="rounded-3xl border border-white/10 bg-black/25 p-8 backdrop-blur-xl">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Guest session</p>
-                    <h1 className="mt-3 text-2xl font-semibold">Sign in to use this private feature</h1>
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">Guest Mode does not provide cloud files, purchases, payments, subscriptions, or cross-device storage.</p>
-                    <button type="button" onClick={() => setAuthed(false)} className="mt-6 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Create account or Sign in</button>
-                  </div>
-                </section>
+                <GuestFeatureGate onSignIn={() => setAuthed(false)} onBack={() => navigate("dashboard")} reduceMotion={settings.reduceMotion} />
               ) : lockedView ? (
                 <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>
               ) : <View />}

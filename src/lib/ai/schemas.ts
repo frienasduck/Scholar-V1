@@ -23,7 +23,7 @@ export const chatMessageSchema = z.object({
 });
 
 export const aiRequestSchema = z.object({
-  resourceContext: z.object({ resourceIds: z.array(z.string().min(1).max(100)).max(4).optional(), subjectId: z.string().max(60).optional(), chapterId: z.string().max(60).optional() }).optional(),
+  resourceContext: z.object({ resourceIds: z.array(z.string().min(1).max(100)).max(4).optional(), subjectId: z.string().max(60).optional(), chapterId: z.string().max(60).optional(), pageStart: z.number().int().min(1).max(500).optional(), pageEnd: z.number().int().min(1).max(500).optional() }).refine(value => value.pageStart === undefined ? value.pageEnd === undefined : Boolean(value.resourceIds?.length) && value.pageEnd !== undefined && value.pageEnd >= value.pageStart && value.pageEnd - value.pageStart < 25, "Choose a source and a range of up to 25 pages.").optional(),
   requestId: z.string().uuid().optional(),
   messages: z.array(chatMessageSchema).min(1).max(30),
   persona: z.string().trim().min(1).max(80).optional().default("default"),

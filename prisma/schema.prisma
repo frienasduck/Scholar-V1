@@ -313,6 +313,7 @@ model CustomEbook {
   pageCount        Int
   text             String    @default("")
   pageTexts        Json      @default("[]")
+  readingState     Json      @default("{}")
   pdfBytes         Bytes
   processingStatus String    @default("ready") // ready | needs_ocr | failed
   allocation       String    @default("standard")

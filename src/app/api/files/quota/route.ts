@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { recordAudit } from "@/lib/subscriptions/audit";
 import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
+import { privateStorageUsed } from "@/lib/ebooks/storage";
 
 const createSchema = z.object({ clientId: z.string().min(4).max(100), name: z.string().min(1).max(255), mimeType: z.string().min(1).max(160), sizeBytes: z.number().int().positive().max(100 * 1024 * 1024) });
 const deleteSchema = z.object({ clientId: z.string().min(4).max(100) });
@@ -14,8 +15,7 @@ export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "AUTH_REQUIRED" }, { status: 401 });
   const access = await resolveUserEntitlements(user.id);
-  const sum = await db.storedFile.aggregate({ where: { userId: user.id, deletedAt: null }, _sum: { sizeBytes: true } });
-  return NextResponse.json({ usedBytes: sum._sum.sizeBytes ?? 0, limitBytes: access.storageLimitBytes });
+  return NextResponse.json({ usedBytes: await privateStorageUsed(db, user.id), limitBytes: access.storageLimitBytes });
 }
 
 export async function POST(request: NextRequest) {
@@ -35,8 +35,7 @@ export async function POST(request: NextRequest) {
       if (!locked[0]) throw new Error("AUTH_REQUIRED");
       const existing = await tx.storedFile.findUnique({ where: { userId_clientId: { userId: user.id, clientId: parsed.data.clientId } } });
       if (existing && !existing.deletedAt) return { usedBytes: 0, duplicate: true };
-      const sum = await tx.storedFile.aggregate({ where: { userId: user.id, deletedAt: null }, _sum: { sizeBytes: true } });
-      const usedBytes = sum._sum.sizeBytes ?? 0;
+      const usedBytes = await privateStorageUsed(tx, user.id);
       if (usedBytes + parsed.data.sizeBytes > access.storageLimitBytes) throw new Error("STORAGE_LIMIT_REACHED");
       await tx.storedFile.upsert({
         where: { userId_clientId: { userId: user.id, clientId: parsed.data.clientId } },

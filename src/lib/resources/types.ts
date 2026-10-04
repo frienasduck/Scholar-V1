@@ -15,6 +15,6 @@ export interface ResourceRecord {
 export interface SourceSection { heading: string; text: string; page?: number; timestamp?: number; sourceUrl?: string }
 export interface IndexedChunk extends SourceSection { ordinal: number }
 export interface Citation { id: string; resourceId: string; title: string; publisher: string; url: string | null; heading: string; page?: number; timestamp?: number }
-export interface ResourceQuery { q?: string; grade?: number; subjectId?: string; chapterId?: string; topic?: string; type?: string; scope?: "all" | "built-in" | "personal"; publisher?: string; language?: string; page?: number; limit?: number }
+export interface ResourceQuery { q?: string; grade?: number; subjectId?: string; chapterId?: string; topic?: string; type?: string; scope?: "all" | "built-in" | "personal"; publisher?: string; language?: string; page?: number; limit?: number; pageStart?: number; pageEnd?: number }
 export interface ResourceResult { resources: (ResourceRecord & { reason: string })[]; total: number; page: number; pages: number; privateAvailable: boolean }
 export interface Snapshot { resourceId: string; revision: string; retrievedAt: string; sections: SourceSection[] }

@@ -92,6 +92,8 @@ type BookModeReaderProps = {
   renderPage?: (page: number) => ReactNode;
   chapters: BookModeChapter[];
   searchPages: BookModeSearchPage[];
+  searchAvailable?: boolean;
+  onSearch?: (query: string, signal: AbortSignal) => Promise<BookModeSearchPage[]>;
   bookmarks: BookModeBookmark[];
   questions?: ReactNode;
   onClose: () => void;
@@ -134,6 +136,8 @@ export function BookModeReader({
   renderPage,
   chapters,
   searchPages,
+  searchAvailable = source === "text",
+  onSearch,
   bookmarks,
   questions,
   onClose,
@@ -362,13 +366,27 @@ export function BookModeReader({
     revealControls,
   ]);
 
+  const [remoteSearch, setRemoteSearch] = useState<{ query: string; pages: BookModeSearchPage[]; error: string }>({ query: "", pages: [], error: "" });
+  useEffect(() => {
+    if (!onSearch || !searchAvailable) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      void onSearch(search, controller.signal).then(pages => {
+        if (!controller.signal.aborted) setRemoteSearch({ query: search, pages, error: "" });
+      }).catch(() => {
+        if (!controller.signal.aborted) setRemoteSearch({ query: search, pages: [], error: "Search is temporarily unavailable. Please retry." });
+      });
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [search, onSearch, searchAvailable]);
   const searchResults = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query || source === "scan") return [];
+    if (!query || !searchAvailable) return [];
+    if (onSearch) return remoteSearch.query === search ? remoteSearch.pages : [];
     return searchPages.filter((page) =>
       page.text.toLowerCase().includes(query),
     );
-  }, [search, searchPages, source]);
+  }, [search, searchPages, searchAvailable, onSearch, remoteSearch]);
 
   const spreadPages = useMemo(() => {
     const basePage = turning?.target ?? currentPage;
@@ -875,7 +893,7 @@ export function BookModeReader({
                   placeholder="Find words or phrases…"
                   className="border-white/10 bg-white/5"
                 />
-                {source === "scan" ? (
+                {!searchAvailable ? (
                   <p className="mt-4 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100">
                     Search is unavailable for this scanned version. Switch to
                     the clean version to search.
@@ -884,9 +902,10 @@ export function BookModeReader({
                   <>
                     <p className="mt-3 text-xs text-white/45">
                       {search
-                        ? `${searchResults.length} matching pages`
-                        : "Type to search the clean text."}
+                        ? onSearch && remoteSearch.query !== search ? "Searching…" : `${searchResults.length} matching pages`
+                        : "Type to search the book text."}
                     </p>
+                    {onSearch && remoteSearch.query === search && remoteSearch.error ? <p role="alert" className="mt-2 text-sm text-amber-200">{remoteSearch.error}</p> : null}
                     {searchResults.length > 0 && (
                       <div className="mt-2 flex gap-2">
                         <Button size="sm" variant="outline" disabled={searchIndex <= 0} onClick={() => { const nextIndex = Math.max(0, searchIndex - 1); setSearchIndex(nextIndex); goTo(searchResults[nextIndex].page, false); }} className="border-white/10 bg-white/5">Previous match</Button>
@@ -910,7 +929,7 @@ export function BookModeReader({
                         >
                           <b>{result.title}</b>
                           <span className="mt-1 block text-xs text-white/45">
-                            Clean page {result.page}
+                            Page {result.page}{onSearch ? ` · ${result.text}` : ""}
                           </span>
                         </button>
                       ))}

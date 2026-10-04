@@ -58,7 +58,10 @@ export async function PATCH(request: NextRequest, context: Context) {
       if (resource.state !== "FAILED") return NextResponse.json({ message: "Only failed transient jobs can be retried. Rejected PDFs must be corrected and uploaded again." }, { status: 409 });
       await db.$transaction(async tx => {
         const queued = await tx.resourceJob.updateMany({ where: { resourceId: id, resource: privateScope(user.id), state: { in: ["FAILED", "QUEUED"] } }, data: { state: "QUEUED", attempts: 0, errorCode: null, nextRunAt: new Date(), leaseToken: null, leaseUntil: null } });
-        if (queued.count) await tx.studyResource.updateMany({ where: { id, ...privateScope(user.id) }, data: { state: "EXTRACTING" } });
+        if (queued.count) {
+          await tx.studyResource.updateMany({ where: { id, ...privateScope(user.id) }, data: { state: "EXTRACTING" } });
+          if (resource.ebookId) await tx.customEbook.updateMany({ where: { id: resource.ebookId, userId: user.id, deletedAt: null }, data: { processingStatus: "processing" } });
+        }
       });
       after(async () => { await processResourceJob(id, user.id).catch(() => false); });
     }
@@ -77,7 +80,7 @@ export async function DELETE(request: NextRequest, context: Context) {
       await tx.studyResource.updateMany({ where: { id, ...privateScope(user.id) }, data: { deletedAt: new Date(), identityKey: `deleted:${id}`, sourceMetadata: {} } });
       await tx.resourceJob.deleteMany({ where: { resourceId: id } }); await tx.resourceChunk.deleteMany({ where: { resourceId: id } }); await tx.resourceArtifact.deleteMany({ where: { resourceId: id } });
       await tx.storedFile.updateMany({ where: { userId: user.id, clientId: `resource:${id}` }, data: { deletedAt: new Date() } });
-      if (resource.ebookId) await tx.customEbook.updateMany({ where: { id: resource.ebookId, userId: user.id }, data: { deletedAt: new Date(), pdfBytes: Buffer.alloc(0), text: "", pageTexts: [] } });
+      if (resource.ebookId) await tx.customEbook.updateMany({ where: { id: resource.ebookId, userId: user.id }, data: { deletedAt: new Date(), pdfBytes: Buffer.alloc(0), text: "", pageTexts: [], readingState: {} } });
     });
     return NextResponse.json({ ok: true });
   } catch (error) { return resourceError(error); }

@@ -83,6 +83,60 @@ import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "4 Oct maintenance · detailed fixes",
+    date: "4 Oct 2026",
+    title: "The small fixes behind a more reliable Scholar",
+    items: [
+      "Private PDF uploads validate empty files, extensions, MIME, signatures and limits before processing. Unicode filenames use safe download headers; duplicate uploads and network retries reuse the existing book instead of creating ghost copies.",
+      "Storage accounting includes uploaded books. Book, source, processing job and usage commitment save atomically; failed reservations can be retried. Saved uploads are not reported as failed just because an optional audit step fails.",
+      "Long PDF extraction runs in checkpointed batches, skips saved pages and resumes indexing. Mixed scanned/text books retain searchable readable pages and original page numbers. Password-protected, corrupt and scan-only PDFs show honest, actionable errors.",
+      "PDF runtime fonts, character maps and WASM assets are bundled for server routes, with Windows-compatible paths. Library/detail payloads contain bounded metadata; only requested page text is loaded, and visible PDF pages render lazily.",
+      "Uploaded-book search debounces requests, cancels stale results and jumps to matching pages. Notes, bookmarks and reading position use account updates plus a validated device retry journal, with visible save failures, legacy-state recovery and retry controls.",
+      "Book links restore the selected reader after refresh. Rename preserves user titles and updates source metadata; confirmed deletion clears PDF bytes, chunks, jobs, reading data and both class profiles' local journals without changing unrelated books.",
+      "Ask LAM opens the existing top-bar assistant with private book/page context. Explicit page ranges constrain retrieval, citations retain real pages, and page/range practice clears old answers and cancels stale generation. Rendering and AI errors are shown separately.",
+      "Guest upload dialogs fit laptop and phone widths, keep keyboard focus accessible and restore the upload trigger on close. Guest private-feature and Plus-locked screens share their new dark-gold treatments, responsive actions and reduced-motion behavior without relaxing access checks.",
+      "LAM closing disables interaction immediately, preserves panel geometry during the exit, restores focus and handles rapid reopening. A bounded developer diagnostic checks LAMTube outline, scene and narration providers without printing keys or lesson content.",
+      "Focused E-Book/security regressions, actual synthetic PDF parser fixtures, TypeScript, repository lint and production build passed. Real signed-in upload, cross-device, live AI and Android acceptance remain pending a working PostgreSQL environment and the additive reading-state migration; scanned-book OCR is not claimed.",
+    ],
+  },
+  {
+    version: "Uploaded E-Books · reliability repair",
+    date: "3 Oct 2026",
+    title: "Your own PDF, inside Scholar's shared reader",
+    items: [
+      "PDF selection now waits for explicit upload confirmation, with file validation, stable retry references, duplicate detection and actionable processing errors. Extraction checkpoints long books and reuses completed stages on retry.",
+      "Uploaded books gain server-side page search, account-saved notes, bookmarks and reading position, rename and safe deletion. The shared reader and built-in book design are preserved. LAM and practice retrieve the selected readable pages; scanned pages are clearly marked as requiring OCR.",
+      "Deployment requires the additive reading-state migration and configured PostgreSQL. Full signed-in, cross-device and live AI acceptance still needs verification in that environment; no production migration or deployment was performed during this repair.",
+    ],
+  },
+  {
+    version: "Guest session · refined private-feature screen",
+    date: "3 Oct 2026",
+    title: "A warmer welcome to private Scholar features",
+    items: [
+      "The shared guest sign-in screen now follows the supplied dark-gold reference, with a luminous frame, textured atmosphere, lock medallion, serif typography and a gold account action. A secondary Back to Scholar action returns to the dashboard.",
+      "Mobile layouts keep the copy and both actions readable, with visible keyboard focus and reduced-motion support. Guest restrictions, account creation, sign-in and saved work are unchanged.",
+    ],
+  },
+  {
+    version: "LAM · smooth close",
+    date: "3 Oct 2026",
+    title: "A polished closing transition for top-bar LAM",
+    items: [
+      "The top LAM panel now fades and gently lifts away before its capsule returns. Onboarding, fullscreen and backdrop closing share the same lightweight transition, with no animated blur or layout resizing.",
+      "Closing controls become inactive immediately, keyboard focus returns after the transition, and both Scholar and system reduced-motion preferences are respected. Escape and rapid reopening retain their existing behavior.",
+    ],
+  },
+  {
+    version: "Scholar Plus · new feature previews",
+    date: "3 Oct 2026",
+    title: "One refined interface for every Plus-locked section",
+    items: [
+      "Plus-locked sections now share the supplied dark-gold design: a luminous fine border, serif chapter-style heading, three numbered capability cards, and matching gold and dark-glass actions.",
+      "Every preview retains its section-specific content, upgrade destination and back action. Small screens use a readable stacked layout, keyboard focus is visible, and reduced-motion preferences are respected. Free tools, saved work and server-side access checks are unchanged.",
+    ],
+  },
+  {
     version: "Platform refinement · connectors & reliability",
     date: "3 Oct 2026",
     title: "Connected materials, clearer Plus previews and reliable study flows",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieve } from "@/lib/resources/service";
+import { requestedBookRange } from "@/lib/ebooks/contracts";
 import { retrievalPrompt } from "@/lib/resources/engine";
 import { chapterContext, citationFooter, citationStream } from "@/lib/resources/grounding";
 import { z } from "zod";
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
 
   const context = input.pageContext;
   let uploadedResourceId: string | undefined;
+  let bookRange: { pageStart: number; pageEnd: number } | undefined;
   if (context.activeFileId && context.ebookTitle) {
     const ebook = await db.customEbook.findFirst({ where: { id: context.activeFileId, userId: access.user.id, deletedAt: null }, select: { title: true, originalFileName: true, processingStatus: true, pageTexts: true, resource: { select: { id: true, sourceMetadata: true } } } });
     if (!ebook || !["ready", "needs_ocr"].includes(ebook.processingStatus)) return NextResponse.json({ ok: false, error: "The uploaded E-Book is unavailable or not ready." }, { status: 404 });
@@ -102,7 +104,9 @@ export async function POST(request: NextRequest) {
     if (metadata?.grade && metadata.grade !== context.scholarClass) return NextResponse.json({ ok: false, error: "Switch to this E-Book's class profile first." }, { status: 403 });
     const pages = ebook.pageTexts as string[];
     context.ebookTitle = ebook.title; context.activeFileName = ebook.originalFileName;
-    context.visibleText = pages[(context.sourcePageNumber ?? 1) - 1]?.slice(0, 8000) || "No reliable extracted text on this page. OCR is required; do not invent page content.";
+    try { bookRange = requestedBookRange(input.message, context.sourcePageNumber ?? 1, pages.length); }
+    catch { return NextResponse.json({ ok: false, error: "Choose pages inside this book, in a range of up to 25 pages." }, { status: 400 }); }
+    context.visibleText = bookRange ? pages.slice(bookRange.pageStart - 1, bookRange.pageEnd).map((text, i) => `Page ${bookRange!.pageStart + i}\n${text || "No reliable extracted text; OCR is required."}`).join("\n\n").slice(0, 8000) : "Whole-book request: use only the cited retrieved excerpts. State that this is a sampled summary, not coverage of every page.";
     uploadedResourceId = ebook.resource?.id;
   }
   const learningProfile = await db.learningProfile.findUnique({where:{userId:access.user.id},select:{status:true,preferences:true}}).catch(()=>null);
@@ -115,12 +119,13 @@ export async function POST(request: NextRequest) {
     chapter: context.chapterTitle,
   }).catch(() => ({ text: "LAM AI memory is temporarily unavailable. Continue without it.", selectedMemoryIds: [], summary: { memories: 0, relevantMemories: 0, weakTopics: [], unresolvedMistakes: 0, dueRevision: 0 } })) : null;
   const retrieved = [context.ebookTitle, context.chapterTitle, context.sourcePageNumber ? `page ${context.sourcePageNumber}` : "", context.activeFileName ? `Active uploaded file: ${context.activeFileName}` : "", context.selectedText ? `Selected material:\n${context.selectedText}` : "", context.visibleText ? `Visible or extracted text:\n${context.visibleText}` : ""].filter(Boolean).join(" · ");
-  const resourceSources = await retrieve(access.user.id, { ...chapterContext(context.scholarClass, context.subjectTitle, context.chapterTitle), q: input.message.slice(0, 1000) }, uploadedResourceId ? [uploadedResourceId] : undefined).catch(() => []);
+  const resourceSources = await retrieve(access.user.id, { ...chapterContext(context.scholarClass, context.subjectTitle, context.chapterTitle), q: input.message.slice(0, 1000), ...bookRange }, uploadedResourceId ? [uploadedResourceId] : undefined).catch(() => []);
   let timezone = access.user.timezone || "Asia/Kolkata";
   try { new Intl.DateTimeFormat("en-IN", { timeZone: timezone }); } catch { timezone = "Asia/Kolkata"; }
   const system = [
     `Current server time: ${new Date().toISOString()}. User timezone: ${timezone}. Local date/time: ${new Date().toLocaleString("en-IN", { timeZone: timezone, dateStyle: "full", timeStyle: "short" })}. Resolve relative dates against this time. Never claim a plan was saved unless Scholar confirms the action.`,
     resourceSources.length ? retrievalPrompt(resourceSources) : "No indexed resource text matched. Distinguish general knowledge; do not invent Scholar source citations.",
+    uploadedResourceId ? "This is a private-book request. Answer only from the provided page text and cited excerpts. If unsupported or scanned, say 'I couldn't find that in this book.' Do not fill missing pages with general knowledge. Mention omitted pages when the retrieval budget does not cover the full requested range. General explanation requires an explicit follow-up and must be clearly labeled." : "",
     "You are LAM (Learning Assistant and Mentor), Scholar's calm personal learning assistant. You are an AI, not a human.",
     `Active profile: ${context.profileName}, CBSE Class ${context.scholarClass}. Profile ID: ${input.profileId}. Never mix content or identity from another class.`,
     `Current Scholar view: ${context.currentView}; route: ${context.currentRoute}; subject: ${context.subjectTitle ?? "not supplied"}; chapter: ${context.chapterTitle ?? "not supplied"}.`,

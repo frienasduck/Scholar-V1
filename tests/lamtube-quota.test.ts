@@ -26,3 +26,10 @@ test("stale abandoned reservations expire without consuming usage",async()=>{awa
 test("cross-account replay and commit are rejected",async()=>{await reserve("one");await expect(reserve("one","attacker")).rejects.toThrow("CONFLICT");await expect(commitMonthlyUsage("attacker","one")).rejects.toThrow("INVALID");});
 test("verified Plus reservation is unlimited, failure still refundable",async()=>{for(let i=0;i<12;i++)await reserveMonthlyUsage({userId:"u",feature:"ai_video_generation",idempotencyKey:`p${i}`,access:{...access,plan:"PLUS"}});expect(events).toHaveLength(12);await releaseMonthlyUsage("u","p0");expect(events[0].status).toBe("released");});
 test("quota exhaustion uses a dedicated safe error",async()=>{for(let i=0;i<10;i++)await reserve(`k${i}`);await expect(reserve("extra")).rejects.toBeInstanceOf(MonthlyQuotaError);});
+test("only released ebook uploads can reopen the same reference after a storage failure", async () => {
+  const input = { userId: "u", feature: "custom_ebook_upload" as const, idempotencyKey: "book-retry", access: { ...access, monthlyEbookUploadLimit: 2 } };
+  await reserveMonthlyUsage(input); await releaseMonthlyUsage("u", "book-retry");
+  expect((await reserveMonthlyUsage(input)).replayed).toBe(false); expect(events).toHaveLength(1); expect(events[0].status).toBe("reserved");
+  await commitMonthlyUsage("u", "book-retry"); expect((await reserveMonthlyUsage(input)).replayed).toBe(true); expect([...counters.values()]).toEqual([1]);
+  await reserve("video-retry"); await releaseMonthlyUsage("u", "video-retry"); expect((await reserve("video-retry")).replayed).toBe(true);
+});

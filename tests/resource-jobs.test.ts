@@ -3,6 +3,7 @@ mock.module("server-only", () => ({}));
 let resource: any; let job: any; let chunkRows: any[]; let scriptError = false; let scanned = false;
 let loseLease = false; let refundCount = 0; let monthlyRefundCount = 0; let mappingCreates = 0;
 let transient = false; let extractionCalls = 0; let indexFailure = false; let stages: string[];
+let partial = false, mixed = false; const parsedStartingPages: number[] = [];
 function matches(row: any, where: any): boolean {
   if (!row) return false;
   return Object.entries(where).every(([key, value]: [string, any]) => {
@@ -46,12 +47,18 @@ const db: any = {
 };
 mock.module("../src/lib/db", () => ({ db }));
 mock.module("../src/lib/resources/service", () => ({ privateScope: (ownerUserId: string) => ({ ownerUserId, visibility: "PRIVATE", deletedAt: null }) }));
-mock.module("../src/lib/resources/pdf", () => ({ extractPdf: async () => { extractionCalls++; if (transient) throw new Error("Parser temporarily unavailable"); if (scriptError) throw new Error("PDF_ACTIVE_CONTENT"); return { pages: scanned ? [""] : ["Laws of Motion: F = ma. Newton's law relates force, mass and acceleration."], pageCount: 1, text: "Extracted text", needsOcr: scanned }; } }));
+mock.module("../src/lib/resources/pdf", () => ({ extractPdf: async (_bytes: unknown, options: any) => {
+  extractionCalls++; if (transient) throw new Error("Parser temporarily unavailable"); if (scriptError) throw new Error("PDF_ACTIVE_CONTENT");
+  const text = "Laws of Motion: F = ma. Newton's law relates force, mass and acceleration.";
+  if (partial) { parsedStartingPages.push(options.pages.length); const pages = [...options.pages, text]; await options.checkpoint({ pages, pageCount: 2 }); return { pages, pageCount: 2, text: "Extracted text", needsOcr: false, complete: pages.length === 2 }; }
+  return { pages: scanned ? [""] : mixed ? [text, "", text] : [text], pageCount: mixed ? 3 : 1, text: "Extracted text", needsOcr: scanned || mixed };
+} }));
 const { processResourceJob } = await import("../src/lib/resources/jobs");
 beforeEach(() => {
   resource = { id: "r1", title: "Laws of Motion", ownerUserId: "owner", visibility: "PRIVATE", deletedAt: null, state: "EXTRACTING", ebookId: null, ebook: null, mappings: [], sourceMetadata: { grade: 11, sections: [{ heading: "Newton's laws", text: "Laws of Motion: Newton's second law F = ma. A net force causes acceleration." }] } };
   job = { id: "j1", resourceId: "r1", state: "QUEUED", attempts: 0, leaseToken: null, leaseUntil: null, nextRunAt: new Date(0) };
   chunkRows = []; scriptError = false; scanned = false; loseLease = false; refundCount = 0; monthlyRefundCount = 0; mappingCreates = 0; transient = false; extractionCalls = 0; indexFailure = false; stages = [];
+  partial = false; mixed = false; parsedStartingPages.length = 0;
 });
 function addPdf(allocation = "standard") { resource.ebookId = "b1"; resource.ebook = { pdfBytes: Buffer.from("%PDF"), userId: "owner", sizeBytes: 100, allocation, processingStatus: "processing" }; resource.sourceMetadata = { grade: 11, usageKey: "owner:ebook:key" }; }
 test("durable job classifies, indexes and removes pending text from metadata", async () => { expect(await processResourceJob("r1", "owner")).toBe(true); expect(job.state).toBe("DONE"); expect(resource.state).toBe("READY"); expect(resource.mappings[0].chapterId).toBe("p5"); expect(chunkRows).toHaveLength(1); expect(resource.sourceMetadata.sections).toBeUndefined(); expect(resource.contentHash).toHaveLength(64); });
@@ -86,4 +93,12 @@ test("index failure rolls back partial publication and retries from the saved PD
   expect(job.state).toBe("QUEUED"); expect(resource.state).toBe("FAILED"); expect(resource.sourceMetadata.extractionComplete).toBe(true); expect(chunkRows).toHaveLength(0);
   indexFailure = false; job.nextRunAt = new Date(0); await processResourceJob();
   expect(extractionCalls).toBe(1); expect(job.state).toBe("DONE"); expect(resource.state).toBe("READY"); expect(resource.ebook.processingStatus).toBe("ready");
+});
+test("successful partial batches requeue without consuming retry attempts or repeating pages", async () => {
+  addPdf(); partial = true;
+  await processResourceJob(); expect(job.state).toBe("QUEUED"); expect(job.attempts).toBe(0); expect(resource.ebook.pageTexts).toHaveLength(1); expect(chunkRows).toHaveLength(0);
+  job.nextRunAt = new Date(0); await processResourceJob(); expect(parsedStartingPages).toEqual([0, 1]); expect(resource.ebook.pageTexts).toHaveLength(2); expect(job.state).toBe("DONE"); expect(resource.ebook.processingStatus).toBe("ready");
+});
+test("mixed text/scanned PDF indexes real text pages only, preserving page numbers and OCR warning", async () => {
+  addPdf(); mixed = true; await processResourceJob(); expect(resource.ebook.processingStatus).toBe("needs_ocr"); expect(resource.sourceMetadata.needsOcr).toBe(true); expect(chunkRows.map(chunk => chunk.page)).toEqual([1, 3]); expect(resource.ebook.pageCount).toBe(3);
 });

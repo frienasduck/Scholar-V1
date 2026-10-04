@@ -50,7 +50,7 @@ export async function findResource(id: string, userId: string | null) {
   return row ? record(row) : null;
 }
 export async function resourceChunks(resource: ResourceRecord, offset = 0, limit = 24): Promise<IndexedChunk[]> {
-  if (!resource.canStoreCopy || !resource.canGenerateDerivatives || !["READY", "NEEDS_REVIEW"].includes(resource.state) || resource.sourceMetadata?.needsOcr) return [];
+  if (!resource.canStoreCopy || !resource.canGenerateDerivatives || !["READY", "NEEDS_REVIEW"].includes(resource.state)) return [];
   if (resource.visibility === "GLOBAL") return chunkSections(snapshotById.get(resource.id)?.sections ?? []).slice(offset, offset + limit);
   if (!resource.ownerUserId || resource.deletedAt) return [];
   return db.resourceChunk.findMany({ where: { resourceId: resource.id, resource: privateScope(resource.ownerUserId) }, orderBy: { ordinal: "asc" }, skip: offset, take: limit }).then(rows => rows.map(row => ({ ...row, page: row.page ?? undefined, timestamp: row.timestamp ?? undefined, sourceUrl: row.sourceUrl ?? undefined })));
@@ -76,7 +76,10 @@ export async function retrieve(userId: string, query: ResourceQuery, resourceIds
   const words = tokens(query.q ?? "").slice(0, 12);
   const groups = await Promise.all(matched.map(async resource => {
     let chunks: IndexedChunk[];
-    if (resource.visibility === "PRIVATE" && words.length) {
+    if (query.pageStart !== undefined && resource.visibility === "PRIVATE") {
+      const rows = await db.resourceChunk.findMany({ where: { resourceId: resource.id, resource: privateScope(userId), page: { gte: query.pageStart, lte: query.pageEnd ?? query.pageStart } }, orderBy: { ordinal: "asc" }, take: 80 });
+      chunks = rows.map(c => ({ ...c, page: c.page ?? undefined, timestamp: c.timestamp ?? undefined, sourceUrl: c.sourceUrl ?? undefined }));
+    } else if (resource.visibility === "PRIVATE" && words.length) {
       const rows = await db.$queryRaw<(IndexedChunk & { page: number | null; timestamp: number | null; sourceUrl: string | null })[]>(Prisma.sql`
         SELECT c."ordinal", c."heading", c."text", c."page", c."timestamp", c."sourceUrl"
         FROM "ResourceChunk" c JOIN "StudyResource" r ON r."id" = c."resourceId"
@@ -85,11 +88,11 @@ export async function retrieve(userId: string, query: ResourceQuery, resourceIds
       chunks = rows.map(c => ({ ...c, page: c.page ?? undefined, timestamp: c.timestamp ?? undefined, sourceUrl: c.sourceUrl ?? undefined }));
       if (!chunks.length && resourceIds?.includes(resource.id)) chunks = await resourceChunks(resource, 0, 6);
     } else chunks = await resourceChunks(resource, 0, 80);
-    return chunks.map(chunk => ({ resource, chunk, score: lexicalScore(`${chunk.heading} ${chunk.text}`, query.q ?? "") }));
+    return chunks.filter(chunk => query.pageStart === undefined || chunk.page !== undefined && chunk.page >= query.pageStart && chunk.page <= (query.pageEnd ?? query.pageStart)).map(chunk => ({ resource, chunk, score: lexicalScore(`${chunk.heading} ${chunk.text}`, query.q ?? "") }));
   }));
   let size = 0;
-  return groups.flat().filter(r => resourceIds?.length || r.score > .15).sort((a, b) => b.score - a.score).slice(0, 6).flatMap(({ resource, chunk }, i) => {
-    const text = chunk.text.slice(0, Math.min(2400, 12_000 - size)); size += text.length;
+  return groups.flat().filter(r => resourceIds?.length || r.score > .15).sort((a, b) => query.pageStart !== undefined ? (a.chunk.page ?? 0) - (b.chunk.page ?? 0) || a.chunk.ordinal - b.chunk.ordinal : b.score - a.score).slice(0, query.pageStart !== undefined ? 25 : 6).flatMap(({ resource, chunk }, i) => {
+    const text = chunk.text.slice(0, Math.min(2400, (query.pageStart !== undefined ? 40_000 : 12_000) - size)); size += text.length;
     return text ? [{ citation: citationFor(resource, chunk, `S${i + 1}`), text }] : [];
   });
 }

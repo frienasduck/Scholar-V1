@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   let resourceSources: Awaited<ReturnType<typeof retrieve>> = [];
   if (body.resourceContext) {
     try {
-      resourceSources = await retrieve(sessionUser.id, { q: body.messages.filter(m => m.role === "user").at(-1)?.content.slice(0, 2000), grade: body.scholarClass, subjectId: body.resourceContext.subjectId, chapterId: body.resourceContext.chapterId }, body.resourceContext.resourceIds);
+      resourceSources = await retrieve(sessionUser.id, { q: body.messages.filter(m => m.role === "user").at(-1)?.content.slice(0, 2000), grade: body.scholarClass, subjectId: body.resourceContext.subjectId, chapterId: body.resourceContext.chapterId, pageStart: body.resourceContext.pageStart, pageEnd: body.resourceContext.pageEnd }, body.resourceContext.resourceIds);
       if (body.resourceContext.resourceIds?.length && !resourceSources.length) return errorResponse("This source has no permitted, readable text. Open the original source or wait for indexing; Scholar will not invent a source-grounded answer.", 409, "RESOURCE_TEXT_UNAVAILABLE");
     } catch { return errorResponse("The resource index could not be safely retrieved. Please retry.", 503, "RESOURCE_INDEX_UNAVAILABLE"); }
   }

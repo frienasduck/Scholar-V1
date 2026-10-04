@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BookOpen, Check, Copy, Expand, FileText, History, Maximize2, Mic, MicOff, Pencil, Pin, Plus, Search, Send, Settings, Sparkles, Square, Trash2, Volume2, X } from "lucide-react";
 import { Markdown } from "@/lib/shared";
 import { useStore } from "@/lib/store";
@@ -19,6 +19,7 @@ import { type LamConversation, type LamMessage, type LamMode, type LamPageContex
 import { LiquidGlassSurface } from "@/components/lam/liquid-glass-surface";
 import { LamMark } from "@/components/lam/lam-mark";
 import { LamResponse } from "@/components/lam/lam-response";
+import { LamDismissScrim, LamPanelSurface } from "@/components/lam/lam-panel-presence";
 import { GlassModeMenu } from "@/components/lam/glass-mode-menu";
 import { GlassWaveListening, LamQuickActionChip, LamThinkingState } from "@/components/lam/lam-glass-states";
 import { microphoneEnvironmentError, microphoneErrorMessage, queryMicrophonePermission, requestMicrophoneStream, stopMediaStream, type MicrophonePermissionState } from "@/lib/lam/microphone";
@@ -115,7 +116,22 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const files = useStore((state) => state.files);
   const profileId = `class-${user.scholarClass}`;
   const [state, setState] = useState<LamProfileState>(() => loadLamState(profileId));
-  const [open, setOpen] = useState(false);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPhase, setPanelPhase] = useState<"closed" | "open" | "closing">("closed");
+  const open = panelPhase === "open";
+  const closed = panelPhase === "closed";
+  const setOpen = useCallback((nextOpen: boolean) => {
+    // Capture the opener before React removes the docked trigger from the DOM.
+    if (nextOpen && !panelRef.current?.contains(document.activeElement)) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+    }
+    setPanelPhase((previous) => nextOpen ? "open" : previous === "closed" ? "closed" : "closing");
+  }, []);
+  const finishClosing = useCallback(() => {
+    // A keyboard shortcut can reopen LAM while it exits. Don't close that new session.
+    setPanelPhase((previous) => previous === "closing" ? "closed" : previous);
+  }, []);
   const [dockTarget, setDockTarget] = useState<HTMLElement | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -138,12 +154,13 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const [microphonePermission, setMicrophonePermission] = useState<MicrophonePermissionState>("unsupported");
   const [handsFreeNeedsResume, setHandsFreeNeedsResume] = useState(false);
   const renderQuality = useLamRenderQuality();
+  const systemReducedMotion = useReducedMotion();
+  const reducedMotion = settings.reduceMotion || Boolean(systemReducedMotion);
   const renderQualityRef = useRef(renderQuality);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const holdTimerRef = useRef<number | null>(null);
   const focusTimerRef = useRef<number | null>(null);
   const voiceTransitionTimerRef = useRef<number | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const wakeHeaderRef = useRef<HTMLElement>(null);
   const wakeContextRef = useRef<HTMLDivElement>(null);
   const internalSaveRef = useRef(false);
@@ -259,13 +276,16 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   useEffect(() => {
     if (focusTimerRef.current) { window.clearTimeout(focusTimerRef.current); focusTimerRef.current = null; }
     if (open) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
       focusTimerRef.current = window.setTimeout(() => { focusTimerRef.current = null; composerRef.current?.focus(); }, 220);
-    } else previousFocusRef.current?.focus?.();
+    } else if (closed) {
+      const previous = previousFocusRef.current;
+      const target = previous?.isConnected && previous !== document.body && previous !== document.documentElement ? previous : triggerRef.current;
+      target?.focus({ preventScroll: true });
+    }
     return () => { if (focusTimerRef.current) { window.clearTimeout(focusTimerRef.current); focusTimerRef.current = null; } };
-  }, [open]);
+  }, [closed, open]);
   useEffect(() => {
-    if (!open) return;
+    if (closed) return;
     const body = document.body;
     const previousOverflow = body.style.overflow;
     const previousPaddingRight = body.style.paddingRight;
@@ -276,7 +296,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
       body.style.overflow = previousOverflow;
       body.style.paddingRight = previousPaddingRight;
     };
-  }, [open]);
+  }, [closed]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [conversation?.messages, status]);
   useEffect(() => {
     const onSelection = () => {
@@ -680,7 +700,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const quick = context.currentView === "ebook" ? ["Explain this page", "Quiz me from this page", "What are the key formulas?"] : context.currentView === "dashboard" ? ["Plan my study today", "Show my weakest topic", "What should I continue?"] : ["Explain what I am viewing", "Quiz me", "What should I revise first?"];
   const latestUserRequest = [...conversation.messages].reverse().find((message) => message.role === "user")?.content;
   const glass = prefs.reduceTransparency ? "bg-slate-950 border-white/25" : "bg-slate-950/78 backdrop-blur-2xl border-white/20";
-  const visualState = !open ? "closed" : historyOpen ? "history" : status === "suspended" ? "suspended" : pendingAction ? "action-preview" : status === "performing" ? "performing-action" : status === "completed" ? "completed" : status === "thinking" || status === "transcribing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
+  const visualState = !open ? panelPhase : historyOpen ? "history" : status === "suspended" ? "suspended" : pendingAction ? "action-preview" : status === "performing" ? "performing-action" : status === "completed" ? "completed" : status === "thinking" || status === "transcribing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
   const surfaceState = status === "completed" ? "success" : status === "thinking" || status === "transcribing" || status === "performing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
   const isTransientCapsule = status === "listening" || status === "thinking" || status === "transcribing";
   const needsExpanded = fullscreen || historyOpen || (!isTransientCapsule && (conversation.messages.length > 2 || conversation.messages.some((message) => message.content.length > 520)));
@@ -688,9 +708,9 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const visibleConversations = state.conversations.filter((item) => !historyQuery.trim() || `${item.title} ${item.mode} ${item.messages.map((message) => message.content).join(" ")}`.toLowerCase().includes(historyQuery.toLowerCase()));
   const mobileOptimized = renderQuality === "mobile-optimized";
   const animationQuality = useMemo(() => resolveScholarAnimationQuality({
-    reduceMotion: settings.reduceMotion,
+    reduceMotion: reducedMotion,
     forceQuality: mobileOptimized ? "mobile-optimized" : "desktop-high",
-  }), [mobileOptimized, settings.reduceMotion]);
+  }), [mobileOptimized, reducedMotion]);
   useEffect(() => {
     const header = wakeHeaderRef.current;
     if (!open || !prefs.onboardingComplete || !header) return;
@@ -701,18 +721,21 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   }, [animationQuality, open, prefs.onboardingComplete]);
   const renderedMessages = mobileOptimized && conversation.messages.length > 8 ? conversation.messages.slice(-8) : conversation.messages;
   const pendingDescription = !pendingAction ? "" : pendingAction.type === "create-note" ? `Save “${pendingAction.title}” in the LAM notes folder?` : pendingAction.type === "start-focus" ? `Start a ${pendingAction.minutes}-minute focus session?` : pendingAction.type === "create-quiz" ? `Create a quiz${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "create-slideshow" ? `Create a slideshow${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "open-ebook-page" ? `Open page ${pendingAction.page}?` : pendingAction.type === "open-file" ? "Open this uploaded file?" : pendingAction.type === "reminder" ? reminderPendingDescription(pendingAction, reminderProfile) : `Open ${pendingAction.view}?`;
-  const dockedTrigger = !open && !context.activeFileId ? <button onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : compactMobile ? "h-12 w-[min(10.5rem,calc(100vw-2rem))]" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
+  const dockedTrigger = closed && !context.activeFileId ? <motion.button ref={triggerRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0.01 : 0.12 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : compactMobile ? "h-12 w-[min(10.5rem,calc(100vw-2rem))]" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
     <span className={cn("relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && !settings.reduceMotion && "animate-pulse")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
     {!prefs.compactOrb && <><span className="flex-1 text-left text-white/78">Ask LAM</span><Mic className="h-4 w-4 text-white/45" /></>}
-  </button> : null;
+  </motion.button> : null;
 
-  if (!prefs.assistantEnabled && !open) return null;
+  if (!prefs.assistantEnabled && closed) return null;
 
   return createPortal(
     <aside className="lam-system-root fixed inset-x-0 top-0 z-[10000] flex flex-col items-center px-3" data-state={visualState} data-quality={renderQuality} data-intensity={settings.reduceMotion ? "minimal" : prefs.animationIntensity} aria-label="LAM personal assistant">
-      {open && needsExpanded && !fullscreen && <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeLam} className="lam-mobile-scrim fixed inset-0 bg-black/20 backdrop-blur-[2px]" aria-label="Dismiss LAM" />}
+      <AnimatePresence>
+        {open && needsExpanded && !fullscreen && <LamDismissScrim key="lam-scrim" reducedMotion={reducedMotion} onClick={closeLam} className="lam-mobile-scrim fixed inset-0 bg-black/20 backdrop-blur-[2px]" aria-label="Dismiss LAM" />}
+      </AnimatePresence>
+      <AnimatePresence onExitComplete={finishClosing}>
       {open && !prefs.onboardingComplete && (
-        <div className={cn("mb-3 flex h-[min(25rem,62dvh)] w-[min(23rem,calc(100vw-2rem))] flex-col justify-between overflow-y-auto rounded-[1.75rem] border p-5 text-white shadow-2xl sm:h-[28rem] sm:w-[25rem] sm:rounded-[2rem] sm:p-6", glass)}>
+        <LamPanelSurface key="lam-panel" reducedMotion={reducedMotion} className={cn("mb-3 flex h-[min(25rem,62dvh)] w-[min(23rem,calc(100vw-2rem))] flex-col justify-between overflow-y-auto rounded-[1.75rem] border p-5 text-white shadow-2xl sm:h-[28rem] sm:w-[25rem] sm:rounded-[2rem] sm:p-6", glass)}>
           <button className="ml-auto rounded-full p-2 hover:bg-white/10" onClick={closeLam} aria-label="Close LAM"><X className="h-4 w-4" /></button>
           <div className="text-center">
             <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-500 to-violet-600 shadow-xl shadow-cyan-400/20"><Sparkles /></div>
@@ -726,11 +749,11 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
             {onboardingStep > 0 && <button onClick={() => setOnboardingStep((step) => step - 1)} className="flex-1 rounded-xl border border-white/15 py-2.5 text-sm">Back</button>}
             <button onClick={() => onboardingStep < 3 ? setOnboardingStep((step) => step + 1) : updatePrefs({ onboardingComplete: true })} className="flex-1 rounded-xl bg-cyan-300 py-2.5 text-sm font-semibold text-slate-950">{onboardingStep < 3 ? "Continue" : "Start using LAM"}</button>
           </div>
-        </div>
+        </LamPanelSurface>
       )}
 
       {open && prefs.onboardingComplete && (
-          <motion.div ref={panelRef} initial={settings.reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={settings.reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: .98 }} transition={{ duration: settings.reduceMotion ? .01 : .22, ease: [0.16, 1, 0.3, 1] }} className={cn("lam-liquid-glass lam-premium-panel relative z-10 mb-3 flex flex-col overflow-hidden text-white", `lam-liquid-glass--${surfaceState}`, prefs.reduceTransparency && "lam-liquid-glass--reduced", fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : needsExpanded ? "h-[min(43rem,calc(100dvh-5.5rem))] w-[min(46rem,calc(100vw-1.5rem))] rounded-[2rem]" : isTransientCapsule ? "max-h-[min(25rem,calc(100dvh-5.5rem))] min-h-[11.5rem] w-[min(43rem,calc(100vw-1.5rem))] rounded-[2rem]" : "max-h-[min(32rem,calc(100dvh-5.5rem))] min-h-[9rem] w-[min(38rem,calc(100vw-1.5rem))] rounded-[1.8rem]")}>
+          <LamPanelSurface key="lam-panel" ref={panelRef} reducedMotion={reducedMotion} className={cn("lam-liquid-glass lam-premium-panel relative z-10 mb-3 flex flex-col overflow-hidden text-white", `lam-liquid-glass--${surfaceState}`, prefs.reduceTransparency && "lam-liquid-glass--reduced", fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : needsExpanded ? "h-[min(43rem,calc(100dvh-5.5rem))] w-[min(46rem,calc(100vw-1.5rem))] rounded-[2rem]" : isTransientCapsule ? "max-h-[min(25rem,calc(100dvh-5.5rem))] min-h-[11.5rem] w-[min(43rem,calc(100vw-1.5rem))] rounded-[2rem]" : "max-h-[min(32rem,calc(100dvh-5.5rem))] min-h-[9rem] w-[min(38rem,calc(100vw-1.5rem))] rounded-[1.8rem]")}>
           <span className="lam-glass-reflection" aria-hidden="true" />
           <header ref={wakeHeaderRef} className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
             <span className={cn("relative grid h-10 w-10 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && "shadow-lg shadow-cyan-400/20")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
@@ -784,13 +807,14 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
             </div>
             <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-white/35"><span>{prefs.keyboardShortcut === "ctrl-space" ? "Ctrl/⌘ Space" : prefs.keyboardShortcut === "alt-space" ? "Alt Space" : "Ctrl/⌘ Shift L"} · Open</span><button onClick={() => navigateTo("settings", { tab: "lam" })} className="flex items-center gap-1 hover:text-white"><Settings className="h-3 w-3" />LAM settings</button></div>
           </div>
-        </motion.div>
+        </LamPanelSurface>
       )}
+      </AnimatePresence>
 
-      {!open && status === "listening" && <div className={cn("mb-2 flex items-center gap-3 rounded-full border px-4 py-2 text-sm text-white", glass)}><Mic className="h-4 w-4 text-cyan-300" />Listening…<button onClick={stopCapturedAudio} aria-label="Stop listening"><Square className="h-3.5 w-3.5" /></button></div>}
-      {!open && status === "suspended" && prefs.wakeWordEnabled && <button onClick={() => void requestMicrophoneAndListen(true)} className={cn("mb-2 rounded-full border px-4 py-2 text-sm text-amber-50", glass)}><Mic className="mr-2 inline h-4 w-4" />Tap to resume Hands-Free LAM</button>}
+      {closed && status === "listening" && <div className={cn("mb-2 flex items-center gap-3 rounded-full border px-4 py-2 text-sm text-white", glass)}><Mic className="h-4 w-4 text-cyan-300" />Listening…<button onClick={stopCapturedAudio} aria-label="Stop listening"><Square className="h-3.5 w-3.5" /></button></div>}
+      {closed && status === "suspended" && prefs.wakeWordEnabled && <button onClick={() => void requestMicrophoneAndListen(true)} className={cn("mb-2 rounded-full border px-4 py-2 text-sm text-amber-50", glass)}><Mic className="mr-2 inline h-4 w-4" />Tap to resume Hands-Free LAM</button>}
       {dockedTrigger && (dockTarget ? createPortal(dockedTrigger, dockTarget) : dockedTrigger)}
-      {selectionMenu && selectedText && !open && <LiquidGlassSurface className="fixed z-[10020] flex items-center gap-1 rounded-full p-1.5 text-xs" style={{ left: selectionMenu.x, top: selectionMenu.y }}><button onClick={() => { setOpen(true); setSelectionMenu(null); }} className="rounded-full px-3 py-2 hover:bg-white/10">Ask LAM</button><button onClick={() => { setOpen(true); setSelectionMenu(null); void send("Explain the selected text clearly."); }} className="rounded-full px-3 py-2 hover:bg-white/10">Explain</button></LiquidGlassSurface>}
+      {selectionMenu && selectedText && closed && <LiquidGlassSurface className="fixed z-[10020] flex items-center gap-1 rounded-full p-1.5 text-xs" style={{ left: selectionMenu.x, top: selectionMenu.y }}><button onClick={() => { setOpen(true); setSelectionMenu(null); }} className="rounded-full px-3 py-2 hover:bg-white/10">Ask LAM</button><button onClick={() => { setOpen(true); setSelectionMenu(null); void send("Explain the selected text clearly."); }} className="rounded-full px-3 py-2 hover:bg-white/10">Explain</button></LiquidGlassSurface>}
       <span className="sr-only" role="status" aria-live="assertive">LAM is {status}</span>
     </aside>
   , document.body);

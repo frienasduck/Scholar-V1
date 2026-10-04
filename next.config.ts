@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+const pdfRuntimeFiles = ["./node_modules/pdfjs-dist/legacy/build/*.mjs", "./node_modules/pdfjs-dist/package.json", "./node_modules/pdfjs-dist/standard_fonts/**/*", "./node_modules/pdfjs-dist/cmaps/**/*", "./node_modules/pdfjs-dist/wasm/**/*", "./node_modules/@napi-rs/canvas*/**/*"];
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -10,6 +11,9 @@ const nextConfig: NextConfig = {
   // of the route's JS bundle. Preserve it explicitly for serverless deployment.
   serverExternalPackages: ["tesseract.js", "pdfjs-dist", "@napi-rs/canvas"],
   outputFileTracingIncludes: {
+    "/api/ebooks": pdfRuntimeFiles,
+    "/api/ebooks/*": pdfRuntimeFiles,
+    "/api/resources/*": pdfRuntimeFiles,
     "/api/group-study/pdf-worker": ["./node_modules/pdfjs-dist/build/pdf.worker.min.mjs"],
     "/api/group-study/rooms/*/resources": [
       "./node_modules/pdfjs-dist/legacy/build/*.mjs",

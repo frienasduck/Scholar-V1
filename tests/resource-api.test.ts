@@ -8,6 +8,7 @@ const rows: any[] = []; const chunks: any[] = []; const stored: any[] = []; cons
 const matches = (row: any, where: any): boolean => !where || Object.entries(where).every(([key, value]: [string, any]) => {
   if (key === "resource") return matches(rows.find(r => r.id === row.resourceId), value);
   if (key === "id" && value?.in) return value.in.includes(row.id);
+  if (key === "page" && typeof value === "object") return row.page >= value.gte && row.page <= value.lte;
   return row && row[key] === value;
 });
 const studyResource = {
@@ -58,6 +59,13 @@ test("private resource retrieval has an owner query and strips pending document 
 test("cross-user GET, artifact, PATCH and DELETE consistently return 404", async () => { rows.push(privateRecord("victim")); for (const method of ["GET", "POST", "PATCH", "DELETE"] as const) { const req = method === "GET" ? new NextRequest("http://localhost/api/resources/test-victim") : request({ type: "summary", retry: true }, method); expect((await detail[method](req, params("test-victim"))).status).toBe(404); } expect(chunks).toHaveLength(0); });
 test("chunk retrieval scopes owner at database level, and processing text stays hidden", async () => { const own = privateRecord(); rows.push(own, privateRecord("victim")); chunks.push({ resourceId: own.id, ordinal: 0, heading: "Law", text: "F = ma: a sufficiently complete explanation.", page: 2 }, { resourceId: "test-victim", ordinal: 0, heading: "Secret", text: "Victim secret" }); expect(await resourceChunks(own)).toHaveLength(1); expect(await resourceChunks({ ...own, state: "EXTRACTING" })).toHaveLength(0); expect(whereChecks[0].resource.ownerUserId).toBe("owner"); });
 test("database failure never falls back to somebody else's private data", async () => { rows.push(privateRecord("victim")); unavailable = true; const result = await library({ grade: 11 }, "owner"); expect(result.privateAvailable).toBe(false); expect(result.resources.every(r => r.visibility === "GLOBAL")).toBe(true); });
+test("selected PDF page range includes only owned readable pages, even in a mixed scanned book", async () => {
+  const own = privateRecord(); own.sourceMetadata = { ...own.sourceMetadata, needsOcr: true } as any; rows.push(own, privateRecord("victim"));
+  for (const page of [1, 12, 13, 40]) chunks.push({ resourceId: own.id, ordinal: page, heading: `Page ${page}`, text: `Newton's force explanation on actual page ${page}.`, page });
+  chunks.push({ resourceId: "test-victim", ordinal: 12, heading: "Private", text: "Another account's secret force explanation.", page: 12 });
+  const found = await retrieve("owner", { grade: 11, q: "summarize selected pages", pageStart: 12, pageEnd: 13 }, [own.id]);
+  expect(found.map(item => item.citation.page)).toEqual([12, 13]); expect(found.every(item => item.text.includes("actual page"))).toBe(true);
+});
 test("explicit owned source can ground a general question when lexical words miss", async () => { const own = privateRecord(); rows.push(own); chunks.push({ resourceId: own.id, ordinal: 0, heading: "Newton's law", text: "A sufficiently long explanation about F = ma.", page: 2 }); const found = await retrieve("owner", { grade: 11, q: "summarize everything" }, [own.id]); expect(found).toHaveLength(1); expect(found[0].citation.page).toBe(2); expect(await retrieve("owner", { grade: 11 }, ["test-victim"])).toHaveLength(0); });
 test("link-only official material cannot be used to fabricate an artifact", async () => { const source = BUILTIN_RESOURCES.find(r => r.state === "LINK_ONLY")!; expect((await detail.POST(request({ type: "summary" }), params(source.id))).status).toBe(409); });
 test("worker maintenance secret is required, including malformed unicode tokens", async () => { process.env.RESOURCE_WORKER_SECRET = "x".repeat(32); for (const token of ["", "short", "é".repeat(32)]) expect((await worker.POST(new Request("http://localhost/api/resources/process", { method: "POST", headers: { authorization: `Bearer ${token}` } }))).status).toBe(401); expect(workerCalls).toBe(0); expect((await worker.POST(new Request("http://localhost/api/resources/process", { method: "POST", headers: { authorization: `Bearer ${"x".repeat(32)}` } }))).status).toBe(200); expect(workerCalls).toBe(1); delete process.env.RESOURCE_WORKER_SECRET; });

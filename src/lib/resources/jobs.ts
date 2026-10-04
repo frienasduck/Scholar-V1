@@ -26,16 +26,17 @@ export async function processResourceJob(resourceId?: string, ownerUserId?: stri
   const job = await db.resourceJob.findFirst({ where: eligible, orderBy: { nextRunAt: "asc" } });
   if (!job) return false;
   const leaseToken = randomUUID();
-  const claimed = await db.resourceJob.updateMany({ where: { id: job.id, ...eligible }, data: { state: "RUNNING", attempts: { increment: 1 }, leaseToken, leaseUntil: new Date(Date.now() + 120_000), stage: "EXTRACTING", errorCode: null } });
+  const claimed = await db.resourceJob.updateMany({ where: { id: job.id, ...eligible }, data: { state: "RUNNING", attempts: { increment: 1 }, leaseToken, leaseUntil: new Date(Date.now() + 60_000), stage: "EXTRACTING", errorCode: null } });
   if (!claimed.count) return false;
   const resource = await db.studyResource.findFirst({ where: { id: job.resourceId, deletedAt: null, visibility: "PRIVATE", ...(ownerUserId ? { ownerUserId } : {}) }, include: { ebook: true, mappings: true } });
   if (!resource?.ownerUserId) return false;
   let metadata = resource.sourceMetadata as Record<string, unknown>;
+  console.info("[Resource job] started", { id: resource.id, stage: metadata.extractionComplete ? "INDEXING" : "EXTRACTING", attempt: job.attempts + 1 });
   async function advance(stage: "CLASSIFYING" | "INDEXING", checkpoint?: Prisma.CustomEbookUpdateInput) {
     return db.$transaction(async tx => {
       const fenced = await tx.resourceJob.updateMany({ where: { id: job!.id, state: "RUNNING", leaseToken }, data: { stage } });
       if (!fenced.count) return false;
-      const current = await tx.studyResource.updateMany({ where: { id: resource!.id, ...privateScope(resource!.ownerUserId!) }, data: { state: stage, ...(checkpoint ? { sourceMetadata: { ...metadata, extractionComplete: true } as Prisma.InputJsonValue } : {}) } });
+      const current = await tx.studyResource.updateMany({ where: { id: resource!.id, ...privateScope(resource!.ownerUserId!) }, data: { state: stage, ...(checkpoint ? { sourceMetadata: { ...metadata, extractionComplete: true } as Prisma.InputJsonValue, ...(typeof checkpoint.title === "string" ? { title: checkpoint.title } : {}) } : {}) } });
       if (!current.count) return false;
       if (checkpoint) await tx.customEbook.updateMany({ where: { id: resource!.ebookId!, userId: resource!.ownerUserId!, deletedAt: null }, data: { ...checkpoint, processingStatus: "processing" } });
       return true;
@@ -49,9 +50,29 @@ export async function processResourceJob(resourceId?: string, ownerUserId?: stri
       // not re-parse the same PDF or consume another upload allocation.
       const pages = resource.ebook.pageTexts as string[];
       const pdf = metadata.extractionComplete && Array.isArray(pages) && pages.length
-        ? { pages, pageCount: resource.ebook.pageCount, text: resource.ebook.text, needsOcr: false }
-        : await extractPdf(resource.ebook.pdfBytes);
-      if (pdf.needsOcr) {
+        ? { pages, pageCount: resource.ebook.pageCount, text: resource.ebook.text, needsOcr: Boolean(metadata.needsOcr), complete: true, title: undefined, outline: metadata.outline }
+        : await extractPdf(resource.ebook.pdfBytes, { pages: metadata.extractedPages && Array.isArray(pages) ? pages : [], batchSize: 30, checkpoint: async checkpoint => {
+          const saved = await db.$transaction(async tx => {
+            const fenced = await tx.resourceJob.updateMany({ where: { id: job.id, state: "RUNNING", leaseToken }, data: { stage: "EXTRACTING" } });
+            if (!fenced.count) return false;
+            await tx.customEbook.updateMany({ where: { id: resource.ebookId!, userId: resource.ownerUserId!, deletedAt: null }, data: { pageTexts: checkpoint.pages, pageCount: checkpoint.pageCount } });
+            metadata = { ...metadata, extractedPages: checkpoint.pages.length };
+            await tx.studyResource.updateMany({ where: { id: resource.id, ...privateScope(resource.ownerUserId!) }, data: { sourceMetadata: metadata as Prisma.InputJsonValue } });
+            return true;
+          });
+          if (!saved) throw new Error("LEASE_LOST");
+        } });
+      if (pdf.complete === false) {
+        await db.$transaction(async tx => {
+          const fenced = await tx.resourceJob.updateMany({ where: { id: job.id, state: "RUNNING", leaseToken }, data: { state: "QUEUED", attempts: 0, stage: "EXTRACTING", nextRunAt: new Date(), leaseToken: null, leaseUntil: null } });
+          if (!fenced.count) return;
+          await tx.customEbook.updateMany({ where: { id: resource.ebookId!, userId: resource.ownerUserId!, deletedAt: null }, data: { pageTexts: pdf.pages, pageCount: pdf.pageCount } });
+          await tx.studyResource.updateMany({ where: { id: resource.id, ...privateScope(resource.ownerUserId!) }, data: { sourceMetadata: { ...metadata, extractedPages: pdf.pages.length } as Prisma.InputJsonValue } });
+        });
+        return true;
+      }
+      metadata = { ...metadata, needsOcr: pdf.needsOcr, outline: pdf.outline ?? [], extractedPages: pdf.pages.length };
+      if (pdf.needsOcr && !pdf.pages.some(text => text.length >= 30)) {
         await db.$transaction(async tx => {
           const claim = await tx.resourceJob.updateMany({ where: { id: job.id, state: "RUNNING", leaseToken }, data: { state: "DONE", stage: "NEEDS_OCR", leaseToken: null, leaseUntil: null } });
           if (!claim.count) return;
@@ -60,8 +81,8 @@ export async function processResourceJob(resourceId?: string, ownerUserId?: stri
         });
         return true;
       }
-      sections = pdf.pages.map((text, i) => ({ heading: `Page ${i + 1}`, text, page: i + 1 }));
-      bookData = { processingStatus: "ready", pageCount: pdf.pageCount, text: pdf.text, pageTexts: pdf.pages };
+      sections = pdf.pages.flatMap((text, i) => text.length >= 30 ? [{ heading: `Page ${i + 1}`, text, page: i + 1 }] : []);
+      bookData = { processingStatus: pdf.needsOcr ? "needs_ocr" : "ready", pageCount: pdf.pageCount, text: pdf.text, pageTexts: pdf.pages, ...(pdf.title && !metadata.titleUserSet ? { title: pdf.title.replace(/[\u0000-\u001f]/g, " ") } : {}) };
     }
     if (!sections.length) throw new Error("NO_EXTRACTABLE_TEXT");
     if (!await advance("CLASSIFYING", bookData)) return true;
@@ -84,6 +105,7 @@ export async function processResourceJob(resourceId?: string, ownerUserId?: stri
     }, { timeout: 15_000 });
     if (published) console.info("[Resource job] completed", { id: resource.id, state, chunks: chunks.length });
   } catch (error) {
+    if (error instanceof Error && error.message === "LEASE_LOST") return true;
     const code = error instanceof Error && /^(PDF_|NO_EXTRACTABLE)/.test(error.message) ? error.message : "EXTRACTION_UNAVAILABLE";
     const permanent = code !== "EXTRACTION_UNAVAILABLE" && code !== "PDF_TIMEOUT";
     await db.$transaction(async tx => {

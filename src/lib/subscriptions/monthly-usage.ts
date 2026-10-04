@@ -50,7 +50,7 @@ export async function reserveMonthlyUsage(input: { userId: string; feature: Mont
     const replay = await tx.usageEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (replay) {
       if (replay.userId !== input.userId || replay.feature !== input.feature || replay.periodDay !== period) throw new Error("MONTHLY_RESERVATION_CONFLICT");
-      return { period, timezone, limit, used: await effectiveUsed(tx, input.userId, input.feature, period), replayed: true };
+      if (input.feature !== "custom_ebook_upload" || replay.status !== "released") return { period, timezone, limit, used: await effectiveUsed(tx, input.userId, input.feature, period), replayed: true };
     }
     const key = counterKey(input.feature);
     await tx.$executeRaw`
@@ -60,7 +60,10 @@ export async function reserveMonthlyUsage(input: { userId: string; feature: Mont
     `;
     const used = await effectiveUsed(tx, input.userId, input.feature, period);
     if (used >= limit) throw new MonthlyQuotaError(input.feature, limit);
-    await tx.usageEvent.create({ data: { userId: input.userId, feature: input.feature, idempotencyKey: input.idempotencyKey, periodDay: period, status: "reserved" } });
+    if (replay) {
+      const reopened = await tx.usageEvent.updateMany({ where: { id: replay.id, userId: input.userId, status: "released" }, data: { status: "reserved", createdAt: new Date() } });
+      if (!reopened.count) return { period, timezone, limit, used, replayed: true };
+    } else await tx.usageEvent.create({ data: { userId: input.userId, feature: input.feature, idempotencyKey: input.idempotencyKey, periodDay: period, status: "reserved" } });
     return { period, timezone, limit, used: used + 1, replayed: false };
   });
 }
