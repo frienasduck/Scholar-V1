@@ -1,5 +1,18 @@
 import type { NextConfig } from "next";
 const pdfRuntimeFiles = ["./node_modules/pdfjs-dist/legacy/build/*.mjs", "./node_modules/pdfjs-dist/package.json", "./node_modules/pdfjs-dist/standard_fonts/**/*", "./node_modules/pdfjs-dist/cmaps/**/*", "./node_modules/pdfjs-dist/wasm/**/*", "./node_modules/@napi-rs/canvas*/**/*"];
+const ocrTraceExcludes = [
+  "./node_modules/**/*.map",
+  "./node_modules/.prisma/client/*.tmp*",
+  // This app uses Prisma's native library engine, not its browser/edge WASM
+  // engines. Keep the platform query_engine binary and library.js untouched.
+  "./node_modules/@prisma/client/runtime/query_engine_bg.*",
+  "./node_modules/@prisma/client/runtime/query_compiler_bg.*",
+  // recognizePageImage always requests OEM.LSTM_ONLY. Keep every LSTM SIMD
+  // variant; the legacy recognition cores cannot be selected by this worker.
+  "./node_modules/tesseract.js-core/tesseract-core.wasm*",
+  "./node_modules/tesseract.js-core/tesseract-core-simd.wasm*",
+  "./node_modules/tesseract.js-core/tesseract-core-relaxedsimd.wasm*",
+];
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -20,15 +33,25 @@ const nextConfig: NextConfig = {
       "./node_modules/@napi-rs/canvas*/**/*",
     ],
     "/api/ocr": [
+      "./node_modules/@tesseract.js-data/eng/4.0.0_best_int/**/*",
+      "./node_modules/@tesseract.js-data/eng/package.json",
       "./node_modules/tesseract.js/src/**/*",
       "./node_modules/tesseract.js/package.json",
-      "./node_modules/tesseract.js-core/**/*",
+      "./node_modules/tesseract.js-core/*lstm*",
+      "./node_modules/tesseract.js-core/package.json",
       "./node_modules/wasm-feature-detect/**/*",
       "./node_modules/regenerator-runtime/**/*",
       "./node_modules/is-url/**/*",
       "./node_modules/zlibjs/**/*",
       "./node_modules/bmp-js/**/*",
     ],
+    "/api/ebooks/*/ocr": [...pdfRuntimeFiles, "./node_modules/@tesseract.js-data/eng/4.0.0_best_int/**/*", "./node_modules/@tesseract.js-data/eng/package.json", "./node_modules/tesseract.js/src/**/*", "./node_modules/tesseract.js/package.json", "./node_modules/tesseract.js-core/*lstm*", "./node_modules/tesseract.js-core/package.json", "./node_modules/wasm-feature-detect/**/*", "./node_modules/regenerator-runtime/**/*", "./node_modules/is-url/**/*", "./node_modules/zlibjs/**/*", "./node_modules/bmp-js/**/*"],
+  },
+  outputFileTracingExcludes: {
+    // Never package abandoned Prisma downloads, debug maps, or alternative
+    // scan directories the supported built-in OCR endpoint does not read.
+    "/api/ocr": [...ocrTraceExcludes, "./public/ebook-pages-*-clean/**/*"],
+    "/api/ebooks/*/ocr": [...ocrTraceExcludes, "./node_modules/@tesseract.js-data/eng/4.0.0/**/*"],
   },
   env: {
     // Public deployment identity used only to invalidate non-sensitive startup warm-up markers.

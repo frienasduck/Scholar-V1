@@ -3,6 +3,34 @@ import { MAX_EBOOK_PAGES, MAX_EBOOK_TEXT } from "@/lib/ebooks/contracts";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 type PdfCheckpoint = { pages: string[]; pageCount: number };
+
+/** Render only an owner-authorized page; no external assets or active PDF scripts. */
+export async function renderPdfPage(bytes: Uint8Array, number: number): Promise<Buffer> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const assets = dirname(createRequire(import.meta.url).resolve("pdfjs-dist/package.json"));
+  const assetDirectory = (name: string) => join(assets, name).replace(/\\/g, "/") + "/";
+  const task = pdfjs.getDocument({ data: Uint8Array.from(bytes), stopAtErrors: true, useWorkerFetch: false, verbosity: 0, standardFontDataUrl: assetDirectory("standard_fonts"), cMapUrl: assetDirectory("cmaps"), cMapPacked: true, wasmUrl: assetDirectory("wasm") });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([(async () => {
+      const document = await task.promise;
+      if (document.numPages > MAX_EBOOK_PAGES || !Number.isInteger(number) || number < 1 || number > document.numPages) throw new Error("INVALID_PAGE");
+      if (await document.hasJSActions()) throw new Error("PDF_ACTIVE_CONTENT");
+      const page = await document.getPage(number);
+      const original = page.getViewport({ scale: 1 });
+      const scale = Math.min(2200 / Math.max(original.width, original.height), 3);
+      const viewport = page.getViewport({ scale });
+      if (!Number.isFinite(viewport.width * viewport.height) || viewport.width < 1 || viewport.height < 1) throw new Error("PDF_CORRUPT");
+      type NativeCanvas = { canvas: HTMLCanvasElement & { toBuffer(type: "image/png"): Buffer }; context: CanvasRenderingContext2D };
+      const factory = document.canvasFactory as { create(width: number, height: number): NativeCanvas; destroy(canvas: NativeCanvas): void };
+      const canvas = factory.create(Math.ceil(viewport.width), Math.ceil(viewport.height));
+      try {
+        await page.render({ canvas: canvas.canvas, canvasContext: canvas.context, viewport }).promise;
+        return canvas.canvas.toBuffer("image/png") as Buffer;
+      } finally { factory.destroy(canvas); page.cleanup(); }
+    })(), new Promise<never>((_, reject) => { timer = setTimeout(() => { reject(new Error("PDF_TIMEOUT")); void task.destroy().catch(() => undefined); }, 12_000); })]);
+  } finally { if (timer) clearTimeout(timer); await task.destroy().catch(() => undefined); }
+}
 /** Bounded original PDF adapter shared with Custom E-Books; never fetches external assets. */
 export async function extractPdf(bytes: Uint8Array, options?: { pages?: string[]; batchSize?: number; checkpoint?: (value: PdfCheckpoint) => Promise<void> }) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");

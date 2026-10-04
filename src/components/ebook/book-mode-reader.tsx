@@ -89,7 +89,7 @@ type BookModeReaderProps = {
   currentPage: number;
   totalPages: number;
   imageUrl: (page: number, source: "scan" | "text") => string;
-  renderPage?: (page: number) => ReactNode;
+  renderPage?: (page: number, fit: "page" | "width") => ReactNode;
   chapters: BookModeChapter[];
   searchPages: BookModeSearchPage[];
   searchAvailable?: boolean;
@@ -717,7 +717,7 @@ export function BookModeReader({
                 width: pageWidth,
               }}
             >
-              {renderPage ? renderPage(pageNumber) : <img
+              {renderPage ? renderPage(pageNumber, fit) : <img
                 src={imageUrl(pageNumber, source)}
                 alt={`${title} page ${pageNumber}`}
                 draggable={false}
@@ -759,7 +759,7 @@ export function BookModeReader({
                         : "right center",
                   }}
                 >
-                  {renderPage ? renderPage(currentPage) : <img
+                  {renderPage ? renderPage(currentPage, fit) : <img
                     src={imageUrl(currentPage, source)}
                     alt=""
                     className="max-h-[calc(100dvh-8rem)] w-auto rounded-lg bg-white shadow-[0_18px_60px_rgba(0,0,0,.7)]"

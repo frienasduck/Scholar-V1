@@ -37,7 +37,7 @@ export const useMusicStore = create<MusicState>((set, get) => {
   const history = (track: MusicTrack) => editLibrary(lib => ({ ...lib, history: [{ id: track.id, at: Date.now() }, ...lib.history.filter(h => h.id !== track.id)].slice(0, 30) }));
   const selectIndex = (index: number) => {
     const s = get(), track = s.queue[index]; if (!track) return;
-    set({ queueIndex: index, currentTrack: track, currentTime: 0, duration: 0, seekRequest: { time: 0, nonce: 0 }, isPlaying: true, widgetMinimized: false, widgetVisible: true, error: null, playNonce: s.playNonce + 1 }); history(track);
+    set({ queueIndex: index, currentTrack: track, currentTime: 0, duration: 0, seekRequest: { time: 0, nonce: 0 }, isPlaying: true, widgetMinimized: false, widgetExpanded: false, widgetVisible: true, error: null, buffering: false, playNonce: s.playNonce + 1 }); history(track);
   };
   return {
     ...musicDefaults(), owner: "", hydrated: false, library: emptyLibrary(), libraryVersion: 0, syncStatus: "local", cloudRevision: 0,
@@ -45,9 +45,9 @@ export const useMusicStore = create<MusicState>((set, get) => {
       track = cleanTrack(track);
       const queue = (supplied?.length ? supplied : [track]).slice(0, 200).map(cleanTrack);
       if (!queue.some(t => t.id === track.id)) { queue.unshift(track); queue.length = Math.min(queue.length, 200); }
-      set({ queue, queueIndex: queue.findIndex(t => t.id === track.id), currentTrack: track, currentTime: 0, duration: 0, seekRequest: { time: 0, nonce: 0 }, isPlaying: true, widgetVisible: true, widgetMinimized: false, error: null, playedIndices: [], playNonce: get().playNonce + 1 }); history(track);
+      set({ queue, queueIndex: queue.findIndex(t => t.id === track.id), currentTrack: track, currentTime: 0, duration: 0, seekRequest: { time: 0, nonce: 0 }, isPlaying: true, widgetVisible: true, widgetMinimized: false, widgetExpanded: false, error: null, buffering: false, playedIndices: [], playNonce: get().playNonce + 1 }); history(track);
     },
-    togglePlay: () => set(s => ({ isPlaying: !!s.currentTrack && !s.isPlaying, widgetMinimized: false, widgetVisible: !!s.currentTrack, playNonce: s.playNonce + 1 })),
+    togglePlay: () => set(s => ({ isPlaying: !!s.currentTrack && !s.isPlaying, widgetVisible: !!s.currentTrack, playNonce: s.playNonce + 1 })),
     setPlaying: isPlaying => set({ isPlaying }), setCurrentTime: currentTime => set({ currentTime: Number.isFinite(currentTime) ? Math.max(0, Math.min(604800, currentTime)) : 0 }), setDuration: duration => set({ duration: Number.isFinite(duration) && duration > 0 && duration <= 604800 ? duration : 0 }),
     setVolume: volume => set({ volume: Math.min(100, Math.max(0, volume)), muted: volume <= 0 }), toggleMute: () => set(s => ({ muted: !s.muted })),
     next(ended = false) {
@@ -99,7 +99,7 @@ export const useMusicStore = create<MusicState>((set, get) => {
     removePlaylist: id => editLibrary(lib => ({ ...lib, playlists: lib.playlists.filter(p => p.id !== id) })),
     playlistAdd: (id, trackId) => editLibrary(lib => ({ ...lib, playlists: lib.playlists.map(p => p.id === id && !p.trackIds.includes(trackId) ? { ...p, trackIds: [...p.trackIds, trackId].slice(0, 200) } : p) })),
     playlistRemove: (id, trackId) => editLibrary(lib => ({ ...lib, playlists: lib.playlists.map(p => p.id === id ? { ...p, trackIds: p.trackIds.filter(t => t !== trackId) } : p) })),
-    setDrawer: drawer => set({ drawer }), setAmbience: (key, value) => set(s => ({ ambience: { ...s.ambience, [key]: Math.max(0, Math.min(100, value)) } })), toggleAmbience: () => set(s => ({ ambienceEnabled: !s.ambienceEnabled })),
+    setDrawer: drawer => set(s => ({ drawer, ...(drawer && s.currentTrack?.mediaSource === "YOUTUBE_VIDEO_SOURCE" ? { isPlaying: false } : {}) })), setAmbience: (key, value) => set(s => ({ ambience: { ...s.ambience, [key]: Math.max(0, Math.min(100, value)) } })), toggleAmbience: () => set(s => ({ ambienceEnabled: !s.ambienceEnabled })),
     startFocus(minutes, breakMinutes, context = {}) {
       const now = Date.now(), studySeconds = Math.max(60, Math.min(10800, Math.round(minutes * 60))), breakSeconds = Math.max(0, Math.min(3600, Math.round(breakMinutes * 60)));
       set({ focus: { id: crypto.randomUUID(), goal: (context.goal ?? "Focused study").slice(0, 180), subject: (context.subject ?? "").slice(0, 80), chapter: (context.chapter ?? "").slice(0, 120), studySeconds, breakSeconds, phase: "study", deadline: now + studySeconds * 1000, remaining: studySeconds, paused: false, startedAt: now, music: get().currentTrack?.title ?? "Native ambience / silence", pauseMusicOnBreak: !!context.pauseMusicOnBreak, recorded: false } });

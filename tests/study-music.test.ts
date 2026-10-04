@@ -1,6 +1,8 @@
 import { beforeEach, expect, test } from "bun:test";
 import { useMusicStore, musicDefaults } from "../src/lib/music-store";
-import { emptyLibrary, parseYouTubeUrl, thumbnailCandidates, librarySchema, mergeLibraries } from "../src/lib/study-music/model";
+import { emptyLibrary, parseYouTubeUrl, thumbnailCandidates, librarySchema, mergeLibraries, cleanTrack } from "../src/lib/study-music/model";
+import { NATIVE_AUDIO_CATALOG, createTextureWav } from "../src/lib/study-music/native-audio";
+import { sourcePlaybackAllowed } from "../src/lib/study-music/source-visibility";
 import { MUSIC_CATALOG, buildSoundtrack } from "../src/lib/study-music/catalog";
 import { clampPosition, normalizePosition, restorePosition, snapPosition } from "../src/lib/study-music/position";
 import { advanceFocus, focusRemaining, toggleFocusPause, type FocusSession } from "../src/lib/study-music/focus";
@@ -8,6 +10,54 @@ import { persistMusic, restoreMusic, musicStorageKey } from "../src/lib/study-mu
 import { youtubeVideoRequest } from "../src/lib/study-music/youtube-player";
 
 const [a,b,c] = MUSIC_CATALOG;
+test("legacy YouTube imports migrate without losing title, attribution or identity", () => {
+  const legacy = { ...a, mediaSource: undefined };
+  expect(cleanTrack(legacy).mediaSource).toBe("YOUTUBE_VIDEO_SOURCE");
+  expect(cleanTrack(legacy).artist).toBe(a.artist);
+});
+test("native audio is explicitly original and supports mixed playlists, history and favorites", () => {
+  const native = NATIVE_AUDIO_CATALOG[0];
+  expect(cleanTrack(native).mediaSource).toBe("AUDIO_SOURCE");
+  expect(thumbnailCandidates(native.id)).toEqual([]);
+  expect(librarySchema.safeParse({ ...emptyLibrary(), songs: [a, native], favorites: [native.id], history: [{ id: native.id, at: 1 }], playlists: [{ id: "p", name: "Focus", trackIds: [a.id, native.id] }] }).success).toBe(true);
+  expect(() => cleanTrack({ ...native, id: "audio:unknown" })).toThrow();
+  expect(() => cleanTrack({ ...native, texture: "ocean" })).toThrow();
+  expect(() => cleanTrack({ ...native, provenance: "youtube-extracted" })).toThrow();
+});
+test("native audio loops are real, bounded PCM audio without external media", () => {
+  for (const texture of ["rain", "brown", "white", "ocean"] as const) {
+    const wav = createTextureWav(texture), bytes = new DataView(wav);
+    expect(new TextDecoder().decode(wav.slice(0, 4))).toBe("RIFF");
+    expect(new TextDecoder().decode(wav.slice(8, 12))).toBe("WAVE");
+    expect(bytes.getUint32(24, true)).toBe(22050);
+    expect(wav.byteLength).toBe(44 + 22050 * 16 * 2);
+    expect([...new Int16Array(wav.slice(44, 2044))].some(sample => sample !== 0)).toBe(true);
+  }
+});
+test("YouTube source requires minimum usable size, majority visibility and no covering overlay", () => {
+  const rect = { width: 320, height: 200, top: 60, left: 0, right: 320, bottom: 260 }, viewport = { width: 390, height: 844 };
+  expect(sourcePlaybackAllowed(rect, viewport, true)).toBe(true);
+  expect(sourcePlaybackAllowed({ ...rect, height: 199 }, viewport, true)).toBe(false);
+  expect(sourcePlaybackAllowed({ ...rect, width: 199 }, viewport, true)).toBe(false);
+  expect(sourcePlaybackAllowed(rect, viewport, false)).toBe(false);
+  expect(sourcePlaybackAllowed({ ...rect, top: 654, bottom: 854 }, viewport, true)).toBe(false);
+  expect(sourcePlaybackAllowed({ ...rect, top: 744, bottom: 944 }, viewport, true)).toBe(false);
+});
+test("video expansion and minimization preserve the track, playback and playhead", () => {
+  const s = useMusicStore.getState(); s.playTrack(a); s.setCurrentTime(42); s.toggleExpand();
+  expect(useMusicStore.getState().widgetExpanded).toBe(true); s.toggleExpand(); s.toggleMinimize();
+  expect(useMusicStore.getState().currentTime).toBe(42); expect(useMusicStore.getState().isPlaying).toBe(true);
+  s.togglePlay(); expect(useMusicStore.getState().widgetMinimized).toBe(true);
+});
+test("covering music tools pause YouTube but retain native background audio", () => {
+  const s = useMusicStore.getState(); s.playTrack(a); s.setDrawer("queue"); expect(useMusicStore.getState().isPlaying).toBe(false);
+  s.setDrawer(null); expect(useMusicStore.getState().isPlaying).toBe(false);
+  s.playTrack(NATIVE_AUDIO_CATALOG[0]); s.setDrawer("mixer"); expect(useMusicStore.getState().isPlaying).toBe(true);
+});
+test("switching media sources clears old buffering and expanded-video state", () => {
+  const s = useMusicStore.getState(); s.playTrack(a); s.setBuffering(true); s.toggleExpand(); s.playTrack(NATIVE_AUDIO_CATALOG[0]);
+  expect(useMusicStore.getState().buffering).toBe(false); expect(useMusicStore.getState().widgetExpanded).toBe(false);
+});
 beforeEach(() => useMusicStore.setState({ ...musicDefaults(), library: emptyLibrary(), libraryVersion: 0, owner: "guest", hydrated: true, cloudRevision: 0, syncStatus: "local" }));
 test("supported video links become one canonical identity, with playlist parameters ignored", () => {
   for (const url of [`https://www.youtube.com/watch?v=${a.id}&list=anything`, `https://youtu.be/${a.id}?si=anything`, `https://music.youtube.com/watch?v=${a.id}`, `https://m.youtube.com/shorts/${a.id}`, `https://youtube.com/embed/${a.id}`]) expect(parseYouTubeUrl(url)).toEqual({ id: a.id, url: `https://www.youtube.com/watch?v=${a.id}` });

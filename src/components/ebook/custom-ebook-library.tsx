@@ -16,12 +16,12 @@ import { profileRemoveItem } from "@/lib/profile-storage";
 type EbookSummary = { id: string; title: string; originalFileName: string; sizeBytes: number; pageCount: number; lastPage?: number; lastOpenedAt?: string; processingStatus: string; createdAt: string; resource?: { id: string; state: string; extractedPages?: number; job?: { stage: string; errorCode?: string } } };
 type Usage = { used: number; limit: number; remaining: number };
 
-export function CustomEbookLibrary() {
+export function CustomEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook) => void }) {
   const identity = useStore(s => s.authed && !s.guestMode ? s.user.email || s.user.username : "guest");
-  return <AccountEbookLibrary key={identity}/>;
+  return <AccountEbookLibrary key={identity} onOpenBook={onOpenBook}/>;
 }
 
-function AccountEbookLibrary() {
+function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook) => void }) {
   const access = useScholarAccess();
   const guestTrigger = useRef<HTMLButtonElement>(null);
   const mounted = useRef(true);
@@ -99,10 +99,11 @@ function AccountEbookLibrary() {
     if (!response.ok) return toast.error("This E-Book could not be opened.");
     const value = await response.json();
     if (!mounted.current) return;
-    setActive({ ...ebook, ...value.ebook });
+    if (onOpenBook) onOpenBook({ ...ebook, ...value.ebook });
+    else setActive({ ...ebook, ...value.ebook });
     const url = new URL(location.href); url.searchParams.set("book", ebook.id); history.replaceState(null, "", url);
     } catch { if (mounted.current) toast.error("This E-Book could not be opened. Please retry."); }
-  },[]);
+  },[onOpenBook]);
 
   useEffect(()=>{
     try{
@@ -116,7 +117,7 @@ function AccountEbookLibrary() {
     return <>
       <section className="eb-glass mb-6 rounded-2xl p-4 sm:p-5"><div className="flex items-start gap-3"><LockKeyhole className="mt-0.5 h-5 w-5 text-cyan-200" /><div><h2 className="font-semibold text-white">Upload your own E-Book</h2><p className="mt-1 text-sm leading-6 text-white/55">Sign in to securely upload private PDFs. Guest files are not sent to the server.</p><button ref={guestTrigger} className="sg-cta-quiet mt-3 min-h-11 rounded-xl px-4 text-sm" onClick={() => setGuestPrompt(true)}>Sign in to upload</button></div></div></section>
       <Dialog open={guestPrompt} onOpenChange={setGuestPrompt}>
-        <DialogContent onCloseAutoFocus={event => { event.preventDefault(); guestTrigger.current?.focus(); }} className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-5xl overflow-y-auto border-white/10 bg-black p-0 sm:max-w-5xl">
+        <DialogContent aria-describedby={undefined} onCloseAutoFocus={event => { event.preventDefault(); guestTrigger.current?.focus(); }} className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-5xl overflow-y-auto border-white/10 bg-black p-0 sm:max-w-5xl">
           <DialogTitle className="sr-only">Sign in for private E-Books</DialogTitle>
           <GuestFeatureGate onSignIn={() => useStore.getState().setAuthed(false)} onBack={() => setGuestPrompt(false)} />
         </DialogContent>

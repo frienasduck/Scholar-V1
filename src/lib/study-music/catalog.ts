@@ -2,8 +2,8 @@ import type { MusicTrack } from "./model";
 
 // Official YouTube oEmbed verified 2026-10-03. Durations are unknown unless the
 // source description specifies one; runtime obtains the actual player duration.
-const entry = (id: string, title: string, artist: string, category: string, tags: string[], durationSeconds: number | null = null): MusicTrack => ({ id, title, artist, category, tags, durationSeconds, thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, source: "catalog" });
-export const MUSIC_CATALOG: MusicTrack[] = [
+const entry = (id: string, title: string, artist: string, category: string, tags: string[], durationSeconds: number | null = null): Extract<MusicTrack, { mediaSource: "YOUTUBE_VIDEO_SOURCE" }> => ({ id, title, artist, category, tags, durationSeconds, thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, source: "catalog", mediaSource: "YOUTUBE_VIDEO_SOURCE" });
+export const MUSIC_CATALOG: ReturnType<typeof entry>[] = [
   entry("jfKfPfyJRdk", "lofi hip hop radio · beats to relax/study to", "Lofi Girl", "Lo-fi", ["focus", "no lyrics", "radio"]),
   entry("7NOSDKb0HlU", "lofi hip hop radio · beats to study/relax to", "Chillhop Music", "Lo-fi", ["focus", "no lyrics", "radio"]),
   entry("MVPTGNGiI-4", "synthwave radio · beats to chill/game to", "Lofi Girl", "Deep focus", ["energetic", "no lyrics", "radio"]),

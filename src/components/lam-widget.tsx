@@ -199,7 +199,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     currentRoute: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/",
     subjectTitle: settings.lamPageContext === false || !prefs.currentScreenContext ? undefined : runtimeContext.subjectTitle ?? subject,
     chapterTitle: settings.lamPageContext === false || !prefs.currentScreenContext ? undefined : runtimeContext.chapterTitle ?? chapter,
-    ebookTitle: settings.lamPageContext === false || !prefs.currentScreenContext ? undefined : runtimeContext.ebookTitle ?? ((currentView === "ebook") ? "Mathematics Part 1" : undefined),
+    ebookTitle: settings.lamPageContext === false || !prefs.currentScreenContext ? undefined : runtimeContext.ebookTitle,
     sourcePageNumber: settings.lamPageContext === false || !prefs.currentScreenContext ? undefined : runtimeContext.sourcePageNumber,
     selectedQuestionId: settings.lamPageContext === false || !prefs.currentScreenContext ? undefined : runtimeContext.selectedQuestionId,
     selectedText: settings.lamSelectedText === false ? undefined : selectedText || undefined,
@@ -321,7 +321,8 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   useEffect(() => {
     const openLam = (event: Event) => {
       const detail = (event as CustomEvent<{ prompt?: string; context?: LamRuntimeContext }>).detail;
-      if (detail?.context) setRuntimeContext((previous) => ({ ...previous, ...detail.context }));
+      // Start from the active reader, not the previously-opened book's IDs/text.
+      if (detail?.context) setRuntimeContext({ ...getLamPageContext(), ...detail.context });
       if (detail?.prompt) setInput(detail.prompt);
       setOpen(true);
     };

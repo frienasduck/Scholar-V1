@@ -1,12 +1,10 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { tmpdir } from "node:os";
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
-import { createWorker } from "tesseract.js";
+import { recognizePageImage } from "@/lib/ebooks/ocr";
+import { mutationOrigin } from "@/lib/resources/http";
 import { requireEntitlement } from "@/lib/subscriptions/entitlements";
-import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
+import { readBoundedBytes, readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 import { enforceRateLimit, RateLimitError, requestRateLimitKey } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
@@ -14,13 +12,7 @@ export const maxDuration = 60;
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const MAX_JSON_BYTES = 2 * 1024;
-const OCR_TIMEOUT_MS = 45_000;
 const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
-const activeJobs = new Map<string, Promise<OcrResult>>();
-let sharedWorker: Awaited<ReturnType<typeof createWorker>> | null = null;
-let workerPromise: ReturnType<typeof createWorker> | null = null;
-
-type OcrResult = { text: string; confidence: number };
 
 function errorResponse(status: number, code: string, error: string) {
   return NextResponse.json({ ok: false, code, error }, { status });
@@ -30,11 +22,11 @@ async function pageImage(body: unknown): Promise<Buffer> {
   if (!body || typeof body !== "object") throw new Error("INVALID_REQUEST");
   const { page, bookId } = body as { page?: unknown; bookId?: unknown };
   if (!Number.isInteger(page) || (page as number) < 1) throw new Error("INVALID_PAGE");
-  if (bookId !== "physics-pt1" && bookId !== "maths-pt1") throw new Error("INVALID_BOOK");
+  if (bookId !== "physics-pt1" && bookId !== "maths-pt1" && bookId !== "chemistry-pt1") throw new Error("INVALID_BOOK");
 
-  const maxPage = bookId === "maths-pt1" ? 37 : 96;
+  const maxPage = bookId === "maths-pt1" ? 37 : bookId === "chemistry-pt1" ? 60 : 96;
   if ((page as number) > maxPage) throw new Error("INVALID_PAGE");
-  const pageDir = bookId === "maths-pt1" ? "ebook-pages-maths" : "ebook-pages";
+  const pageDir = bookId === "maths-pt1" ? "ebook-pages-maths" : bookId === "chemistry-pt1" ? "ebook-pages-chemistry" : "ebook-pages";
   const imagePath = path.join(
     process.cwd(),
     "public",
@@ -51,7 +43,8 @@ async function pageImage(body: unknown): Promise<Buffer> {
 async function requestImage(request: NextRequest): Promise<{ source: Buffer; homeworkScanner: boolean }> {
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
-    const form = await request.formData();
+    const bytes = await readBoundedBytes(request, MAX_UPLOAD_BYTES + 16_384);
+    const form = await new Response(bytes, { headers: { "Content-Type": contentType } }).formData();
     if (form.get("feature") !== "homework_scanner") throw new Error("FEATURE_REQUIRED");
     const file = form.get("file");
     if (!(file instanceof File)) throw new Error("FILE_REQUIRED");
@@ -65,40 +58,8 @@ async function requestImage(request: NextRequest): Promise<{ source: Buffer; hom
   return { source: await pageImage(await readBoundedJson(request, MAX_JSON_BYTES)), homeworkScanner: false };
 }
 
-async function runOcr(source: Buffer): Promise<OcrResult> {
-  let expired = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const work = async () => {
-    const prepared = await sharp(source, { failOn: "error", limitInputPixels: 40_000_000 })
-      .rotate().grayscale().normalize().sharpen({ sigma: 0.8 })
-      .resize({ width: 2200, withoutEnlargement: true }).png().toBuffer();
-    if (expired) throw new Error("OCR_TIMEOUT");
-    if (!workerPromise) {
-      workerPromise = createWorker("eng", undefined, {
-        workerPath: path.join(process.cwd(), "node_modules", "tesseract.js", "src", "worker-script", "node", "index.js"),
-        cachePath: tmpdir(),
-        errorHandler: () => { sharedWorker = null; workerPromise = null; },
-      }).catch(error => { workerPromise = null; throw error; });
-    }
-    const worker = sharedWorker ?? await workerPromise;
-    if (expired) { void worker.terminate().catch(() => undefined); throw new Error("OCR_TIMEOUT"); }
-    sharedWorker = worker;
-    const result = await worker.recognize(prepared);
-    return { text: result.data.text.trim(), confidence: Math.max(0, Math.min(100, Math.round(result.data.confidence))) };
-  };
-  try {
-    return await Promise.race([
-      work(),
-      new Promise<never>((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error("OCR_TIMEOUT")); }, OCR_TIMEOUT_MS); }),
-    ]);
-  } catch (error) {
-    if (sharedWorker) void sharedWorker.terminate().catch(() => undefined);
-    sharedWorker = null; workerPromise = null;
-    throw error;
-  } finally { if (timer) clearTimeout(timer); }
-}
-
 export async function POST(request: NextRequest) {
+  if (!mutationOrigin(request)) return errorResponse(403, "ORIGIN_REJECTED", "Open OCR from Scholar.");
   try {
     await enforceRateLimit(requestRateLimitKey(request, "ocr-ip"), "ocr", 15, 10 * 60_000);
     const input = await requestImage(request);
@@ -106,15 +67,7 @@ export async function POST(request: NextRequest) {
       const access = await requireEntitlement("homework_scanner");
       if (!access.ok) return access.response;
     }
-    const source = input.source;
-    const jobId = createHash("sha256").update(source).digest("hex");
-    let job = activeJobs.get(jobId);
-    if (!job) {
-      if (activeJobs.size > 0) return errorResponse(429, "OCR_BUSY", "Another page is being read. Please retry in a moment.");
-      job = runOcr(source).finally(() => activeJobs.delete(jobId));
-      activeJobs.set(jobId, job);
-    }
-    const result = await job;
+    const result = await recognizePageImage(input.source);
     if (!result.text) {
       return errorResponse(422, "NO_TEXT", "No readable text was found. Try a sharper, well-lit image with the page filling the frame.");
     }
@@ -131,6 +84,8 @@ export async function POST(request: NextRequest) {
     }
     const code = error instanceof Error ? error.message : "OCR_FAILED";
     const known: Record<string, [number, string]> = {
+      OCR_BUSY: [429, "Another page is being read. Please retry in a moment."],
+      NO_TEXT: [422, "No readable text was found. Try a sharper scan or type the page text for review."],
       FILE_REQUIRED: [400, "Choose an image before starting OCR."],
       EMPTY_FILE: [400, "The selected file is empty."],
       FILE_TOO_LARGE: [413, "The image is larger than 10 MB. Compress or crop it and try again."],
@@ -144,6 +99,10 @@ export async function POST(request: NextRequest) {
       PAGE_NOT_FOUND: [404, "The page image could not be found."],
       OCR_TIMEOUT: [504, "OCR took too long. Crop the image to the text area and try again."],
     };
+    if (!known[code]) {
+      console.warn("[OCR] request failed", { type: error instanceof Error ? error.name : "UNKNOWN", code: typeof error === "object" && error && "code" in error ? String(error.code) : "OCR_FAILED" });
+      return errorResponse(503, "OCR_UNAVAILABLE", "OCR is temporarily unavailable. Check the server database and OCR configuration, then retry. No text has been saved.");
+    }
     const [status, message] = known[code] ?? [500, "The image could not be read. Try a clearer PNG or JPEG, then retry."];
     return errorResponse(status, known[code] ? code : "OCR_FAILED", message);
   }

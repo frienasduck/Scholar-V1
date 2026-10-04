@@ -9,6 +9,10 @@ import { EMPTY_READING, type EbookReading } from "@/lib/ebooks/contracts";
 import { useUploadedBookState } from "./uploaded-book-state";
 import { useStore } from "@/lib/store";
 import { Markdown } from "@/lib/shared";
+import { PageReaderShell } from "./page-reader-shell";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/lib/notifications/notification-api";
+import { pdfPageScale } from "@/lib/ebooks/page-layout";
 
 export type UploadedBook = { id: string; resourceId?: string; title: string; originalFileName: string; pageCount: number; readingState: EbookReading; outline?: { title: string; page: number }[]; processingStatus: string };
 type Question = { question: string; options: string[]; correctAnswer: number | string; explanation: string };
@@ -22,6 +26,13 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
   const [kind, setKind] = useState("mcq"); const [rangeEnd, setRangeEnd] = useState(page); const [written, setWritten] = useState<{ question: string; modelAnswer?: string } | null>(null); const [revealed, setRevealed] = useState(false); const [summary, setSummary] = useState("");
   const [question, setQuestion] = useState<Question | null>(null); const [answer, setAnswer] = useState<number | null>(null); const [busy, setBusy] = useState(false);
   const questionRequest = useRef<AbortController | null>(null);
+  const [bookMode, setBookMode] = useState(false);
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const [ocrDraft, setOcrDraft] = useState("");
+  const [ocrStatus, setOcrStatus] = useState("");
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const ocrRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => ocrRequest.current?.abort(), [book.id, page]);
   useEffect(() => () => questionRequest.current?.abort(), [page]);
   const text = pageText?.page === page ? pageText.text.trim() : "";
   useEffect(() => {
@@ -36,7 +47,30 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
     void import("pdfjs-dist").then(async pdfjs => { if (disposed) return; pdfjs.GlobalWorkerOptions.workerSrc = `/api/group-study/pdf-worker?v=${pdfjs.version}`; task = pdfjs.getDocument({ url: `/api/ebooks/${encodeURIComponent(book.id)}?file=1`, withCredentials: true }); const document = await task.promise; if (!disposed) setPdf(document); }).catch(() => { if (!disposed) setPdfError("The PDF could not be rendered. Try reopening the book."); });
     return () => { disposed = true; void task?.destroy().catch(() => undefined); };
   }, [book.id]);
-  const ask = () => window.dispatchEvent(new CustomEvent("scholar:open-lam", { detail: { prompt: `Explain page ${page} of my uploaded book “${book.title}”. Cite the book's actual page content and say if anything is missing.`, context: { ebookTitle: book.title, activeFileId: book.id, activeFileName: book.originalFileName, sourcePageNumber: page } } }));
+  const ask = () => {
+    if (!text) { setOcrDraft(""); setOcrOpen(true); setOcrStatus("Extract and review this scanned page first. LAM won't invent missing book content."); return; }
+    const context = { ebookTitle: book.title, activeFileId: book.id, activeFileName: book.originalFileName, sourcePageNumber: page, visibleText: text.slice(0, 8000) };
+    setLamPageContext(context);
+    window.dispatchEvent(new CustomEvent("scholar:open-lam", { detail: { prompt: `Explain page ${page} of my uploaded book “${book.title}”. Cite the book's actual page content and say if anything is missing.`, context } }));
+  };
+  const runOCR = async (save = false) => {
+    if (ocrBusy) return;
+    const controller = new AbortController(); ocrRequest.current = controller;
+    const timer = setTimeout(() => controller.abort(), 58_000);
+    setOcrBusy(true); setOcrStatus(save ? "Saving and indexing reviewed text…" : "Reading this PDF page… This can take up to a minute.");
+    try {
+      const response = await fetch(`/api/ebooks/${encodeURIComponent(book.id)}/ocr`, { method: save ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ page, ...(save ? { text: ocrDraft } : {}) }), signal: controller.signal });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.message || "OCR is unavailable. Retry shortly.");
+      if (controller.signal.aborted) return;
+      if (save) {
+        setPageText({ page, text: result.text, error: "" });
+        setOcrOpen(false);
+        toast.success("Page text saved", { description: "LAM, search and study tools can now read this page." });
+      } else { setOcrDraft(result.text); setOcrStatus(`OCR confidence: ${result.confidence}%. Check formulas, symbols and question numbering against the scan, then save.`); }
+    } catch (error) { if (!controller.signal.aborted) setOcrStatus(error instanceof Error ? error.message : "OCR failed. No text was saved."); else setOcrStatus("OCR was interrupted. Retry; no text was saved."); }
+    finally { clearTimeout(timer); if (ocrRequest.current === controller) setOcrBusy(false); }
+  };
   const onSearch = useCallback(async (query: string, signal: AbortSignal) => {
     if (query.trim().length < 2) return [];
     const response = await fetch(`/api/ebooks/${encodeURIComponent(book.id)}?q=${encodeURIComponent(query.trim())}`, { signal, cache: "no-store" });
@@ -69,20 +103,14 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
     } catch { if (!controller.signal.aborted) setError("The page question could not be generated. Please retry; no question is claimed to be ready."); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   };
-  return <BookModeReader
-    open title={book.title} subject="Your private E-Book" source="scan" currentPage={page} totalPages={book.pageCount}
-    imageUrl={() => ""} renderPage={number => <UploadedPage key={number} pdf={pdf} page={number} error={pdfError} />}
-    chapters={(book.outline ?? []).map((item, i) => ({ id: String(i), title: item.title, scanPage: item.page, textPage: item.page }))} searchPages={[]} searchAvailable onSearch={onSearch}
-    bookmarks={bookmarks} onClose={onClose}
-    onPageChange={next => { questionRequest.current?.abort(); setBusy(false); update({ page: next }); setRangeEnd(next); setQuestion(null); setWritten(null); setSummary(""); setAnswer(null); setError(""); }}
-    onToggleBookmark={number => update({ bookmark: { page: number, remove: bookmarks.some(item => item.page === number) } })}
-    onBookmarkNote={(number, note) => update({ bookmark: { page: number, note } })}
-    questions={<div className="space-y-4 text-sm">
+  const changePage = (next: number) => { questionRequest.current?.abort(); ocrRequest.current?.abort(); setOcrOpen(false); setOcrBusy(false); setBusy(false); update({ page: next }); setRangeEnd(next); setQuestion(null); setWritten(null); setSummary(""); setAnswer(null); setError(""); };
+  const toggleBookmark = (number: number) => update({ bookmark: { page: number, remove: bookmarks.some(item => item.page === number) } });
+  const tools = <div className="space-y-4 text-sm">
       <p>Study page {page}</p>
       <p role="status" className="text-xs text-cyan-100">{sync} {(sync.includes("failed") || sync.includes("Not saved")) && <button className="underline" onClick={() => void flush()}>Retry saving</button>}</p>
-      {pageText?.page !== page ? <p role="status">Loading this page's text…</p> : !text && <p className="text-amber-200">{pageText.error || "No reliable text is available on this page. Read the original scan; text-based tools require OCR, which has not been performed."}</p>}
+      {pageText?.page !== page ? <p role="status">Loading this page's text…</p> : !text && <p className="text-amber-200">{pageText.error || "This page is scanned. Use Extract text (OCR), review the result and save it to enable page-based study tools."}</p>}
       <label className="block">Your page note<textarea key={page} aria-label={`Note for page ${page}`} value={state.notes.find(n => n.page === page)?.text ?? ""} maxLength={4000} rows={4} className="mt-2 block w-full rounded-xl border border-white/15 bg-white/5 p-3" onChange={event => update({ note: { page, text: event.target.value } })} /></label>
-      <button disabled={!text} className="sg-cta-primary min-h-11 rounded-xl px-4 disabled:opacity-50" onClick={ask}>Ask LAM about this page</button>
+      <button className="sg-cta-primary min-h-11 rounded-xl px-4" onClick={ask}>Ask LAM about this page</button>
       <label className="block">Through page <input disabled={busy} aria-label="Last study page" type="number" min={page} max={Math.min(page + 24, book.pageCount)} value={rangeEnd} onChange={event => { setRangeEnd(Number(event.target.value)); setQuestion(null); setWritten(null); setSummary(""); }} className="w-20 rounded-lg border border-white/20 bg-white/5 p-2" /></label>
       <label className="block">Practice format <select disabled={busy} aria-label="Practice format" value={kind} onChange={event => { setKind(event.target.value); setQuestion(null); setWritten(null); }} className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-900 p-3"><option value="mcq">MCQ</option><option value="short">Short answer / numerical</option><option value="long">Written answer</option><option value="mixed">Mixed practice</option></select></label>
       <button disabled={!text || busy} className="sg-cta-quiet min-h-11 rounded-xl px-4 disabled:opacity-50" onClick={() => void generate()}>{busy ? "Generating…" : "Practice this page"}</button>
@@ -96,14 +124,18 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
         {answer !== null && <div role="status"><p>{answer === question.correctAnswer ? "Correct." : "Review the explanation."}</p><Markdown content={question.explanation} /></div>}
       </div>}
       <a className="block min-h-11 underline" target="_blank" rel="noreferrer" href={`/api/ebooks/${encodeURIComponent(book.id)}?file=1`}>Open original PDF</a>
-    </div>}
-  />;
+    </div>;
+  return <>
+    <PageReaderShell title={book.title} page={page} totalPages={book.pageCount} chapters={book.outline ?? []} status={sync} textReady={!!text} bookmarked={bookmarks.some(item => item.page === page)} tools={tools} onClose={onClose} onPage={changePage} onBookmark={() => toggleBookmark(page)} onAsk={ask} onOCR={() => { setOcrDraft(text); setOcrStatus(""); setOcrOpen(true); }} onBookMode={() => setBookMode(true)} onSearch={onSearch} renderPage={() => !bookMode && <UploadedPage key={page} pdf={pdf} page={page} error={pdfError} fit="width" />} />
+    {bookMode && <BookModeReader open title={book.title} subject="Your private E-Book" source="scan" currentPage={page} totalPages={book.pageCount} imageUrl={() => ""} renderPage={(number, fit) => <UploadedPage key={number} pdf={pdf} page={number} error={pdfError} fit={fit} />} chapters={(book.outline ?? []).map((item, i) => ({ id: String(i), title: item.title, scanPage: item.page, textPage: item.page }))} searchPages={[]} searchAvailable onSearch={onSearch} bookmarks={bookmarks} onClose={() => setBookMode(false)} onPageChange={changePage} onToggleBookmark={toggleBookmark} onBookmarkNote={(number, note) => update({ bookmark: { page: number, note } })} questions={tools} />}
+    <Dialog open={ocrOpen} onOpenChange={open => { if (!ocrBusy) setOcrOpen(open); }}><DialogContent className="max-h-[90dvh] overflow-y-auto border-white/15 bg-[#10131e] text-white"><DialogTitle>Extract text — page {page}</DialogTitle><DialogDescription>Review the actual page text before saving. English OCR may misread handwriting, equations or other languages.</DialogDescription><p role="status" className="text-sm leading-6 text-cyan-100">{ocrStatus}</p><button disabled={ocrBusy} className="sg-cta-quiet min-h-11 rounded-xl px-4 disabled:opacity-50" onClick={() => void runOCR()}>{ocrBusy ? "Working…" : "Run OCR on this page"}</button><textarea aria-label="Reviewed OCR text" value={ocrDraft} onChange={event => setOcrDraft(event.target.value)} disabled={ocrBusy} maxLength={20_000} rows={12} className="w-full rounded-xl border border-white/15 bg-black/20 p-3 text-sm leading-6" placeholder="Run OCR, or paste this page's text, then correct any recognition mistakes." /><button disabled={ocrBusy || ocrDraft.trim().length < 10} className="sg-cta-primary min-h-11 rounded-xl px-4 disabled:opacity-50" onClick={() => void runOCR(true)}>Save reviewed text for LAM</button></DialogContent></Dialog>
+  </>;
 }
-function UploadedPage({ pdf, page, error }: { pdf: PDFDocumentProxy | null; page: number; error: string }) {
+function UploadedPage({ pdf, page, error, fit }: { pdf: PDFDocumentProxy | null; page: number; error: string; fit: "page" | "width" }) {
   const canvas = useRef<HTMLCanvasElement>(null); const host = useRef<HTMLDivElement>(null); const [visible, setVisible] = useState(false); const [width, setWidth] = useState(550); const [ready, setReady] = useState(false); const [renderError, setRenderError] = useState("");
   useEffect(() => { const node = host.current; if (!node) return; const observer = new IntersectionObserver(entries => setVisible(entries[0].isIntersecting), { rootMargin: "160px" }); const resize = new ResizeObserver(entries => setWidth(Math.max(160, Math.floor(entries[0].contentRect.width)))); observer.observe(node); resize.observe(node); return () => { observer.disconnect(); resize.disconnect(); }; }, []);
   useEffect(() => { if (!pdf || !visible || !canvas.current) return; let disposed = false; let render: RenderTask | undefined; const element = canvas.current;
-    void pdf.getPage(page).then(async pdfPage => { if (disposed) return; setReady(false); setRenderError(""); const original = pdfPage.getViewport({ scale: 1 }); const viewport = pdfPage.getViewport({ scale: Math.min(width / original.width, Math.max(240, innerHeight - 190) / original.height) }); const ratio = Math.min(devicePixelRatio || 1, 1.75); element.width = Math.floor(viewport.width * ratio); element.height = Math.floor(viewport.height * ratio); element.style.width = `${viewport.width}px`; element.style.height = `${viewport.height}px`; render = pdfPage.render({ canvas: element, viewport, transform: [ratio, 0, 0, ratio, 0, 0] }); await render.promise; if (!disposed) setReady(true); }).catch(() => { if (!disposed) { setReady(false); setRenderError("This page could not be rendered. Use Open original PDF or reopen the book."); } }); return () => { disposed = true; render?.cancel(); };
-  }, [pdf, page, visible, width]);
+    void pdf.getPage(page).then(async pdfPage => { if (disposed) return; setReady(false); setRenderError(""); const original = pdfPage.getViewport({ scale: 1 }); const scale = pdfPageScale(width, original, fit, innerHeight - 190); const viewport = pdfPage.getViewport({ scale }); const ratio = Math.min(devicePixelRatio || 1, 1.75, 3000 / Math.max(viewport.width, viewport.height)); element.width = Math.floor(viewport.width * ratio); element.height = Math.floor(viewport.height * ratio); element.style.width = `${viewport.width}px`; element.style.height = `${viewport.height}px`; render = pdfPage.render({ canvas: element, viewport, transform: [ratio, 0, 0, ratio, 0, 0] }); await render.promise; if (!disposed) setReady(true); }).catch(() => { if (!disposed) { setReady(false); setRenderError("This page could not be rendered. Use Open original PDF or reopen the book."); } }); return () => { disposed = true; render?.cancel(); };
+  }, [pdf, page, visible, width, fit]);
   return <div ref={host} className="relative flex min-h-64 w-full items-center justify-center bg-white">{!ready && <p role="status" className="absolute px-4 text-sm text-slate-700">{renderError || error || `Rendering page ${page}…`}</p>}<canvas ref={canvas} aria-label={`PDF page ${page}`} className="max-w-full" /></div>;
 }

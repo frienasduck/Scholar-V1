@@ -83,6 +83,42 @@ import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Study Music · compact controller",
+    date: "4 Oct 2026",
+    title: "Music controls first, video source separate",
+    items: [
+      "The large merged video/music card is replaced by two independent surfaces: a compact liquid-glass Scholar controller with artwork, progress, transport, favorites, volume and active focus time; and a smaller official YouTube source near a screen edge. The redundant page-level transport bar and oversized empty listening dock are removed.",
+      "YouTube's supported controls=0 option removes the duplicate transport toolbar without covering or altering the embedded video or branding. Show video resizes the existing source iframe and Minimize video restores its secondary footprint, preserving the track and playback position. Visibility, modal pause, creator restrictions and browser-gesture safeguards remain intact.",
+      "Mobile defaults to an artwork/title/play/next bottom bar with a tiny progress indicator. Tapping the title or Open player reveals the full controls. Desktop dragging, keyboard corner snapping, saved placement and pill mode remain; source placement avoids the controller. My Songs, playlists, favorites, queue, metadata, native audio, focus and ambience retain their existing data and behavior.",
+      "Continue Listening uses a normal artwork card, not a video. Ownership attribution stays at the bottom of Study Music. Native sound textures have no YouTube surface. No music backend or unrelated section redesign is included in this presentation correction.",
+    ],
+  },
+  {
+    version: "Study Music · audio first",
+    date: "4 Oct 2026",
+    title: "Your soundtrack leads; the video stays secondary",
+    items: [
+      "Study Music retains its fuchsia/glass identity with album-style artwork, track/channel attribution, progress, volume, queue, favorites, My Songs, playlists, focus timer and ambience. A shared persistent listening space docks on the music page and follows navigation as a mini-player.",
+      "YouTube tracks keep an official, unobstructed source player of at least 200 × 200 pixels. Show video enlarges the same embed; Minimize video returns to the compact source without restarting. Minimizing music controls never hides the YouTube player or intentionally stops an otherwise visible track.",
+      "YouTube playback pauses when its source is covered, undersized, outside view or the app is backgrounded. Modal tools pause and detach the embed, then restore it cued; closing the player stops playback. No hidden embeds, extraction or background-only YouTube workaround is used. Creator attribution and the ownership disclaimer remain visible.",
+      "Explicit YOUTUBE_VIDEO_SOURCE and AUDIO_SOURCE types keep old YouTube libraries compatible. Scholar-original rain/ocean textures and brown/white noise are genuine native audio loops, with the same controls, mixed-source queue, favorites and playlists, and audio-only playback across section navigation. They are synthesized textures, not third-party recordings.",
+      "Source switching clears stale YouTube events; browser playback restrictions and creator embedding failures show actionable messages. Scoped library protections, per-owner paused restoration, focus controls and independent ambience mixing are preserved.",
+    ],
+  },
+  {
+    version: "E-Book OCR · readable uploads",
+    date: "4 Oct 2026",
+    title: "Large pages and real page text for LAM",
+    items: [
+      "Uploaded PDFs open in the familiar large-page reader with chapter/page navigation, width-fit zoom, bookmarks, notes, OCR and chapter-specific study tools. Immersive Book Mode remains optional; normal pages no longer shrink to screen height. Phone navigation collapses and page zoom stays inside the reader.",
+      "Private scanned pages can be rendered for English OCR, reviewed and edited before saving. Saved page text and source chunks update together, retain original PDF bytes and real page numbers, and invalidate outdated study aids. LAM, search, summaries and practice use this saved index.",
+      "OCR language data is packaged locally instead of downloaded at runtime. Textbook column detection, image preprocessing, bounded jobs, timeouts and safe service errors improve recognition reliability. OCR is not guaranteed for handwriting, equations or non-English scans; review remains required.",
+      "Built-in OCR uses the current book ID, cancels stale requests and keeps error messages out of saved text. Ask LAM can extract missing current-page text first; reviewed text takes priority. Book-specific class storage and active-reader context prevent one book's notes or stale file IDs from being reused for another.",
+      "Real PDF rasterization/OCR and the Physics page-9 scan passed isolated tests, including 1,987 recognized characters at 78% confidence. Owner checks, atomic OCR save/index rollback, LAM prompt handoff, reader sizing and accessible controls have regression coverage. Laptop/phone layout checks use a public scan, not a signed-in uploaded-book session.",
+      "Local live OCR, private upload and live LAM acceptance still require a working PostgreSQL configuration: the current environment reports Prisma P1012. Authentication, rate limits and ownership protections were not bypassed. This entry does not claim a production deployment or migration.",
+    ],
+  },
+  {
     version: "4 Oct maintenance · detailed fixes",
     date: "4 Oct 2026",
     title: "The small fixes behind a more reliable Scholar",

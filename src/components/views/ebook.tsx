@@ -1,7 +1,7 @@
 "use client";
 import { ResourceLibrary } from "@/components/resources/resource-library";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,9 @@ import {
 } from "@/components/views/maths-ebook-system";
 import { BookModeReader } from "@/components/ebook/book-mode-reader";
 import { CustomEbookLibrary } from "@/components/ebook/custom-ebook-library";
+import { UploadedBookReader, type UploadedBook } from "@/components/ebook/uploaded-book-reader";
+import { profileGetItem, profileSetItem } from "@/lib/profile-storage";
+import { readablePageText } from "@/lib/ebooks/page-text";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { setLamPageContext } from "@/lib/lam-context";
 import {
@@ -227,19 +230,21 @@ const PAGE_TAGS = [
 
 const STORAGE_KEY = "eb-reader-data";
 
-function loadData() {
+function loadData(bookId: string, grade: 9 | 11) {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = profileGetItem(grade, `${STORAGE_KEY}:v2:${bookId}`) ?? (bookId === "physics-pt1" && grade === 11 ? localStorage.getItem(STORAGE_KEY) : null);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    data.ocrReviewed = Object.fromEntries(Object.entries(data.ocrReviewed ?? {}).filter(([, text]) => readablePageText(text)).map(([page, text]) => [page, (text as string).slice(0, 20_000)]));
+    return data;
   } catch {
     return null;
   }
 }
-function saveData(data: any) {
+function saveData(bookId: string, grade: 9 | 11, data: any) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    profileSetItem(grade, `${STORAGE_KEY}:v2:${bookId}`, JSON.stringify(data));
   } catch {}
 }
 
@@ -248,6 +253,11 @@ function pageImage(page: number, pageDir: string = "ebook-pages") {
 }
 
 export function EBookView() {
+  const grade = useStore(s => s.user.scholarClass);
+  const readerIdentity = useStore(s => s.authed && !s.guestMode ? s.user.email || s.user.username : "guest");
+  const [uploadedReader, setUploadedReader] = useState<{ identity: string; book: UploadedBook } | null>(null);
+  const uploadedBook = uploadedReader?.identity === readerIdentity ? uploadedReader.book : null;
+  const openUploadedBook = useCallback((book: UploadedBook) => setUploadedReader({ identity: readerIdentity, book }), [readerIdentity]);
   const addXP = useStore((s) => s.addXP);
   const pushActivity = useStore((s) => s.pushActivity);
   const addNote = useStore((s) => s.addNote);
@@ -264,16 +274,6 @@ export function EBookView() {
     return () => window.cancelAnimationFrame(frame);
   }, [activeBookId, view]);
 
-  useEffect(() => {
-    const ebookTitle =
-      activeBookId === "maths-pt1"
-        ? "Mathematics Part 1"
-        : activeBookId === "chemistry-pt1"
-          ? "Chemistry Part 1"
-          : "Physics Part 1";
-    setLamPageContext({ ebookTitle, sourcePageNumber: activePage });
-    return () => setLamPageContext({});
-  }, [activeBookId, activePage]);
   const [notes, setNotes] = useState<Record<number, PageNote>>({});
   const [bookmarks, setBookmarks] = useState<PageBookmark[]>([]);
   const [zoom, setZoom] = useState(1);
@@ -292,6 +292,10 @@ export function EBookView() {
   const [ocrModal, setOcrModal] = useState<number | null>(null);
   const [ocrText, setOcrText] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState("");
+  const [ocrDrafts, setOcrDrafts] = useState<Record<number, string>>({});
+  const ocrRequest = useRef<AbortController | null>(null);
+  useEffect(() => { ocrRequest.current?.abort(); setOcrLoading(false); setOcrModal(null); setOcrDrafts({}); return () => ocrRequest.current?.abort(); }, [activeBookId, activePage]);
   const [ocrReviewed, setOcrReviewed] = useState<Record<number, string>>({});
 
   useEffect(() => {
@@ -327,21 +331,24 @@ export function EBookView() {
   const pageDir = activeBook.pageDir;
 
   useEffect(() => {
+    if (uploadedBook || activeBookId !== "physics-pt1") return;
+    if (view !== "reader") { setLamPageContext({}); return; }
     const current = chapters.find((item) => activePage >= item.startPage && activePage <= item.endPage);
-    const subjectTitle = activeBookId === "maths-pt1" ? "Mathematics" : activeBookId === "chemistry-pt1" ? "Chemistry" : "Physics";
-    setLamPageContext({ ebookTitle: activeBook.title, subjectTitle, chapterTitle: current?.title, sourcePageNumber: activePage, visibleText: ocrReviewed[activePage] });
-  }, [activeBook.title, activeBookId, activePage, chapters, ocrReviewed]);
+    const subjectTitle = activeBook.subject;
+    setLamPageContext({ ebookTitle: activeBook.title, subjectTitle, chapterTitle: current?.title, sourcePageNumber: activePage, visibleText: ocrReviewed[activePage] || ocrDrafts[activePage] });
+  }, [activeBook.title, activeBook.subject, activeBookId, activePage, chapters, ocrReviewed, ocrDrafts, uploadedBook, view]);
 
   // Load persisted data
   useEffect(() => {
-    const data = loadData();
+    const data = loadData(activeBookId, grade);
+    setNotes(data?.notes ?? {}); setBookmarks(data?.bookmarks ?? []); setOcrReviewed(data?.ocrReviewed ?? {});
     if (data) {
       if (data.notes) setNotes(data.notes);
       if (data.bookmarks) setBookmarks(data.bookmarks);
       if (data.ocrReviewed) setOcrReviewed(data.ocrReviewed);
       if (data.lastPage) setActivePage(data.lastPage);
     }
-  }, []);
+  }, [activeBookId, grade]);
 
   // Persist
   const persist = useCallback(
@@ -353,15 +360,15 @@ export function EBookView() {
         lastPage: number;
       }>,
     ) => {
-      const data = loadData() ?? {};
+      const data = loadData(activeBookId, grade) ?? {};
       const merged = { ...data, ...updates };
-      saveData(merged);
+      saveData(activeBookId, grade, merged);
       if (updates.notes) setNotes(updates.notes);
       if (updates.bookmarks) setBookmarks(updates.bookmarks);
       if (updates.ocrReviewed) setOcrReviewed(updates.ocrReviewed);
       if (updates.lastPage !== undefined) setActivePage(updates.lastPage);
     },
-    [],
+    [activeBookId, grade],
   );
 
   // Navigation
@@ -436,48 +443,60 @@ export function EBookView() {
 
   // OCR extract
   const runOCR = useCallback(async (page: number) => {
+    ocrRequest.current?.abort();
+    const controller = new AbortController(); ocrRequest.current = controller;
     setOcrLoading(true);
     setOcrText("");
+    setOcrError("");
     try {
       const res = await fetch("/api/ocr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ page, bookId: activeBookId }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "OCR failed");
-      setOcrText(data.text || "(No text extracted)");
+      if (!data.text?.trim()) throw new Error("No readable page text was found.");
+      if (controller.signal.aborted) return "";
+      setOcrText(data.text);
+      setOcrDrafts(previous => ({ ...previous, [page]: data.text }));
+      return data.text as string;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "OCR failed. Try again.";
-      toast.error("OCR failed", { description: message });
-      setOcrText(`OCR error: ${message}`);
+      if (!controller.signal.aborted) { toast.error("OCR failed", { description: message }); setOcrError(message); }
+      return "";
     } finally {
-      setOcrLoading(false);
+      if (ocrRequest.current === controller) setOcrLoading(false);
     }
-  }, []);
+  }, [activeBookId]);
 
   // Save reviewed OCR
   const saveOCR = useCallback(() => {
-    if (ocrModal === null) return;
+    if (ocrModal === null || ocrLoading || ocrText.trim().length < 10 || /^OCR error:/i.test(ocrText)) return;
     persist({ ocrReviewed: { ...ocrReviewed, [ocrModal]: ocrText } });
     toast.success("OCR text saved for this page");
     setOcrModal(null);
     setOcrText("");
-  }, [ocrModal, ocrText, ocrReviewed, persist]);
+  }, [ocrModal, ocrText, ocrReviewed, persist, ocrLoading]);
 
-  const openPageLam = useCallback(() => {
+  const openPageLam = useCallback(async () => {
+    const text = ocrReviewed[activePage] || ocrDrafts[activePage] || await runOCR(activePage);
+    if (!text) return;
     const chapter = chapters.find((item) => activePage >= item.startPage && activePage <= item.endPage);
     const context = {
       ebookTitle: activeBook.title,
       subjectTitle: activeBook.subject,
       chapterTitle: chapter?.title,
       sourcePageNumber: activePage,
-      visibleText: ocrReviewed[activePage] ?? "",
+      visibleText: text,
+      activeFileId: undefined,
+      activeFileName: undefined,
     };
     setLamPageContext(context);
     window.dispatchEvent(new CustomEvent("scholar:open-lam", { detail: { context } }));
-  }, [activeBook.subject, activeBook.title, activePage, chapters, ocrReviewed]);
+  }, [activeBook.subject, activeBook.title, activePage, chapters, ocrReviewed, ocrDrafts, runOCR]);
 
   // Search
   const searchResults = useMemo(() => {
@@ -543,6 +562,7 @@ export function EBookView() {
   const progress = Math.round((activePage / totalPages) * 100);
 
   // ===== HOME VIEW =====
+  if (uploadedBook) return <UploadedBookReader key={uploadedBook.id} book={uploadedBook} onClose={() => { setUploadedReader(null); setLamPageContext({}); const url = new URL(location.href); url.searchParams.delete("book"); history.replaceState(null, "", url); }} />;
   if (view === "home") {
     return (
       <div className="scholar-ebook scholar-responsive-page relative bg-[#0a0a0f] overflow-hidden -m-3 sm:-m-4 lg:-m-6 text-white eb-font">
@@ -619,7 +639,7 @@ export function EBookView() {
             </motion.p>
           </div>
 
-          <CustomEbookLibrary />
+          <CustomEbookLibrary onOpenBook={openUploadedBook} />
           <ResourceLibrary type="textbook" title="Built-in chapter textbooks"/>
 
           {/* Stats */}
@@ -1425,12 +1445,15 @@ export function EBookView() {
                 )}
               </Button>
               <textarea
+                aria-label="Reviewed OCR text"
+                maxLength={20_000}
                 value={ocrText}
                 onChange={(e) => setOcrText(e.target.value)}
                 rows={15}
                 placeholder="Click 'Run OCR' to extract text, then edit as needed..."
                 className="w-full flex-1 p-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 resize-none eb-scroll"
               />
+              {ocrError && <p role="alert" className="text-sm text-amber-200">{ocrError}</p>}
             </div>
           </div>
           <DialogFooter>
@@ -1446,7 +1469,7 @@ export function EBookView() {
             <Button
               size="sm"
               onClick={saveOCR}
-              disabled={!ocrText}
+              disabled={ocrLoading || ocrText.trim().length < 10}
               className="bg-emerald-500 text-white hover:bg-emerald-600"
             >
               Save Reviewed Text

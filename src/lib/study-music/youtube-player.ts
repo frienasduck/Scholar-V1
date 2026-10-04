@@ -10,7 +10,7 @@ export interface YouTubePlayer {
   getCurrentTime(): number; getDuration(): number; destroy(): void;
 }
 export interface YouTubeWindow extends Window {
-  YT?: { Player: new (host: HTMLElement, config: { videoId: string; width: string; height: string; playerVars: Record<string, string | number>; events: { onReady: (event: { target: YouTubePlayer }) => void; onStateChange: (event: { data: number }) => void; onError: (event: { data: number }) => void } }) => YouTubePlayer };
+  YT?: { Player: new (host: HTMLElement, config: { videoId: string; width: string; height: string; playerVars: Record<string, string | number>; events: { onReady: (event: { target: YouTubePlayer }) => void; onStateChange: (event: { data: number }) => void; onError: (event: { data: number }) => void; onAutoplayBlocked?: () => void } }) => YouTubePlayer };
   onYouTubeIframeAPIReady?: () => void;
 }
 let loading: Promise<void> | null = null;

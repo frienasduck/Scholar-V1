@@ -1,11 +1,12 @@
 "use client";
 import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "@/lib/notifications/notification-api";
 import { useMusicStore, type MusicTrack } from "@/lib/music-store";
 import { MUSIC_CATALOG, CATEGORIES } from "@/lib/study-music/catalog";
+import { NATIVE_AUDIO_CATALOG } from "@/lib/study-music/native-audio";
 import { trackName } from "@/lib/study-music/model";
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Plus, Music as MusicIcon, Sparkles, X, ListMusic, Headphones, Timer, Link2, Heart, Search, SlidersHorizontal } from "lucide-react";
+import { Play, Pause, Plus, Music as MusicIcon, Sparkles, X, ListMusic, Headphones, Timer, Link2, Heart, Search, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { FreeAdSlot } from "@/components/subscriptions/free-ad-slot";
@@ -23,19 +24,14 @@ export function MusicView() {
   const selectedTrack = useMusicStore(s => s.currentTrack), isPlaying = useMusicStore(s => s.isPlaying);
   const queue = useMusicStore(s => s.queue), queueIndex = useMusicStore(s => s.queueIndex);
   const lastTrack = selectedTrack ?? queue[queueIndex];
-  const muted = useMusicStore(s => s.muted), volume = useMusicStore(s => s.volume);
   const [activeTab, setActiveTab] = useState<"all"|"songs"|"playlists"|"focus">("all");
   const [showCreatePL, setShowCreatePL] = useState(false), [editPL, setEditPL] = useState<string|null>(null), [newPLName, setNewPLName] = useState(""), [newPLTrackIds, setNewPLTrackIds] = useState<string[]>([]);
   const [showImport, setShowImport] = useState(false), [search, setSearch] = useState(""), [category, setCategory] = useState("All"), [noLyrics, setNoLyrics] = useState(false), [focusView, setFocusView] = useState(false), [collection,setCollection]=useState("all"), [duration,setDuration]=useState("all");
   const favorites=useMusicStore(s=>s.library.favorites),history=useMusicStore(s=>s.library.history);
-  const allTracks = useMemo(() => [...new Map([...MUSIC_CATALOG.filter(t=>t.id==='zAiIgYOH4Ys'),...MUSIC_CATALOG.filter(t=>t.id!=='zAiIgYOH4Ys'), ...songs].map(t => [t.id,t])).values()], [songs]);
-  const TRACKS: Track[] = allTracks.map(t => ({ id:t.id, videoId:t.id, title:trackName(t),category:t.category,emoji:emojis[t.category] ?? "🎵",duration:t.durationSeconds ? `${Math.round(t.durationSeconds/60)} min` : t.tags?.includes("radio") ? "Radio" : "YouTube",desc:t.artist,featured:t.id === "zAiIgYOH4Ys",data:t }));
-  const filtered = TRACKS.filter(t => (category === "All" || t.category === category) && `${t.title} ${t.desc} ${t.category}`.toLowerCase().includes(search.toLowerCase()) && (!noLyrics || t.data.tags?.includes("no lyrics")) && (collection==="all" || collection==="favorites" && favorites.includes(t.id) || collection==="recent" && history.some(h=>h.id===t.id) || collection==="imported" && t.data.source==="imported" || collection==="catalog" && t.data.source==="catalog") && (duration==="all" || duration==="long" && (t.data.durationSeconds ?? 0)>=3600 || duration==="unknown" && !t.data.durationSeconds));
-  const currentIdx = Math.max(0, TRACKS.findIndex(t => t.videoId === lastTrack?.id)), currentTrack = lastTrack ? TRACKS.find(t => t.videoId === lastTrack.id) ?? { title:trackName(lastTrack),emoji:"🎵",category:lastTrack.category,desc:lastTrack.artist } : TRACKS[0];
+  const allTracks = useMemo(() => [...new Map([...MUSIC_CATALOG.filter(t=>t.id==='zAiIgYOH4Ys'),...MUSIC_CATALOG.filter(t=>t.id!=='zAiIgYOH4Ys'), ...NATIVE_AUDIO_CATALOG, ...songs].map(t => [t.id,t])).values()], [songs]);
+  const TRACKS: Track[] = allTracks.map(t => ({ id:t.id, videoId:t.id, title:trackName(t),category:t.category,emoji:emojis[t.category] ?? "🎵",duration:t.mediaSource === "AUDIO_SOURCE" ? "Continuous" : t.durationSeconds ? `${Math.round(t.durationSeconds/60)} min` : t.tags?.includes("radio") ? "Radio" : "YouTube",desc:t.artist,featured:t.id === "zAiIgYOH4Ys",data:t }));
+  const filtered = TRACKS.filter(t => (category === "All" || t.category === category) && `${t.title} ${t.desc} ${t.category}`.toLowerCase().includes(search.toLowerCase()) && (!noLyrics || t.data.tags?.includes("no lyrics")) && (collection==="all" || collection==="favorites" && favorites.includes(t.id) || collection==="recent" && history.some(h=>h.id===t.id) || collection==="imported" && t.data.source==="imported" || collection==="catalog" && t.data.source==="catalog" || collection==="native" && t.data.mediaSource==="AUDIO_SOURCE") && (duration==="all" || duration==="long" && (t.data.durationSeconds ?? 0)>=3600 || duration==="unknown" && !t.data.durationSeconds));
   const playingTrackId = selectedTrack?.id;
-  const playTrack = (idx:number) => useMusicStore.getState().playTrack(TRACKS[idx].data,allTracks);
-  const togglePlay = () => selectedTrack ? useMusicStore.getState().togglePlay() : lastTrack ? useMusicStore.getState().playTrack(lastTrack,queue) : playTrack(currentIdx);
-  const skipNext = () => useMusicStore.getState().next(), skipPrev = () => useMusicStore.getState().prev(), toggleMute = () => useMusicStore.getState().toggleMute();
   const createPlaylist = () => { if (!newPLName.trim() || !newPLTrackIds.length) return; const s=useMusicStore.getState(); if(editPL)s.updatePlaylist(editPL,newPLName,newPLTrackIds);else s.createPlaylist(newPLName,newPLTrackIds); setShowCreatePL(false);setEditPL(null);setNewPLName("");setNewPLTrackIds([]);toast.success(editPL?"Playlist updated":"Playlist created"); };
   const deletePlaylist = (id:string) => { if (window.confirm("Delete this playlist? Your songs will stay in your library.")) useMusicStore.getState().removePlaylist(id); };
   const toggleTrackInPL = (id:string) => setNewPLTrackIds(ids => ids.includes(id) ? ids.filter(t => t !== id) : [...ids,id]);
@@ -149,9 +145,14 @@ export function MusicView() {
             </motion.div>
           )}
 
+          {lastTrack && <section className="sm-ui sm-continue-card" aria-label="Continue listening">
+            <div className="sm-continue-art"><MusicThumbnail track={lastTrack}/></div>
+            <div className="sm-continue-copy"><small>Continue listening</small><strong>{trackName(lastTrack)}</strong><p>{lastTrack.artist}</p></div>
+            <button className="sm-btn" onClick={() => { const s = useMusicStore.getState(); if (!selectedTrack) s.playTrack(lastTrack, queue); else s.setWidgetVisible(true); window.dispatchEvent(new Event("scholar:music-controls")); }}>Open player</button>
+          </section>}
           {activeTab==="all"&&!focusView&&<>
-            <div className="sm-ui mu-font mb-5 flex flex-wrap items-center gap-3"><label className="flex-1 min-w-48 relative"><Search className="absolute left-3 top-3.5 h-4 w-4 text-white/40"/><input aria-label="Search music" placeholder="Search tracks, channels or moods" style={{paddingLeft:36}} value={search} onChange={e=>setSearch(e.target.value)}/></label><select aria-label="Music category" style={{width:"auto",maxWidth:"100%"}} value={category} onChange={e=>setCategory(e.target.value)}>{[...CATEGORIES,...(songs.length?["My Songs"]:[])].map(c=><option key={c}>{c}</option>)}</select><select aria-label="Music collection" style={{width:"auto",maxWidth:"100%"}} value={collection} onChange={e=>setCollection(e.target.value)}><option value="all">All sources</option><option value="favorites">Favorites</option><option value="recent">Recently played</option><option value="imported">My imports</option><option value="catalog">Scholar catalog</option></select><select aria-label="Track duration" style={{width:"auto",maxWidth:"100%"}} value={duration} onChange={e=>setDuration(e.target.value)}><option value="all">All durations</option><option value="long">1 hour+ (known)</option><option value="unknown">Unknown / radio</option></select><label className="sm-check"><input type="checkbox" checked={noLyrics} onChange={e=>setNoLyrics(e.target.checked)}/> No lyrics</label></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{filtered.map(t=><TrackCard key={t.id} track={t} isActive={playingTrackId===t.videoId} isPlaying={isPlaying&&playingTrackId===t.videoId} onPlay={()=>{if(playingTrackId===t.videoId)useMusicStore.getState().togglePlay();else useMusicStore.getState().playTrack(t.data,filtered.map(v=>v.data));}}/>)}</div>
+            <div className="sm-ui mu-font mb-5 flex flex-wrap items-center gap-3"><label className="flex-1 min-w-48 relative"><Search className="absolute left-3 top-3.5 h-4 w-4 text-white/40"/><input aria-label="Search music" placeholder="Search tracks, channels or moods" style={{paddingLeft:36}} value={search} onChange={e=>setSearch(e.target.value)}/></label><select aria-label="Music category" style={{width:"auto",maxWidth:"100%"}} value={category} onChange={e=>setCategory(e.target.value)}>{[...CATEGORIES,"Sound textures",...(songs.length?["My Songs"]:[])].map(c=><option key={c}>{c}</option>)}</select><select aria-label="Music collection" style={{width:"auto",maxWidth:"100%"}} value={collection} onChange={e=>setCollection(e.target.value)}><option value="all">All sources</option><option value="favorites">Favorites</option><option value="recent">Recently played</option><option value="imported">My imports</option><option value="catalog">Scholar catalog</option><option value="native">Native audio · background friendly</option></select><select aria-label="Track duration" style={{width:"auto",maxWidth:"100%"}} value={duration} onChange={e=>setDuration(e.target.value)}><option value="all">All durations</option><option value="long">1 hour+ (known)</option><option value="unknown">Unknown / radio</option></select><label className="sm-check"><input type="checkbox" checked={noLyrics} onChange={e=>setNoLyrics(e.target.checked)}/> No lyrics</label></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">{filtered.map(t=><TrackCard key={t.id} track={t} isActive={playingTrackId===t.videoId} isPlaying={isPlaying&&playingTrackId===t.videoId} onPlay={()=>{if(playingTrackId===t.videoId)useMusicStore.getState().togglePlay();else useMusicStore.getState().playTrack(t.data,filtered.map(v=>v.data));}}/>)}</div>
             {!filtered.length&&<p className="text-white/60 py-10 text-center mu-font">No matching tracks. Try a different filter.</p>}
             <div className="sm-ui mu-font mt-8"><SoundtrackBuilder tracks={allTracks}/></div>
           </>}
@@ -208,98 +209,11 @@ export function MusicView() {
           )}
 
           {(activeTab==="focus"||focusView)&&<div className="sm-ui mu-font max-w-2xl mx-auto space-y-5"><FocusPanel/><MixerPanel/></div>}
+          <p className="sm-music-disclaimer mu-font">YouTube music and videos belong to their respective creators, not Scholar. Original Scholar sound textures support audio-only background listening.</p>
           <div className="mt-8"><FreeAdSlot entitlement="study_music_ad_free" label="Study Music"/></div>
 
         </div>
 
-        {/* Now Playing bar — sticky bottom */}
-        <AnimatePresence>
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="sticky bottom-0 z-20 px-4 md:px-8 pb-4"
-          >
-            <div className="mu-glass-strong rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4 max-w-5xl mx-auto">
-              {/* Track info */}
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="grid place-items-center h-12 w-12 rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shrink-0 text-xl">
-                  {currentTrack.emoji}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-white mu-font truncate">{currentTrack.title}</p>
-                  <p className="text-[11px] text-white/40 mu-font truncate">{currentTrack.category} · {currentTrack.desc}</p>
-                </div>
-              </div>
-
-              {/* Visualizer (desktop) */}
-              <div className="hidden md:flex items-end gap-0.5 h-8 w-24">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex-1 rounded-full bg-gradient-to-t from-fuchsia-500 to-purple-300",
-                      isPlaying && "mu-bar-anim"
-                    )}
-                    style={{
-                      height: isPlaying ? "40%" : "20%",
-                      animationDelay: `${i * 0.07}s`,
-                      animationDuration: `${0.7 + (i % 3) * 0.2}s`,
-                      opacity: isPlaying ? 1 : 0.3,
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                <button
-                  onClick={skipPrev}
-                  className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  aria-label="Previous"
-                >
-                  <SkipBack className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={togglePlay}
-                  className="grid place-items-center h-10 w-10 rounded-full bg-white text-black hover:scale-105 transition-transform"
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-                </button>
-                <button
-                  onClick={skipNext}
-                  className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  aria-label="Next"
-                >
-                  <SkipForward className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={toggleMute}
-                  className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors hidden sm:block"
-                  aria-label={muted ? "Unmute" : "Mute"}
-                >
-                  {muted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                </button>
-              </div>
-
-              {/* Volume (desktop) */}
-              <div className="hidden lg:flex items-center gap-2 w-28 shrink-0">
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={muted ? 0 : volume}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value);
-                    useMusicStore.getState().setVolume(v);
-                  }}
-                  className="flex-1 h-1 rounded-full bg-white/20 accent-fuchsia-500 cursor-pointer"
-                  aria-label="Volume"
-                />
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
       </div>
 
       <MusicImportDialog open={showImport} onClose={()=>setShowImport(false)}/>
@@ -314,14 +228,14 @@ function LibraryStatus() {
 function TrackCard({track,isActive,isPlaying,onPlay}:{track:Track;isActive:boolean;isPlaying:boolean;onPlay:()=>void}) {
   const favorite=useMusicStore(s=>s.library.favorites.includes(track.id)),playlists=useMusicStore(s=>s.library.playlists);
   return <article className={cn("mu-glass rounded-2xl group transition-all hover:scale-[1.02]",isActive&&"ring-2 ring-fuchsia-500/60")}>
-    <button onClick={onPlay} aria-label={`${isPlaying?"Pause":"Play"} ${track.title}`} className="relative aspect-video bg-white/5 overflow-hidden rounded-t-2xl w-full block text-left">
+    <button onClick={onPlay} aria-label={`${isPlaying?"Pause":"Play"} ${track.title}`} className="sm-album-cover relative bg-white/5 overflow-hidden rounded-t-2xl w-full block text-left">
       <MusicThumbnail track={track.data}/><div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"/>
       <div className="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"><div className="grid place-items-center h-14 w-14 rounded-full bg-white/20 backdrop-blur-md">{isPlaying?<Pause className="h-6 w-6 text-white"/>:<Play className="h-6 w-6 text-white ml-1"/>}</div></div>
       {isActive&&<div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-fuchsia-500/90 text-white text-[10px] font-medium mu-font">{isPlaying?"Now Playing":"Selected"}</div>}
       {track.featured&&!isActive&&<div className="absolute left-2 top-2 rounded-full border border-white/15 bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-100">Featured · Scholar Pick</div>}
       <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-white text-[10px] font-mono">{track.duration}</span><span className="absolute bottom-2 left-2 text-2xl">{track.emoji}</span>
-    </button><div className="p-3"><p className="text-sm font-medium text-white mu-font truncate" title={track.title}>{track.title}</p><p className="text-xs text-white/40 mu-font mt-0.5">{track.category}</p><p className="text-[11px] text-white/50 mu-font mt-1 line-clamp-1">{track.desc}</p>
-    <div className="sm-ui sm-track-actions -mb-2 mt-1"><button className="sm-icon" aria-label={`Favorite ${track.title}`} aria-pressed={favorite} onClick={()=>useMusicStore.getState().favorite(track.id)}><Heart size={16} fill={favorite?"currentColor":"none"}/></button><button className="sm-icon" aria-label={`Queue ${track.title}`} onClick={()=>{useMusicStore.getState().addToQueue(track.data);toast.success("Added to queue");}}><Plus size={18}/></button><details className="sm-menu"><summary aria-label={`More actions for ${track.title}`}>•••</summary><div><button onClick={()=>useMusicStore.getState().addToQueue(track.data,true)}>Play next</button><a href={`https://www.youtube.com/watch?v=${track.videoId}`} target="_blank" rel="noopener noreferrer">Open on YouTube</a>{playlists.map(p=><button key={p.id} onClick={()=>useMusicStore.getState().playlistAdd(p.id,track.id)}>Add to {p.name}</button>)}</div></details></div></div>
+    </button><div className="p-3"><p className="text-sm font-medium text-white mu-font truncate" title={track.title}>{track.title}</p><p className="sm-source-badge mu-font mt-0.5">{track.data.mediaSource === "AUDIO_SOURCE" ? "Native audio" : "YouTube source"} · {track.category}</p><p className="text-[11px] text-white/50 mu-font mt-1 line-clamp-1">{track.desc}</p>
+    <div className="sm-ui sm-track-actions -mb-2 mt-1"><button className="sm-icon" aria-label={`Favorite ${track.title}`} aria-pressed={favorite} onClick={()=>useMusicStore.getState().favorite(track.id)}><Heart size={16} fill={favorite?"currentColor":"none"}/></button><button className="sm-icon" aria-label={`Queue ${track.title}`} onClick={()=>{useMusicStore.getState().addToQueue(track.data);toast.success("Added to queue");}}><Plus size={18}/></button><details className="sm-menu"><summary aria-label={`More actions for ${track.title}`}>•••</summary><div><button onClick={()=>useMusicStore.getState().addToQueue(track.data,true)}>Play next</button>{track.data.mediaSource === "YOUTUBE_VIDEO_SOURCE" && <a href={`https://www.youtube.com/watch?v=${track.videoId}`} target="_blank" rel="noopener noreferrer">Open on YouTube</a>}<button onClick={()=>{useMusicStore.getState().addSong(track.data);toast.success("Saved to My Songs");}}>Save to My Songs</button>{playlists.map(p=><button key={p.id} onClick={()=>useMusicStore.getState().playlistAdd(p.id,track.id)}>Add to {p.name}</button>)}</div></details></div></div>
   </article>;
 }
 export default MusicView;

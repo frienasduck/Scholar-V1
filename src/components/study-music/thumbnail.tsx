@@ -1,9 +1,13 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { Music2 } from "lucide-react";
+import { Music2, CloudRain, Waves, AudioLines } from "lucide-react";
 import { thumbnailCandidates, type MusicTrack } from "@/lib/study-music/model";
 export function MusicThumbnail({ track }: { track: MusicTrack }) {
+  if (track.mediaSource === "AUDIO_SOURCE") {
+    const Icon = track.texture === "rain" ? CloudRain : track.texture === "ocean" ? Waves : AudioLines;
+    return <div className={`sm-art sm-native-art sm-native-${track.texture}`}><span className="sm-native-orbit"/><Icon size={36} aria-hidden="true"/></div>;
+  }
   return <Thumbnail key={`${track.id}:${track.thumbnail}`} track={track}/>;
 }
 function Thumbnail({ track }: { track: MusicTrack }) {
