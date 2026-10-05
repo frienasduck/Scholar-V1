@@ -211,7 +211,9 @@ STUDENT_QUESTION_DATA ${JSON.stringify(action.question)}`,
       const updated = await saveVideo(userId, v, token);
       return { video: updated, insight };
     }
-    return saveVideo(userId, v, token);
+    // Keep the lease until the asynchronous write has committed; finally would
+    // otherwise release it before saveVideo's ownership check completes.
+    return await saveVideo(userId, v, token);
   } finally {
     await releaseLease(userId, id, token);
   }
