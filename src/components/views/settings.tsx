@@ -83,6 +83,29 @@ import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Reader & LAMTube · reliability repair",
+    date: "October 5, 2026",
+    title: "Clearer PDF reading and resilient visual lessons",
+    items: [
+      "Uploaded PDFs use a compact Scholar reader with full-width pages, chapter/page navigation and a dedicated document scroll area. Toolbar and pagination no longer overlay the document; page changes reset only the document scroll.",
+      "Reader controls retain bookmarks, reviewed OCR text, Ask LAM, notes, summaries, practice and immersive book mode, with mobile navigation and reading progress.",
+      "LAMTube validates generated scenes, discards unused AI metadata and makes one bounded correction attempt while preserving strict geometry, cue and source checks.",
+      "Configured Gemini speech produces seekable WAV narration. Groq-only configurations now show actionable model-terms and access errors instead of a generic failure.",
+      "A new LAMTube lesson-studio loading view shows saved scenes, voice clips, the real storyboard and stage progress, with lightweight reduced-motion-aware animation and background continuation.",
+      "Video failures now record safe stage diagnostics; completed stages and the existing successful-generation credit protections are preserved.",
+    ],
+  },
+  {
+    version: "Study Music · Plus access",
+    date: "4 Oct 2026",
+    title: "Study Music is now included with Scholar Plus",
+    items: [
+      "Free and guest users see Scholar's gold locked-feature preview instead of the music workspace. The menu and top music shortcut lead to this preview; Plus members retain the existing music interface and controls.",
+      "Music playback, native ambience, focus timers and quick drawers stop when verified access is lost. Saved songs, favorites, queues and playlists are not deleted. Music imports and cloud-library read/write endpoints enforce Plus access on the server, including direct API requests.",
+      "The Plus comparison and benefits now identify Study Music as Plus-only. Existing developer access and the explicit subscriptions-disabled global unlock continue to follow Scholar's central entitlement policy.",
+    ],
+  },
+  {
     version: "Study Music · compact controller",
     date: "4 Oct 2026",
     title: "Music controls first, video source separate",

@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from "bun:test";
-import { useMusicStore, musicDefaults } from "../src/lib/music-store";
+import { useMusicStore, musicDefaults, suspendStudyMusic } from "../src/lib/music-store";
 import { emptyLibrary, parseYouTubeUrl, thumbnailCandidates, librarySchema, mergeLibraries, cleanTrack } from "../src/lib/study-music/model";
 import { NATIVE_AUDIO_CATALOG, createTextureWav } from "../src/lib/study-music/native-audio";
 import { sourcePlaybackAllowed } from "../src/lib/study-music/source-visibility";
@@ -10,6 +10,19 @@ import { persistMusic, restoreMusic, musicStorageKey } from "../src/lib/study-mu
 import { youtubeVideoRequest } from "../src/lib/study-music/youtube-player";
 
 const [a,b,c] = MUSIC_CATALOG;
+test("loss of Plus access stops music, ambience and focus without deleting saved work", () => {
+  const s = useMusicStore.getState();
+  s.addSong(a); s.favorite(a.id); s.createPlaylist("Saved soundtrack", [a.id]); s.playTrack(a, [a,b]);
+  s.startFocus(25, 5, { goal: "Study", subject: "Physics", chapter: "Motion", pauseMusicOnBreak: false });
+  s.setDrawer("quick"); s.toggleAmbience();
+  const library = useMusicStore.getState().library;
+  suspendStudyMusic();
+  const stopped = useMusicStore.getState();
+  expect(stopped.isPlaying).toBe(false); expect(stopped.widgetVisible).toBe(false);
+  expect(stopped.drawer).toBeNull(); expect(stopped.ambienceEnabled).toBe(false);
+  expect(stopped.focus?.paused).toBe(true); expect(stopped.library).toBe(library);
+  expect(stopped.queue.map(t=>t.id)).toEqual([a.id,b.id]);
+});
 test("legacy YouTube imports migrate without losing title, attribution or identity", () => {
   const legacy = { ...a, mediaSource: undefined };
   expect(cleanTrack(legacy).mediaSource).toBe("YOUTUBE_VIDEO_SOURCE");

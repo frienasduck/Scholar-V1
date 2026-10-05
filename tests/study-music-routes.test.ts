@@ -1,8 +1,14 @@
 import { beforeEach, expect, mock, test } from "bun:test";
 mock.module("server-only", () => ({}));
-let signedIn=true, conflict=false;
+let signedIn=true, conflict=false, plus=true, planAvailable=true;
 const sql: Array<{command:string;values:unknown[]}> = [];
 mock.module("../src/lib/auth/session",()=>({getSessionUser:async()=>signedIn?{id:"owner-A",name:"A",email:"a@example.test"}:null}));
+mock.module("../src/lib/subscriptions/entitlements",()=>({requireEntitlement:async(feature:string)=>{
+  if (!signedIn) return {ok:false,response:Response.json({error:"AUTH_REQUIRED"},{status:401})};
+  if (!planAvailable) return {ok:false,response:Response.json({error:"ENTITLEMENTS_UNAVAILABLE"},{status:503})};
+  if (!plus) return {ok:false,response:Response.json({error:"PLUS_REQUIRED",feature},{status:403})};
+  return {ok:true,user:{id:"owner-A"},access:{plan:"PLUS"}};
+}}));
 mock.module("../src/lib/auth/request-security",()=>({assertAuthMutation:(request:Request)=>{if(request.headers.get("origin") && request.headers.get("origin")!==new URL(request.url).origin)throw new Error("Cross origin");}}));
 mock.module("../src/lib/security/rate-limit",()=>({enforceRateLimit:async()=>{},RateLimitError:class extends Error{}}));
 const execute=async(parts:TemplateStringsArray,...values:unknown[])=>{sql.push({command:parts.join("?"),values});return parts[0].startsWith("UPDATE")&&conflict?0:1;};
@@ -12,7 +18,20 @@ const metadataRoute=await import("../src/app/api/study-music/metadata/route");
 const {resolveMusicMetadata}=await import("../src/lib/study-music/metadata");
 const {emptyLibrary}=await import("../src/lib/study-music/model");
 const request=(data:unknown,origin="http://localhost")=>new Request("http://localhost/api/study-music/library?userId=owner-B",{method:"PUT",headers:{"Content-Type":"application/json",origin},body:JSON.stringify(data)});
-beforeEach(()=>{signedIn=true;conflict=false;sql.length=0;});
+beforeEach(()=>{signedIn=true;conflict=false;plus=true;planAvailable=true;sql.length=0;});
+
+test("Free, guest and unavailable plans cannot use music library or metadata APIs",async()=>{
+  const previous=globalThis.fetch;let fetches=0;
+  globalThis.fetch=(async()=>{fetches++;return Response.json({});}) as unknown as typeof fetch;
+  try {
+    for (const state of [{signedIn:false,plus:false,planAvailable:true,status:401},{signedIn:true,plus:false,planAvailable:true,status:403},{signedIn:true,plus:true,planAvailable:false,status:503}]) {
+      signedIn=state.signedIn;plus=state.plus;planAvailable=state.planAvailable;
+      const responses=[await libraryRoute.GET(),await libraryRoute.PUT(request({revision:0,library:emptyLibrary()})),await metadataRoute.POST(new Request("http://localhost/api/study-music/metadata",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:"https://youtu.be/Abcdef12345"})}))];
+      for (const response of responses) {expect(response.status).toBe(state.status);expect(response.headers.get("Cache-Control")).toBe("private, no-store");}
+    }
+    expect(sql).toHaveLength(0);expect(fetches).toBe(0);
+  } finally {globalThis.fetch=previous;}
+});
 test("unauthenticated requests never read or change a music library",async()=>{signedIn=false;expect((await libraryRoute.GET()).status).toBe(401);expect((await libraryRoute.PUT(request({revision:0,library:emptyLibrary()}))).status).toBe(401);expect(sql).toHaveLength(0);});
 test("library reads and writes always use the server session owner, not supplied IDs",async()=>{await libraryRoute.GET();expect(sql[0].values).toEqual(["owner-A"]);const res=await libraryRoute.PUT(request({revision:0,library:emptyLibrary(),userId:"owner-B"}));expect(res.status).toBe(200);expect(sql.every(q=>!q.values.includes("owner-B"))).toBe(true);expect(sql[2].values).toContain("owner-A");expect(sql[2].command).toContain('AND "revision"');});
 test("cross-origin requests cannot mutate the library",async()=>{expect((await libraryRoute.PUT(request({revision:0,library:emptyLibrary()},"https://evil.test"))).status).not.toBe(200);expect(sql).toHaveLength(0);});

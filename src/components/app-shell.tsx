@@ -150,6 +150,7 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
 };
 
 const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title: string; description: string; anchor?: string }> = {
+  music: { entitlement: "study_music_ad_free", title: "Study Music", description: "Build your study soundtrack with music, playlists, focus sessions and native ambience.", anchor: "music" },
   levels: { entitlement: "levels", title: "Levels", description: "Unlock Scholar progression, advanced rewards, and full level insights." },
   assignments: { entitlement: "assignments", title: "Assignments", description: "Create, manage, and improve assignments with Scholar’s advanced workflow." },
   practicals: { entitlement: "practical_lab", title: "Practical Lab", description: "Explore practical procedures, observations, and interactive laboratory guidance." },

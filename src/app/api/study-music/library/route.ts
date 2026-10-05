@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireEntitlement } from "@/lib/subscriptions/entitlements";
 import { assertAuthMutation } from "@/lib/auth/request-security";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
@@ -12,8 +12,9 @@ const headers = { "Cache-Control": "private, no-store" };
 type LibraryRow = { stateJson: string; revision: number };
 export async function GET() {
   try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ message: "Sign in to sync your library." }, { status: 401, headers });
+    const gate = await requireEntitlement("study_music_ad_free");
+    if (!gate.ok) { gate.response.headers.set("Cache-Control", headers["Cache-Control"]); return gate.response; }
+    const { user } = gate;
     const rows = await db.$queryRaw<LibraryRow[]>`SELECT "stateJson", "revision" FROM "StudyMusicLibrary" WHERE "userId" = ${user.id}`;
     return NextResponse.json({ library: rows[0] ? librarySchema.parse(JSON.parse(rows[0].stateJson)) : emptyLibrary(), revision: rows[0]?.revision ?? 0 }, { headers });
   } catch { return NextResponse.json({ message: "Cloud music storage is unavailable. Your device library is still safe." }, { status: 503, headers }); }
@@ -21,8 +22,9 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     assertAuthMutation(request);
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ message: "Sign in to sync your library." }, { status: 401, headers });
+    const gate = await requireEntitlement("study_music_ad_free");
+    if (!gate.ok) { gate.response.headers.set("Cache-Control", headers["Cache-Control"]); return gate.response; }
+    const { user } = gate;
     await enforceRateLimit(user.id, "music-library", 60, 60_000);
     const data = z.object({ revision: z.number().int().nonnegative(), library: librarySchema }).parse(await readBoundedJson(request, 512 * 1024));
     const json = JSON.stringify(data.library);

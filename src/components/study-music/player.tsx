@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ListMusic, SlidersHorizontal, X, ChevronDown, Maximize2, GripHorizontal, Repeat, Shuffle, Loader2, Headphones, Heart } from "lucide-react";
-import { useMusicStore } from "@/lib/music-store";
+import { useMusicStore, suspendStudyMusic } from "@/lib/music-store";
 import { loadYouTubeAPI, youtubeVideoRequest, type YouTubePlayer, type YouTubeWindow } from "@/lib/study-music/youtube-player";
 import { clampPosition, normalizePosition, snapPosition, type Bounds, type Position } from "@/lib/study-music/position";
 import { formatTime, trackName } from "@/lib/study-music/model";
@@ -53,6 +53,15 @@ function HeaderPlaybackIcon({ playing }: { playing: boolean }) {
 }
 
 export function StudyMusicPlayer({ currentView }: { currentView?: string }) {
+  const access = useScholarAccess();
+  const allowed = access.has("study_music_ad_free");
+  useEffect(() => {
+    if (!allowed) { suspendStudyMusic(); void ambienceEngine.destroy(); }
+    return () => { void ambienceEngine.destroy(); };
+  }, [allowed]);
+  return allowed ? <StudyMusicRuntime currentView={currentView}/> : null;
+}
+function StudyMusicRuntime({ currentView }: { currentView?: string }) {
   const { track, visible, minimized, expanded, owner, position, ambience, ambienceEnabled } = useMusicStore(useShallow(s => ({ track: s.currentTrack, visible: s.widgetVisible, minimized: s.widgetMinimized, expanded: s.widgetExpanded, owner: s.owner, position: s.widgetPosition, ambience: s.ambience, ambienceEnabled: s.ambienceEnabled })));
   const error = useMusicStore(s => s.error), playing = useMusicStore(s => s.isPlaying), playNonce = useMusicStore(s => s.playNonce), seek = useMusicStore(s => s.seekRequest);
   const volume = useMusicStore(s => s.volume), muted = useMusicStore(s => s.muted);
@@ -260,6 +269,8 @@ export function StudyMusicPlayer({ currentView }: { currentView?: string }) {
   </>;
 }
 export function StudyMusicQuickAccess() {
+  const access = useScholarAccess();
   const focus = useMusicStore(s => s.focus);
-  return <button className="sm-quick-access" aria-label="Study Music quick controls" title={focus ? "Music & active focus session" : "Study Music"} onClick={() => useMusicStore.getState().setDrawer("quick")}><Headphones size={18}/>{focus && focus.phase !== "complete" && <span className="sm-status-dot"/>}</button>;
+  const allowed = access.has("study_music_ad_free");
+  return <button className="sm-quick-access" aria-label="Study Music quick controls" title={allowed ? focus ? "Music & active focus session" : "Study Music" : "Study Music · Scholar Plus"} onClick={() => allowed ? useMusicStore.getState().setDrawer("quick") : openMusic()}><Headphones size={18}/>{allowed && focus && focus.phase !== "complete" && <span className="sm-status-dot"/>}</button>;
 }

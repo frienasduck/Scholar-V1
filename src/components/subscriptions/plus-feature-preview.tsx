@@ -5,6 +5,7 @@ import { useId, type ReactNode } from "react";
 import styles from "./plus-feature-preview.module.css";
 
 const capabilities: Partial<Record<ScholarEntitlement, string[]>> = {
+  study_music_ad_free: ["Choose your study soundtrack", "Keep your songs and playlists", "Focus with native ambience"],
   premium_experiments: ["Control interactive instruments", "Take measurements and repeat trials", "Complete guided experiments"],
   slideshow_generation_plus: ["Turn notes, chapters or PDFs into slides", "Choose layouts and presentation density", "Preview, edit and export your presentation"],
   levels: ["Explore your learning progression", "Track milestones and achievements", "See your next learning challenge"],
@@ -20,6 +21,7 @@ const capabilities: Partial<Record<ScholarEntitlement, string[]>> = {
   lam_ai: ["Learn with a contextual tutor", "Break down difficult concepts", "Choose your next learning step"],
 };
 const details: Partial<Record<ScholarEntitlement, string[]>> = {
+  study_music_ad_free: ["Listen with Scholar's compact music controller and supported YouTube source player.", "Organise favorites, imported tracks and queues without losing your saved library.", "Pair study sessions with focus timers and original rain, ocean and noise textures."],
   scholar_intelligence: ["See the bigger picture from all your saved work, organised intelligently.", "Spot gaps and patterns so you know where to focus next.", "Get tailored suggestions to keep your learning on track and moving forward."],
   levels: ["Follow your progress as your study activity builds over time.", "See the milestones and achievements along your learning journey.", "Find the next goal to work towards, one focused step at a time."],
   assignments: ["Keep your chapter tasks and assignment work together in one place.", "Use a structured workflow to plan and develop your responses.", "Return to your saved work and refine it before submission."],

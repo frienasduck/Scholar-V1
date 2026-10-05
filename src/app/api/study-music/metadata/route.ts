@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { resolveMusicMetadata } from "@/lib/study-music/metadata";
 import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 import { assertAuthMutation } from "@/lib/auth/request-security";
+import { requireEntitlement } from "@/lib/subscriptions/entitlements";
 
 export const runtime = "nodejs";
 const windows = new Map<string, { count: number; reset: number }>();
 export async function POST(request: Request) {
   try {
     assertAuthMutation(request);
-    // Ephemeral abuse guard also works for guests without a database. Global
+    const gate = await requireEntitlement("study_music_ad_free");
+    if (!gate.ok) { gate.response.headers.set("Cache-Control", "private, no-store"); return gate.response; }
+    // Ephemeral abuse guard is additional to the server-side Plus check. Global
     // in-flight and cache caps live in the resolver; no arbitrary outbound URLs.
     const key = request.headers.get("x-forwarded-for")?.split(",")[0].trim().slice(0, 80) ?? "local";
     const now = Date.now();

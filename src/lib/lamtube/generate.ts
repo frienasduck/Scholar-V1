@@ -17,6 +17,7 @@ import {
 import { outlineSchema, scenePlanSchema, assembleTimeline } from "./model";
 import type { VideoState } from "./model";
 import { narration } from "./narration";
+import { validatedGeneration } from "./structured-output";
 export function teachingPolicy(v: VideoState) {
   return `You are LAMTube, Scholar's educational motion-graphics director. Teach accurate Class ${
     v.settings.grade
@@ -107,9 +108,8 @@ export async function processVideo(userId: string, id: string, timeoutMs = 48000
       await gather(userId, v);
       v.stage = "outline";
     } else if (v.stage === "outline") {
-      v.outline = outlineSchema.parse(
-        await completeJSON(
-          userId,
+      v.outline = await validatedGeneration(
+          outlineSchema,
           `${teachingPolicy(v)}
 Build a coherent ordered lesson covering ALL selected chapters, prerequisites first, intuitive explanation, formal concept, worked application and recap. Avoid repeating previously covered concepts. Target ${Math.min(
             24,
@@ -120,8 +120,7 @@ Build a coherent ordered lesson covering ALL selected chapters, prerequisites fi
           )} scenes, each ~30–45 seconds. Return only JSON matching ${JSON.stringify(
             z.toJSONSchema(outlineSchema)
           )}`,
-          signal
-        )
+          prompt => completeJSON(userId, prompt, signal)
       );
       const allowed = new Set(v.settings.chapters.map((c) => c.id));
       if (
@@ -139,9 +138,8 @@ Build a coherent ordered lesson covering ALL selected chapters, prerequisites fi
       const index =
         v.repair?.kind === "scene" ? v.repair.scene! : v.plans.length;
       const target = v.outline!.scenes[index];
-      const plan = scenePlanSchema.parse(
-        await completeJSON(
-          userId,
+      const plan = await validatedGeneration(
+          scenePlanSchema,
           `${teachingPolicy(v)}
 OUTLINE DATA ${JSON.stringify(v.outline)}
 CURRENT SCENE ${JSON.stringify(target)}; scene ${
@@ -152,8 +150,7 @@ CURRENT SCENE ${JSON.stringify(target)}; scene ${
 Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas: keep main content in x=80..920,y=140..800. Labels <=65 characters; equations short plain Unicode, no LaTeX. Use 5–12 narration phrases, each <=200 characters (speech limit), ~60–120 words TOTAL. Cues must reveal/draw/move multiple distinct elements at the phrase where the narration explains them, not show everything at time zero. Use pedagogically relevant arrows, changing objects, diagram, drawn graph/sketch or worked equation stages; do NOT merely display bullet points. Graph/sketch points are normalized coordinates within w/h, arrows point from x/y to x+w/y+h. Rectangles/circles support motion cues for physical demonstrations. Plain labels, never full paragraphs on canvas. camera is a subtle pan/zoom, not a planet travel. Tables rows should be brief. Give optional 4-choice question only when interactive enabled; do not reveal its answer in narration. sourceIds must be supplied actual IDs supporting this scene, or [] for general teaching. Return JSON matching ${JSON.stringify(
             z.toJSONSchema(scenePlanSchema)
           )}`,
-          signal
-        )
+          prompt => completeJSON(userId, prompt, signal)
       );
       if (
         plan.chapterId !== target.chapterId ||
@@ -202,6 +199,14 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
     saved = true;
     return result;
   } catch (error) {
+    console.warn("[LAMTube] stage failed", {
+      videoId: id, stage: v?.stage, type: error instanceof Error ? error.name : "Unknown",
+      code: error instanceof AIProviderError ? error.code : undefined,
+      status: error instanceof AIProviderError || error instanceof ProfileError ? error.status : undefined,
+      issues: error instanceof z.ZodError ? error.issues.map(issue => ({ path: issue.path.join("."), code: issue.code })) : undefined,
+      // Stack frames locate unknown infrastructure errors without logging model output or credentials.
+      frames: error instanceof Error ? error.stack?.split("\n").filter(line => /^\s+at /.test(line)).slice(0, 4) : undefined,
+    });
     if (v) {
       const coolingDown = error instanceof RateLimitError;
       v.status = coolingDown ? "generating" : "failed";
@@ -211,7 +216,9 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
           ? "Generation is waiting for the shared AI rate limit. Saved stages will resume automatically after the cooldown."
           : error instanceof ProfileError || error instanceof AIProviderError
           ? error.message
-          : "Generation stopped safely. Retry to reuse completed stages; no successful-generation credit was consumed.";
+          : error instanceof z.ZodError
+          ? `The AI could not produce a valid ${v.stage === "outline" ? "lesson outline" : "animated scene"} after correction. Retry this stage; completed work is saved and no generation credit was consumed.`
+          : `The ${v.stage} stage could not finish. Completed work is saved; retry to continue without a successful-generation charge.`;
       try {
         await saveVideo(userId, v, token);
         saved = true;

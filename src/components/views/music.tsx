@@ -10,6 +10,7 @@ import { Play, Pause, Plus, Music as MusicIcon, Sparkles, X, ListMusic, Headphon
 import { cn } from "@/lib/utils";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { FreeAdSlot } from "@/components/subscriptions/free-ad-slot";
+import { PlusGate } from "@/components/subscriptions/plus-gate";
 import { FocusPanel, MixerPanel } from "@/components/study-music/tools";
 import { MusicImportDialog } from "@/components/study-music/import-dialog";
 import { MusicThumbnail } from "@/components/study-music/thumbnail";
@@ -20,6 +21,9 @@ interface Track { id: string; videoId: string; title: string; category: string; 
 const emojis: Record<string,string> = { "Lo-fi":"🎧",Classical:"🎻",Nature:"🌿",Ambient:"🌌",Piano:"🎹",Rain:"🌧️","Deep focus":"🎯","Scholar picks":"✨","Late night":"🌙","Café":"☕",Instrumental:"🎼" };
 const BG_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4";
 export function MusicView() {
+  return <PlusGate entitlement="study_music_ad_free" title="Study Music" description="Build your study soundtrack with music, playlists, focus sessions and native ambience." anchor="music"><MusicWorkspace/></PlusGate>;
+}
+function MusicWorkspace() {
   const songs = useMusicStore(s => s.library.songs), playlists = useMusicStore(s => s.library.playlists);
   const selectedTrack = useMusicStore(s => s.currentTrack), isPlaying = useMusicStore(s => s.isPlaying);
   const queue = useMusicStore(s => s.queue), queueIndex = useMusicStore(s => s.queueIndex);

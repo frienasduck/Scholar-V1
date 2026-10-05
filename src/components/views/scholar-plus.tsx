@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Beaker, BookOpen, Bot, Check, Crown, FileUp, HardDrive, Loader2, ShieldCheck, Sparkles, Users, Wand2, Workflow, Target } from "lucide-react";
+import { Beaker, BookOpen, Bot, Check, Crown, FileUp, HardDrive, Loader2, ShieldCheck, Sparkles, Users, Wand2, Workflow, Target, Headphones } from "lucide-react";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { toast } from "@/lib/notifications/notification-api";
 
 const FEATURE_SECTIONS = [
+  { id: "music", title: "Study Music", icon: Headphones, copy: "A Plus-only soundtrack workspace with compact playback controls, your saved library and original native ambience. YouTube sources retain their supported visible player.", bullets: ["My Songs and playlists", "Persistent music controls", "Focus sessions and ambience"] },
   { id: "ai", title: "Premium AI & Scholar Intelligence", icon: Bot, copy: "LAM AI tutoring is free. Plus adds configured Gemini and NVIDIA model choices, higher AI limits, mastery signals, weak-topic insights, and a focused revision queue.", bullets: ["Premium AI models", "Scholar Intelligence insights", "Premium AI limits"] },
   { id: "jee", title: "JEE Focused Mode", icon: Target, copy: "Switch Scholar into a JEE-oriented Class 11 flow without locking ordinary CBSE material.", bullets: ["JEE-context AI assistance", "Exam-style practice", "Targeted revision organisation"] },
   { id: "experiments", title: "Interactive Experiments", icon: Beaker, copy: "Get early access to every experiment that is genuinely interactive. Unfinished simulations remain honestly marked Coming Soon.", bullets: ["Vernier Calipers", "Screw Gauge", "Pendulum Motion"] },
@@ -28,7 +29,8 @@ const COMPARISON = [
   ["AI-generated quizzes and slideshows", "3 each per day", "Higher configured limits"],
   ["File storage", "30 MB", "Expanded storage"],
   ["Class 9 and advanced study labs", "Preview", "Included"],
-  ["LAMTube and Study Music", "Scholar-controlled ads may appear", "Ad-free"],
+  ["LAMTube", "Scholar-controlled ads may appear", "No Scholar-controlled ads"],
+  ["Study Music", "Locked preview", "Included"],
 ] as const;
 
 export function ScholarPlusView() {
@@ -92,7 +94,7 @@ export function ScholarPlusView() {
     </section>
     <nav aria-label="Scholar Plus benefits" className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[.035] p-2 backdrop-blur-xl">{FEATURE_SECTIONS.map((section) => <a key={section.id} href={`#${section.id}`} className="min-h-10 shrink-0 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white">{section.title}</a>)}</nav>
     <section id="overview" className="scroll-mt-24">
-      <p className="text-xs font-semibold uppercase tracking-[.22em] text-cyan-200">What Plus changes</p><h2 className="mt-2 text-2xl font-semibold">A stronger Scholar, not a broken Free tier</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">Free keeps core learning, standard resources, LAMTube, Study Music, and limited generation. Plus adds premium intelligence, focused modes, collaboration hosting, richer resources, and higher cost-aware limits.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.22em] text-cyan-200">What Plus changes</p><h2 className="mt-2 text-2xl font-semibold">A stronger Scholar, not a broken Free tier</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-white/55">Free keeps core learning, standard resources, LAMTube, and limited generation. Plus adds Study Music, premium intelligence, focused modes, collaboration hosting, richer resources, and higher cost-aware limits.</p>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {FEATURE_SECTIONS.map((section) => (
           <article id={section.id} key={section.id} className="scroll-mt-24 rounded-3xl border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.02))] p-5 shadow-[inset_0_1px_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-6">

@@ -276,7 +276,7 @@ export function initialVideo(
       notes: "",
       lastWatched: null,
     },
-    provider: "Scholar configured AI / Groq Orpheus narration",
+    provider: "Scholar configured AI / generated speech narration",
     insights: [],
     repair: null,
   };

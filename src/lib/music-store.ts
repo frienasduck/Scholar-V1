@@ -4,6 +4,12 @@ import { advanceFocus, toggleFocusPause, type FocusSession } from "./study-music
 import type { Position } from "./study-music/position";
 export type { MusicTrack } from "./study-music/model";
 export type Ambience = "rain" | "brown" | "white" | "ocean";
+/** Revoking music access stops all activity without deleting the user's library. */
+export function suspendStudyMusic() {
+  const state = useMusicStore.getState();
+  if (state.focus && !state.focus.paused && state.focus.phase !== "complete") state.pauseFocus();
+  useMusicStore.setState({ isPlaying: false, buffering: false, widgetVisible: false, drawer: null, ambienceEnabled: false });
+}
 export type FocusSummary = { id: string; seconds: number; breakSeconds: number; goal: string; subject: string; chapter: string; music: string; at: number };
 export interface MusicState {
   owner: string; hydrated: boolean; library: MusicLibrary; libraryVersion: number;
