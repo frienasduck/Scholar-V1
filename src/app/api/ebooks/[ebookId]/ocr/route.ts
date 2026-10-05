@@ -31,7 +31,19 @@ function failure(error: unknown) {
   };
   const match = error instanceof Error ? messages[error.message] : undefined;
   if (match) return json(match[0], { message: match[1] });
-  console.warn("[Ebook OCR] request failed", { type: error instanceof Error ? error.name : "UNKNOWN" });
+  // Tesseract's worker can reject with a string. Record only infrastructure
+  // identifiers, never the image, book text, credentials or full error message.
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const missingModule = /Cannot find module ['"]([@a-zA-Z0-9_.\/-]+)['"]/.exec(message)?.[1];
+  const runtimeCode = error && typeof error === "object" && "code" in error && typeof error.code === "string" && /^[A-Z0-9_]{1,60}$/.test(error.code) ? error.code : undefined;
+  console.warn("[Ebook OCR] request failed", {
+    type: error instanceof Error ? error.name : typeof error,
+    runtimeCode, missingModule,
+    fileCode: /\b(ENOENT|EACCES|ENOMEM|ERR_WORKER_[A-Z_]+)\b/.exec(message)?.[1],
+    runtimeAsset: /(?:node_modules\/)([a-zA-Z0-9@_.\/-]{1,180})/.exec(message.replace(/\\/g, "/"))?.[1],
+    workerFailure: /worker|tesseract|wasm/i.test(message),
+    frames: error instanceof Error ? error.stack?.split("\n").filter(line => /^\s+at /.test(line)).slice(0, 4) : undefined,
+  });
   return json(503, { message: "The private OCR service is temporarily unavailable. Your original book is safe; no replacement text was saved." });
 }
 

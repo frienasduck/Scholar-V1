@@ -57,7 +57,8 @@ export async function GET(request: NextRequest, context: Context) {
   if (pageQuery !== null) {
     const page = Number(pageQuery);
     if (!Number.isInteger(page) || page < 1 || page > ebook.pageCount) return NextResponse.json({ message: "Choose a page in this book." }, { status: 400 });
-    const rows = await db.$queryRaw<{ text: string | null }[]>`SELECT "pageTexts" ->> ${page - 1} AS text FROM "CustomEbook" WHERE "id" = ${ebookId} AND "userId" = ${user.id} AND "deletedAt" IS NULL`;
+    // Prisma binds JS integers as bigint; JSON array operators require int4.
+    const rows = await db.$queryRaw<{ text: string | null }[]>`SELECT "pageTexts" ->> CAST(${page - 1} AS integer) AS text FROM "CustomEbook" WHERE "id" = ${ebookId} AND "userId" = ${user.id} AND "deletedAt" IS NULL`;
     return NextResponse.json({ page, text: rows[0]?.text?.slice(0, 20_000) ?? "" }, { headers });
   }
   const reading = readingSchema.safeParse(ebook.readingState);

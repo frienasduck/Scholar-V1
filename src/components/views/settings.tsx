@@ -93,6 +93,8 @@ const SCHOLAR_UPDATE_LOG = [
       "LAMTube validates generated scenes, discards unused AI metadata and makes one bounded correction attempt while preserving strict geometry, cue and source checks.",
       "Supported Groq models now generate outlines and animated scenes with strict JSON-schema constraints, an explicit generation message and a larger bounded output budget; safe provider error codes help diagnose failures without exposing prompts or credentials.",
       "Malformed JSON returned as a provider 400 now uses the existing alternate-model fallback instead of incorrectly asking students to shorten their input.",
+      "If the provider rejects a complex animation schema, the one alternate attempt uses JSON mode while retaining strict local scene, animation and source validation.",
+      "Fixed the uploaded-book page lookup's PostgreSQL integer type so saved extraction and reviewed OCR text reach LAM instead of failing silently.",
       "Configured Gemini speech produces seekable WAV narration. Groq-only configurations now show actionable model-terms and access errors instead of a generic failure.",
       "A new LAMTube lesson-studio loading view shows saved scenes, voice clips, the real storyboard and stage progress, with lightweight reduced-motion-aware animation and background continuation.",
       "Video failures now record safe stage diagnostics; completed stages and the existing successful-generation credit protections are preserved.",

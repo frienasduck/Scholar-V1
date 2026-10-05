@@ -30,7 +30,7 @@ const db: any = {
     updateMany: async ({ where, data }: any) => { if (!matches(job, where)) return { count: 0 }; Object.assign(job, data); return { count: 1 }; },
     deleteMany: async () => { job = null; },
   },
-  $queryRaw: async (parts: TemplateStringsArray, ...values: any[]) => { expect(values).toContain(actor); if (parts.join("").includes('"pageTexts"')) return [{ text: book.pageTexts[values[0]] }]; return [{ id: book.id }]; },
+  $queryRaw: async (parts: TemplateStringsArray, ...values: any[]) => { expect(values).toContain(actor); if (parts.join("").includes('"pageTexts"')) { expect(parts.join("")).toContain("AS integer)"); return [{ text: book.pageTexts[values[0]] }]; } return [{ id: book.id }]; },
   $transaction: async (callback: (tx: any) => unknown) => { const snapshot = structuredClone({ book, resource, chunks, job }); try { return await callback(db); } catch (error) { ({ book, resource, chunks, job } = snapshot); throw error; } },
 };
 mock.module("../src/lib/db", () => ({ db }));

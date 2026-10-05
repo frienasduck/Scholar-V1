@@ -94,15 +94,23 @@ async function complete(request: ScholarGroqRequest, json: boolean): Promise<str
   const deadline = AbortSignal.timeout(50_000);
   const signal = request.signal ? AbortSignal.any([request.signal, deadline]) : deadline;
   const client = new Groq({ apiKey: config.apiKey, timeout: 25_000, maxRetries: 0 });
+  let schemaRejected = false;
   for (const [index, model] of config.models.entries()) {
     try {
       signal.throwIfAborted();
-      const result = await client.chat.completions.create({ ...parameters(request, model, json), stream: false }, { signal });
+      // Some complex animation schemas pass local validation but are rejected by
+      // the provider's constrained decoder. The existing alternate attempt uses
+      // JSON mode in that case; canonical Zod validation remains mandatory.
+      const attempt = schemaRejected ? { ...request, jsonSchema: undefined } : request;
+      const result = await client.chat.completions.create({ ...parameters(attempt, model, json), stream: false }, { signal });
       const choice = result.choices[0];
       return validateCompletion(choice?.message.content, choice?.finish_reason);
     } catch (error) {
       console.warn("[Scholar AI]", { model, status: statusOf(error), code: providerCode(error) });
-      if (!signal.aborted && index < config.models.length - 1 && canFallback(error)) continue;
+      if (!signal.aborted && index < config.models.length - 1 && canFallback(error)) {
+        schemaRejected = json && providerCode(error) === "json_validate_failed";
+        continue;
+      }
       throw normalizeError(error, signal);
     }
   }

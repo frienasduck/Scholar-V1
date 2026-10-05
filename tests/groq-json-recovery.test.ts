@@ -22,8 +22,11 @@ function setup(code: string) {
 }
 test("provider JSON validation failure uses one alternate model", async () => {
   const fetcher = setup("json_validate_failed");
-  expect(await generateScholarGroqJSON({ messages: [{ role: "user", content: "JSON result" }] })).toEqual({ ok: true });
+  expect(await generateScholarGroqJSON({ messages: [{ role: "user", content: "JSON result" }], jsonSchema: { type: "object", properties: { ok: { type: "boolean" } } } })).toEqual({ ok: true });
   expect(fetcher).toHaveBeenCalledTimes(2);
+  const bodies = fetcher.mock.calls.map(call => JSON.parse(String(call[1]?.body)));
+  expect(bodies[0].response_format.type).toBe("json_schema");
+  expect(bodies[1].response_format.type).toBe("json_object");
 });
 test("arbitrary invalid-request 400 is not retried", async () => {
   const fetcher = setup("invalid_request_error");
