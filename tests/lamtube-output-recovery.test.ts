@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { outlineSchema, scenePlanSchema } from "../src/lib/lamtube/model";
+import { elementSchema, outlineSchema, scenePlanSchema } from "../src/lib/lamtube/model";
 import { previewVideo } from "../src/lib/lamtube/preview";
 import { parseGenerated, validatedGeneration } from "../src/lib/lamtube/structured-output";
 
@@ -16,6 +16,12 @@ test("invalid geometry, cue references and executable kinds are still rejected",
     { ...source, elements: [{ ...source.elements[0], x: -5 }, ...source.elements.slice(1)] },
     { ...source, cues: source.cues.map(cue => ({ ...cue, element: "does-not-exist" })) },
   ]) expect(() => parseGenerated(scenePlanSchema, bad)).toThrow();
+});
+test("opposing force arrows accept bounded signed vectors, not negative box sizes", () => {
+  const arrow = { id: "reaction", kind: "arrow", x: 700, y: 400, w: -200, h: 0 };
+  expect(elementSchema.parse(arrow).w).toBe(-200);
+  expect(() => elementSchema.parse({ ...arrow, kind: "rect" })).toThrow();
+  expect(() => elementSchema.parse({ ...arrow, w: -1001 })).toThrow();
 });
 test("one bounded repair corrects invalid output; repeated invalid data stops", async () => {
   const valid = { summary: "Forces", scenes: previewVideo().plans.map(({ title, chapterId, goal }) => ({ title, chapterId, goal })) };

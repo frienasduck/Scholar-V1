@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Eye, Maximize2, PanelLeft, PenLine, Search, Sparkles, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { BookModeSearchPage } from "./book-mode-reader";
@@ -27,7 +27,16 @@ export function PageReaderShell(props: Props) {
   const currentChapter = props.chapters.filter(item => item.page <= props.page).at(-1)?.title;
   // Scroll only the document, never move the reader underneath Scholar's header.
   useEffect(() => { stage.current?.scrollTo({ top: 0, left: 0 }); }, [props.page]);
-  useEffect(() => { root.current?.closest("#main-scroll")?.scrollTo({ top: 0 }); }, []);
+  useLayoutEffect(() => {
+    const main = root.current?.closest<HTMLElement>("#main-scroll");
+    if (!main) return;
+    const overflow = main.style.overflow;
+    main.scrollTo({ top: 0, behavior: "instant" });
+    // The reader owns scrolling. Prevent browser focus/scrollIntoView from
+    // moving the entire workspace's toolbar behind Scholar's fixed header.
+    main.style.overflow = "clip";
+    return () => { main.style.overflow = overflow; };
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     if (search.trim().length < 2) return;

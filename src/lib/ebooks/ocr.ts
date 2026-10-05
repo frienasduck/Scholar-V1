@@ -21,7 +21,7 @@ async function recognize(source: Buffer): Promise<OcrResult> {
     if (expired) throw new Error("OCR_TIMEOUT");
     if (!workerPromise) workerPromise = createWorker("eng", OEM.LSTM_ONLY, {
       // next.config.ts traces these files; do not use bundler-rewritten require.resolve IDs.
-      workerPath: join(process.cwd(), "node_modules", "tesseract.js", "src", "worker-script", "node", "index.js"),
+      workerPath: join(process.cwd(), "src", "runtime", "ocr-worker.cjs"),
       langPath: join(process.cwd(), "node_modules", "@tesseract.js-data", "eng", "4.0.0_best_int"),
       cachePath: tmpdir(), cacheMethod: "none",
       errorHandler: () => { workerPromise = null; },

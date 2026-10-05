@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
       "./node_modules/@napi-rs/canvas*/**/*",
     ],
     "/api/ocr": [
+      "./src/runtime/ocr-worker.cjs",
       "./node_modules/@tesseract.js-data/eng/4.0.0_best_int/**/*",
       "./node_modules/@tesseract.js-data/eng/package.json",
       "./node_modules/tesseract.js/src/**/*",
@@ -45,7 +46,7 @@ const nextConfig: NextConfig = {
       "./node_modules/zlibjs/**/*",
       "./node_modules/bmp-js/**/*",
     ],
-    "/api/ebooks/*/ocr": [...pdfRuntimeFiles, "./node_modules/@tesseract.js-data/eng/4.0.0_best_int/**/*", "./node_modules/@tesseract.js-data/eng/package.json", "./node_modules/tesseract.js/src/**/*", "./node_modules/tesseract.js/package.json", "./node_modules/tesseract.js-core/*lstm*", "./node_modules/tesseract.js-core/package.json", "./node_modules/wasm-feature-detect/**/*", "./node_modules/regenerator-runtime/**/*", "./node_modules/is-url/**/*", "./node_modules/zlibjs/**/*", "./node_modules/bmp-js/**/*"],
+    "/api/ebooks/*/ocr": ["./src/runtime/ocr-worker.cjs", ...pdfRuntimeFiles, "./node_modules/@tesseract.js-data/eng/4.0.0_best_int/**/*", "./node_modules/@tesseract.js-data/eng/package.json", "./node_modules/tesseract.js/src/**/*", "./node_modules/tesseract.js/package.json", "./node_modules/tesseract.js-core/*lstm*", "./node_modules/tesseract.js-core/package.json", "./node_modules/wasm-feature-detect/**/*", "./node_modules/regenerator-runtime/**/*", "./node_modules/is-url/**/*", "./node_modules/zlibjs/**/*", "./node_modules/bmp-js/**/*"],
   },
   outputFileTracingExcludes: {
     // Never package abandoned Prisma downloads, debug maps, or alternative

@@ -88,8 +88,9 @@ export const elementSchema = z
     ]),
     x: coordinate,
     y: coordinate,
-    w: coordinate.default(100),
-    h: coordinate.default(70),
+    // Arrows use a signed displacement, not a CSS box size.
+    w: z.number().finite().min(-1000).max(1000).default(100),
+    h: z.number().finite().min(-1000).max(1000).default(70),
     text: z.string().max(100).default(""),
     color: z
       .enum(
@@ -102,7 +103,11 @@ export const elementSchema = z
     points: z.array(point).max(80).default([]),
     rows: z.array(z.string().max(80)).max(8).default([]),
   })
-  .strict();
+  .strict()
+  .superRefine((element, ctx) => {
+    if (element.kind !== "arrow" && (element.w < 0 || element.h < 0))
+      ctx.addIssue({ code: "custom", message: "Only arrows can have signed dimensions" });
+  });
 const cue = z
   .object({
     element: z.string().max(40),

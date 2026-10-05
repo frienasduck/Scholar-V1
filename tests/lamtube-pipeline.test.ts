@@ -1,11 +1,13 @@
 import { beforeEach, expect, mock, test } from "bun:test";
 import { initialVideo, type VideoState } from "../src/lib/lamtube/model";
 import { previewVideo } from "../src/lib/lamtube/preview";
+import { AIProviderError } from "../src/lib/ai/errors";
 mock.module("server-only",()=>({}));
 const demo=previewVideo();let state:VideoState;let lease:string|null=null;let aiCalls=0;let speechCalls=0;let commits=0;let refunds=0;let broken=false;let emptySources=false;
 mock.module("../src/lib/personalization/server",()=>({ProfileError:class extends Error{constructor(message:string,readonly status=409){super(message);}},checkGrade:async()=>{}}));
 class RateLimitError extends Error { constructor(readonly retryAfterSeconds: number) { super("Cooldown"); } }
 let limited = false;
+let providerLimited = false;
 mock.module("../src/lib/security/rate-limit",()=>({RateLimitError,enforceRateLimit:async()=>{if(limited)throw new RateLimitError(60);}}));
 mock.module("../src/lib/lamtube/store",()=>({
   claimVideo:async()=>{if(lease)throw new Error("BUSY");lease=crypto.randomUUID();return lease;},
@@ -16,11 +18,11 @@ mock.module("../src/lib/lamtube/store",()=>({
   saveVideo:async(_u:string,v:VideoState,token:string,complete=false)=>{if(token!==lease||v.revision!==state.revision)throw new Error("LEASE_FENCED");state={...structuredClone(v),charged:v.charged||complete,revision:v.revision+1};if(complete&&!v.charged)commits++;if(v.status==="failed")refunds++;lease=null;return structuredClone(state);},
 }));
 mock.module("../src/lib/resources/service",()=>({findResource:async()=>({canGenerateDerivatives:true,canStoreCopy:true,state:"READY",sourceMetadata:{}}),retrieve:async()=>emptySources?[]:[{citation:{id:"S1",resourceId:"r1",title:"Licensed source",publisher:"Publisher",url:null,heading:"Forces"},text:"Net force equals mass times acceleration."}]}));
-mock.module("../src/lib/ai/structured",()=>({completeJSON:async()=>{aiCalls++;if(broken)throw new Error("PROVIDER_DOWN");if(state.stage==="outline")return{summary:"Force and graph",scenes:demo.plans.map(p=>({title:p.title,goal:p.goal,chapterId:p.chapterId}))};const index=state.repair?.scene??state.plans.length;return{...demo.plans[index],sourceIds:["S1"]};}}));
+mock.module("../src/lib/ai/structured",()=>({completeJSON:async()=>{aiCalls++;if(providerLimited)throw new AIProviderError("Busy",429,"GROQ_RATE_LIMITED");if(broken)throw new Error("PROVIDER_DOWN");if(state.stage==="outline")return{summary:"Force and graph",scenes:demo.plans.map(p=>({title:p.title,goal:p.goal,chapterId:p.chapterId}))};const index=state.repair?.scene??state.plans.length;return{...demo.plans[index],sourceIds:["S1"]};}}));
 mock.module("../src/lib/lamtube/narration",()=>({narration:async(_u:string,_id:string,_token:string,text:string)=>{speechCalls++;if(broken)throw new Error("TTS_DOWN");return{id:`audio-${speechCalls}`,text,duration:7};}}));
 const {processVideo}=await import("../src/lib/lamtube/generate");
 const {queueVideo,runVideoBatch}=await import("../src/lib/lamtube/jobs");
-beforeEach(()=>{state=initialVideo("v",demo.settings,0);lease=null;aiCalls=0;speechCalls=0;commits=0;refunds=0;broken=false;emptySources=false;limited=false;});
+beforeEach(()=>{state=initialVideo("v",demo.settings,0);lease=null;aiCalls=0;speechCalls=0;commits=0;refunds=0;broken=false;emptySources=false;limited=false;providerLimited=false;});
 test("planning, per-scene generation, audio and assembly are separate saved stages",async()=>{await processVideo("u","v");expect(state.stage).toBe("outline");expect(aiCalls).toBe(0);await processVideo("u","v");expect(state.stage).toBe("scenes");expect(aiCalls).toBe(1);await processVideo("u","v");expect(state.plans).toHaveLength(1);expect(speechCalls).toBe(0);await processVideo("u","v");expect(state.stage).toBe("narration");expect(commits).toBe(0);while(state.status!=="ready")await processVideo("u","v");expect(aiCalls).toBe(3);expect(speechCalls).toBe(7);expect(commits).toBe(1);expect(state.timeline?.duration).toBe(49);});
 test("reloading/resuming a saved stage does not rerun completed planning",async()=>{for(let i=0;i<5;i++)await processVideo("u","v");const beforeAI=aiCalls;while(state.status!=="ready")await processVideo("u","v");expect(aiCalls).toBe(beforeAI);expect(state.clips.flat()).toHaveLength(7);});
 test("provider failure releases credit and retains successful earlier stages",async()=>{await processVideo("u","v");broken=true;await expect(processVideo("u","v")).rejects.toThrow();expect(state.status).toBe("failed");expect(state.sources).toHaveLength(1);expect(refunds).toBe(1);expect(commits).toBe(0);broken=false;await processVideo("u","v");expect(state.outline?.scenes).toHaveLength(2);});
@@ -32,3 +34,4 @@ test("queue responds before provider work, then the server batch completes witho
 test("background heartbeat never restarts a cancelled or failed job",async()=>{for(const status of ["cancelled","failed"] as const){state.status=status;await queueVideo("u","v");await runVideoBatch("u","v");expect(state.status).toBe(status);}expect(aiCalls).toBe(0);expect(commits).toBe(0);await queueVideo("u","v",true);expect(state.status).toBe("generating");});
 test("shared AI limits pause rather than fail or refund completed work",async()=>{await queueVideo("u","v");await processVideo("u","v");limited=true;await expect(processVideo("u","v")).rejects.toBeInstanceOf(RateLimitError);expect(state.status).toBe("generating");expect(state.retryAt).toBeGreaterThan(Date.now());expect(refunds).toBe(0);await runVideoBatch("u","v");expect(aiCalls).toBe(0);limited=false;state.retryAt=0;await runVideoBatch("u","v");expect(state.status).toBe("ready");expect(commits).toBe(1);});
 test("a near-deadline batch preserves the next provider stage for a fresh batch",async()=>{await queueVideo("u","v");await processVideo("u","v");await runVideoBatch("u","v",2000);expect(state.stage).toBe("outline");expect(aiCalls).toBe(0);expect(state.status).toBe("generating");});
+test("provider rate limits persist a cooldown and resume without rerunning saved work",async()=>{await processVideo("u","v");providerLimited=true;await expect(processVideo("u","v")).rejects.toBeInstanceOf(AIProviderError);expect(state.status).toBe("generating");expect(state.retryAt).toBeGreaterThan(Date.now());expect(refunds).toBe(0);const calls=aiCalls;await runVideoBatch("u","v");expect(aiCalls).toBe(calls);providerLimited=false;state.retryAt=0;await runVideoBatch("u","v");expect(state.status).toBe("ready");expect(commits).toBe(1);});

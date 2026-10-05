@@ -208,9 +208,10 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
       frames: error instanceof Error ? error.stack?.split("\n").filter(line => /^\s+at /.test(line)).slice(0, 4) : undefined,
     });
     if (v) {
-      const coolingDown = error instanceof RateLimitError;
+      const coolingDown = error instanceof RateLimitError || error instanceof AIProviderError && error.status === 429;
+      const cooldownSeconds = error instanceof RateLimitError ? error.retryAfterSeconds : 60;
       v.status = coolingDown ? "generating" : "failed";
-      v.retryAt = coolingDown ? Date.now() + error.retryAfterSeconds * 1000 : null;
+      v.retryAt = coolingDown ? Date.now() + cooldownSeconds * 1000 : null;
       v.error =
         coolingDown
           ? "Generation is waiting for the shared AI rate limit. Saved stages will resume automatically after the cooldown."
