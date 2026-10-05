@@ -45,6 +45,7 @@ function normalizeError(error: unknown, signal: AbortSignal): Error {
   if (signal.aborted) return new AIProviderError("The AI request timed out or was cancelled. Please try again.", 504, "AI_TIMEOUT");
   if (error instanceof AIProviderError) return error;
   const status = statusOf(error);
+  if (providerCode(error) === "json_validate_failed") return new AIProviderError("The AI could not produce valid structured data. Retry this saved stage.", 502, "GROQ_INVALID_JSON");
   if (status === 401 || status === 403) return new AIProviderError("Scholar AI is temporarily unavailable. Please contact support.", 503, "GROQ_AUTH_FAILED");
   if (status === 429) return new AIProviderError("Scholar AI is busy right now. Please retry shortly.", 429, "GROQ_RATE_LIMITED");
   if (status === 404) return new AIProviderError("This AI model is unavailable. Please try again.", 503, "GROQ_MODEL_UNAVAILABLE");
@@ -54,6 +55,9 @@ function normalizeError(error: unknown, signal: AbortSignal): Error {
 
 function canFallback(error: unknown) {
   if (error instanceof AIProviderError) return error.code === "GROQ_EMPTY_RESPONSE";
+  // This 400 describes malformed model output, not a bad user request.
+  // Use the existing single alternate-model budget; never retry arbitrary 400s.
+  if (providerCode(error) === "json_validate_failed") return true;
   const status = statusOf(error);
   return status === 0 || status === 404 || status === 429 || status >= 500;
 }

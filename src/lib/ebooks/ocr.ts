@@ -1,7 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
 import sharp from "sharp";
 import { createWorker, OEM, PSM } from "tesseract.js";
@@ -9,7 +8,6 @@ import { createWorker, OEM, PSM } from "tesseract.js";
 export type OcrResult = { text: string; confidence: number; reviewRequired: boolean };
 const activeJobs = new Map<string, Promise<OcrResult>>();
 let workerPromise: ReturnType<typeof createWorker> | null = null;
-const require = createRequire(import.meta.url);
 
 /** One bounded native worker. Language data ships with the app, not a runtime CDN. */
 async function recognize(source: Buffer): Promise<OcrResult> {
@@ -22,8 +20,9 @@ async function recognize(source: Buffer): Promise<OcrResult> {
       .resize({ width: 2200, withoutEnlargement: true }).png().toBuffer();
     if (expired) throw new Error("OCR_TIMEOUT");
     if (!workerPromise) workerPromise = createWorker("eng", OEM.LSTM_ONLY, {
-      workerPath: require.resolve("tesseract.js/src/worker-script/node/index.js"),
-      langPath: join(dirname(require.resolve("@tesseract.js-data/eng/package.json")), "4.0.0_best_int"),
+      // next.config.ts traces these files; do not use bundler-rewritten require.resolve IDs.
+      workerPath: join(process.cwd(), "node_modules", "tesseract.js", "src", "worker-script", "node", "index.js"),
+      langPath: join(process.cwd(), "node_modules", "@tesseract.js-data", "eng", "4.0.0_best_int"),
       cachePath: tmpdir(), cacheMethod: "none",
       errorHandler: () => { workerPromise = null; },
     }).catch(error => { workerPromise = null; throw error; });

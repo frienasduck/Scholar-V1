@@ -1,13 +1,13 @@
 import "server-only";
 import { MAX_EBOOK_PAGES, MAX_EBOOK_TEXT } from "@/lib/ebooks/contracts";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 type PdfCheckpoint = { pages: string[]; pageCount: number };
 
 /** Render only an owner-authorized page; no external assets or active PDF scripts. */
 export async function renderPdfPage(bytes: Uint8Array, number: number): Promise<Buffer> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const assets = dirname(createRequire(import.meta.url).resolve("pdfjs-dist/package.json"));
+  // Explicitly traced runtime files: Turbopack can turn require.resolve into a numeric module ID.
+  const assets = join(process.cwd(), "node_modules", "pdfjs-dist");
   const assetDirectory = (name: string) => join(assets, name).replace(/\\/g, "/") + "/";
   const task = pdfjs.getDocument({ data: Uint8Array.from(bytes), stopAtErrors: true, useWorkerFetch: false, verbosity: 0, standardFontDataUrl: assetDirectory("standard_fonts"), cMapUrl: assetDirectory("cmaps"), cMapPacked: true, wasmUrl: assetDirectory("wasm") });
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -35,7 +35,7 @@ export async function renderPdfPage(bytes: Uint8Array, number: number): Promise<
 export async function extractPdf(bytes: Uint8Array, options?: { pages?: string[]; batchSize?: number; checkpoint?: (value: PdfCheckpoint) => Promise<void> }) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   // Buffer.slice() aliases memory; Uint8Array.from() also copies Node/Bun Buffers.
-  const assets = dirname(createRequire(import.meta.url).resolve("pdfjs-dist/package.json"));
+  const assets = join(process.cwd(), "node_modules", "pdfjs-dist");
   const assetDirectory = (name: string) => join(assets, name).replace(/\\/g, "/") + "/";
   const task = pdfjs.getDocument({ data: Uint8Array.from(bytes), stopAtErrors: true, disableFontFace: true, useSystemFonts: false, useWorkerFetch: false, verbosity: 0, standardFontDataUrl: assetDirectory("standard_fonts"), cMapUrl: assetDirectory("cmaps"), cMapPacked: true, wasmUrl: assetDirectory("wasm") });
   let timeout: ReturnType<typeof setTimeout>;
