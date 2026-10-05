@@ -127,7 +127,11 @@ export async function processResourceJob(resourceId?: string, ownerUserId?: stri
         await tx.studyResource.update({ where: { id: resource.id }, data: { sourceMetadata: { ...metadata, refunded: true } as Prisma.InputJsonValue } });
       }
     });
-    console.warn("[Resource job] failed", { id: resource.id, code });
+    console.warn("[Resource job] failed", { id: resource.id, code,
+      type: error instanceof Error ? error.name : "Unknown",
+      runtimeCode: error && typeof error === "object" && "code" in error && typeof error.code === "string" && /^[A-Z_]{1,60}$/.test(error.code) ? error.code : undefined,
+      frames: error instanceof Error ? error.stack?.split("\n").filter(line => /^\s+at /.test(line)).slice(0, 5) : undefined,
+    });
   }
   return true;
 }
