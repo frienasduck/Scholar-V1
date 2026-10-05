@@ -92,21 +92,30 @@ function playLamActivationSound() {
 }
 
 type LamWidgetProps = { currentView?: string; scholarClass?: 9 | 11; subject?: string; chapter?: string; summary?: string; concepts?: string[] };
+type LamOpenRequest = { prompt?: string; context?: LamRuntimeContext };
 
 export function LamWidget(props: LamWidgetProps) {
   const mobileMode = useStore((state) => state.settings.mobileLamMode ?? "off");
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
+  const [manualRequest, setManualRequest] = useState<LamOpenRequest | null>(null);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");
     const sync = () => setIsMobile(query.matches);
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
-  if (isMobile && mobileMode === "off") return null;
-  return <LamWidgetRuntime {...props} compactMobile={isMobile && mobileMode === "compact"} />;
+  const manualOnly = isMobile && mobileMode === "off";
+  useEffect(() => {
+    if (!manualOnly) return;
+    const open = (event: Event) => setManualRequest((event as CustomEvent<LamOpenRequest>).detail ?? {});
+    window.addEventListener("scholar:open-lam", open);
+    return () => window.removeEventListener("scholar:open-lam", open);
+  }, [manualOnly]);
+  if (manualOnly && !manualRequest) return null;
+  return <LamWidgetRuntime {...props} compactMobile={isMobile && (mobileMode === "compact" || manualOnly)} manualOnly={manualOnly} initialRequest={manualOnly ? manualRequest : null} onManualClose={() => setManualRequest(null)} />;
 }
 
-function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, compactMobile }: LamWidgetProps & { compactMobile: boolean }) {
+function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, compactMobile, manualOnly = false, initialRequest, onManualClose }: LamWidgetProps & { compactMobile: boolean; manualOnly?: boolean; initialRequest?: LamOpenRequest | null; onManualClose?: () => void }) {
   const user = useStore((state) => state.user);
   const addNote = useStore((state) => state.addNote);
   const settings = useStore((state) => state.settings);
@@ -131,7 +140,8 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const finishClosing = useCallback(() => {
     // A keyboard shortcut can reopen LAM while it exits. Don't close that new session.
     setPanelPhase((previous) => previous === "closing" ? "closed" : previous);
-  }, []);
+    if (manualOnly) onManualClose?.();
+  }, [manualOnly, onManualClose]);
   const [dockTarget, setDockTarget] = useState<HTMLElement | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -177,7 +187,9 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const endRef = useRef<HTMLDivElement>(null);
 
   const conversation = useMemo(() => state.conversations.find((item) => item.id === state.activeConversationId) ?? state.conversations[0], [state]);
-  const prefs = state.preferences;
+  // Explicit page help may open a temporary mobile session. Keep ambient
+  // hands-free listening off and never change the student's saved settings.
+  const prefs = useMemo(() => manualOnly ? { ...state.preferences, wakeWordEnabled: false } : state.preferences, [manualOnly, state.preferences]);
   useEffect(() => { if (!prefs.assistantEnabled) setOpen(false); }, [prefs.assistantEnabled]);
   useEffect(() => {
     const desktop = window.matchMedia("(min-width: 1024px)");
@@ -329,6 +341,12 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     window.addEventListener("scholar:open-lam", openLam);
     return () => window.removeEventListener("scholar:open-lam", openLam);
   }, []);
+  useEffect(() => {
+    if (!initialRequest) return;
+    if (initialRequest.context) setRuntimeContext({ ...getLamPageContext(), ...initialRequest.context });
+    if (initialRequest.prompt) setInput(initialRequest.prompt);
+    setOpen(true);
+  }, [initialRequest, setOpen]);
 
   const stopSpeech = useCallback(() => {
     window.speechSynthesis?.cancel();
@@ -727,7 +745,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
     {!prefs.compactOrb && <><span className="flex-1 text-left text-white/78">Ask LAM</span><Mic className="h-4 w-4 text-white/45" /></>}
   </motion.button> : null;
 
-  if (!prefs.assistantEnabled && closed) return null;
+  if ((manualOnly || !prefs.assistantEnabled) && closed) return null;
 
   return createPortal(
     <aside className="lam-system-root fixed inset-x-0 top-0 z-[10000] flex flex-col items-center px-3" data-state={visualState} data-quality={renderQuality} data-intensity={settings.reduceMotion ? "minimal" : prefs.animationIntensity} aria-label="LAM personal assistant">
