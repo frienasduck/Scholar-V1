@@ -90,6 +90,7 @@ const SCHOLAR_UPDATE_LOG = [
       "Uploaded PDFs use a compact Scholar reader with full-width pages, chapter/page navigation and a dedicated document scroll area. Toolbar and pagination no longer overlay the document; page changes reset only the document scroll.",
       "Reader controls retain bookmarks, reviewed OCR text, Ask LAM, notes, summaries, practice and immersive book mode, with mobile navigation and reading progress.",
       "LAMTube validates generated scenes, discards unused AI metadata and makes one bounded correction attempt while preserving strict geometry, cue and source checks.",
+      "Supported Groq models now generate outlines and animated scenes with strict JSON-schema constraints, an explicit generation message and a larger bounded output budget; safe provider error codes help diagnose failures without exposing prompts or credentials.",
       "Configured Gemini speech produces seekable WAV narration. Groq-only configurations now show actionable model-terms and access errors instead of a generic failure.",
       "A new LAMTube lesson-studio loading view shows saved scenes, voice clips, the real storyboard and stage progress, with lightweight reduced-motion-aware animation and background continuation.",
       "Video failures now record safe stage diagnostics; completed stages and the existing successful-generation credit protections are preserved.",

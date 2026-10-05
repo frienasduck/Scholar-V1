@@ -120,7 +120,7 @@ Build a coherent ordered lesson covering ALL selected chapters, prerequisites fi
           )} scenes, each ~30–45 seconds. Return only JSON matching ${JSON.stringify(
             z.toJSONSchema(outlineSchema)
           )}`,
-          prompt => completeJSON(userId, prompt, signal)
+          prompt => completeJSON(userId, prompt, signal, z.toJSONSchema(outlineSchema))
       );
       const allowed = new Set(v.settings.chapters.map((c) => c.id));
       if (
@@ -150,7 +150,7 @@ CURRENT SCENE ${JSON.stringify(target)}; scene ${
 Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas: keep main content in x=80..920,y=140..800. Labels <=65 characters; equations short plain Unicode, no LaTeX. Use 5–12 narration phrases, each <=200 characters (speech limit), ~60–120 words TOTAL. Cues must reveal/draw/move multiple distinct elements at the phrase where the narration explains them, not show everything at time zero. Use pedagogically relevant arrows, changing objects, diagram, drawn graph/sketch or worked equation stages; do NOT merely display bullet points. Graph/sketch points are normalized coordinates within w/h, arrows point from x/y to x+w/y+h. Rectangles/circles support motion cues for physical demonstrations. Plain labels, never full paragraphs on canvas. camera is a subtle pan/zoom, not a planet travel. Tables rows should be brief. Give optional 4-choice question only when interactive enabled; do not reveal its answer in narration. sourceIds must be supplied actual IDs supporting this scene, or [] for general teaching. Return JSON matching ${JSON.stringify(
             z.toJSONSchema(scenePlanSchema)
           )}`,
-          prompt => completeJSON(userId, prompt, signal)
+          prompt => completeJSON(userId, prompt, signal, z.toJSONSchema(scenePlanSchema))
       );
       if (
         plan.chapterId !== target.chapterId ||

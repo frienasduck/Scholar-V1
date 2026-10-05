@@ -3,6 +3,7 @@ import "server-only";
 import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { AIProviderError } from "@/lib/ai/errors";
+import { structuredResponseFormat } from "./output-schema";
 
 export type ScholarGroqMessage = ChatCompletionMessageParam;
 export type ScholarGroqRequest = {
@@ -12,6 +13,7 @@ export type ScholarGroqRequest = {
   temperature?: number;
   maxTokens?: number;
   signal?: AbortSignal;
+  jsonSchema?: Record<string, unknown>;
 };
 
 export function getScholarGroqConfig(credential?: ScholarGroqRequest["credential"], requestedModel?: string) {
@@ -27,6 +29,16 @@ export function getScholarGroqConfig(credential?: ScholarGroqRequest["credential
 
 function statusOf(error: unknown) {
   return error && typeof error === "object" && "status" in error ? Number(error.status) : 0;
+}
+
+function providerCode(error: unknown) {
+  if (error instanceof AIProviderError) return error.code;
+  if (error instanceof Groq.APIError) {
+    const body = error.error as { code?: unknown; error?: { code?: unknown } } | undefined;
+    const code = body?.code ?? body?.error?.code;
+    if (typeof code === "string" && /^[a-zA-Z0-9_]{1,80}$/.test(code)) return code;
+  }
+  return "PROVIDER_FAILURE";
 }
 
 function normalizeError(error: unknown, signal: AbortSignal): Error {
@@ -55,7 +67,7 @@ function parameters(request: ScholarGroqRequest, model: string, json: boolean) {
     // for both reasoning and the actual JSON, rather than a tiny fallback cap.
     max_completion_tokens: Math.min(16_384, Math.max(256, request.maxTokens ?? (json ? 12_000 : 4_000))),
     ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" as const, include_reasoning: false } : {}),
-    ...(json ? { response_format: { type: "json_object" as const } } : {}),
+    ...(json ? { response_format: structuredResponseFormat(model, request.jsonSchema) } : {}),
   };
 }
 
@@ -85,7 +97,7 @@ async function complete(request: ScholarGroqRequest, json: boolean): Promise<str
       const choice = result.choices[0];
       return validateCompletion(choice?.message.content, choice?.finish_reason);
     } catch (error) {
-      console.warn("[Scholar AI]", { model, status: statusOf(error), code: error instanceof AIProviderError ? error.code : "PROVIDER_FAILURE" });
+      console.warn("[Scholar AI]", { model, status: statusOf(error), code: providerCode(error) });
       if (!signal.aborted && index < config.models.length - 1 && canFallback(error)) continue;
       throw normalizeError(error, signal);
     }
