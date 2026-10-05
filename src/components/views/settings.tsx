@@ -101,6 +101,7 @@ const SCHOLAR_UPDATE_LOG = [
       "Temporary provider rate limits pause saved video generation and resume after a cooldown, rather than forcing students to restart.",
       "Ask LAM from a book now opens a temporary mobile session even when the floating mobile assistant is off, without enabling hands-free listening or changing preferences.",
       "Fixed a video-edit lease race so playback progress, notes, bookmarks and favorites finish saving before the database ownership lock is released.",
+      "Mobile PDF pagination reserves space for Scholar's bottom menu, keeping the page-number field and previous/next controls unobstructed.",
       "Configured Gemini speech produces seekable WAV narration. Groq-only configurations now show actionable model-terms and access errors instead of a generic failure.",
       "A new LAMTube lesson-studio loading view shows saved scenes, voice clips, the real storyboard and stage progress, with lightweight reduced-motion-aware animation and background continuation.",
       "Video failures now record safe stage diagnostics; completed stages and the existing successful-generation credit protections are preserved.",

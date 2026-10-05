@@ -47,7 +47,9 @@
   .chapter { max-width: 130px; }
   .document { padding: 12px 8px 4px; }
   .sidebar { border-bottom: 1px solid #ffffff14; }
-  .pagination { padding: 8px; }
+  /* Scholar's persistent mobile Menu sits at the bottom centre. Keep page
+     controls above that dock, including devices with a home-indicator inset. */
+  .pagination { padding: 8px 8px calc(56px + env(safe-area-inset-bottom, 0px)); }
   .pagePosition { gap: 4px; }
   .pagePosition progress, .pagePosition > span { display: none; }
   .paper { border-radius: 9px; }
