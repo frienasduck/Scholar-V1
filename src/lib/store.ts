@@ -6,6 +6,7 @@ import { CURRICULUM } from "./curriculum";
 import type { StartupLoadingMode } from "./startup/startup-modes";
 import type { ScholarAppearanceSettings } from "./appearance/appearance-schema";
 import { DEFAULT_APPEARANCE, migrateAppearance } from "./appearance/appearance-defaults";
+import { DEFAULT_LAM_IDENTITY, normalizeLamIdentity, type LamIdentityPreferences } from "./lam/identity";
 
 // ===== Types =====
 export interface User {
@@ -201,6 +202,7 @@ export interface Purchase {
 }
 
 export interface Settings {
+  lamIdentity: LamIdentityPreferences;
   theme: "dark" | "light";
   startupLoadingMode: StartupLoadingMode;
   reduceMotion: boolean;
@@ -802,6 +804,7 @@ function legacyDefaults() {
     purchases: [] as Purchase[],
     dailyChallenge: { date: today(), completed: false, streak: 3 },
     settings: {
+      lamIdentity: { ...DEFAULT_LAM_IDENTITY },
       theme: "dark" as const,
       startupLoadingMode: "long" as const,
       reduceMotion: false,
@@ -916,6 +919,7 @@ function loadPersistedState(): Partial<AppState> | null {
             ...(guest.state.settings ?? {}),
             ...(Number(guest.schema ?? 0) < 7 ? { elamEnabled: false, mobileLamMode: "off" as const } : {}),
             appearance: migrateAppearance(guest.state.settings?.appearance),
+            lamIdentity: normalizeLamIdentity(guest.state.settings?.lamIdentity),
           },
           tasks: Array.isArray(guest.state.tasks) ? guest.state.tasks : [],
         };
@@ -963,6 +967,7 @@ function loadPersistedState(): Partial<AppState> | null {
       ...(state.settings ?? {}),
       ...(migrateAssistantDefaults ? { elamEnabled: false, mobileLamMode: "off" as const } : {}),
       appearance: migrateAppearance(state.settings?.appearance),
+      lamIdentity: normalizeLamIdentity(state.settings?.lamIdentity),
     };
     safe.authed = !!state.authed;
     safe.guestMode = !!state.guestMode;
@@ -1457,7 +1462,7 @@ export const useStore = create<AppState>()(
           }
         }),
 
-      updateSettings: (st) => set((s) => ({ settings: { ...s.settings, ...st } })),
+      updateSettings: (st) => set((s) => ({ settings: { ...s.settings, ...st, ...(st.lamIdentity ? { lamIdentity: normalizeLamIdentity(st.lamIdentity) } : {}) } })),
     })
 );
 

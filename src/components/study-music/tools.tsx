@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Play, Pause, X, ArrowUp, ArrowDown, Music2, Waves, Timer, ExternalLink, Headphones } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useMusicStore, type Ambience } from "@/lib/music-store";
@@ -8,11 +8,11 @@ import { formatTime, trackName } from "@/lib/study-music/model";
 import { ambienceEngine } from "@/lib/study-music/ambience";
 import { toast } from "@/lib/notifications/notification-api";
 import { MusicThumbnail } from "./thumbnail";
+import { useVisibleClock } from "@/lib/time/use-visible-clock";
 
 export function FocusClock() {
   const focus = useMusicStore(s => s.focus);
-  const [now, setNow] = useState(0);
-  useEffect(() => { const update = () => setNow(Date.now()); const start = setTimeout(update, 0); const interval = setInterval(update, 1000); return () => { clearTimeout(start); clearInterval(interval); }; }, []);
+  const now = useVisibleClock();
   return <div className="sm-focus-clock" aria-label="Focus time remaining"><span>{focus?.phase === "break" ? "BREAK" : focus?.phase === "complete" ? "COMPLETE" : "FOCUS SESSION"}</span><strong>{focus ? formatTime(focusRemaining(focus, now || focus.startedAt)) : "25:00"}</strong><small>{focus ? focus.goal : "Make room for your next breakthrough."}</small></div>;
 }
 export function FocusPanel({ compact = false }: { compact?: boolean }) {

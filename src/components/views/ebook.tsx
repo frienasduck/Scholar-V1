@@ -1,4 +1,5 @@
 "use client";
+import { useLamActivity } from "@/components/lam/lam-avatar";
 import { ResourceLibrary } from "@/components/resources/resource-library";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
@@ -293,6 +294,7 @@ export function EBookView() {
   const [ocrText, setOcrText] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState("");
+  useLamActivity(ocrLoading ? "scanning" : ocrError ? "error" : view === "reader" || uploadedBook ? "reading" : "idle", ocrLoading, view === "reader" || !!uploadedBook, "resource");
   const [ocrDrafts, setOcrDrafts] = useState<Record<number, string>>({});
   const ocrRequest = useRef<AbortController | null>(null);
   useEffect(() => { ocrRequest.current?.abort(); setOcrLoading(false); setOcrModal(null); setOcrDrafts({}); return () => ocrRequest.current?.abort(); }, [activeBookId, activePage]);

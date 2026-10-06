@@ -3,8 +3,6 @@
 import { useStore, getLevelInfo } from "@/lib/store";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { CURRICULUM } from "@/lib/curriculum";
-import { StatCard, SectionHeader, ProgressRing, EmptyState } from "@/lib/shared";
-import { exportPDF, mdToHtml } from "@/lib/pdf";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -294,7 +292,13 @@ export function DashboardView() {
     });
   }
 
-  function handleExportReport() {
+  async function handleExportReport() {
+    // Open during the gesture, before importing math/PDF code: touch and WebView
+    // popup policies must keep working even on an uncached slow connection.
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) { alert("Please allow popups to export the PDF."); return; }
+    try {
+    const { exportPDF, mdToHtml } = await import("@/lib/pdf");
     const md = `## Weekly Report — Last 7 Days
 
 - **Total study time:** ${weekMinutes} minutes
@@ -315,8 +319,10 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
       subtitle: "Last 7 days",
       bodyHtml: mdToHtml(md),
       scholarClass: user.scholarClass,
+      printWindow,
     });
     toast.success("Opening PDF…", { description: "Weekly report ready to print" });
+    } catch { printWindow.close(); toast.error("The PDF exporter could not load. Retry when connected."); }
   }
 
   return (

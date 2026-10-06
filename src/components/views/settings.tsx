@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LearningProfileSettings } from "@/components/personalization/learning-profile-settings";
+import { LamIdentitySettings } from "@/components/lam/lam-identity-settings";
 import { AccountSecurity } from "@/components/account-security";
 import {
   User,
@@ -82,6 +83,46 @@ import { UserAISettings } from "@/components/ai/user-ai-settings";
 import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
+  {
+    version: "Pre-SEPB · performance engineering",
+    date: "October 6, 2026",
+    title: "A lighter engine, the same Scholar",
+    items: [
+      "The performance pass preserves Scholar’s layouts, typography, colors, rich backgrounds, Liquid Glass, transitions and features. The local production sample reduced Dashboard script bodies from 2.48 MB to 2.14 MB; this is not a guaranteed speedup on every device.",
+      "All 22 LAM forms now use lossless crops of the unchanged reference artwork and display-sized image variants. The header’s measured image response falls from 52,864 bytes to 950 bytes. Missing-art fallback is isolated to each derivative instead of affecting every form from a source sheet.",
+      "LAM activity and avatar subscriptions now track only relevant presentation values. The gallery no longer rerenders for unrelated reaction phases, scroll-driven presence recomputation is bounded, and peeks check eligibility before querying dialogs or hit-testing margins.",
+      "Exam Ready and Music display clocks share one visibility-aware interval and listener, stop display ticks in hidden tabs, catch up from real timestamps and clean up after the last subscriber. Music’s focus-completion loop runs only when required, including restored unrecorded completions.",
+      "Liquid Glass completes geometry reads before CSS writes, coalesces pointer frames and cancels a queued frame when the document hides. Existing materials, glows and animation timings remain intact.",
+      "The closed assistant’s academic renderer, Dashboard PDF exporter and gated Music implementation are split into interaction or feature chunks. Teaching pages keep synchronous Markdown and MathML rendering; regression checks preserve spaced prose and explicit equations. PDF export opens its window during the user gesture before loading export code.",
+      "Quick startup no longer warms Full-mode extras. Optional prefetch respects the selected mode, active and warmed routes, mobile budgets, Data Saver, slow connections and document visibility. Long prepares active feature implementations; explicit Full Loading retains all nine original module targets. Footer links preload on hover or keyboard focus instead of merely entering the viewport.",
+      "Duplicate playback telemetry no longer publishes redundant updates. Playback progress cannot keep postponing dirty library saves. Music observes dialog mutations only for an active visible YouTube source and ignores unrelated chat or progress changes; dialog opening and closing remain detected. Native audio and compliant visible YouTube playback rules are unchanged.",
+      "Overlapping session refresh events reuse a pending request; account switches supersede and abort it, and unmount cleans it up. Global flag reads share one query, retain the existing short TTL, back off after failures and invalidate safely after mutations without caching user entitlements.",
+      "The service worker caches explicit public static assets, not private APIs, dynamic image endpoints or route/prefetch payloads. Uploaded PDF render cleanup explicitly releases canvas backing stores while retaining worker loading, bounded page rendering and actual OCR context.",
+      "Added 26 performance regression cases and reproducible asset, audit and isolated-test scripts. The final run recorded 861 passes, 13 skips and three pre-existing PDF fixture failures; build, TypeScript and lint passed. Six viewport sizes showed no new horizontal overflow. Cold panel-opening spikes and authenticated or physical Android performance still need further verification.",
+    ],
+  },
+  {
+    version: "LAM living identity 2.0",
+    date: "October 6, 2026",
+    title: "Your chosen LAM, throughout Scholar",
+    items: [
+      "Living Identity 2.0 adds individual motion ranges for all 22 forms, body-posture transitions, contextual teaching/source props, small reactions and a shared priority controller. Error, teaching and real input interrupt ambient behavior immediately.",
+      "The Ask LAM trigger has restrained desktop-only cursor awareness; Ask LAM and LAM AI have a dedicated visual presence tied to typing, thinking, speech and streaming. Chapter quiz feedback and Exam Ready checkpoints show bounded encouragement, not repeated celebrations or invented mastery.",
+      "LAMTube’s atomic story now pauses, notices, turns, holds eye contact, shrugs, asks “What?”, turns back and resumes watching, with occasional shorter alternate reactions. Existing playback remains independent.",
+      "One session clock retains greeting, recent interaction and peek counts across navigation. Quiet browsing progresses to rest after 90 seconds, sleepiness after 4 minutes and sleep after 8 minutes; returning interaction wakes LAM gently.",
+      "New Quiet/Balanced/Lively presence, desktop cursor, reduced-character-motion and session-quiet controls preserve the existing gallery. Peeks alternate safe sides, are capped per session and never cover cards or controls; offscreen characters pause using one shared observer.",
+      "Study Music reflects actual playback without touching the source player; built-in and uploaded E-Book reading/extraction feed quiet reading/scanning states. Exam deadline restraint is recalculated centrally, including still presentation in emergency mode. Mobile previews wrap cleanly and motion-off remains functional.",
+      "All 22 approved reference forms are available in Settings → LAM. Preview a form and its animation states before explicitly applying it; appearance never changes teaching personality, intelligence or provider routing.",
+      "The top Ask LAM mark, expanded assistant, LAM AI, Chapter Command Centre, Exam Ready teacher and LAMTube companion share the saved selection. Appearance follows the existing isolated Guest/account-local workspace; cross-device appearance sync is not yet available.",
+      "LAM reacts to actual typing, listening, thinking, streamed responses, teaching, tool activity, completion and recoverable errors. Existing assistant opening and closing transitions are preserved.",
+      "LAMTube adds a tiny-computer companion with a bounded look-back, shrug and return sequence, click-spam protection and a 12-second cooldown. It does not control or obstruct video playback.",
+      "Rare desktop edge peeks check for clear margins and stay off during typing, reading, tests, dialogs, fullscreen, active requests and mobile use. Inner-page scrolling immediately dismisses a peek; one shell-level scheduler enforces a five-minute cooldown.",
+      "Character animation, intensity, ambient appearances, peeks, celebration reactions and gentle idle reactions have separate controls. Scholar/device reduced motion and battery mode take priority; hidden tabs pause motion and cancel reactions.",
+      "Original artwork is retained without redrawing. Optimized image variants, lazy gallery thumbnails, static historical-message marks and safe missing-art fallbacks keep the presentation lightweight.",
+      "Browser QA corrected feedback that settled in the top bar but remained on the lesson avatar: each registered placement now reads its immutable owned state. Formula/question targets stay aligned, quiet intensity wins over major reactions, and decorative captions do not announce ambient activity to screen readers.",
+      "Reference art is single-pose concept artwork. Current reactions use posture, props and timing; exact facial, limb and back-turn acting requires authored layered animation assets. OS reduced motion also disables scene and pseudo-element transitions directly.",
+    ],
+  },
   {
     version: "Reader & LAMTube · reliability repair",
     date: "October 5, 2026",
@@ -1329,6 +1370,7 @@ export function SettingsView() {
 
             {/* ===== LAM ===== */}
             <TabsContent value="lam" className="mt-2 space-y-4">
+              <LamIdentitySettings />
               <UserAISettings />
               <div className="asme-glass rounded-3xl p-6">
                 <GlassSettingRow icon={<Bot className="h-4 w-4 text-cyan-300" />} title="Mobile LAM" desc="Choose whether LAM is absent, compact, or fully available on mobile. Off stops wake listening and idle effects.">

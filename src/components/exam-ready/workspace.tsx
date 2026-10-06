@@ -15,6 +15,7 @@ import { useExamSessions } from "./use-session";
 import { MissionPath, Plate, SessionHeader } from "./presentation";
 import { PreparationHome, SessionOverview } from "./overview";
 import { StudyTools, type ToolTab } from "./study-tools";
+import { useLamActivity } from "@/components/lam/lam-avatar";
 import { TeacherPanel } from "./teacher-panel";
 import { FinalReview } from "./final-review";
 import "./exam-ready.css";
@@ -29,6 +30,7 @@ function Workspace({ scope, grade, guest }: { scope: string; grade: 9 | 11; gues
     const [betaNotice, setBetaNotice] = useState(true);
     const [selected, setSelected] = useState<string | null>(null), [setup, setSetup] = useState(false), [edit, setEdit] = useState(false), [mode, setMode] = useState<Mode>("overview"), [lessonKey, setLessonKey] = useState(""), [tool, setTool] = useState<ToolTab>("tools"), [mobilePanel, setMobilePanel] = useState<"path" | "tools" | null>(null), [draft, setDraft] = useState<string | null>(null), [previewPace, setPreviewPace] = useState("normal"), [adjust, setAdjust] = useState<"behind" | "more" | null>(null), [minutes, setMinutes] = useState(45), [planChange, setPlanChange] = useState(""), [reward, setReward] = useState("");
     const s = c.sessions.find(s => s.id === selected), task = s ? currentTask(s) : undefined;
+    useLamActivity(c.busy ? "planning" : c.error ? "error" : mode === "review" ? "reviewing" : "idle", c.busy, true, "content", "calm", s?.setup.examAt);
     const savedLesson = s ? activeLesson(s, lessonKey) : undefined;
     const demo = guest && s ? localMissionLesson(s, previewPace) : undefined;
     const lesson = guest ? demo : savedLesson, notes = draft ?? s?.notes ?? "";

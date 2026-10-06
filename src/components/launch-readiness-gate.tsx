@@ -13,6 +13,8 @@ import {
 import { useReducedMotion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { startupIdleRoutes } from "@/lib/startup/startup-modes";
+import { getBrowserStartupProfile } from "@/lib/startup/startup-performance";
 import { LaunchSplash } from "@/components/launch-splash";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import {
@@ -164,12 +166,10 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     if (visible) return;
     document.body.style.overflow = "";
     return scheduleIdleStartupWork(() => {
-      const remainingRoutes = STARTUP_ROUTE_GROUPS.full.filter(
-        (route) => !result?.warmedRoutes.includes(route),
-      );
-      remainingRoutes.slice(0, 4).forEach((route) => router.prefetch(route));
+      if (document.hidden) return;
+      startupIdleRoutes(mode, pathname || "/", result?.warmedRoutes, getBrowserStartupProfile()).forEach(route => router.prefetch(route));
     });
-  }, [result, router, visible]);
+  }, [mode, pathname, result, router, visible]);
 
   useEffect(() => {
     if (visible) return;

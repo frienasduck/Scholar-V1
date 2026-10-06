@@ -1,12 +1,16 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { useVisibleClock } from "@/lib/time/use-visible-clock";
 import { ArrowRight, BookOpen, Brain, Check, Clock3, Coffee, FileCheck2, Layers, Lightbulb, Pause, Play, Sparkles, Target, Zap } from "lucide-react";
 import { currentTask, elapsedMs, evidence, remainingSeconds, type ExamSession, type TaskKind } from "@/lib/exam-ready/model";
 import { formatTime, stageLabels } from "@/lib/exam-ready/experience";
+import { LamScene } from "@/components/lam/lam-scene";
+import type { LamAvatarState } from "@/lib/lam/identity";
+import type { LamFocusTarget } from "@/lib/lam/presence";
 
 export const stageIcons: Record<TaskKind, typeof Brain> = { diagnostic: Target, learn: BookOpen, repair: Lightbulb, revise: Sparkles, practice: FileCheck2, recall: Brain, mistakes: Zap, mock: Layers, break: Coffee };
-export function LAMVisual({ small = false }: { small?: boolean }) {
-    return <div className={`er-lam-visual ${small ? "er-lam-small" : ""}`} aria-hidden="true"><div className="er-lam-orbit"/><div className="er-lam-core"><span/><span/><i/></div><div className="er-lam-badge"><Sparkles size={13}/> LAM</div></div>;
+export function LAMVisual({ small = false, state = "teaching", target = "content" }: { small?: boolean; state?: LamAvatarState; target?: LamFocusTarget }) {
+    return <div className={`er-lam-visual ${small ? "er-lam-small" : ""}`} aria-hidden="true"><LamScene size={small ? 104 : 150} state={state} placement="exam" target={target} label=""/><div className="er-lam-badge"><Sparkles size={13}/> LAM</div></div>;
 }
 export function Plate({ title, icon: Icon, action, children, className = "" }: { title?: string; icon?: typeof Brain; action?: ReactNode; children: ReactNode; className?: string }) {
     return <section className={`er-plate ${className}`}>{title && <div className="er-card-title"><h3>{Icon && <Icon size={18}/>} {title}</h3>{action}</div>}{children}</section>;
@@ -16,8 +20,7 @@ export function ReadinessRing({ session, large = false }: { session: ExamSession
     return <div className={`er-readiness ${large ? "er-readiness-large" : ""}`}><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" className="er-ring-track"/><circle cx="50" cy="50" r="42" className="er-ring-value" pathLength="100" strokeDasharray={`${value ?? Math.min(22, e.questions * 4)} 100`}/></svg><div><strong>{value === null ? <Target size={large ? 36 : 24}/> : `${value}%`}</strong><small>{value === null ? "Calibrating" : "Estimate"}</small></div></div>;
 }
 export function SessionClocks({ session, busy, onToggle, compact = false, examCountdown = false }: { session: ExamSession; busy: boolean; onToggle: () => void; compact?: boolean; examCountdown?: boolean }) {
-    const [now, setNow] = useState(session.updatedAt);
-    useEffect(() => { const update = () => setNow(Date.now()); update(); const timer = setInterval(update, 1000); return () => clearInterval(timer); }, []);
+    const now = useVisibleClock(session.updatedAt);
     const task = currentTask(session), used = session.taskElapsedMs + (session.status === "active" ? Math.max(0, now - session.taskSince) : 0), stepLeft = task ? task.seconds - used / 1000 : 0;
     return <div className={`er-clocks ${compact ? "er-clock-card" : ""}`} aria-live="off"><div><small><Clock3 size={13}/> {compact ? "Study session" : "Study time left"}</small><strong>{formatTime(compact ? stepLeft : remainingSeconds(session, now))}</strong>{compact && <small>{stepLeft < 0 ? "Step overtime · plan will rebalance" : task ? stageLabels[task.kind] : "Preparation completed"}</small>}</div>{!compact && <div><small>Until your exam</small><strong>{formatTime((session.setup.examAt - now) / 1000)}</strong></div>}{compact && <div className="er-time-detail"><span>{formatTime(remainingSeconds(session, now))}<small>Study left</small></span><span>{formatTime(examCountdown ? (session.setup.examAt - now) / 1000 : elapsedMs(session, now) / 1000)}<small>{examCountdown ? "Until exam" : "Time used"}</small></span></div>}<button className={compact ? "er-timer-toggle" : "er-icon-button"} aria-label={session.status === "active" ? "Pause study timer" : "Resume study timer"} disabled={busy || session.status === "completed" || remainingSeconds(session, now) <= 0} onClick={onToggle}>{session.status === "active" ? <Pause size={18}/> : <Play size={18}/>}</button></div>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useLamActivity } from "@/components/lam/lam-avatar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import { BookModeReader } from "./book-mode-reader";
@@ -32,6 +33,7 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
   const [ocrStatus, setOcrStatus] = useState("");
   const [ocrBusy, setOcrBusy] = useState(false);
   const ocrRequest = useRef<AbortController | null>(null);
+  useLamActivity(ocrBusy ? "scanning" : busy ? "thinking" : error || pdfError ? "error" : "reading", ocrBusy || busy, true, "resource");
   useEffect(() => () => ocrRequest.current?.abort(), [book.id, page]);
   useEffect(() => () => questionRequest.current?.abort(), [page]);
   const text = pageText?.page === page ? pageText.text.trim() : "";
@@ -135,7 +137,7 @@ function UploadedPage({ pdf, page, error, fit }: { pdf: PDFDocumentProxy | null;
   const canvas = useRef<HTMLCanvasElement>(null); const host = useRef<HTMLDivElement>(null); const [visible, setVisible] = useState(false); const [width, setWidth] = useState(550); const [ready, setReady] = useState(false); const [renderError, setRenderError] = useState("");
   useEffect(() => { const node = host.current; if (!node) return; const observer = new IntersectionObserver(entries => setVisible(entries[0].isIntersecting), { rootMargin: "160px" }); const resize = new ResizeObserver(entries => setWidth(Math.max(160, Math.floor(entries[0].contentRect.width)))); observer.observe(node); resize.observe(node); return () => { observer.disconnect(); resize.disconnect(); }; }, []);
   useEffect(() => { if (!pdf || !visible || !canvas.current) return; let disposed = false; let render: RenderTask | undefined; const element = canvas.current;
-    void pdf.getPage(page).then(async pdfPage => { if (disposed) return; setReady(false); setRenderError(""); const original = pdfPage.getViewport({ scale: 1 }); const scale = pdfPageScale(width, original, fit, innerHeight - 190); const viewport = pdfPage.getViewport({ scale }); const ratio = Math.min(devicePixelRatio || 1, 1.75, 3000 / Math.max(viewport.width, viewport.height)); element.width = Math.floor(viewport.width * ratio); element.height = Math.floor(viewport.height * ratio); element.style.width = `${viewport.width}px`; element.style.height = `${viewport.height}px`; render = pdfPage.render({ canvas: element, viewport, transform: [ratio, 0, 0, ratio, 0, 0] }); await render.promise; if (!disposed) setReady(true); }).catch(() => { if (!disposed) { setReady(false); setRenderError("This page could not be rendered. Use Open original PDF or reopen the book."); } }); return () => { disposed = true; render?.cancel(); };
+    void pdf.getPage(page).then(async pdfPage => { if (disposed) return; setReady(false); setRenderError(""); const original = pdfPage.getViewport({ scale: 1 }); const scale = pdfPageScale(width, original, fit, innerHeight - 190); const viewport = pdfPage.getViewport({ scale }); const ratio = Math.min(devicePixelRatio || 1, 1.75, 3000 / Math.max(viewport.width, viewport.height)); element.width = Math.floor(viewport.width * ratio); element.height = Math.floor(viewport.height * ratio); element.style.width = `${viewport.width}px`; element.style.height = `${viewport.height}px`; render = pdfPage.render({ canvas: element, viewport, transform: [ratio, 0, 0, ratio, 0, 0] }); await render.promise; if (!disposed) setReady(true); }).catch(() => { if (!disposed) { setReady(false); setRenderError("This page could not be rendered. Use Open original PDF or reopen the book."); } }); return () => { disposed = true; render?.cancel(); element.width = element.height = 0; };
   }, [pdf, page, visible, width, fit]);
   return <div ref={host} className="relative flex min-h-64 w-full items-center justify-center bg-white">{!ready && <p role="status" className="absolute px-4 text-sm text-slate-700">{renderError || error || `Rendering page ${page}…`}</p>}<canvas ref={canvas} aria-label={`PDF page ${page}`} className="max-w-full" /></div>;
 }

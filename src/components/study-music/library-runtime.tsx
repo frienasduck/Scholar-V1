@@ -10,6 +10,7 @@ import { useStore } from "@/lib/store";
 import { toast } from "@/lib/notifications/notification-api";
 
 export function MusicLibraryRuntime() {
+  const focusRunning = useMusicStore(s => !!s.focus && (!s.focus.paused && s.focus.phase !== "complete" || s.focus.phase !== "study" && !s.focus.recorded));
   const access = useScholarAccess();
   const owner = access.entitlementsLoaded ? access.user?.id ? `user:${access.user.id}` : "guest" : "";
   const synced = useRef(0);
@@ -70,7 +71,8 @@ export function MusicLibraryRuntime() {
       if (s.owner !== owner) return;
       if (s.libraryVersion !== prev.libraryVersion || s.focus !== prev.focus || s.widgetPosition !== prev.widgetPosition || s.currentTrack !== prev.currentTrack || s.queue !== prev.queue || s.isPlaying !== prev.isPlaying || s.volume !== prev.volume || s.muted !== prev.muted || s.ambience !== prev.ambience)
         if (!persistMusic(s, synced.current)) toast.error("Device storage is full. Music changes are available for this session only.", { id: "music-storage-full" });
-      if (s.libraryVersion > synced.current && s.syncStatus === "synced") { clearTimeout(syncTimer); syncTimer = setTimeout(saveCloud, 1800); }
+      // Playback telemetry must not perpetually postpone a dirty library save.
+      if ((s.libraryVersion !== prev.libraryVersion || s.syncStatus !== prev.syncStatus) && s.libraryVersion > synced.current && s.syncStatus === "synced") { clearTimeout(syncTimer); syncTimer = setTimeout(saveCloud, 1800); }
     });
     const save = () => persistMusic(useMusicStore.getState(), synced.current);
     const checkpoint = setInterval(save, 15000);
@@ -81,6 +83,7 @@ export function MusicLibraryRuntime() {
   }, [owner]);
 
   useEffect(() => {
+    if (!focusRunning) return;
     const interval = setInterval(() => {
       const s = useMusicStore.getState(); if (!s.hydrated) return;
       s.tickFocus(); const result = useMusicStore.getState().recordFocus();
@@ -91,6 +94,6 @@ export function MusicLibraryRuntime() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [focusRunning]);
   return null;
 }

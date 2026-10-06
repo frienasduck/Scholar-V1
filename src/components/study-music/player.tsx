@@ -13,6 +13,7 @@ import { MUSIC_PROMO_MESSAGE, MUSIC_PROMO_WINDOW_MS, shouldRunMusicPromo, openSc
 import { speakReminder, stopTalkSpeech } from "@/lib/reminders/talk";
 import { ambienceEngine } from "@/lib/study-music/ambience";
 import { sourcePlaybackAllowed } from "@/lib/study-music/source-visibility";
+import { dialogMutationRelevant } from "@/lib/study-music/dialog-mutations";
 import { NativeAudioPlayer } from "./native-player";
 import { MusicThumbnail } from "./thumbnail";
 import { YouTubeSourceSurface } from "./source-surface";
@@ -113,6 +114,7 @@ function StudyMusicRuntime({ currentView }: { currentView?: string }) {
   // Tools and other application dialogs must never cover an active source player.
   // Detach the paused embed while a modal is open, then restore it cued, not autoplaying.
   useEffect(() => {
+    if (!youtube || !visible) return;
     const inspect = () => {
       const open = !!document.querySelector('[role="dialog"][data-state="open"], [role="dialog"][aria-modal="true"]');
       if (open && useMusicStore.getState().currentTrack?.mediaSource === "YOUTUBE_VIDEO_SOURCE") {
@@ -120,10 +122,10 @@ function StudyMusicRuntime({ currentView }: { currentView?: string }) {
       }
       setModalOpen(open);
     };
-    const observer = new MutationObserver(inspect);
+    const observer = new MutationObserver(records => { if (dialogMutationRelevant(records)) inspect(); });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state", "aria-modal"] });
     inspect(); return () => observer.disconnect();
-  }, []);
+  }, [youtube, visible]);
 
   const hasTrack = !!youtube && visible && !blocked;
   useEffect(() => {
@@ -268,9 +270,4 @@ function StudyMusicRuntime({ currentView }: { currentView?: string }) {
     {youtube && visible && <YouTubeSourceSurface surfaceRef={sourceBox} hostRef={host} expanded={expanded} blocked={blocked} onToggle={useMusicStore.getState().toggleExpand}/>}
   </>;
 }
-export function StudyMusicQuickAccess() {
-  const access = useScholarAccess();
-  const focus = useMusicStore(s => s.focus);
-  const allowed = access.has("study_music_ad_free");
-  return <button className="sm-quick-access" aria-label="Study Music quick controls" title={allowed ? focus ? "Music & active focus session" : "Study Music" : "Study Music · Scholar Plus"} onClick={() => allowed ? useMusicStore.getState().setDrawer("quick") : openMusic()}><Headphones size={18}/>{allowed && focus && focus.phase !== "complete" && <span className="sm-status-dot"/>}</button>;
-}
+export { StudyMusicQuickAccess } from "./quick-access";

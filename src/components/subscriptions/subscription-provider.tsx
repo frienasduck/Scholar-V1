@@ -33,7 +33,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const previousAccessSource = useRef<ScholarAccessSource | null>(null);
   const refreshSequence = useRef(0);
   const initialized = useRef(false);
+  const requestActive = useRef(false);
+  const requestController = useRef<AbortController | null>(null);
   const refresh = useCallback(async (reason: "boot" | "silent" | "switch") => {
+    // Focus + visibility + payment polling can arrive together. Reuse the live
+    // refresh, not a cached entitlement; a session switch always supersedes it.
+    if (reason !== "switch" && requestActive.current) return;
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller; requestActive.current = true;
     const sequence = ++refreshSequence.current;
     if (reason === "boot" || !initialized.current) {
       // Full-screen loader is allowed only during this first initialization.
@@ -65,7 +73,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setState((previous) => ({ ...previous, status: "refreshing", loading: false, refreshing: true }));
     }
     try {
-      const response = await fetch("/api/auth/session", { cache: "no-store", signal: AbortSignal.timeout(12_000) });
+      const response = await fetch("/api/auth/session", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12_000)]) });
       if (!response.ok) throw new Error("Session service unavailable");
       const value = await response.json();
       if (!value || typeof value.authenticated !== "boolean") throw new Error("Invalid session response");
@@ -82,6 +90,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       if (sequence !== refreshSequence.current) return;
       initialized.current = true;
       setState((previous) => ({ ...previous, status: "error", loading: false, refreshing: false }));
+    } finally {
+      if (sequence === refreshSequence.current) requestActive.current = false;
     }
   }, []);
   useEffect(() => {
@@ -93,6 +103,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      refreshSequence.current++; requestController.current?.abort(); requestActive.current = false;
       window.clearTimeout(initialRefresh);
       window.removeEventListener("scholar:session-changed", onSessionChanged);
       window.removeEventListener("focus", onFocus);

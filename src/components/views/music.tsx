@@ -1,4 +1,7 @@
 "use client";
+import { useLamActivity } from "@/components/lam/lam-avatar";
+import { LamScene } from "@/components/lam/lam-scene";
+import { useStore } from "@/lib/store";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { toast } from "@/lib/notifications/notification-api";
@@ -26,6 +29,8 @@ export function MusicView() {
 function MusicWorkspace() {
   const songs = useMusicStore(s => s.library.songs), playlists = useMusicStore(s => s.library.playlists);
   const selectedTrack = useMusicStore(s => s.currentTrack), isPlaying = useMusicStore(s => s.isPlaying);
+  const lamAmbient = useStore(s => s.settings.lamIdentity.ambient);
+  const lamState = useLamActivity(isPlaying ? "listening_music" : "rest", false, true, "screen");
   const queue = useMusicStore(s => s.queue), queueIndex = useMusicStore(s => s.queueIndex);
   const lastTrack = selectedTrack ?? queue[queueIndex];
   const [activeTab, setActiveTab] = useState<"all"|"songs"|"playlists"|"focus">("all");
@@ -92,6 +97,7 @@ function MusicWorkspace() {
             </div>
           </div>
 
+          {lamAmbient && <div className="hidden xl:block"><LamScene state={lamState} size={60} placement="music" compact label={isPlaying ? "In the groove." : "Your quiet study company."}/></div>}
           {/* Tabs */}
           <div className="scholar-music-tabs scholar-scroll-rail flex items-center gap-1 mu-glass rounded-full p-1">
             {[

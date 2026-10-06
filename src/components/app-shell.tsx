@@ -11,7 +11,7 @@ import { NAV_ITEMS, NAV_GROUPS } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { migrateLegacyStorage } from "@/lib/profile-storage";
 import { FloatingMusicWidget } from "@/components/views/music-widget";
-import { StudyMusicQuickAccess } from "@/components/study-music/player";
+import { StudyMusicQuickAccess } from "@/components/study-music/quick-access";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { BackgroundTaskNotifications } from "@/components/background-task-notifications";
 import {
@@ -79,6 +79,7 @@ const PracticalsView = dynamic(() => import("@/components/views/practicals").the
 const PythonView = dynamic(() => import("@/components/views/python").then((module) => module.PythonView), { loading: ViewLoading });
 const DerivationsView = dynamic(() => import("@/components/views/derivations").then((module) => module.DerivationsView), { loading: ViewLoading });
 import { LamWidget } from "@/components/lam-widget";
+import { LamPresenceRuntime } from "@/components/lam/lam-presence-runtime";
 import { ReminderScheduler } from "@/lib/reminders/scheduler";
 import { initReminderStoreSync } from "@/lib/reminders/store";
 import { useScholarTransition } from "@/components/scholar-transition";
@@ -856,6 +857,7 @@ export function AppShell() {
         </main>
       </div>
 
+      {startupReady && <LamPresenceRuntime page={active}/>}
       {startupReady && active !== "live-tutor" ? <LamWidget currentView={active} /> : null}
 
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BookOpen, Check, Copy, Expand, FileText, History, Maximize2, Mic, MicOff, Pencil, Pin, Plus, Search, Send, Settings, Sparkles, Square, Trash2, Volume2, X } from "lucide-react";
-import { Markdown } from "@/lib/shared";
 import { useStore } from "@/lib/store";
 import { navigateTo } from "@/lib/nav-event";
 import { consumeLamDraft, getLamPageContext, type LamRuntimeContext } from "@/lib/lam-context";
@@ -18,6 +17,11 @@ import type { ReminderProfileState, SmartReminder } from "@/lib/reminders/types"
 import { type LamConversation, type LamMessage, type LamMode, type LamPageContext, type LamProfileState } from "@/lib/lam/types";
 import { LiquidGlassSurface } from "@/components/lam/liquid-glass-surface";
 import { LamMark } from "@/components/lam/lam-mark";
+import { LamAvatar, useLamActivity } from "@/components/lam/lam-avatar";
+import { resolveLamState } from "@/lib/lam/identity";
+import { LamScene } from "@/components/lam/lam-scene";
+import { useLamCursorAwareness } from "@/components/lam/use-lam-cursor";
+import { noteLamInteraction } from "@/lib/lam/presence";
 import { LamResponse } from "@/components/lam/lam-response";
 import { LamDismissScrim, LamPanelSurface } from "@/components/lam/lam-panel-presence";
 import { GlassModeMenu } from "@/components/lam/glass-mode-menu";
@@ -31,6 +35,7 @@ import { proposeStudyPlan, planningContext, isPlanningDateReply, type ProposedSt
 import { StudyPlanProposal } from "@/components/lam/study-plan-proposal";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { consumeSSEChunk } from "@/lib/ai/sse";
+import { preloadScholarAIContent } from "@/components/ai/lazy-scholar-ai-content";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
 type Recognition = {
@@ -147,6 +152,9 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const [historyOpen, setHistoryOpen] = useState(false);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<"sleeping" | "armed" | "listening" | "transcribing" | "suspended" | "thinking" | "speaking" | "performing" | "completed" | "error">("sleeping");
+  const [avatarStreaming, setAvatarStreaming] = useState(false);
+  const [triggerHovered, setTriggerHovered] = useState(false);
+  const cursor = useLamCursorAwareness();
   const [interim, setInterim] = useState("");
   const [error, setError] = useState("");
   const [selectedText, setSelectedText] = useState("");
@@ -191,6 +199,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   // hands-free listening off and never change the student's saved settings.
   const prefs = useMemo(() => manualOnly ? { ...state.preferences, wakeWordEnabled: false } : state.preferences, [manualOnly, state.preferences]);
   useEffect(() => { if (!prefs.assistantEnabled) setOpen(false); }, [prefs.assistantEnabled]);
+  useEffect(() => { if (open) preloadScholarAIContent(); }, [open]);
   useEffect(() => {
     const desktop = window.matchMedia("(min-width: 1024px)");
     const syncDock = () => setDockTarget(desktop.matches ? document.getElementById("scholar-lam-dock") : null);
@@ -509,6 +518,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
           throw new Error("LAM returned malformed streaming data. Please retry.");
         }
         if (event.type === "text-delta" && event.value) {
+          if (!full) setAvatarStreaming(true);
           full += event.value;
           if (streamFlushTimer === null) streamFlushTimer = window.setTimeout(flushStream, 64);
         }
@@ -537,6 +547,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
       else if ((caught as Error).name === "AbortError") setStatus("sleeping");
       else { setError(caught instanceof Error ? caught.message : "LAM could not answer."); setStatus("error"); }
     } finally {
+      setAvatarStreaming(false);
       window.clearTimeout(deadline);
       await reader?.cancel().catch(() => undefined);
       reader?.releaseLock();
@@ -721,6 +732,8 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   const glass = prefs.reduceTransparency ? "bg-slate-950 border-white/25" : "bg-slate-950/78 backdrop-blur-2xl border-white/20";
   const visualState = !open ? panelPhase : historyOpen ? "history" : status === "suspended" ? "suspended" : pendingAction ? "action-preview" : status === "performing" ? "performing-action" : status === "completed" ? "completed" : status === "thinking" || status === "transcribing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
   const surfaceState = status === "completed" ? "success" : status === "thinking" || status === "transcribing" || status === "performing" ? "thinking" : status === "listening" ? "listening" : status === "error" ? "error" : conversation.messages.length ? "answering" : "idle";
+  const requestedAvatarState = resolveLamState(avatarStreaming ? "responding" : status === "speaking" ? "responding" : status === "thinking" || status === "transcribing" ? "thinking" : status === "performing" ? "reading" : status === "completed" ? "happy" : status === "error" ? "error" : status === "listening" || input.trim() ? "listening" : open && !conversation.messages.length ? "greeting" : "idle");
+  const avatarState = useLamActivity(requestedAvatarState, avatarStreaming || ["thinking", "transcribing", "performing", "speaking"].includes(status), open, input.trim() || status === "listening" ? "input" : context.currentView === "ebook" ? "resource" : "content");
   const isTransientCapsule = status === "listening" || status === "thinking" || status === "transcribing";
   const needsExpanded = fullscreen || historyOpen || (!isTransientCapsule && (conversation.messages.length > 2 || conversation.messages.some((message) => message.content.length > 520)));
   const contextualPlaceholder = selectedText ? "Ask about the selected text" : context.activeFileName ? `Ask about ${context.activeFileName}` : context.ebookTitle ? "Ask about this ebook page" : context.activeSlideshowId ? "Ask about this slideshow" : "Ask about anything in Scholar";
@@ -740,8 +753,8 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
   }, [animationQuality, open, prefs.onboardingComplete]);
   const renderedMessages = mobileOptimized && conversation.messages.length > 8 ? conversation.messages.slice(-8) : conversation.messages;
   const pendingDescription = !pendingAction ? "" : pendingAction.type === "create-note" ? `Save “${pendingAction.title}” in the LAM notes folder?` : pendingAction.type === "start-focus" ? `Start a ${pendingAction.minutes}-minute focus session?` : pendingAction.type === "create-quiz" ? `Create a quiz${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "create-slideshow" ? `Create a slideshow${pendingAction.chapter ? ` for ${pendingAction.chapter}` : ""}?` : pendingAction.type === "open-ebook-page" ? `Open page ${pendingAction.page}?` : pendingAction.type === "open-file" ? "Open this uploaded file?" : pendingAction.type === "reminder" ? reminderPendingDescription(pendingAction, reminderProfile) : `Open ${pendingAction.view}?`;
-  const dockedTrigger = closed && !context.activeFileId ? <motion.button ref={triggerRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0.01 : 0.12 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : compactMobile ? "h-12 w-[min(10.5rem,calc(100vw-2rem))]" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
-    <span className={cn("relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && !settings.reduceMotion && "animate-pulse")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
+  const dockedTrigger = closed && !context.activeFileId ? <motion.button ref={triggerRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0.01 : 0.12 }} onPointerDown={() => { holdTimerRef.current = window.setTimeout(() => void requestMicrophoneAndListen(false), 480); }} onPointerUp={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerCancel={() => { if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current); }} onPointerEnter={() => { setTriggerHovered(true); noteLamInteraction(); }} onPointerMove={cursor.pointerMove} onPointerLeave={event => { setTriggerHovered(false); cursor.pointerLeave(event); }} onClick={() => setOpen(true)} aria-label="LAM" aria-expanded={false} className={cn("lam-liquid-glass lam-liquid-glass--idle lam-docked-capsule flex min-h-13 items-center gap-3 rounded-[1.35rem] px-3 text-sm font-medium text-white", prefs.compactOrb ? "w-13 justify-center" : compactMobile ? "h-12 w-[min(10.5rem,calc(100vw-2rem))]" : "w-[min(25rem,calc(100vw-1.5rem))]")}>
+    <span className="relative grid h-9 w-9 shrink-0 place-items-center"><LamMark state={triggerHovered && ["idle","attentive","rest","sleepy","sleeping"].includes(avatarState) ? "hover" : avatarState}/>{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
     {!prefs.compactOrb && <><span className="flex-1 text-left text-white/78">Ask LAM</span><Mic className="h-4 w-4 text-white/45" /></>}
   </motion.button> : null;
 
@@ -757,7 +770,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
         <LamPanelSurface key="lam-panel" reducedMotion={reducedMotion} className={cn("mb-3 flex h-[min(25rem,62dvh)] w-[min(23rem,calc(100vw-2rem))] flex-col justify-between overflow-y-auto rounded-[1.75rem] border p-5 text-white shadow-2xl sm:h-[28rem] sm:w-[25rem] sm:rounded-[2rem] sm:p-6", glass)}>
           <button className="ml-auto rounded-full p-2 hover:bg-white/10" onClick={closeLam} aria-label="Close LAM"><X className="h-4 w-4" /></button>
           <div className="text-center">
-            <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-500 to-violet-600 shadow-xl shadow-cyan-400/20"><Sparkles /></div>
+            <div className="mx-auto mb-5 grid h-24 w-24 place-items-center"><LamAvatar state="greeting" size={96} placement="panel"/></div>
             <h2 className="text-2xl font-semibold">{["Meet LAM", "Talk naturally", "LAM understands Scholar", "You stay in control"][onboardingStep]}</h2>
             <p className="mt-3 text-sm leading-6 text-white/65">{[
               "Your personal study assistant inside Scholar.", "Say “Hey Lam,” tap the orb, use push-to-talk, or type.",
@@ -775,7 +788,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
           <LamPanelSurface key="lam-panel" ref={panelRef} reducedMotion={reducedMotion} className={cn("lam-liquid-glass lam-premium-panel relative z-10 mb-3 flex flex-col overflow-hidden text-white", `lam-liquid-glass--${surfaceState}`, prefs.reduceTransparency && "lam-liquid-glass--reduced", fullscreen ? "fixed inset-2 h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] rounded-[1.75rem] sm:inset-5 sm:h-[calc(100dvh-2.5rem)] sm:w-[calc(100vw-2.5rem)] sm:rounded-[2rem]" : needsExpanded ? "h-[min(43rem,calc(100dvh-5.5rem))] w-[min(46rem,calc(100vw-1.5rem))] rounded-[2rem]" : isTransientCapsule ? "max-h-[min(25rem,calc(100dvh-5.5rem))] min-h-[11.5rem] w-[min(43rem,calc(100vw-1.5rem))] rounded-[2rem]" : "max-h-[min(32rem,calc(100dvh-5.5rem))] min-h-[9rem] w-[min(38rem,calc(100vw-1.5rem))] rounded-[1.8rem]")}>
           <span className="lam-glass-reflection" aria-hidden="true" />
           <header ref={wakeHeaderRef} className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
-            <span className={cn("relative grid h-10 w-10 place-items-center rounded-full bg-white/8 text-cyan-100", status !== "sleeping" && "shadow-lg shadow-cyan-400/20")}><LamMark active={status !== "sleeping"} />{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
+            <span className="relative grid h-12 w-12 shrink-0 place-items-center"><LamMark state={avatarState} size={48} placement="panel"/>{status === "armed" && <i className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-slate-950 bg-emerald-400" />}</span>
             <div className="min-w-0 flex-1"><p className="font-semibold">LAM</p><p className="truncate text-[11px] text-white/50">{status === "thinking" ? "Thinking…" : status === "transcribing" ? "Transcribing your recording…" : status === "suspended" ? "Hands-Free LAM suspended" : status === "performing" ? "Completing Scholar action…" : status === "completed" ? "Done" : status === "listening" ? "Listening…" : status === "speaking" ? "Speaking…" : `${user.name} · ${context.currentView}`}</p></div>
             <button onClick={() => setHistoryOpen((value) => !value)} className="rounded-full p-2 hover:bg-white/10" aria-label={historyOpen ? "Back to chat" : "Conversation history"}><History className="h-4 w-4" /></button>
             <button onClick={newChat} className="rounded-full p-2 hover:bg-white/10" aria-label="New LAM chat"><Plus className="h-4 w-4" /></button>
@@ -800,6 +813,7 @@ function LamWidgetRuntime({ currentView, subject, chapter, summary, concepts, co
           </section>}
 
           <div className={cn("relative z-0 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4", historyOpen && "hidden")} aria-live="polite" aria-busy={status === "thinking" || status === "transcribing"}>
+            <div className="lam-living-presence"><LamScene state={avatarState} placement="panel" size={76} compact target={input.trim() || status === "listening" ? "input" : context.currentView === "ebook" ? "resource" : "content"}/></div>
             <AnimatePresence mode="wait" initial={false}>
               {status === "listening" && <GlassWaveListening key="listening" transcript={interim} onStop={stopCapturedAudio} optimized={mobileOptimized} />}
               {(status === "thinking" || status === "transcribing") && <LamThinkingState key="thinking" request={latestUserRequest} transcribing={status === "transcribing"} onStop={status === "thinking" ? () => abortRef.current?.abort() : undefined} optimized={mobileOptimized} />}

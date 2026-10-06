@@ -1,5 +1,6 @@
 "use client";
 import { ResourceShelf } from "@/components/resources/resource-library";
+import { LamTubeCompanion } from "@/components/lam/lamtube-companion";
 import { AIVideoFeedCard } from "@/components/lamtube/feed-card";
 import { useVideoLibrary, videoScope } from "@/lib/lamtube/library";
 import { selectFeedVideos } from "@/lib/lamtube/feed";
@@ -523,6 +524,7 @@ export function NigtubeView() {
               <h1 className="text-xl font-bold text-white tracking-tight">LAMTube</h1>
               <p className="text-[10px] text-white/40 -mt-0.5">Study videos, reimagined</p>
             </div>
+            <LamTubeCompanion />
           </div>
 
           {/* Search */}

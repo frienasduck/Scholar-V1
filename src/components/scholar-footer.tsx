@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/navigation/intent-link";
 import { useId } from "react";
 import { GraduationCap, MessageCircle, Play, Sparkles, UsersRound } from "lucide-react";
 import styles from "./scholar-footer.module.css";

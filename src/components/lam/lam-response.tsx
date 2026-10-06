@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef } from "react";
 import { Sparkles } from "lucide-react";
-import { ScholarAIContent } from "@/components/ai/scholar-ai-content";
+import { ScholarAIContent } from "@/components/ai/lazy-scholar-ai-content";
 import { animateLamResponseReveal } from "@/lib/animation/lam-animations";
 import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 import { parseLamTextBlocks } from "@/lib/lam/schemas";

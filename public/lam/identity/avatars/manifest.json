@@ -1,0 +1,266 @@
+[
+  {
+    "id": "aurora",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      25,
+      197,
+      256,
+      270
+    ],
+    "bytes": 90912
+  },
+  {
+    "id": "nexus",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      319,
+      192,
+      254,
+      280
+    ],
+    "bytes": 89952
+  },
+  {
+    "id": "orbit",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      601,
+      187,
+      249,
+      279
+    ],
+    "bytes": 84892
+  },
+  {
+    "id": "lume",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      888,
+      196,
+      251,
+      276
+    ],
+    "bytes": 73686
+  },
+  {
+    "id": "arc",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      1175,
+      185,
+      252,
+      291
+    ],
+    "bytes": 90148
+  },
+  {
+    "id": "prism-faceted",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      30,
+      604,
+      251,
+      279
+    ],
+    "bytes": 90200
+  },
+  {
+    "id": "kindle",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      317,
+      610,
+      253,
+      271
+    ],
+    "bytes": 84220
+  },
+  {
+    "id": "cosmos",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      601,
+      608,
+      247,
+      275
+    ],
+    "bytes": 97850
+  },
+  {
+    "id": "study-buddy",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      890,
+      606,
+      251,
+      279
+    ],
+    "bytes": 87966
+  },
+  {
+    "id": "icon",
+    "source": "/lam/identity/mascots.png",
+    "sourceSha256": "ca8883cd218f87fc265be25d39a44401fbc2fe5d58f27120fd2f6b1e87ab2959",
+    "crop": [
+      1177,
+      628,
+      251,
+      249
+    ],
+    "bytes": 64410
+  },
+  {
+    "id": "orb",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      35,
+      130,
+      313,
+      204
+    ],
+    "bytes": 84572
+  },
+  {
+    "id": "glyph",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      396,
+      113,
+      306,
+      215
+    ],
+    "bytes": 61468
+  },
+  {
+    "id": "guide",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      782,
+      70,
+      290,
+      260
+    ],
+    "bytes": 93218
+  },
+  {
+    "id": "owl",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      1100,
+      116,
+      320,
+      215
+    ],
+    "bytes": 87972
+  },
+  {
+    "id": "prism",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      40,
+      416,
+      307,
+      221
+    ],
+    "bytes": 82868
+  },
+  {
+    "id": "ribbon",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      392,
+      440,
+      313,
+      198
+    ],
+    "bytes": 79324
+  },
+  {
+    "id": "atlas",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      764,
+      432,
+      304,
+      206
+    ],
+    "bytes": 83390
+  },
+  {
+    "id": "lantern",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      1105,
+      409,
+      307,
+      230
+    ],
+    "bytes": 82350
+  },
+  {
+    "id": "halo",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      41,
+      744,
+      305,
+      210
+    ],
+    "bytes": 77926
+  },
+  {
+    "id": "lore",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      395,
+      749,
+      310,
+      206
+    ],
+    "bytes": 81196
+  },
+  {
+    "id": "nova",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      764,
+      735,
+      308,
+      222
+    ],
+    "bytes": 81410
+  },
+  {
+    "id": "wisp",
+    "source": "/lam/identity/concepts.png",
+    "sourceSha256": "9ef199da804f949a1bd3ac64412c5b10f40a078cb7741dff9bbff22d0e2b4ee4",
+    "crop": [
+      1104,
+      746,
+      310,
+      211
+    ],
+    "bytes": 93584
+  }
+]

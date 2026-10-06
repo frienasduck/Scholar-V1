@@ -37,6 +37,8 @@ export interface ExportPDFOpts {
   brandName?: string;       // defaults to the neutral Scholar brand
   scholarClass?: 9 | 11;    // 9 by default (legacy callers)
   type?: DocType; // affects cover styling
+  /** Optional gesture-opened window for on-demand exporter loading. */
+  printWindow?: Window;
 }
 
 export interface StudyPackChapter {
@@ -1192,8 +1194,8 @@ function conclusionHTML(title: string, profile: ClassProfile): string {
 // Print window helper
 // ---------------------------------------------------------------------------
 
-function openPrintWindow(html: string): void {
-  const w = window.open("", "_blank");
+function openPrintWindow(html: string, printWindow?: Window): void {
+  const w = printWindow ?? window.open("", "_blank");
   if (!w) {
     alert("Please allow popups to export the PDF.");
     return;
@@ -1303,7 +1305,7 @@ ${cover}
   ${conclusion}
 </section>`;
 
-  openPrintWindow(htmlShell({ title, css, body }));
+  openPrintWindow(htmlShell({ title, css, body }), opts.printWindow);
 }
 
 // ---------------------------------------------------------------------------

@@ -11,20 +11,30 @@ import { isFlagEnabled, type FlagOverrides, type V2FlagKey } from "@/lib/v2/flag
 const TTL_MS = 30_000;
 
 let cache: { rows: FlagOverrides; at: number } | null = null;
+let generation = 0;
+let inFlight: { generation: number; promise: Promise<FlagOverrides> } | null = null;
 
 export async function serverFlagOverrides(): Promise<FlagOverrides> {
   const now = Date.now();
   if (cache && now - cache.at < TTL_MS) return cache.rows;
-  try {
+  if (inFlight?.generation === generation) return inFlight.promise;
+  const version = generation;
+  const promise = (async () => { try {
     const rows = await db.featureFlag.findMany();
     const overrides: FlagOverrides = {};
     for (const row of rows) overrides[row.key as V2FlagKey] = row.enabled;
-    cache = { rows: overrides, at: now };
+    if (version === generation) cache = { rows: overrides, at: Date.now() };
     return overrides;
   } catch (error) {
     console.error("[Scholar v2 flags] DB override lookup failed", error instanceof Error ? error.message : "unknown");
+    // Preserve the same env/default fallback but back off failed global reads.
+    // This contains query/log storms without caching any user or entitlement.
+    if (version === generation) cache = { rows: {}, at: Date.now() };
     return {};
-  }
+  } })();
+  inFlight = { generation: version, promise };
+  try { return await promise; }
+  finally { if (inFlight?.promise === promise) inFlight = null; }
 }
 
 export async function isServerFlagEnabled(key: V2FlagKey, userId?: string | null): Promise<boolean> {
@@ -38,5 +48,5 @@ export async function setServerFlag(key: V2FlagKey, enabled: boolean, rolloutPct
     create: { key, enabled, rolloutPct },
     update: { enabled, rolloutPct },
   });
-  cache = null;
+  generation++; cache = null;
 }

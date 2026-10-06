@@ -91,6 +91,7 @@ function onScrollOrResize(): void {
 
 function onVisibilityChange(): void {
   if (document.hidden) {
+    stopLoop();
     entries.forEach(resetEntry);
   }
 }
@@ -142,8 +143,10 @@ function runFrame(): void {
     return;
   }
 
-  entries.forEach((entry) => {
-    const rect = rectFor(entry);
+  // Complete geometry reads before any custom-property writes. Otherwise a
+  // newly dirty surface can force layout after the preceding surface's writes.
+  const measured = [...entries.values()].map(entry => ({ entry, rect: rectFor(entry) }));
+  measured.forEach(({ entry, rect }) => {
     if (!rect || rect.width === 0 || rect.height === 0) return;
 
     const centerX = rect.left + rect.width / 2;

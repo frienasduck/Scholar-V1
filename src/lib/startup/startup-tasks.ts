@@ -6,6 +6,7 @@ import type {
 import {
   STARTUP_ROUTE_GROUPS,
   modeIncludes,
+  startupModuleTargets,
 } from "./startup-modes";
 import {
   getBrowserStartupProfile,
@@ -89,28 +90,19 @@ function persistedEbookAssets(mode: StartupLoadingMode): string[] {
   return [...assets];
 }
 
-async function warmHeavyModules(mode: StartupLoadingMode): Promise<void> {
-  const common = [
-    () => import("@/components/ai/scholar-ai-content"),
-    () => import("@/components/files/file-preview-modal"),
-  ];
-  const long = [
-    () => import("@/components/views/ebook"),
-    () => import("@/components/views/quiz"),
-    () => import("@/components/views/mock-exam"),
-  ];
-  const full = [
-    () => import("@/components/views/slideshow-maker"),
-    () => import("@/components/views/notes"),
-    () => import("@/components/views/community"),
-    () => import("@/components/lam-widget"),
-  ];
-  const loaders = [
-    ...common,
-    ...(modeIncludes(mode, "long") ? long : []),
-    ...(mode === "full" ? full : []),
-  ];
-  await Promise.all(loaders.map((load) => load().then(() => undefined)));
+async function warmHeavyModules(mode: StartupLoadingMode, route: string): Promise<void> {
+  const loaders: Record<string, () => Promise<unknown>> = {
+    academic: () => import("@/components/ai/scholar-ai-content"),
+    files: () => import("@/components/files/file-preview-modal"),
+    ebook: () => import("@/components/views/ebook"),
+    quiz: () => import("@/components/views/quiz"),
+    mock: () => import("@/components/views/mock-exam"),
+    slides: () => import("@/components/views/slideshow-maker"),
+    notes: () => import("@/components/views/notes"),
+    community: () => import("@/components/views/community"),
+    lam: () => import("@/components/lam-widget"),
+  };
+  await Promise.all(startupModuleTargets(mode, route).map(key => loaders[key]().then(() => undefined)));
 }
 
 export function createStartupTasks(mode: StartupLoadingMode): StartupTaskRuntime[] {
@@ -236,7 +228,7 @@ export function createStartupTasks(mode: StartupLoadingMode): StartupTaskRuntime
       weight: 4,
       run: async (context) => {
         // Module imports only: no AI requests, media playback, microphone or component side effects.
-        await warmHeavyModules(context.mode);
+        await warmHeavyModules(context.mode, context.currentRoute);
       },
     },
     {

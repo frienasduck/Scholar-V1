@@ -54,7 +54,9 @@ export const useMusicStore = create<MusicState>((set, get) => {
       set({ queue, queueIndex: queue.findIndex(t => t.id === track.id), currentTrack: track, currentTime: 0, duration: 0, seekRequest: { time: 0, nonce: 0 }, isPlaying: true, widgetVisible: true, widgetMinimized: false, widgetExpanded: false, error: null, buffering: false, playedIndices: [], playNonce: get().playNonce + 1 }); history(track);
     },
     togglePlay: () => set(s => ({ isPlaying: !!s.currentTrack && !s.isPlaying, widgetVisible: !!s.currentTrack, playNonce: s.playNonce + 1 })),
-    setPlaying: isPlaying => set({ isPlaying }), setCurrentTime: currentTime => set({ currentTime: Number.isFinite(currentTime) ? Math.max(0, Math.min(604800, currentTime)) : 0 }), setDuration: duration => set({ duration: Number.isFinite(duration) && duration > 0 && duration <= 604800 ? duration : 0 }),
+    setPlaying: isPlaying => { if (get().isPlaying !== isPlaying) set({ isPlaying }); },
+    setCurrentTime: value => { const currentTime = Number.isFinite(value) ? Math.max(0, Math.min(604800, value)) : 0; if (get().currentTime !== currentTime) set({ currentTime }); },
+    setDuration: value => { const duration = Number.isFinite(value) && value > 0 && value <= 604800 ? value : 0; if (get().duration !== duration) set({ duration }); },
     setVolume: volume => set({ volume: Math.min(100, Math.max(0, volume)), muted: volume <= 0 }), toggleMute: () => set(s => ({ muted: !s.muted })),
     next(ended = false) {
       const s = get(); if (!s.queue.length) return;
@@ -75,7 +77,7 @@ export const useMusicStore = create<MusicState>((set, get) => {
     toggleMinimize: () => set(s => ({ widgetMinimized: !s.widgetMinimized, widgetExpanded: false })),
     toggleExpand: () => set(s => ({ widgetExpanded: !s.widgetExpanded, widgetMinimized: false })), setWidgetPosition: widgetPosition => set({ widgetPosition }),
     setRepeatMode: repeatMode => set({ repeatMode }), toggleShuffle: () => set(s => ({ shuffle: !s.shuffle, playedIndices: [] })),
-    setBuffering: buffering => set({ buffering }), setError: error => set({ error, ...(error ? { isPlaying: false, buffering: false } : {}) }),
+    setBuffering: buffering => { if (get().buffering !== buffering) set({ buffering }); }, setError: error => set({ error, ...(error ? { isPlaying: false, buffering: false } : {}) }),
     seekTo(time) { const s = get(); const safe = Math.max(0, Math.min(s.duration || Number.MAX_SAFE_INTEGER, time)); set({ currentTime: safe, seekRequest: { time: safe, nonce: s.seekRequest.nonce + 1 } }); },
     addToQueue(track, next = false) {
       const s = get(); track = cleanTrack(track);
