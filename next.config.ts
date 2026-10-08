@@ -85,6 +85,9 @@ const nextConfig: NextConfig = {
         : []),
     ];
     return [
+      // API payloads can include private books, room state or account usage.
+      // Neither browsers nor a shared CDN may retain them across sessions.
+      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
       {
         source: "/api/auth/:path*",
         headers: [{ key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],

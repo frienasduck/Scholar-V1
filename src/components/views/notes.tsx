@@ -94,6 +94,7 @@ const MINDLOOP_STYLES = `
 
 // ===== Main View =====
 export function NotesView() {
+  const guestMode = useStore((s) => s.guestMode);
   const notes = useStore((s) => s.notes);
   const folders = useStore((s) => s.folders);
   const addNote = useStore((s) => s.addNote);
@@ -213,6 +214,7 @@ export function NotesView() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+        {guestMode && <p role="note" className="mx-4 mt-4 rounded-xl border border-amber-200/20 bg-amber-200/5 px-4 py-3 text-sm leading-6 text-amber-100/80">Guest notes last only for this open session. Use the note’s Actions → Export PDF before refreshing, leaving, or signing in. Guest preferences and tasks have separate device storage; these notes are not saved to an account.</p>}
         {/* ===== Navbar ===== */}
         <nav className="flex items-center justify-between py-4 px-6">
           <div className="flex items-center gap-3">
@@ -610,6 +612,7 @@ function Editor({
   pushActivity: (a: { type: string; text: string; icon?: string }) => void;
   addXP: (n: number) => void;
 }) {
+  const guestMode = useStore((s) => s.guestMode);
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [tags, setTags] = useState(note.tags.join(", "));
@@ -909,7 +912,7 @@ function Editor({
       <div className="border-t border-white/15 px-4 py-1.5 flex items-center justify-between text-[11px] text-white/65">
         <span className="flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-          Autosaved
+          {guestMode ? "Session only · export before leaving" : "Autosaved on this device"}
         </span>
         <span className="tabular-nums">
           {content.split(/\s+/).filter(Boolean).length} words · {content.length} chars

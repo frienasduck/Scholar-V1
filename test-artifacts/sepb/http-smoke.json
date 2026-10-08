@@ -1,0 +1,109 @@
+{
+  "scope": "anonymous HTTP smoke only, not authenticated persistence/device/provider certification",
+  "passed": 16,
+  "failed": 0,
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/help",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/terms",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/updates",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "expected": "200 + nonempty public response",
+      "passed": true
+    },
+    {
+      "path": "/api/ebooks",
+      "status": 401,
+      "cache": "private, no-store",
+      "expected": "401/403 + private,no-store; unauthenticated access denied",
+      "passed": true
+    },
+    {
+      "path": "/api/lamtube",
+      "status": 401,
+      "cache": "private, no-store",
+      "expected": "401/403 + private,no-store; unauthenticated access denied",
+      "passed": true
+    },
+    {
+      "path": "/api/connections",
+      "status": 401,
+      "cache": "private, no-store",
+      "expected": "401/403 + private,no-store; unauthenticated access denied",
+      "passed": true
+    },
+    {
+      "path": "/api/files/quota",
+      "status": 401,
+      "cache": "private, no-store",
+      "expected": "401/403 + private,no-store; unauthenticated access denied",
+      "passed": true
+    },
+    {
+      "path": "/api/study-music/library",
+      "status": 401,
+      "cache": "private, no-store",
+      "expected": "401/403 + private,no-store; unauthenticated access denied",
+      "passed": true
+    },
+    {
+      "path": "/api/v2/intelligence/state",
+      "status": 401,
+      "cache": "private, no-store",
+      "expected": "401/403 + private,no-store; unauthenticated access denied",
+      "passed": true
+    },
+    {
+      "path": "/api/exam-ready guest policy",
+      "status": 200,
+      "expected": "200 with exactly zero private sessions",
+      "passed": true
+    },
+    {
+      "path": "POST /api/exam-ready guest",
+      "status": 401,
+      "expected": "401 before creation",
+      "passed": true
+    },
+    {
+      "path": "POST /api/ebooks foreign origin",
+      "status": 403,
+      "expected": "403 before any write",
+      "passed": true
+    }
+  ]
+}

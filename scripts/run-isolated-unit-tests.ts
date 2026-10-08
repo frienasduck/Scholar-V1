@@ -1,5 +1,6 @@
 import { readdir, mkdir, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { resolve } from "node:path";
 
 // Existing tests mock shared modules. Process isolation prevents one security
 // fixture from leaking its mocked database/provider into an unrelated file.
@@ -25,6 +26,11 @@ async function worker() {
 }
 await Promise.all([worker(),worker()]);
 const summary = {files:files.length,passed:results.reduce((n,r)=>n+r.passed,0),failed:results.reduce((n,r)=>n+r.failed,0),skipped:results.reduce((n,r)=>n+r.skipped,0),unsuccessful:results.filter(r=>r.exit!==0),results};
-await mkdir("test-artifacts",{recursive:true}); await writeFile("test-artifacts/perf-regression-results.json",JSON.stringify(summary,null,2));
+const artifact = process.argv[2] ?? "test-artifacts/perf-regression-results.json";
+// Keep command-selected reports in the artifact directory, not arbitrary paths.
+const artifactRoot = resolve("test-artifacts");
+const outputPath = resolve(artifact);
+if (!outputPath.startsWith(artifactRoot + (process.platform === "win32" ? "\\" : "/")) || !outputPath.endsWith(".json")) throw new Error("Choose a JSON report inside test-artifacts");
+await mkdir(artifactRoot,{recursive:true}); await writeFile(outputPath,JSON.stringify(summary,null,2));
 console.log(JSON.stringify({files:summary.files,passed:summary.passed,failed:summary.failed,skipped:summary.skipped,unsuccessful:summary.unsuccessful.map(r=>({file:r.file,exit:r.exit,timedOut:r.timedOut}))}));
 process.exitCode = summary.unsuccessful.length ? 1 : 0;

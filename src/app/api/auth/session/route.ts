@@ -7,6 +7,7 @@ import { publicSubscriptionConfig } from "@/lib/subscriptions/config";
 import { databaseUnavailableError } from "@/lib/auth/errors";
 import { publicBetaConfig } from "@/lib/auth/beta";
 import { getMonthlyUsage } from "@/lib/subscriptions/monthly-usage";
+import { privateStorageUsed } from "@/lib/ebooks/storage";
 
 export async function GET() {
   try {
@@ -28,7 +29,7 @@ export async function GET() {
     const [usage, monthlyUsage, storage, pendingPayment] = await Promise.all([
       getUsage(user.id, access),
       getMonthlyUsage(user.id, access),
-      db.storedFile.aggregate({ where: { userId: user.id, deletedAt: null }, _sum: { sizeBytes: true } }),
+      privateStorageUsed(db, user.id),
       db.scholarPaymentRequest.findFirst({
         where: { userId: user.id, status: { in: ["created", "submitted", "more_information_required"] } },
         orderBy: { createdAt: "desc" },
@@ -51,7 +52,7 @@ export async function GET() {
       access,
       usage,
       monthlyUsage,
-      storage: { usedBytes: storage._sum.sizeBytes ?? 0, limitBytes: access.storageLimitBytes },
+      storage: { usedBytes: storage, limitBytes: access.storageLimitBytes },
       pendingPayment,
       config: publicSubscriptionConfig(),
     });

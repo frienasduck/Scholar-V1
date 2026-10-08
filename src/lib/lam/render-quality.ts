@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 
 export type LamRenderQuality = "desktop-high" | "mobile-optimized";
+// Match AppShell's lg desktop dock. Tablet/phone landscape has no header dock.
+export const LAM_COMPACT_MEDIA_QUERY = "(max-width: 1023px)";
 
 function detectQuality(): LamRenderQuality {
   if (typeof window === "undefined") return "desktop-high";
-  const mobile = window.matchMedia("(max-width: 767px)").matches;
+  const mobile = window.matchMedia(LAM_COMPACT_MEDIA_QUERY).matches;
   if (!mobile) return "desktop-high";
   const nav = navigator as Navigator & { deviceMemory?: number };
   const constrained = (navigator.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
@@ -17,7 +19,7 @@ function detectQuality(): LamRenderQuality {
 export function useLamRenderQuality() {
   const [quality, setQuality] = useState<LamRenderQuality>("desktop-high");
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 767px)");
+    const query = window.matchMedia(LAM_COMPACT_MEDIA_QUERY);
     const sync = () => setQuality(detectQuality());
     sync();
     query.addEventListener("change", sync);
@@ -25,4 +27,3 @@ export function useLamRenderQuality() {
   }, []);
   return quality;
 }
-

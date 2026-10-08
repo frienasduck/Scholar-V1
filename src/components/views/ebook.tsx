@@ -822,6 +822,14 @@ export function EBookView() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   className="eb-chapter-card eb-glass rounded-2xl p-5 cursor-pointer hover:bg-white/5 transition-colors"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Read ${ch.title}, pages ${ch.startPage} to ${ch.endPage}`}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault(); jumpTo(ch.startPage); setView("reader");
+                    }
+                  }}
                   onClick={() => {
                     jumpTo(ch.startPage);
                     setView("reader");
@@ -1041,6 +1049,7 @@ export function EBookView() {
           <div className="eb-reader-tools flex items-center gap-1.5" aria-label="Reader tools">
             <button
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
+              aria-label="Zoom out"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               <ZoomOut className="h-4 w-4" />
@@ -1050,6 +1059,7 @@ export function EBookView() {
             </span>
             <button
               onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+              aria-label="Zoom in"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               <ZoomIn className="h-4 w-4" />
@@ -1057,12 +1067,14 @@ export function EBookView() {
             <div className="eb-tool-divider w-px h-6 bg-white/10 mx-1" />
             <button
               onClick={() => setRotation((rotation + 90) % 360)}
+              aria-label="Rotate page"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               <RotateCw className="h-4 w-4" />
             </button>
             <button
               onClick={() => setFullscreen(!fullscreen)}
+              aria-label={fullscreen ? "Exit fullscreen reader" : "Expand reader"}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               {fullscreen ? (
@@ -1082,6 +1094,8 @@ export function EBookView() {
             <div className="eb-tool-divider w-px h-6 bg-white/10 mx-1" />
             <button
               onClick={() => toggleBookmark(activePage)}
+              aria-label={isBookmarked ? "Remove page bookmark" : "Bookmark page"}
+              aria-pressed={isBookmarked}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               {isBookmarked ? (
@@ -1096,6 +1110,7 @@ export function EBookView() {
                 setNoteText(pageNote?.text ?? "");
                 setNoteTags(pageNote?.tags ?? []);
               }}
+              aria-label="Add page note"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               <PenLine className="h-4 w-4" />
@@ -1105,6 +1120,7 @@ export function EBookView() {
                 setOcrModal(activePage);
                 setOcrText(ocrReviewed[activePage] ?? "");
               }}
+              aria-label="Extract page text"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               <Eye className="h-4 w-4" />
@@ -1277,6 +1293,7 @@ export function EBookView() {
               min={1}
               max={totalPages}
               value={activePage}
+              aria-label="Page number"
               onChange={(e) => jumpTo(parseInt(e.target.value) || 1)}
               className="w-14 text-center text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white"
             />

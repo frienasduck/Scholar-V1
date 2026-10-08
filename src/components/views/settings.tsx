@@ -84,6 +84,35 @@ import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "SEPB candidate · October 8 update",
+    date: "October 8, 2026",
+    title: "Release-candidate fixes and Your Scholar controls",
+    items: [
+      "This update includes the PDF, account-switch, storage, privacy-cache, reader accessibility, guest preference and mobile/LAM/Canvas repairs detailed below, together with the release matrix, issue register and reproducible verification scripts.",
+      "Your Scholar daily guidance and recommended-source shelf are now controlled by the Your Scholar switch in Learning Profile settings. It is off by default; turning it off keeps the saved learning profile and study work intact.",
+      "The recorded hardening checks passed 880 unit cases and 12 live-provider probes, plus 16 HTTP smoke checks. Fourteen provider cases are skipped by the default unit command; twelve were separately verified live, with two image-generation checks not run.",
+      "The SEPB audit remains NOT READY for public-beta certification: real authenticated private-data, multiplayer, hosted video and physical-device journeys are still outstanding, and production Drive/recovery-email configuration requires follow-up. Publishing these code changes is not a beta-launch certification.",
+    ],
+  },
+  {
+    version: "SEPB release candidate · local hardening",
+    date: "October 6, 2026",
+    title: "Safer uploads, account switching and small-screen controls",
+    items: [
+      "Onboarding PDF uploads dispatch processing using the private resource returned by their storage transaction, avoiding a second optional lookup after saving. The three red PDF tests now exercise faithful storage, rollback, quota release and parser-transfer preservation of original bytes.",
+      "Explicit account changes temporarily remove the prior private workspace while the new server session resolves. Sign-in, sign-out and developer-access changes invalidate other tabs using a random marker without sharing account details or credentials. Silent focus refreshes keep verified content visible.",
+      "Session storage totals now include standard uploaded E-Books as well as other files, matching the upload limit enforcement. API responses explicitly use private, no-store headers to prevent cross-session browser or CDN reuse.",
+      "OAuth/recovery defaults and public metadata now use Scholar's current canonical domain. Explicit staging origins and local development remain supported; unsafe authentication origins are rejected.",
+      "Small phone headers keep full-sized search, menu and notification controls without text overlap. Music and feedback quick controls remain reachable in mobile navigation; larger layouts keep their existing controls and design.",
+      "Mobile Canvas leaves space between its drawing/zoom controls and Scholar's fixed bottom menu, and its height follows the visual viewport instead of enforcing a 520 px floor on short screens.",
+      "Ordinary guest Notes now clearly explain their existing session-only limit and export-before-leaving action. The editor no longer labels these temporary notes as durably autosaved; authenticated local notes retain their existing storage behavior.",
+      "Built-in E-Book chapter cards support Enter/Space navigation. Zoom, rotation, reader expansion, bookmark, page-note, OCR and page-number controls now have accessible names without changing their layout.",
+      "Fresh guest preferences now write the current storage schema, so legacy migration no longer resets a newly selected mobile LAM mode on each refresh. Guest storage still excludes account files, notes, chats, coins and privileges.",
+      "Tablet and phone-landscape LAM now uses the same 1,024 px desktop-dock breakpoint as Scholar navigation, preventing an undocked desktop capsule from covering header controls. Short Canvas layouts keep zoom controls inside the stage as well as clear of the bottom menu.",
+      "Added a release matrix, issue register, value-redacted configuration check, isolated regression runner and non-mutating localhost HTTP smoke. These changes are a local release candidate, not a production deployment or a claim that authenticated, physical-device and live-provider release gates are complete.",
+    ],
+  },
+  {
     version: "Pre-SEPB · performance engineering",
     date: "October 6, 2026",
     title: "A lighter engine, the same Scholar",

@@ -108,8 +108,7 @@ async function uploadBook(request: NextRequest) {
       const bonusSource = pdfResource(user.id,safeName(requestedTitle || originalFileName.replace(/\.pdf$/i,"")),digest,importGrade);
       bonusSource.sourceMetadata = { grade: importGrade, titleUserSet: Boolean(requestedTitle.trim()) };
       const ebook = await storeBonusBook(user.id,key,digest,{title:safeName(requestedTitle || originalFileName.replace(/\.pdf$/i,"")).slice(0,120),originalFileName,sizeBytes:bytes.byteLength,pageCount:0,text:"",pageTexts:[],pdfBytes:Buffer.from(bytes),processingStatus:"processing",resource:{create:bonusSource}});
-      const resource = await db.studyResource.findFirst({ where: { ebookId: ebook.id, ownerUserId: user.id }, select: { id: true } }).catch(() => null);
-      if (resource) after(() => processResourceJob(resource.id, user.id).catch(() => false));
+      if (ebook.resource) after(() => processResourceJob(ebook.resource!.id, user.id).catch(() => console.warn("[Ebook upload] saved setup job awaits worker")));
       await recordAudit("onboarding_import_used",{actorUserId:user.id}).catch(() => console.warn("[Ebook upload] setup audit deferred"));
       return NextResponse.json({ok:true,ebook:{id:ebook.id,title:ebook.title,pageCount:ebook.pageCount,sizeBytes:ebook.sizeBytes,processingStatus:ebook.processingStatus}},{status:201});
     } catch(error) {

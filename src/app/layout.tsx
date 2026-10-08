@@ -7,6 +7,7 @@ import "katex/dist/katex.min.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { ScholarGlassProvider } from "@/components/liquid-glass";
+import { SCHOLAR_PRODUCTION_ORIGIN } from "@/lib/site-origin";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -48,7 +49,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://scholar-v1.vercel.app"),
+  metadataBase: new URL(SCHOLAR_PRODUCTION_ORIGIN),
   openGraph: { type: "website", siteName: "Scholar", title: "Scholar — Your intelligent learning system", description: "Study, practice and organize your CBSE learning with Scholar." },
   title: "Scholar — Study OS for CBSE Class 9 & Class 11",
   description:

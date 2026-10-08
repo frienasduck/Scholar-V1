@@ -11,7 +11,7 @@ type Journal = { previousOwner: string; backupKey: string };
 
 export function isWorkspaceKey(key: string) {
   if (key === OWNER || key === JOURNAL || key.startsWith(VAULT)) return false;
-  return /^(scholar[:-]|neha-scholar-|ws-|eb-reader-data$|pdf-studio-history$|pp-mistakes$|py-code$|smart-reminders$|fc-|quiz-|aisig-history$|dv-studied$|pr-completed$|pdf-edited-questions$|pdf-review-status$|mu-playlists$)/.test(key) && key !== "scholar-guest-session-v1";
+  return /^(scholar[:-]|neha-scholar-|ws-|eb-reader-data$|pdf-studio-history$|pp-mistakes$|py-code$|smart-reminders$|fc-|quiz-|aisig-history$|dv-studied$|pr-completed$|pdf-edited-questions$|pdf-review-status$|mu-playlists$)/.test(key) && key !== "scholar-guest-session-v1" && key !== "scholar-session-invalidation-v1";
 }
 
 function snapshot(storage: Storage): Snapshot {

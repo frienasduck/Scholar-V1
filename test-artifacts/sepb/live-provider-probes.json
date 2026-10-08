@@ -1,0 +1,51 @@
+{
+  "scope": "local configured providers only; not a hosted authenticated workflow",
+  "results": [
+    {
+      "file": "tests/ai-live.test.ts",
+      "status": "passed",
+      "exit": 0,
+      "timedOut": false,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 2,
+      "evidence": [
+        "{\"capability\":\"answer-evaluation\",\"status\":\"passed\",\"elapsedMs\":1618}",
+        "{\"capability\":\"mock-exam\",\"status\":\"passed\",\"elapsedMs\":1365}",
+        "{\"capability\":\"text\",\"status\":\"passed\",\"elapsedMs\":919}",
+        "{\"capability\":\"checkpoint\",\"status\":\"passed\",\"elapsedMs\":1015}",
+        "{\"capability\":\"flashcards\",\"status\":\"passed\",\"elapsedMs\":882}",
+        "{\"capability\":\"planner\",\"status\":\"passed\",\"elapsedMs\":1301}",
+        "{\"capability\":\"stream\",\"status\":\"passed\",\"elapsedMs\":585}",
+        "{\"capability\":\"stream\",\"firstTextMs\":378}"
+      ]
+    },
+    {
+      "file": "tests/lamtube-speech-live.test.ts",
+      "status": "passed",
+      "exit": 0,
+      "timedOut": false,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": [
+        "{\"capability\":\"video-narration\",\"provider\":\"gemini\",\"bytes\":234594,\"elapsedMs\":6425,\"status\":\"passed\"}"
+      ]
+    },
+    {
+      "file": "tests/live-tutor-providers-live.test.ts",
+      "status": "passed",
+      "exit": 0,
+      "timedOut": false,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "evidence": [
+        "{\"provider\":\"groq\",\"resolved\":\"groq\",\"status\":\"passed\",\"outputCharacters\":173}",
+        "{\"provider\":\"gemini\",\"resolved\":\"gemini\",\"status\":\"passed\",\"outputCharacters\":237}",
+        "{\"provider\":\"nvidia\",\"resolved\":\"nvidia\",\"status\":\"passed\",\"outputCharacters\":187}",
+        "{\"provider\":\"auto\",\"resolved\":\"groq\",\"status\":\"passed\",\"outputCharacters\":173}"
+      ]
+    }
+  ]
+}

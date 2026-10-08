@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
+import { subscribeSessionChanges } from "@/lib/auth/session-events";
 import type { ScholarEntitlement, ScholarAccessSource, ScholarPlan } from "@/lib/subscriptions/entitlements";
 
 export type ScholarSessionStatus = "initializing" | "authenticated" | "guest" | "unauthenticated" | "refreshing" | "error";
@@ -48,10 +49,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setState(INITIAL_STATE);
     } else if (reason === "switch") {
       // Account context change (sign-in / sign-out): clear prior account
-      // privileges before the next server session resolves. The full-screen
-      // loader is NOT shown because status stays "refreshing", but loading is
-      // true for this short transition so downstream `loading`-guarded effects
-      // (e.g. the logout check in app-content) do not race the new session.
+      // privileges before the next server session resolves. Account content is
+      // gated during this explicit transition; silent revalidation stays smooth.
       setState((previous) => ({
         ...previous,
         status: "refreshing",
@@ -64,6 +63,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         plan: undefined,
         entitlementsLoaded: false,
         usage: undefined,
+        monthlyUsage: undefined,
         storage: undefined,
         pendingPayment: null,
       }));
@@ -99,13 +99,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     const onSessionChanged = () => void refresh("switch");
     const onFocus = () => void refresh("silent");
     const onVisibility = () => { if (!document.hidden) void refresh("silent"); };
-    window.addEventListener("scholar:session-changed", onSessionChanged);
+    const unsubscribeSessionChanges = subscribeSessionChanges(onSessionChanged);
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       refreshSequence.current++; requestController.current?.abort(); requestActive.current = false;
       window.clearTimeout(initialRefresh);
-      window.removeEventListener("scholar:session-changed", onSessionChanged);
+      unsubscribeSessionChanges();
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };

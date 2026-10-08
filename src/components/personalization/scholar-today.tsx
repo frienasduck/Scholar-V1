@@ -11,7 +11,8 @@ export function ScholarToday() {
   const {profile,open}=useLearningProfile();const sessions=useStore(s=>s.sessions);
   const access=useScholarAccess();
   const activeGrade=useStore(s=>s.user.scholarClass);
-  if(!profile?.result)return null;
+  const enabled=useStore(s=>s.settings.yourScholarEnabled === true);
+  if(!enabled || !profile?.result)return null;
   const plan=profile.result;
   if(plan.grade!==activeGrade)return <GlassSurface material="elevated" className="scholar-today"><h2>Your study level changed.</h2><p>Update your learning profile to build recommendations for Class {activeGrade}. Your saved work is unchanged.</p><GlassButton onClick={open}>Update learning profile</GlassButton></GlassSurface>;
   const date=new Date().toDateString();
@@ -38,6 +39,7 @@ export function ScholarToday() {
 export function ScholarTodaySources() {
   const { profile } = useLearningProfile();
   const activeGrade = useStore(s => s.user.scholarClass);
-  if (!profile?.result || profile.result.grade !== activeGrade) return null;
+  const enabled = useStore(s => s.settings.yourScholarEnabled === true);
+  if (!enabled || !profile?.result || profile.result.grade !== activeGrade) return null;
   return <ResourceShelf grade={activeGrade} subjectId={profile.result.priorities[0]?.id} title="Sources for your next useful step"/>;
 }

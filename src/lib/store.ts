@@ -202,6 +202,7 @@ export interface Purchase {
 }
 
 export interface Settings {
+  yourScholarEnabled?: boolean;
   lamIdentity: LamIdentityPreferences;
   theme: "dark" | "light";
   startupLoadingMode: StartupLoadingMode;
@@ -804,6 +805,7 @@ function legacyDefaults() {
     purchases: [] as Purchase[],
     dailyChallenge: { date: today(), completed: false, streak: 3 },
     settings: {
+      yourScholarEnabled: false,
       lamIdentity: { ...DEFAULT_LAM_IDENTITY },
       theme: "dark" as const,
       startupLoadingMode: "long" as const,
@@ -1022,7 +1024,7 @@ function savePersistedState(state: AppState) {
           tasks: state.tasks,
           devMode: false,
         },
-        schema: 2,
+        schema: SCHEMA_VERSION,
       }));
       return;
     }

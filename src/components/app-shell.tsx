@@ -319,7 +319,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
   return (
     <header data-sg-chrome="topbar" className="scholar-mobile-topbar sticky top-0 z-30 h-16 border-b border-border/60">
       <div className="h-full flex items-center gap-2 px-3 sm:px-4 lg:px-6">
-          <Button id="scholar-mobile-menu" variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobile} aria-label="Open navigation menu" aria-haspopup="dialog">
+          <Button id="scholar-mobile-menu" variant="ghost" size="icon" className="size-11 shrink-0 lg:hidden" onClick={onOpenMobile} aria-label="Open navigation menu" aria-haspopup="dialog">
             <Menu className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon" className="hidden lg:flex" onClick={onToggleSidebar} aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
@@ -339,10 +339,9 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             {user.jeeMode && <span className="px-1 py-0.5 rounded-full bg-orange-500 text-white text-[8px]">JEE</span>}
           </div>
 
-          <Button variant="outline" size="sm" onClick={onOpenCmd} className="scholar-top-search min-w-0 max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
-            <Search className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={onOpenCmd} aria-label="Search or jump to…" className="scholar-top-search min-w-0 max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
+            <Search className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Search or jump to…</span>
-          <span className="sm:hidden">Search</span>
           <kbd className="ml-auto hidden lg:inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono">
             <CmdIcon className="h-3 w-3" />K
           </kbd>
@@ -351,10 +350,10 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
         <div id="scholar-lam-dock" className="scholar-lam-dock hidden min-w-0 flex-1 items-center justify-center lg:flex" />
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <StudyMusicQuickAccess />
-          <FeedbackButton />
+          <div className="hidden min-[390px]:block"><StudyMusicQuickAccess /></div>
+          <div className="hidden sm:block"><FeedbackButton /></div>
           <NotificationCenter />
-          {guestMode && <Badge variant="outline" className="scholar-top-status border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
+          {guestMode && <Badge variant="outline" className="scholar-top-status hidden sm:inline-flex border-cyan-300/30 bg-cyan-300/10 text-cyan-100">Guest</Badge>}
           {devMode && <Badge variant="outline" className="scholar-top-status text-orange-400 border-orange-400/40 bg-orange-400/10 hidden sm:inline-flex">DEV</Badge>}
           <div className="scholar-top-status hidden 2xl:contents">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 text-orange-500">
@@ -808,6 +807,10 @@ export function AppShell() {
             <SheetTitle className="text-left">{guestMode ? "Guest workspace" : `${user.name.split(" ")[0] || "Your"}’s Scholar`}</SheetTitle>
           </SheetHeader>
           <div className="scholar-mobile-drawer-body overflow-y-auto no-scrollbar">
+            <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-3 sm:hidden" aria-label="Quick controls">
+              <div className="flex items-center gap-2"><StudyMusicQuickAccess /><span className="text-xs text-muted-foreground">Music</span></div>
+              <div className="flex items-center gap-2"><FeedbackButton /><span className="text-xs text-muted-foreground">Feedback</span></div>
+            </div>
             <NavList active={active} onNavigate={navigate} badges={badges} selectionId="mobile" />
           </div>
         </SheetContent>
@@ -835,14 +838,14 @@ export function AppShell() {
           ) : null}
         </AnimatePresence>
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" || active === "exam-prep" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" || active === "exam-prep" || active === "lab" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <motion.div
             key={active}
             initial={settings.pageTransitions === false || settings.reduceMotion ? false : { opacity: 0, y: lockedView ? 0 : 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: settings.pageTransitions === false || settings.reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className={cn("w-full", active !== "live-tutor" && active !== "exam-prep" && "scholar-footer-view")}
+            className={cn("w-full", active !== "live-tutor" && active !== "exam-prep" && active !== "lab" && "scholar-footer-view")}
           >
             <ViewErrorBoundary viewName={active}>
               {guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (

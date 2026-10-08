@@ -1,0 +1,837 @@
+{
+  "files": 92,
+  "passed": 880,
+  "failed": 0,
+  "skipped": 14,
+  "unsuccessful": [],
+  "results": [
+    {
+      "file": "account-workspace.test.ts",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ai-live.test.ts",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 9,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ai-math-normalization.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ai-output-schema.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ai-reliability.test.ts",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "auth-rate-limit-void.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "auth-api.test.ts",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "auth-recovery.test.ts",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "connector-browser.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "connector-crypto.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "drive-connector.test.ts",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "drive-files.test.ts",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "developer-access.test.ts",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-api.test.ts",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-ocr-api.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-page-layout.test.tsx",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-page-text.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-parser-real.test.ts",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-reading.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-upload.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "entitlements-fail-closed.test.ts",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-access.test.ts",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-diagnostic.test.tsx",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-engine.test.ts",
+      "passed": 46,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-experience.test.ts",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-materials.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-persistence.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-security.test.ts",
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ebook-ocr-real.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "exam-ready-teacher.test.ts",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "google-auth.test.ts",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "groq-json-recovery.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "google-claims.test.ts",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "group-study-policy.test.ts",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "group-study-host-repair.test.ts",
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "group-study-sync.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "guest-feature-gate.test.tsx",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "guest-mode-security.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lam-identity.test.ts",
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lam-layout-breakpoint.test.ts",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lam-living-behavior.test.ts",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lam-study-plan.test.ts",
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lam-panel-presence.test.tsx",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-background-route.test.ts",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-edit-lease.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-feed.test.tsx",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-output-recovery.test.ts",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-pipeline.test.ts",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-quota.test.ts",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-speech-live.test.ts",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 1,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-security.test.ts",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-speech.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-timeline.test.tsx",
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "live-tutor-provider-reliability.test.ts",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "live-tutor-providers-live.test.ts",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 4,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "ocr-packaging.test.ts",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "monetization.test.ts",
+      "passed": 27,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "payment-workflow-security.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "performance-glass.test.ts",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "performance-server-flags.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "personalization-engine.test.ts",
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "performance-engine.test.ts",
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "personalization-presentation.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "plus-feature-preview.test.tsx",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "personalization-security.test.ts",
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "postgres-auth-security.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "postgres-migration-coverage.test.ts",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "private-api-cache.test.ts",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "quiz-generation-contract.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "private-beta-auth.test.ts",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "reminder-store.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "reminders-engine.test.ts",
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "request-body-security.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-engine.test.ts",
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-api.test.ts",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-jobs.test.ts",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-library-presentation.test.ts",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-ssrf.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-pdf.test.ts",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "security-rate-limit.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "session-events.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "session-workspace-gate.test.tsx",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "session-storage.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "site-origin.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "slideshow-plus-route.test.ts",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "study-music-presentation.test.ts",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "study-music-routes.test.ts",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "study-music.test.ts",
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "subscription-security.test.ts",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "v2-intelligence.test.ts",
+      "passed": 41,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "user-ai-provider.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "v2-platform.test.ts",
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    }
+  ]
+}

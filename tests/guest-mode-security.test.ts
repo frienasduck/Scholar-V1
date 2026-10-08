@@ -13,6 +13,11 @@ describe("temporary Guest Mode security", () => {
     expect(store).toContain("devMode: false");
     expect(store).toContain('name: "Guest"');
     expect(store).not.toMatch(/GUEST_STORAGE_KEY[\s\S]{0,900}(notes|files|chatThreads|coins): state\./);
+    const guestSave = store.slice(store.indexOf("localStorage.setItem(GUEST_STORAGE_KEY"), store.indexOf("localStorage.setItem(STORAGE_KEY, JSON.stringify"));
+    // Writing schema 2 caused the schema<7 migration to disable fresh mobile
+    // LAM preferences again on every reload. No private data is added here.
+    expect(guestSave).toContain("schema: SCHEMA_VERSION");
+    expect(guestSave).not.toContain("schema: 2");
   });
 
   test("guest sessions cannot satisfy server entitlements", () => {

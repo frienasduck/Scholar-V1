@@ -757,6 +757,23 @@ html[data-scholar-theme="theme-paper"] {
 .scholar-guest-dismiss:hover { background: rgba(255,255,255,.11); }
 
 /* --- Mobile compact top bar --- */
+@media (max-width: 639px) {
+  .scholar-mobile-topbar .scholar-top-search {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .scholar-mobile-topbar .sm-quick-access,
+  .scholar-mobile-topbar button[aria-label^="Notifications"],
+  .scholar-mobile-drawer-body .sm-quick-access,
+  .scholar-mobile-drawer-body .scholar-feedback-trigger {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+}
 @media (max-width: 1023px) {
   .scholar-mobile-topbar {
     height: var(--scholar-topbar-height) !important;
@@ -1046,8 +1063,8 @@ body.immersive-mode .scholar-mobile-nav-shell {
   .lam-listening-orb, .lam-wave i, .lam-thinking-capsule::after, .lam-thinking-dots i { animation: none !important; }
 }
 
-/* Mobile-only LAM compositor budget. Desktop-high rules above remain untouched. */
-@media (max-width: 767px) {
+/* Undocked LAM layout matches AppShell's 1024 px desktop breakpoint. */
+@media (max-width: 1023px) {
   html[data-lam-docked] .scholar-mobile-topbar {
     height: calc(7.5rem + var(--safe-area-top)) !important;
     flex: 0 0 calc(7.5rem + var(--safe-area-top));
@@ -1122,7 +1139,7 @@ body.immersive-mode .scholar-mobile-nav-shell {
   .lam-system-root[data-quality="mobile-optimized"] .lam-response-card { overflow-wrap: anywhere; }
   .lam-system-root[data-quality="mobile-optimized"] .lam-wave i { animation-duration: 1.15s; }
 }
-@media (max-width: 767px) and (pointer: coarse) {
+@media (max-width: 1023px) and (pointer: coarse) {
   .lam-mode-option:hover { transform: none; }
   .lam-quick-chip:hover { box-shadow: inset 0 1px 0 rgb(255 255 255 / .13), 0 8px 28px rgb(0 0 0 / .16); }
 }

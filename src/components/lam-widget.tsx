@@ -27,7 +27,7 @@ import { LamDismissScrim, LamPanelSurface } from "@/components/lam/lam-panel-pre
 import { GlassModeMenu } from "@/components/lam/glass-mode-menu";
 import { GlassWaveListening, LamQuickActionChip, LamThinkingState } from "@/components/lam/lam-glass-states";
 import { microphoneEnvironmentError, microphoneErrorMessage, queryMicrophonePermission, requestMicrophoneStream, stopMediaStream, type MicrophonePermissionState } from "@/lib/lam/microphone";
-import { useLamRenderQuality } from "@/lib/lam/render-quality";
+import { LAM_COMPACT_MEDIA_QUERY, useLamRenderQuality } from "@/lib/lam/render-quality";
 import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
 import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 import { aiErrorMessage } from "@/lib/ai/client";
@@ -101,10 +101,10 @@ type LamOpenRequest = { prompt?: string; context?: LamRuntimeContext };
 
 export function LamWidget(props: LamWidgetProps) {
   const mobileMode = useStore((state) => state.settings.mobileLamMode ?? "off");
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia(LAM_COMPACT_MEDIA_QUERY).matches);
   const [manualRequest, setManualRequest] = useState<LamOpenRequest | null>(null);
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 767px)");
+    const query = window.matchMedia(LAM_COMPACT_MEDIA_QUERY);
     const sync = () => setIsMobile(query.matches);
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);

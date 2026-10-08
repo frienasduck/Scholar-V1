@@ -37,14 +37,16 @@ export async function readProfile(userId: string) {
 export async function storeBonusBook(userId: string, key: string, digest: string, data: Omit<Prisma.CustomEbookUncheckedCreateInput,"userId">) {
   return db.$transaction(async tx => {
     await lockAccount(tx,userId);
-    const existing = await tx.customEbook.findUnique({where:{userId_importKey:{userId,importKey:key}}});
+    const existing = await tx.customEbook.findUnique({where:{userId_importKey:{userId,importKey:key}},include:{resource:{select:{id:true}}}});
     if (existing) {
       if (existing.importDigest !== digest || existing.deletedAt) throw new ProfileError("This import reference was already used. Choose the file again.");
       return existing;
     }
     const profile = await tx.learningProfile.findUnique({where:{userId}});
     if (!profile || !mayImport(profile.status,Boolean(profile.bonusClosedAt),profile.bonusUsedBytes,data.sizeBytes)) throw new ProfileError("Your initial-setup import space is closed or this PDF exceeds the remaining space.");
-    const book = await tx.customEbook.create({data:{...data,userId,allocation:"onboarding",importKey:key,importDigest:digest}});
+    // Return the nested durable resource from the same transaction. Dispatch
+    // must not depend on a second optional read after the upload has committed.
+    const book = await tx.customEbook.create({data:{...data,userId,allocation:"onboarding",importKey:key,importDigest:digest},include:{resource:{select:{id:true}}}});
     await tx.learningProfile.update({where:{userId},data:{bonusUsedBytes:{increment:data.sizeBytes}}});
     return book;
   },{timeout:10_000});

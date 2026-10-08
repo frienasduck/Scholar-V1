@@ -78,14 +78,18 @@ function ScholarContent() {
   if (restoringWorkspace) {
     return <div role="status" className="grid min-h-dvh place-items-center bg-background">Opening your account’s workspace…</div>;
   }
-  if (session.status === "initializing" && !guestMode) {
-    return <div className="grid min-h-screen place-items-center bg-black text-sm text-white/60">Checking your Scholar session…</div>;
+  if (session.loading && !guestMode) {
+    // Do not keep account A's private local shell mounted while a sign-in,
+    // sign-out or cross-tab session switch is resolving. Silent refreshes set
+    // loading=false and do not disrupt the active verified workspace.
+    return <div role="status" className="grid min-h-dvh place-items-center bg-background text-sm text-muted-foreground">Checking your Scholar session…</div>;
   }
   if (session.status === "error" && authed && !guestMode && !session.authenticated) {
     return <div role="alert" className="grid min-h-dvh place-items-center bg-background px-6 text-center"><div className="max-w-sm space-y-4"><h1 className="text-xl font-semibold">We couldn't check your session</h1><p className="text-sm text-muted-foreground">Your saved work is still here. Check your connection and try again.</p><button className="rounded-xl border border-border px-5 py-3" onClick={() => void session.refresh()}>Retry connection</button></div></div>;
   }
   if (!authed) return <AuthScreen />;
   if (session.authenticated && session.user) return <PersonalizationProvider key={session.user.id}><AppShell /></PersonalizationProvider>;
+  if (!guestMode) return <AuthScreen />;
   if (!onboarded) return <Onboarding />;
   return <AppShell />;
 }

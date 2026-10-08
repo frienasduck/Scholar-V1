@@ -1,8 +1,9 @@
 import "server-only";
+import { SCHOLAR_PRODUCTION_ORIGIN } from "@/lib/site-origin";
 
 /** Never derive recovery links or OAuth callbacks from an untrusted Host header. */
 export function authBaseUrl() {
-  const url = new URL(process.env.AUTH_BASE_URL?.trim() || (process.env.NODE_ENV === "production" ? "https://scholar-v1.vercel.app" : "http://localhost:3000"));
+  const url = new URL(process.env.AUTH_BASE_URL?.trim() || (process.env.NODE_ENV === "production" ? SCHOLAR_PRODUCTION_ORIGIN : "http://localhost:3000"));
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (url.username || url.password || url.search || url.hash || url.pathname !== "/" ||
     (url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && local && url.protocol === "http:"))) {

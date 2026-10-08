@@ -1,4 +1,5 @@
 "use client";
+import { notifySessionChanged } from "@/lib/auth/session-events";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -119,6 +120,7 @@ export function AuthScreen() {
         token.current = ""; changeMode("login"); setMessage(data.message); return;
       }
       await post(`/api/auth/${mode === "signup" ? "register" : "login"}`, { email, password, ...(mode === "signup" ? { name, confirmPassword } : {}) });
+      notifySessionChanged();
       // Server session + existing account-workspace/Your Scholar providers own restoration.
       window.location.replace("/");
     } catch (failure) { setError(failure instanceof Error && failure.name !== "TimeoutError" ? failure.message : "The request took too long. Please retry; Guest Mode is still available."); }
