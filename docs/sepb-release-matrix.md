@@ -79,3 +79,7 @@ The table above is the pre-edit snapshot. Current detailed outcomes and all requ
 | Mobile navigation / Android WebView | 92 settled captures across 24 routes/14 sizes; no document-wide overflow/framework overlay; precise header/LAM/Canvas checks | Emulation, not real virtual keyboard/file picker/permissions/WebView certification |
 
 **Local checks passed; public-beta verdict remains NOT READY.** Changes are local only; no production write/deployment/push performed.
+
+## October 8 staging overlay
+
+`sepb-staging-execution.md` records approved isolated infrastructure work, actual resource identifiers, migration evidence and remaining account/provider gates. New staging PostgreSQL passed identity, empty-schema and write-permission checks; all 16 migrations applied, no existing users/files/rooms/videos. Core secrets are stage-specific. This satisfies infrastructure prerequisites only: authenticated persistence, Free/Plus comparison, OAuth/Drive/email, hosted AI, multi-client and physical-device rows above remain unverified. Current default regression count: 886 pass, zero fail, 14 opt-in skipped / 93 files. Production and main remain unchanged.

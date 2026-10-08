@@ -62,7 +62,9 @@ describe("PostgreSQL migration coverage", () => {
   test("Vercel and packaged production builds deploy migrations before Next.js", () => {
     const vercel = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8")) as { buildCommand?: string };
     const packagedBuild = readFileSync(join(root, ".zscripts", "build.sh"), "utf8");
-    expect(vercel.buildCommand).toBe("bun run db:migrate:deploy && bun run build");
+    expect(vercel.buildCommand).toBe("bun run deploy:preflight && bun run db:migrate:deploy && bun run build");
+    expect(packagedBuild.indexOf("bun run deploy:preflight")).toBeGreaterThan(-1);
+    expect(packagedBuild.indexOf("bun run deploy:preflight")).toBeLessThan(packagedBuild.indexOf("bun run db:migrate:deploy"));
     expect(packagedBuild.indexOf("bun run db:migrate:deploy")).toBeGreaterThan(-1);
     expect(packagedBuild.indexOf("bun run db:migrate:deploy")).toBeLessThan(packagedBuild.indexOf("bun run build"));
     expect(packagedBuild).not.toContain("prisma db push");

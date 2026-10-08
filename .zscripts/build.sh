@@ -42,6 +42,7 @@ bun install
 
 # 构建 Next.js 应用
 echo "🔨 构建 Next.js 应用..."
+bun run deploy:preflight
 bun run db:migrate:deploy
 bun run build
 

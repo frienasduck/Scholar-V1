@@ -84,6 +84,18 @@ import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "SEPB staging · isolated release candidate",
+    date: "October 8, 2026",
+    title: "Safer staging and deployment boundaries",
+    items: [
+      "Prepared a separate release-candidate branch and Free staging project/database, without moving main or copying production users, files, subscriptions or session credentials.",
+      "Candidate builds and migrations now check the intended project, dedicated database, secure direct migration connection and staging origin before running. Unconfigured candidates and candidate previews in the production project stop safely.",
+      "Staging has independent session, connector, audit and background-worker secrets. Its metadata uses its own canonical origin and requests no search indexing; Scholar’s production identity and existing interface stay unchanged.",
+      "Deployment uploads exclude unrelated prototypes, APK backups, historical browser artifacts and local configuration. Explicit staging setup and database-verification scripts log status, not credentials.",
+      "The new empty database passed isolation and write-permission checks, and all 16 migrations applied successfully. The regression suite passed 886 cases with zero failures and 14 opt-in live cases skipped. Real controlled-account, OAuth/email, multiplayer, hosted AI and physical-device certification remain pending; this is not a public-beta readiness claim.",
+    ],
+  },
+  {
     version: "SEPB candidate · October 8 update",
     date: "October 8, 2026",
     title: "Release-candidate fixes and Your Scholar controls",

@@ -1,0 +1,10 @@
+# Deployment source must not include unrelated local work or test captures.
+NEW PROJECT/
+test-artifacts/
+apps/android/
+.sepb-staging/
+.env*
+*.log
+.codex/
+.agents/
+onalization*

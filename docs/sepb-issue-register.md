@@ -50,3 +50,10 @@ RC-017 reference: [Google output/thinking limits](https://ai.google.dev/gemini-a
 - RC-014: actual rebuilt `role=note` warning explicitly describes session-only guest Notes/export. Separate reader annotation/bookmark count remained one each after reload.
 
 Final default run: 880 pass, 0 fail, 14 skip / 92 files; explicit live probes 12 pass, 0 fail, 2 skip. Real browser layout evidence: 92 settled observations, 24 routes, 14 viewport sizes, no document-wide overflow/framework overlay. Authenticated/staging/physical gates remain open; no release certification inferred.
+
+## October 8 isolated staging execution
+
+- RC-005 infrastructure prerequisite: user approved candidate push + Free staging. Separate `scholar-staging` Vercel project and `scholar-staging-db` Neon Free project created; pinned isolation, zero-table/write-permission proof and all 16 migrations passed. Real private-account journey is still **unverified**, not closed by schema provisioning.
+- RC-020 (high): production project currently scopes base DB/session envs to previews too. Candidate branch now refuses execution there before migrations, requires known project/resource/endpoint/origin and direct TLS connection in staging, and preserves existing main behavior. Negative boundary cases pass. No production Git/env settings changed.
+- RC-021 (setup gate): browser Vercel dashboard requires secure user sign-in; staging Git branch setting and OAuth/email follow-up pending. Disposable controlled addresses requested; no production user or synthetic entitlement borrowed.
+- Current zero-cost regression run: **886 passed, 0 failed, 14 opt-in skipped / 93 files**. Full details/checkpoints: `sepb-staging-execution.md`. No new billable AI test authorized or run.

@@ -1,6 +1,6 @@
 {
-  "files": 92,
-  "passed": 880,
+  "files": 93,
+  "passed": 886,
   "failed": 0,
   "skipped": 14,
   "unsuccessful": [],
@@ -51,15 +51,6 @@
       "failures": ""
     },
     {
-      "file": "auth-rate-limit-void.test.ts",
-      "passed": 3,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "auth-api.test.ts",
       "passed": 10,
       "failed": 0,
@@ -69,8 +60,8 @@
       "failures": ""
     },
     {
-      "file": "auth-recovery.test.ts",
-      "passed": 12,
+      "file": "auth-rate-limit-void.test.ts",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -80,6 +71,15 @@
     {
       "file": "connector-browser.test.ts",
       "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "auth-recovery.test.ts",
+      "passed": 12,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -105,8 +105,8 @@
       "failures": ""
     },
     {
-      "file": "drive-files.test.ts",
-      "passed": 9,
+      "file": "developer-access.test.ts",
+      "passed": 19,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -114,8 +114,8 @@
       "failures": ""
     },
     {
-      "file": "developer-access.test.ts",
-      "passed": 19,
+      "file": "drive-files.test.ts",
+      "passed": 9,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -258,15 +258,6 @@
       "failures": ""
     },
     {
-      "file": "ebook-ocr-real.test.ts",
-      "passed": 3,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "exam-ready-teacher.test.ts",
       "passed": 10,
       "failed": 0,
@@ -285,8 +276,8 @@
       "failures": ""
     },
     {
-      "file": "groq-json-recovery.test.ts",
-      "passed": 2,
+      "file": "ebook-ocr-real.test.ts",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -303,8 +294,8 @@
       "failures": ""
     },
     {
-      "file": "group-study-policy.test.ts",
-      "passed": 9,
+      "file": "groq-json-recovery.test.ts",
+      "passed": 2,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -314,6 +305,15 @@
     {
       "file": "group-study-host-repair.test.ts",
       "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "group-study-policy.test.ts",
+      "passed": 9,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -411,15 +411,6 @@
       "failures": ""
     },
     {
-      "file": "lamtube-feed.test.tsx",
-      "passed": 7,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "lamtube-output-recovery.test.ts",
       "passed": 5,
       "failed": 0,
@@ -429,8 +420,8 @@
       "failures": ""
     },
     {
-      "file": "lamtube-pipeline.test.ts",
-      "passed": 12,
+      "file": "lamtube-feed.test.tsx",
+      "passed": 7,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -440,6 +431,15 @@
     {
       "file": "lamtube-quota.test.ts",
       "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-pipeline.test.ts",
+      "passed": 12,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -501,8 +501,8 @@
       "failures": ""
     },
     {
-      "file": "ocr-packaging.test.ts",
-      "passed": 1,
+      "file": "monetization.test.ts",
+      "passed": 27,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -510,8 +510,8 @@
       "failures": ""
     },
     {
-      "file": "monetization.test.ts",
-      "passed": 27,
+      "file": "ocr-packaging.test.ts",
+      "passed": 1,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -573,8 +573,8 @@
       "failures": ""
     },
     {
-      "file": "plus-feature-preview.test.tsx",
-      "passed": 3,
+      "file": "personalization-security.test.ts",
+      "passed": 28,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -582,8 +582,8 @@
       "failures": ""
     },
     {
-      "file": "personalization-security.test.ts",
-      "passed": 28,
+      "file": "plus-feature-preview.test.tsx",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -663,15 +663,6 @@
       "failures": ""
     },
     {
-      "file": "resource-engine.test.ts",
-      "passed": 20,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "resource-api.test.ts",
       "passed": 18,
       "failed": 0,
@@ -681,8 +672,8 @@
       "failures": ""
     },
     {
-      "file": "resource-jobs.test.ts",
-      "passed": 18,
+      "file": "resource-engine.test.ts",
+      "passed": 20,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -692,6 +683,15 @@
     {
       "file": "resource-library-presentation.test.ts",
       "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-jobs.test.ts",
+      "passed": 18,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -754,7 +754,7 @@
     },
     {
       "file": "site-origin.test.ts",
-      "passed": 3,
+      "passed": 4,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -764,6 +764,15 @@
     {
       "file": "slideshow-plus-route.test.ts",
       "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "staging-boundaries.test.ts",
+      "passed": 5,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -789,15 +798,6 @@
       "failures": ""
     },
     {
-      "file": "study-music.test.ts",
-      "passed": 29,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "subscription-security.test.ts",
       "passed": 16,
       "failed": 0,
@@ -807,8 +807,8 @@
       "failures": ""
     },
     {
-      "file": "v2-intelligence.test.ts",
-      "passed": 41,
+      "file": "study-music.test.ts",
+      "passed": 29,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -818,6 +818,15 @@
     {
       "file": "user-ai-provider.test.ts",
       "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "v2-intelligence.test.ts",
+      "passed": 41,
       "failed": 0,
       "skipped": 0,
       "exit": 0,

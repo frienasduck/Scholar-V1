@@ -1,5 +1,9 @@
 import "server-only";
 import { PrismaClient } from "@prisma/client";
+import { assertCandidateDeployment } from "@/lib/staging/environment";
+
+// Repeat the boundary at runtime, not only in the migration/build launcher.
+assertCandidateDeployment(process.env);
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

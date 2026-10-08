@@ -61,3 +61,4 @@ server.log
 # Skills directory
 /skills/
 .freebuff/
+.sepb-staging/
