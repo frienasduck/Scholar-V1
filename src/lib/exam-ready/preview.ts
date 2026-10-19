@@ -19,9 +19,9 @@ export function localMissionLesson(s: ExamSession, pace = "normal"): Lesson | un
     if (["personal", "custom"].includes(s.setup.materials)) return { text: "Live teaching from your private or selected material requires an account. Your local mission and notes are still available. No outside lesson has been substituted for your selected sources.", formulas: [], questions: [], citations: [], grounding: "material gap" };
     const topics = task.topics ?? chapter.concepts;
     const topic = topics[0] ?? chapter.title;
-    const index = Math.max(0, chapter.concepts.indexOf(topic));
+    const index = chapter.concepts.indexOf(topic);
     const stageIndex = ["diagnostic", "learn", "repair", "practice", "recall", "mistakes", "revise"].indexOf(task.kind);
-    const focus = task.subjectId === "physics" && task.chapterId === "p5" ? motion[(topics.length === 1 ? index : Math.max(0, stageIndex)) % motion.length] : undefined;
+    const focus = task.subjectId === "physics" && task.chapterId === "p5" && (topics.length !== 1 || index >= 0) ? motion[(topics.length === 1 ? index : Math.max(0, stageIndex)) % motion.length] : undefined;
     const excerpt = (details.quickSummary ?? []).filter(line => topics.some(t => t.toLowerCase().split(/[^a-z]+/).filter(word => word.length > 4).some(word => line.toLowerCase().includes(word)))).slice(0, 3);
     const text = task.kind === "diagnostic" ? `Start with a baseline check for ${chapter.title}. Try the question before reading its feedback. Calibration is not a teaching lecture.` : task.kind === "practice" ? `Apply what you learned in ${chapter.title}. Attempt the question first, then check each step of the reasoning. This is application, not a chapter restart.` : task.kind === "recall" ? `Recall ${topics.join("; ")} without looking at your notes. Explain the idea in your own words before checking the answer.` : task.kind === "mistakes" ? `Review ${chapter.title}'s common traps: ${(details.commonMistakes ?? []).slice(0, 3).join("; ") || "check your assumptions, reasoning and units"}. Your recorded account mistakes will be used by live LAM.` : focus?.text ?? `This checkpoint covers: ${topics.join("; ")}.\n\n${excerpt.length ? excerpt.join("\n\n") : "Use the chapter resources to study this specific concept, explain it in your own words, and try its application. Sign in for a detailed live LAM lesson for this checkpoint."}`;
     const teaching = ["learn", "repair", "revise"].includes(task.kind);
@@ -32,6 +32,6 @@ export function localMissionLesson(s: ExamSession, pace = "normal"): Lesson | un
         example: focus && teaching && pace !== "faster" ? { title: "Worked example", problem: focus.problem, steps: focus.steps, result: focus.result } : undefined,
         formulas: focus?.formula ? [focus.formula] : chapter.formulas ?? [],
         questions: [stageCheck ? { id: `preview:${task.id}:${stageCheck.title}`, subjectId: task.subjectId, chapterId: task.chapterId, topic: stageCheck.title, kind: "mcq", question: stageCheck.question, options: stageCheck.options, answer: stageCheck.answer, explanation: stageCheck.explanation, source: "Scholar question bank" } : { id: `preview:${task.id}:recall`, subjectId: task.subjectId, chapterId: task.chapterId, topic, kind: "short", question: `Explain ${topics.join("; ")} in your own words. Connect it to ${chapter.title}.`, answer: chapter.summary, explanation: `${chapter.summary}\n\nCompare your explanation with these curriculum points:\n\n${topics.join("\n\n")}`, source: "Scholar question bank" }],
-        citations: [], grounding: "general AI explanation",
+        citations: [], grounding: "offline curriculum guidance",
     };
 }

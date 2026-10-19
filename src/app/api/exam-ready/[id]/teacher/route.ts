@@ -4,6 +4,7 @@ import { checkGrade } from "@/lib/personalization/server";
 import { claimTeacher, publicSession, readSession, releaseTeacher, saveSession, storeLesson, ProfileError } from "@/lib/exam-ready/server";
 import { lessonKey, teach, teachingStyles } from "@/lib/exam-ready/teacher";
 import { authorized, fail, reply } from "@/lib/exam-ready/http";
+import { selectMaterials } from "@/lib/exam-ready/materials";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export async function POST(request: Request, ctx: {
@@ -23,12 +24,13 @@ export async function POST(request: Request, ctx: {
         if (s.revision !== body.revision || s.status === "completed")
             throw new ProfileError("The session changed or is complete. Reload before starting a teaching turn.", 409);
         await checkGrade(user.id, s.setup.grade);
-        const key = lessonKey(s, body.pace, body.question);
-        if (s.lessons[key])
+        const materials = await selectMaterials(user.id,s,body.question,body.pace.startsWith("notes "));
+        const key = lessonKey(s, body.pace, body.question, materials.sources.map(p=>`${p.citation.resourceId}:${p.version}`));
+        if (s.lessons[key] && !s.lessons[key].recovery && !s.lessons[key].quality?.limitations.some(l=>l.startsWith("Incomplete stages:")))
             return reply({ session: publicSession(s), key });
         await claimTeacher(user.id, id, body.revision);
         lease = { userId: user.id, id, revision: body.revision };
-        const lesson = await teach(user.id, s, body.pace, body.question, AbortSignal.any([request.signal, AbortSignal.timeout(50000)]));
+        const lesson = await teach(user.id, s, body.pace, body.question, AbortSignal.any([request.signal, AbortSignal.timeout(50000)]), materials);
         return reply({ session: publicSession(await saveSession(user.id, storeLesson(s, key, lesson, body.question), body.revision, true)), key });
     }
     catch (e) {

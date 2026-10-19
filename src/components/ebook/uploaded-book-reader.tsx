@@ -14,6 +14,7 @@ import { PageReaderShell } from "./page-reader-shell";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/notifications/notification-api";
 import { pdfPageScale } from "@/lib/ebooks/page-layout";
+import { fetchEbookPdf } from "@/lib/ebooks/transfer";
 
 export type UploadedBook = { id: string; resourceId?: string; title: string; originalFileName: string; pageCount: number; readingState: EbookReading; outline?: { title: string; page: number }[]; processingStatus: string };
 type Question = { question: string; options: string[]; correctAnswer: number | string; explanation: string };
@@ -46,8 +47,9 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
   useEffect(() => () => setLamPageContext({}), []);
   useEffect(() => {
     let disposed = false; let task: ReturnType<typeof import("pdfjs-dist").getDocument> | undefined;
-    void import("pdfjs-dist").then(async pdfjs => { if (disposed) return; pdfjs.GlobalWorkerOptions.workerSrc = `/api/group-study/pdf-worker?v=${pdfjs.version}`; task = pdfjs.getDocument({ url: `/api/ebooks/${encodeURIComponent(book.id)}?file=1`, withCredentials: true }); const document = await task.promise; if (!disposed) setPdf(document); }).catch(() => { if (!disposed) setPdfError("The PDF could not be rendered. Try reopening the book."); });
-    return () => { disposed = true; void task?.destroy().catch(() => undefined); };
+    const controller = new AbortController();
+    void import("pdfjs-dist").then(async pdfjs => { if (disposed) return; pdfjs.GlobalWorkerOptions.workerSrc = `/api/group-study/pdf-worker?v=${pdfjs.version}`; const data = await fetchEbookPdf(book.id, controller.signal); if (disposed) return; task = pdfjs.getDocument({ data }); const document = await task.promise; if (!disposed) setPdf(document); }).catch(() => { if (!disposed) setPdfError("The PDF could not be rendered. Try reopening the book."); });
+    return () => { disposed = true; controller.abort(); void task?.destroy().catch(() => undefined); };
   }, [book.id]);
   const ask = () => {
     if (!text) { setOcrDraft(""); setOcrOpen(true); setOcrStatus("Extract and review this scanned page first. LAM won't invent missing book content."); return; }
@@ -125,7 +127,10 @@ export function UploadedBookReader({ book, onClose }: { book: UploadedBook; onCl
         {question.options.map((option, i) => <button key={i} disabled={answer !== null} className={`block w-full rounded-xl border p-3 text-left ${answer === i ? "border-cyan-200 bg-cyan-200/10" : "border-white/15"}`} onClick={() => setAnswer(i)}>{option}</button>)}
         {answer !== null && <div role="status"><p>{answer === question.correctAnswer ? "Correct." : "Review the explanation."}</p><Markdown content={question.explanation} /></div>}
       </div>}
-      <a className="block min-h-11 underline" target="_blank" rel="noreferrer" href={`/api/ebooks/${encodeURIComponent(book.id)}?file=1`}>Open original PDF</a>
+      <button type="button" className="block min-h-11 underline" onClick={async () => {
+        try { const bytes = await fetchEbookPdf(book.id, AbortSignal.timeout(120_000)); const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" })); const link = document.createElement("a"); link.href = url; link.download = book.originalFileName; link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000); }
+        catch { toast.error("The original PDF could not be downloaded. Please retry."); }
+      }}>Download original PDF</button>
     </div>;
   return <>
     <PageReaderShell title={book.title} page={page} totalPages={book.pageCount} chapters={book.outline ?? []} status={sync} textReady={!!text} bookmarked={bookmarks.some(item => item.page === page)} tools={tools} onClose={onClose} onPage={changePage} onBookmark={() => toggleBookmark(page)} onAsk={ask} onOCR={() => { setOcrDraft(text); setOcrStatus(""); setOcrOpen(true); }} onBookMode={() => setBookMode(true)} onSearch={onSearch} renderPage={() => !bookMode && <UploadedPage key={page} pdf={pdf} page={page} error={pdfError} fit="width" />} />

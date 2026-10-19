@@ -62,3 +62,4 @@ server.log
 /skills/
 .freebuff/
 .sepb-staging/
+.exam-ready-dev/

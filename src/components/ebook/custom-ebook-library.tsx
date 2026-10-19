@@ -12,6 +12,7 @@ import { openScholarPlus } from "@/lib/subscriptions/promo";
 import { setLamPageContext } from "@/lib/lam-context";
 import { useStore } from "@/lib/store";
 import { profileRemoveItem } from "@/lib/profile-storage";
+import { transferEbook } from "@/lib/ebooks/transfer";
 
 type EbookSummary = { id: string; title: string; originalFileName: string; sizeBytes: number; pageCount: number; lastPage?: number; lastOpenedAt?: string; processingStatus: string; createdAt: string; resource?: { id: string; state: string; extractedPages?: number; job?: { stage: string; errorCode?: string } } };
 type Usage = { used: number; limit: number; remaining: number };
@@ -30,6 +31,7 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
   const [ebooks, setEbooks] = useState<EbookSummary[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [active, setActive] = useState<UploadedBook | null>(null);
   const [libraryError, setLibraryError] = useState("");
   const [staged, setStaged] = useState<{ file: File; key: string } | null>(null);
@@ -71,14 +73,19 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
     if (!staged || uploadInFlight.current) return;
     uploadInFlight.current = true;
     setBusy(true);
+    setUploadProgress(0);
     setUploadError("");
     try {
       const form = new FormData();
       form.set("file", staged.file);
       if (title.trim()) form.set("title", title.trim());
-      const response = await fetch("/api/ebooks", { method: "POST", body: form, headers: { "x-idempotency-key": staged.key }, signal: AbortSignal.timeout(55_000) });
-      const value = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(value.message || "Scholar could not upload this PDF.");
+      let value;
+      if (staged.file.size > 4 * 1024 * 1024) value = await transferEbook(staged.file, title.trim(), staged.key, percent => { if (mounted.current) setUploadProgress(percent); });
+      else {
+        const response = await fetch("/api/ebooks", { method: "POST", body: form, headers: { "x-idempotency-key": staged.key }, signal: AbortSignal.timeout(55_000) });
+        value = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(value.message || "Scholar could not upload this PDF.");
+      }
       if (!mounted.current) return;
       toast.success(value.duplicate ? "This book is already in your library" : value.ebook.processingStatus === "processing" ? "PDF saved · processing" : "E-Book ready", { description: value.ebook.processingStatus === "processing" ? "Extraction and chapter indexing continue in the background. You can leave this screen." : value.ebook.processingStatus === "needs_ocr" ? "The PDF is saved. Some scanned pages still need OCR." : `${value.ebook.pageCount} pages are ready to study.` });
       setStaged(null);
@@ -132,7 +139,8 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-cyan-200" /><h2 className="font-semibold text-white">Upload your own E-Book</h2></div>
-            <p className="mt-1 text-xs leading-5 text-white/50">PDF only · private to your account · up to 4 MB and 500 pages</p>
+            <p className="mt-1 text-xs leading-5 text-white/50">PDF only · private to your account · up to 20 MB and 500 pages</p>
+            {busy && uploadProgress > 0 && <p role="status" className="text-xs text-white/60">Uploading {uploadProgress}%{uploadProgress === 100 ? " · saving your PDF…" : ""}</p>}
             <button className="mt-2 text-xs text-cyan-200 underline underline-offset-4" onClick={async () => { try { const response = await fetch("/api/resources/backfill", { method: "POST" }); const result = await response.json(); if (!response.ok) throw new Error(result.message); if (!mounted.current) return; toast.success(result.indexed ? `${result.indexed} existing PDFs queued for chapter indexing` : "No additional PDFs to index", { description: "Processes up to five at a time; upload and setup allowances are unchanged." }); await refresh(); } catch { if (mounted.current) toast.error("Chapter indexing is unavailable. Check the resource database update."); } }}>Index existing PDFs in my Resource Vault</button>
             {usage ? <p className="mt-2 text-xs font-medium text-cyan-100">{usage.used} of {usage.limit} uploads used this month</p> : null}
           </div>

@@ -84,6 +84,54 @@ import { PluginConnections } from "@/components/connections/plugin-connections";
 
 const SCHOLAR_UPDATE_LOG = [
   {
+    version: "Exam Ready 3.3 · localhost Guest AI and guided setup",
+    date: "October 15, 2026",
+    title: "Real local teaching, Liquid Glass preparation and transparent fallback",
+    items: [
+      "Added an explicitly enabled, loopback-only development Guest AI workspace with no production database requirement. Production, public staging, CI and ordinary development servers remain closed; existing authentication, private-material protection and Plus enforcement are unchanged.",
+      "Real localhost Laws of Motion testing verified a source-cited explanation, contextual follow-up, incorrect-answer feedback, misconception repair and correct retry using the configured NVIDIA adapter. Verified bank checks remain labelled separately from AI; this is limited local evidence, not whole-curriculum certification.",
+      "Live requests use server-held credentials, a pinned approved provider/model, durable workspace-wide request/token reservations, payload caps, same-origin checks, isolated sessions, revision fencing and single-attempt transport. Failures count; quota errors halt calls; refresh and restart never replenish an allowance.",
+      "Rebuilt preparation setup into seven animated Liquid Glass steps, with selectable goal/confidence cards, searchable multi-subject chapters, realistic time and multi-day blocks, independent source selection, editable plan preview and a separate adjustment dialog. Existing LAM identities, academic library and study workspace are retained.",
+      "Added an intentional six-second preparation transition with truthful local-planner wording, reduced-motion support, smooth card/button/workspace transitions, mobile layouts and correctly fitted compact LAM artwork. Chapter search now preserves the original chapter number.",
+      "Preserved provider HTTP errors and Retry-After, corrected Gemini structured-output/thinking options and kept NVIDIA text output within the bounded single-attempt path. Retained real outputs can pass through lossless formula-format repair and full source/academic revalidation without another paid call.",
+      "Closed or exhausted live allowances explicitly show no request was made; stored source guidance remains available and is not presented as live AI. Failed turns refresh their budget through a read-only status check, not a provider retry, and failed questions retain their draft. Formula symbols render as math; built-in citations are labelled stored sources rather than private sources.",
+      "A missing horizontal balancing force in one live friction example is transparently clarified from the source material. Correctness limitations and unsuccessful Gemini attempts are documented; no new deployment, migration, commit or push is included in this local checkpoint.",
+    ],
+  },
+  {
+    version: "Exam Ready 3.3 · teaching reliability checkpoint",
+    date: "October 14, 2026",
+    title: "Context-aware teaching, safer recovery and deeper original practice",
+    items: [
+      "LAM follow-ups now retain the permitted current lesson, example, question and answer context. Required objective sources stay ahead of keyword matches. Source-owned examples/checks can be reused while adapting only the explanation, with focused repair contracts instead of contradictory full-lesson templates. Equal-distance difficulty ties prefer a suitable challenge over an easier check; Guest guides receive the actual recall/practice/diagnostic stage rather than resetting to the setup stage.",
+      "Exam Ready uses one provider attempt per request, preserves accepted generation stages and their validation reasons, respects Retry-After and retains stored lessons when the provider is unavailable. A Groq 429 no longer rotates models. Guest controls now request real stored source-based guidance; failed guide loads have an explicit retry without paid AI or invented readiness.",
+      "Added progressive hints and requested solutions, assisted-answer evidence labels, bounded polynomial equivalence, numerical working/partial-credit handling, cautious difficulty escalation, varied delayed independent retrieval and source-version-fenced revision. Older excluded, deleted or changed source summaries cannot be reused as teaching. Long-history answer IDs remain unique after the 250-answer cap; notes, clocks and account fences are preserved.",
+      "Added ten original PCM depth units, including graph/sign reasoning, uncertainty, circular acceleration, concurrent-force equilibrium, first-law transfer, stoichiometry, empirical formulas, redox conservation, first-principles differentiation and multi-step binomial challenges. The library now has 89 original units, 164 examples, 176 questions and 253 revision prompts; 134/695 objectives have teaching and 99/695 have checks. This is partial coverage, not certified complete chapters.",
+      "Existing Liquid Glass design, layouts and LAM animations remain unchanged. The new coefficient-convolution formula uses explicit math delimiters so its bracket notation is not parsed as an empty Markdown link. Two newly approved live text probes were made: one citation-free response was rejected, then a 429 with a 30-second wait stopped the batch. No further calls, automatic deployment, migration or push ran. Live/authenticated staging and subject-expert certification remain outstanding; the teaching engine is only partially ready.",
+    ],
+  },
+  {
+    version: "Exam Ready 3.2 · academic expansion checkpoint",
+    date: "October 14, 2026",
+    title: "Independent PCM foundations and deeper original practice",
+    items: [
+      "Exam Ready's own library now includes 79 original topic units, 144 worked examples, 154 original questions and 223 revision prompts. All 37 current Class XI PCM theory chapters have readable foundation material and a checked first learning checkpoint; this is not complete chapter or expert/live-teaching certification.",
+      "Added deeper mechanics, rotational motion, bonding, thermodynamics, binomial, counting, series, geometry and other foundations with explicit assumptions, misconceptions, repair guidance and original solutions. Existing design and animations remain unchanged.",
+      "Source-owned bank questions now map to exact objectives, select suitable difficulty, and avoid attempted variants. Original MCQ keys use varied, stable option positions instead of always appearing at A. Corrected molecular-orbital objective mapping, labeled misconceptions instead of presenting them as takeaways, and added current-scope extension annotations without changing saved chapter IDs. Offline gap messages now identify the current source selection rather than imply that excluded material does not exist.",
+      "The five additional live Groq probes did not establish accepted complete teaching: one returned invalid/citation-free rotational content and four were rate-limited. Saved evidence is retained; no readiness claim is inferred from failed calls or structural tests. Private upload and full curriculum certification remain pending.",
+    ],
+  },
+  {
+    version: "October 14 · temporary section notices",
+    date: "October 14, 2026",
+    title: "LAMTube and Study Music temporarily paused",
+    items: [
+      "LAMTube and Study Music now open temporary copyright/licensing notices for all users, including Scholar Plus, instead of their normal workspaces. The familiar Plus-card layout has separate coral and violet finishes, section-specific information and study alternatives.",
+      "Both sections are marked Paused in navigation. The music shortcut opens its notice rather than quick playback controls; the global music player is suspended and LAMTube background-job polling is not mounted during the pause.",
+      "No feature code, songs, playlists, favorites or saved Scholar data is deleted. These are temporary interface notices, not new subscription requirements, and there is no confirmed return date.",
+    ],
+  },
+  {
     version: "SEPB staging · isolated release candidate",
     date: "October 8, 2026",
     title: "Safer staging and deployment boundaries",

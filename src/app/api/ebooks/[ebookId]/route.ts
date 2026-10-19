@@ -8,7 +8,7 @@ import { privateScope } from "@/lib/resources/service";
 import { processResourceJob } from "@/lib/resources/jobs";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
-import { EMPTY_READING, fileDisposition, readingSchema, safeEbookName } from "@/lib/ebooks/contracts";
+import { EMPTY_READING, EBOOK_READ_BYTES, fileDisposition, readingSchema, safeEbookName } from "@/lib/ebooks/contracts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,6 +36,16 @@ export async function GET(request: NextRequest, context: Context) {
   if (!ebook) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   if (!["ready", "needs_ocr"].includes(ebook.processingStatus)) return NextResponse.json({ error: "PDF_NOT_READY", message: "This PDF has not completed safe processing. Check its status in Resources." }, { status: 409 });
   if (request.nextUrl.searchParams.get("file") === "1") {
+    const offsetQuery = request.nextUrl.searchParams.get("offset");
+    if (offsetQuery !== null) {
+      const offset = Number(offsetQuery);
+      if (!/^\d+$/.test(offsetQuery) || !Number.isSafeInteger(offset) || offset < 0 || offset >= ebook.sizeBytes) return NextResponse.json({ error: "INVALID_RANGE" }, { status: 416, headers });
+      const rows = await db.$queryRaw<{ bytes: Uint8Array }[]>`SELECT substring("pdfBytes" from CAST(${offset + 1} AS integer) for CAST(${EBOOK_READ_BYTES} AS integer)) AS bytes FROM "CustomEbook" WHERE "id"=${ebookId} AND "userId"=${user.id} AND "deletedAt" IS NULL`;
+      const bytes = rows[0]?.bytes;
+      if (!bytes?.length) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers });
+      return new Response(Buffer.from(bytes), { status: 206, headers: { ...headers, "Content-Type": "application/pdf", "Content-Range": `bytes ${offset}-${offset + bytes.length - 1}/${ebook.sizeBytes}`, "Content-Length": String(bytes.length), "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" } });
+    }
+    if (ebook.sizeBytes > 4 * 1024 * 1024) return NextResponse.json({ error: "CHUNKED_READ_REQUIRED", message: "Open this PDF in the E-Book reader and use Download original PDF." }, { status: 413, headers });
     const source = await db.customEbook.findFirst({ where: { id: ebookId, userId: user.id, deletedAt: null }, select: { pdfBytes: true } });
     if (!source) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     return new Response(source.pdfBytes, { headers: { ...headers, "Content-Type": "application/pdf", "Content-Disposition": fileDisposition(ebook.originalFileName), "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox", "Cross-Origin-Resource-Policy": "same-origin" } });

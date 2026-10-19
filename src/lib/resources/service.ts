@@ -72,7 +72,7 @@ export async function artifact(resource: ResourceRecord, type: ArtifactType) {
 }
 export async function retrieve(userId: string, query: ResourceQuery, resourceIds?: string[]) {
   const candidates = resourceIds?.length ? (await Promise.all(resourceIds.slice(0, 4).map(id => findResource(id, userId)))).filter((r): r is ResourceRecord => !!r) : (await library({ ...query, limit: 8 }, userId)).resources;
-  const matched = candidates.filter(r => r.canStoreCopy && r.canGenerateDerivatives && ["READY", "NEEDS_REVIEW"].includes(r.state) && (!query.grade || r.mappings.some(m => m.grade === query.grade) || !r.mappings.length && r.visibility === "PRIVATE"));
+  const matched = candidates.filter(r => r.canStoreCopy && r.canGenerateDerivatives && ["READY", "NEEDS_REVIEW"].includes(r.state) && (r.mappings.some(m => (!query.grade || m.grade === query.grade) && (!query.subjectId || m.subjectId === query.subjectId) && (!query.chapterId || m.chapterId === query.chapterId || m.chapterId === "")) || !r.mappings.length && r.visibility === "PRIVATE" && !query.subjectId && !query.chapterId));
   const words = tokens(query.q ?? "").slice(0, 12);
   const groups = await Promise.all(matched.map(async resource => {
     let chunks: IndexedChunk[];

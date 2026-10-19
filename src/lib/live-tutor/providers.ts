@@ -1,8 +1,9 @@
 import "server-only";
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { AIProviderError } from "@/lib/ai/errors";
 import { consumeSSEChunk } from "@/lib/ai/sse";
+import { retryAfterSeconds } from "@/lib/ai/retry-after";
 import { getScholarGroqConfig, streamScholarGroqText, type ScholarGroqMessage } from "@/lib/ai/scholar-groq";
 import type { LiveTutorProvider, LiveTutorProviderStatus } from "./types";
 
@@ -15,6 +16,12 @@ export interface LiveTutorProviderRequest {
   temperature?: number;
   maxTokens?: number;
   preferLargeContext?: boolean;
+  singleAttempt?: boolean;
+  jsonSchema?: Record<string, unknown>;
+  thinkingBudget?: number;
+  thinkingLevel?: "low";
+  deadlineMs?: number;
+  nvidiaThinking?: boolean;
   onDelta: (value: string) => void;
   onProviderResolved?: (provider: Exclude<LiveTutorProvider, "auto">, model: string) => void;
 }
@@ -82,6 +89,8 @@ async function streamGemini(request: LiveTutorProviderRequest) {
   }));
   const model = request.credential?.model ?? request.model ?? process.env.GEMINI_TEXT_MODEL?.trim() ?? "gemini-3.6-flash";
   try {
+    // This SDK makes one fetch when retryOptions are omitted. Its optional
+    // retry wrapper discards HTTP status (including 404/429), so do not enable it.
     const ai = new GoogleGenAI({ apiKey });
     request.onProviderResolved?.("gemini", model);
     const stream = await ai.models.generateContentStream({
@@ -89,9 +98,12 @@ async function streamGemini(request: LiveTutorProviderRequest) {
       contents,
       config: {
         systemInstruction: system,
-        temperature: request.temperature ?? 0.35,
+        ...(!/^gemini-[34]/.test(model)?{temperature: request.temperature ?? 0.35}:{}),
         maxOutputTokens: request.maxTokens ?? 4_000,
         abortSignal: request.signal,
+        ...(request.jsonSchema ? {responseMimeType:"application/json", responseJsonSchema:request.jsonSchema} : {}),
+        ...(request.thinkingBudget !== undefined ? {thinkingConfig:{thinkingBudget:request.thinkingBudget}} : {}),
+        ...(request.thinkingLevel === "low" ? {thinkingConfig:{thinkingLevel:ThinkingLevel.LOW}} : {}),
       },
     });
     let received = false;
@@ -130,13 +142,15 @@ async function streamNvidiaModel(request: LiveTutorProviderRequest, apiKey: stri
         temperature: request.temperature ?? 0.35,
         max_tokens: request.maxTokens ?? 4_000,
         stream: true,
+        ...(request.nvidiaThinking!==undefined&&model.startsWith("nvidia/nemotron-3-")?{chat_template_kwargs:{enable_thinking:request.nvidiaThinking}}:{}),
       }),
       signal: request.signal,
     });
     if (!response.ok || !response.body) {
       if (response.status === 401 || response.status === 403) throw new AIProviderError("NVIDIA text tutoring is temporarily unavailable. Try Auto or contact support.", 503, "NVIDIA_AUTH_FAILED");
       if (response.status === 404 || response.status === 410) throw new AIProviderError("The selected NVIDIA model is unavailable. Try Auto or another provider.", 503, "NVIDIA_MODEL_UNAVAILABLE");
-      if (response.status === 429 || response.status === 503) throw new AIProviderError("NVIDIA is temporarily overloaded. Try Auto or retry shortly.", 503, "NVIDIA_OVERLOADED");
+      if (response.status === 429) throw new AIProviderError("NVIDIA is rate-limited. Wait before explicitly retrying.", 429, "NVIDIA_RATE_LIMITED",retryAfterSeconds({headers:response.headers}));
+      if (response.status === 503) throw new AIProviderError("NVIDIA is temporarily overloaded. Try Auto or retry shortly.", 503, "NVIDIA_OVERLOADED");
       if (response.status === 400 || response.status === 413 || response.status === 422) throw new AIProviderError("NVIDIA could not process this input. Shorten the conversation and retry.", 422, "NVIDIA_INVALID_REQUEST");
       throw new AIProviderError("NVIDIA could not start this response.", 502, "NVIDIA_REQUEST_FAILED");
     }
@@ -164,6 +178,7 @@ async function streamNvidiaModel(request: LiveTutorProviderRequest, apiKey: stri
         throw new AIProviderError("NVIDIA returned malformed streaming data. Try Auto or retry.", 502, "NVIDIA_MALFORMED_STREAM");
       }
       if (parsed.error) {
+        if(String(parsed.error.code)==="429")throw new AIProviderError("NVIDIA is rate-limited. Wait before explicitly retrying.",429,"NVIDIA_RATE_LIMITED");
         const overloaded = parsed.error.code === 503 || /overload|unavailable/i.test(parsed.error.message ?? "");
         throw new AIProviderError(
           overloaded ? "NVIDIA is temporarily overloaded. Try Auto or retry shortly." : "NVIDIA could not finish this response.",
@@ -211,7 +226,7 @@ async function streamNvidia(request: LiveTutorProviderRequest): Promise<string> 
 }
 
 export async function streamLiveTutorText(request: LiveTutorProviderRequest): Promise<{ provider: Exclude<LiveTutorProvider, "auto">; model: string }> {
-  const deadline = AbortSignal.timeout(LIVE_TUTOR_DEADLINE_MS);
+  const deadline = AbortSignal.timeout(Math.min(120000, Math.max(1000, request.deadlineMs ?? LIVE_TUTOR_DEADLINE_MS)));
   const signal = AbortSignal.any([request.signal, deadline]);
   const providers = request.credential && request.provider !== "auto"
     ? [request.provider as Exclude<LiveTutorProvider, "auto">]
@@ -236,6 +251,7 @@ export async function streamLiveTutorText(request: LiveTutorProviderRequest): Pr
           temperature: request.temperature,
           maxTokens: request.maxTokens,
           signal,
+          singleAttempt: request.singleAttempt,
         }, attempt.onDelta, (resolvedModel) => request.onProviderResolved?.(provider, resolvedModel));
         return { provider, model: model || config.model };
       }
@@ -244,7 +260,7 @@ export async function streamLiveTutorText(request: LiveTutorProviderRequest): Pr
     } catch (error) {
       lastError = error;
       if (signal.aborted) throw new AIProviderError("The LAM AI request was cancelled or timed out.", 504, "AI_TIMEOUT");
-      if (request.provider !== "auto" || emitted || !canAutoFallback(error)) throw error;
+      if (request.singleAttempt || request.provider !== "auto" || emitted || !canAutoFallback(error)) throw error;
     }
   }
 

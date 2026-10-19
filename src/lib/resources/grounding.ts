@@ -25,11 +25,11 @@ export function citationStream(ids: string[]) {
   };
 }
 /** Only IDs actually retrieved from permitted source text may become citation links. */
-export function citationFooter(text: string, sources: { citation: Citation; text: string }[]) {
+export function citationFooter(text: string, sources: { citation: Citation; text: string }[], nonLinkLabel:"private source"|"stored source"="private source") {
   const allowed = new Map(sources.map(s => [s.citation.id, s.citation]));
   const used = new Set<string>();
   const clean = text.replace(/\[(S\d+)\]/g, (match, id: string) => { if (!allowed.has(id)) return "[unverified source]"; used.add(id); return match; });
-  const footer = [...used].map(id => { const c = allowed.get(id)!; const title = `${label(c.title)} — ${label(c.heading)}${c.page ? `, p. ${c.page}` : ""}${c.timestamp ? `, ${c.timestamp}s` : ""}`; return `[${id}] ${c.url?.startsWith("https://") ? `[${title}](${c.url})` : `${title} (private source)`}`; }).join("\n\n");
+  const footer = [...used].map(id => { const c = allowed.get(id)!; const title = `${label(c.title)} — ${label(c.heading)}${c.page ? `, p. ${c.page}` : ""}${c.timestamp ? `, ${c.timestamp}s` : ""}`; return `[${id}] ${c.url?.startsWith("https://") ? `[${title}](${c.url})` : `${title} (${nonLinkLabel})`}`; }).join("\n\n");
   return { text: footer ? `${clean}\n\n### Sources\n\n${footer}` : clean, citations: [...used].map(id => allowed.get(id)!) };
 }
 export function groundStructured(value: unknown, sources: { citation: Citation; text: string }[]) {

@@ -94,6 +94,8 @@ import { PlusPromotion } from "@/components/subscriptions/plus-promotion";
 import { FeedbackButton } from "@/components/feedback/feedback-button";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
+import { SectionShutdown } from "@/components/section-shutdown";
+import { getSectionShutdown } from "@/lib/section-availability";
 
 function ViewLoading() {
   return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
@@ -220,7 +222,8 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
           <div className="flex flex-col gap-0.5">
             {NAV_ITEMS.filter((n) => n.group === group && (!n.preview || access.developerMode)).map((item) => {
               const isActive = active === item.id;
-              const plusLocked = Boolean(access.authenticated && VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
+              const shutdown = getSectionShutdown(item.id);
+              const plusLocked = Boolean(!shutdown && access.authenticated && VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
               const badge = (badges as Record<string, string | null>)[item.id];
               const hasFinishedTask = backgroundTasks.some(
                 (task) =>
@@ -286,7 +289,8 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                       aria-label="Background task finished"
                     />
                   )}
-                  {item.badge && !badge && (
+                  {shutdown && <span className="scholar-nav-badge rounded-full border border-rose-200/20 bg-rose-300/10 px-1.5 py-0.5 text-[9px] font-semibold text-rose-200">Paused</span>}
+                  {item.badge && !badge && !shutdown && (
                     <span className={cn("scholar-nav-badge shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full", item.id === "exam-prep" ? "border border-cyan-300/30 bg-cyan-300/10 text-cyan-100" : "bg-red-500 text-white animate-pulse")}>{item.badge}</span>
                   )}
                   {plusLocked && <span className="scholar-nav-badge rounded-full border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-cyan-200">Plus</span>}
@@ -711,7 +715,8 @@ export function AppShell() {
   }, [navigate]);
 
   const View = VIEW_COMPONENTS[active] ?? DashboardView;
-  const lockedView = Boolean(VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement));
+  const shutdown = getSectionShutdown(active);
+  const lockedView = Boolean(shutdown || (VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement)));
 
   // Per-view gradient background classes
   const viewBg: Record<string, string> = {
@@ -762,7 +767,7 @@ export function AppShell() {
 
   return (
     <div className="scholar-shell flex h-dvh w-full overflow-hidden" data-mobile-nav-open={mobileNavOpen ? "true" : "false"}>
-      <LamTubeBackgroundJobs />
+      {!getSectionShutdown("nigtube") && <LamTubeBackgroundJobs />}
       {/* Ambient glass environment. Glass needs something coherent to refract:
           deep graphite with a few very soft fields instead of neon gradients. */}
       <div className="sg-environment" aria-hidden="true" />
@@ -848,7 +853,7 @@ export function AppShell() {
             className={cn("w-full", active !== "live-tutor" && active !== "exam-prep" && active !== "lab" && "scholar-footer-view")}
           >
             <ViewErrorBoundary viewName={active}>
-              {guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (
+              {shutdown ? <SectionShutdown viewId={active} /> : guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (
                 <GuestFeatureGate onSignIn={() => setAuthed(false)} onBack={() => navigate("dashboard")} reduceMotion={settings.reduceMotion} />
               ) : lockedView ? (
                 <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>

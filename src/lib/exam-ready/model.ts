@@ -1,15 +1,19 @@
 import { z } from "zod";
 import { getCurriculum } from "@/lib/curriculum-helper";
-export const materialModes = ["all", "scholar-web", "scholar", "personal-scholar", "personal", "custom"] as const;
+import { sessionCoverage } from "./coverage";
+import { numericSchema, rubricSchema, type ErrorCategory } from "./assessment";
+export const materialModes = ["all", "scholar-web", "scholar", "personal-scholar", "personal", "custom", "verified"] as const;
 export const setupSchema = z.object({
     exam: z.string().trim().min(2).max(120), grade: z.union([z.literal(9), z.literal(11)]), board: z.string().trim().min(1).max(60).default("CBSE"),
     examAt: z.number().int().positive(), minutes: z.number().int().min(15).max(43200),
     format: z.enum(["school", "mcq", "mixed", "short-answer"]), style: z.enum(["step-by-step", "concise", "examples"]),
     chapters: z.array(z.object({ subjectId: z.string().max(40), chapterId: z.string().max(60), confidence: z.number().int().min(1).max(5) })).min(1).max(16),
-    materials: z.enum(materialModes), resourceIds: z.array(z.string().min(1).max(180)).max(12).default([]),
+    materials: z.enum(materialModes), resourceIds: z.array(z.string().min(1).max(180)).max(12).default([]), excludedResourceIds: z.array(z.string().min(1).max(180)).max(100).optional(),
     blocks: z.array(z.object({ start: z.number().int().positive(), minutes: z.number().int().min(5).max(480) })).max(60).default([]),
     diagnostic: z.boolean().default(false),
+    preferences: z.object({questionLevel:z.enum(["adaptive","easier","challenging","exam"]),revision:z.enum(["light","balanced","intense"]),recall:z.enum(["balanced","frequent"]),hints:z.enum(["minimal","gentle","detailed"])}).optional(),
 }).superRefine((v, ctx) => {
+    if (v.board.toUpperCase() !== "CBSE") ctx.addIssue({ code: "custom", path: ["board"], message: "Scholar's current chapter registry supports CBSE. Select CBSE and put a school/JEE practice goal in the exam name; another board's coverage cannot be assumed." });
     const curriculum = getCurriculum(v.grade), seen = new Set<string>();
     for (const c of v.chapters) {
         const key = `${c.subjectId}:${c.chapterId}`;
@@ -34,6 +38,7 @@ export interface Task {
     chapterId: string;
     topic: string;
     topics?: string[];
+    objectiveIds?: string[];
     kind: TaskKind;
     title: string;
     objective: string;
@@ -57,11 +62,22 @@ export interface Question {
     explanation: string;
     source: "Scholar question bank" | "Scholar AI-generated";
     citationIds?: string[];
+    objectiveId?: string;
+    difficulty?: number;
+    marks?: number;
+    estimatedSeconds?: number;
+    rubric?: { id: string; criterion: string; points: number }[];
+    numeric?: { value: number; unit: string; tolerance: number; expression: string };
+    validation?: "schema-checked" | "calculation-checked";
+    hints?: string[];
+    algebraic?: {expression:string;variable:string};
+    assistance?: "hint" | "solution";
 }
 export interface Attempt {
     id: string;
     taskId?: string;
     questionId: string;
+    question?: string;
     subjectId: string;
     chapterId: string;
     topic: string;
@@ -73,16 +89,26 @@ export interface Attempt {
     kind: "diagnostic" | "practice" | "recall" | "mock";
     mistake?: string;
     evaluation: "objective" | "AI-assessed" | "self-reviewed";
+    objectiveId?: string;
+    difficulty?: number;
+    score?: number;
+    maxScore?: number;
+    errorCategory?: ErrorCategory;
+    assistance?: "hint" | "solution";
 }
 export interface Lesson {
+    materialTrace?: import("./knowledge/types").MaterialTrace;
+    recovery?: { pace: string; question: string };
+    delivery?: {mode:"authored"|"live"|"support"|"offline-fallback";reason?:string;retryAt?:number};
     text: string;
     formulas: string[];
     questions: Question[];
     citations: import("@/lib/resources/types").Citation[];
-    grounding: "source-grounded" | "general AI explanation" | "material gap";
+    grounding: "source-grounded" | "general AI explanation" | "material gap" | "saved session evidence" | "offline curriculum guidance";
     concept?: { title: string; explanation: string; formula?: string; symbols?: string; conditions?: string };
-    example?: { title: string; problem: string; steps: string[]; result: string };
+    example?: { title: string; problem: string; steps: string[]; result: string; calculations?: { expression: string; value: number; unit: string; tolerance: number }[] };
     takeaway?: string;
+    quality?: { version: string; objectiveIds: string[]; checks: string[]; status: "validated-structure" | "partial"; limitations: string[] };
 }
 export interface ExamSession {
     id: string;
@@ -109,6 +135,7 @@ export interface ExamSession {
     }[];
     planVersion: number;
     lessons: Record<string, Lesson>;
+    revisionItems?: Record<string, { objectiveId: string; topic: string; summary: string; formulas: string[]; example?: string; citations: import("@/lib/resources/types").Citation[];sourceVersions?:{sourceId:string;version:string}[] }>;
     mock?: {
         score: number;
         total: number;
@@ -122,9 +149,9 @@ export interface ExamSession {
 }
 export const lessonSchema = z.object({ text: z.string().min(20).max(16000), formulas: z.array(z.string().max(500)).max(12).default([]),
     concept: z.object({ title: z.string().min(1).max(160), explanation: z.string().min(1).max(2400), formula: z.string().max(500).optional(), symbols: z.string().max(1200).optional(), conditions: z.string().max(1200).optional() }).optional(),
-    example: z.object({ title: z.string().min(1).max(160), problem: z.string().min(1).max(1800), steps: z.array(z.string().min(1).max(1000)).min(1).max(8), result: z.string().min(1).max(1000) }).optional(),
+    example: z.object({ title: z.string().min(1).max(160), problem: z.string().min(1).max(1800), steps: z.array(z.string().min(1).max(1000)).min(1).max(8), result: z.string().min(1).max(1000), calculations: z.array(numericSchema).min(1).max(8).optional() }).optional(),
     takeaway: z.string().max(1200).optional(),
-    questions: z.array(z.object({ question: z.string().min(8).max(1800), topic: z.string().max(120), kind: z.enum(["mcq", "short"]), options: z.array(z.string().min(1).max(700)).length(4).optional(), answer: z.string().min(1).max(2000), explanation: z.string().min(5).max(3000), citationIds: z.array(z.string().regex(/^S\d+$/)).max(6).default([]) })).max(5) }).superRefine((v, ctx) => { for (const q of v.questions)
+    questions: z.array(z.object({ question: z.string().min(8).max(1800), topic: z.string().max(240), kind: z.enum(["mcq", "short"]), options: z.array(z.string().min(1).max(700)).length(4).optional(), answer: z.string().min(1).max(2000), explanation: z.string().min(5).max(3000), citationIds: z.array(z.string().regex(/^S\d+$/)).max(6).default([]), objectiveId: z.string().max(120).optional(), difficulty: z.number().int().min(1).max(5).optional(), marks: z.number().int().min(1).max(20).optional(), estimatedSeconds: z.number().int().min(15).max(1800).optional(), rubric: rubricSchema.optional(), numeric: numericSchema.optional() })).max(5) }).superRefine((v, ctx) => { for (const q of v.questions)
     if (q.kind === "mcq" && (!q.options?.includes(q.answer) || new Set(q.options).size !== 4))
         ctx.addIssue({ code: "custom", message: "MCQ answer must match one of four distinct options." }); });
 export const actionSchema = z.discriminatedUnion("type", [
@@ -156,11 +183,13 @@ export function restoreMissionCoverage(session: ExamSession): ExamSession {
     return { ...session, tasks, lessons };
 }
 export function evidence(s: ExamSession) {
-    const attempts = s.attempts.filter(a => a.evaluation !== "self-reviewed"), unique = new Map(attempts.map(a => [a.questionId, a]));
+    const attempts = s.attempts.filter(a => a.evaluation !== "self-reviewed"&&!a.assistance), unique = new Map(attempts.map(a => [a.questionId, a]));
     const values = [...unique.values()], correct = values.filter(a => a.correct).length;
-    const covered = s.setup.chapters.filter(c => values.some(a => a.subjectId === c.subjectId && a.chapterId === c.chapterId)).length;
-    const accuracy = values.length ? Math.round(correct / values.length * 100) : null;
+    const coverage = sessionCoverage(s), testedObjectives = coverage.reduce((n, c) => n + c.objectives.filter(o=>o.independentTested).length, 0), totalObjectives = coverage.reduce((n, c) => n + c.objectives.length, 0);
+    const covered = coverage.filter(c => c.objectives.every(o=>o.independentTested) && c.tested > 0).length;
+    const accuracy = values.length ? Math.round(values.reduce((n, a) => n + (a.score ?? Number(a.correct)) / Math.max(1, a.maxScore ?? 1), 0) / values.length * 100) : null;
     // No evidence means no score; confidence and checked boxes cannot manufacture mastery.
-    const readiness = values.length >= 5 ? Math.round((accuracy! * .65 + covered / s.setup.chapters.length * 100 * .2 + (s.mock?.verified ? s.mock.score / s.mock.total * 100 : 0) * .15) * Math.min(1, values.length / 15)) : null;
-    return { accuracy, readiness, questions: values.length, covered, totalChapters: s.setup.chapters.length, mistakes: attempts.filter(a => !a.correct), label: readiness === null ? "Not enough evidence yet" : values.length < 15 ? "Early estimate · limited evidence" : "Preparation estimate · not a predicted exam score" };
+    const demonstrated = coverage.reduce((n, c) => n + c.demonstrated, 0);
+    const readiness = values.length >= 5 && testedObjectives >= 2 ? Math.round(Math.min(accuracy! * Math.min(1, values.length / 15), totalObjectives ? testedObjectives / totalObjectives * 100 : 0)) : null;
+    return { accuracy, readiness, questions: values.length, correct, covered, totalChapters: s.setup.chapters.length, testedObjectives, totalObjectives, demonstratedObjectives: demonstrated, assistedAnswers:s.attempts.filter(a=>a.assistance).length,mistakes: attempts.filter(a => !a.correct), label: readiness === null ? "Not enough objective-level evidence yet" : values.length < 15 ? "Early estimate · limited evidence" : "Preparation estimate · tested coverage, not a predicted exam score" };
 }

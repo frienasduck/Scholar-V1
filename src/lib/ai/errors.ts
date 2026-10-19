@@ -3,6 +3,7 @@ export class AIProviderError extends Error {
     message: string,
     public readonly status = 502,
     public readonly code = "AI_PROVIDER_ERROR",
+    public readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "AIProviderError";

@@ -8,7 +8,9 @@ import { ProfileError } from "@/lib/personalization/server";
 import { AIProviderError, publicAIError } from "@/lib/ai/errors";
 import { ZodError } from "zod";
 import { examAccess } from "./access";
-export const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "no-store, private" } });
+import { AcademicQualityError } from "./quality";
+import { MaterialContextError } from "./materials";
+export const reply = (data: unknown, status = 200, headers?: Record<string,string>) => NextResponse.json(data, { status, headers: { ...headers, "Cache-Control": "no-store, private" } });
 export async function authorized(request: Request, mutate = false, ai = false) {
     if (mutate && !mutationOrigin(request))
         throw new ProfileError("Cross-site requests are not allowed.", 403);
@@ -26,6 +28,8 @@ export async function authorized(request: Request, mutate = false, ai = false) {
     return user;
 }
 export function fail(error: unknown) {
+    if (error instanceof MaterialContextError) return reply({ message: error.message }, 409);
+    if (error instanceof AcademicQualityError) return reply({ message: error.message }, 422);
     if (error instanceof RequestBodyError || error instanceof ProfileError)
         return reply({ message: error.message }, error.status);
     if (error instanceof RateLimitError)
@@ -33,7 +37,7 @@ export function fail(error: unknown) {
     if (error instanceof ZodError)
         return reply({ message: "Invalid Exam Ready input or teacher output. Please check your choices and retry." }, 422);
     if (error instanceof AIProviderError)
-        return reply({ message: publicAIError(error).message }, error.status);
+        return reply({ message: publicAIError(error).message, code:error.code, retryAfterSeconds:error.retryAfterSeconds }, error.status, error.retryAfterSeconds ? {"Retry-After":String(error.retryAfterSeconds)} : undefined);
     console.warn("[Exam Ready] request unavailable; state preserved");
     return reply({ message: "Exam Ready account services are unavailable. Your local work is retained. Check database configuration and the Exam Ready migration." }, 503);
 }

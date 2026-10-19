@@ -455,7 +455,7 @@ For MCQs omit modelAnswer. For descriptive questions omit correctAnswer and opti
     if (autoSubmit) toast("Time's up — auto-submitting your paper…");
     try {
       if (!examQs) return;
-      if(examReady){const value=await examRequest(`/api/exam-ready/${examReady.id}/mock`,{type:"submit",responses});const marked=examQs.map(q=>{const verdict=value.marked.find((x:{id:string})=>x.id===q.id);return {...q,userAnswer:responses[q.id]??"",aiMarkedScore:verdict?.correct?q.marks:0,aiFeedback:verdict?.feedback??"Unanswered"};});const total=marked.reduce((n,q)=>n+q.marks,0),score=marked.reduce((n,q)=>n+(q.aiMarkedScore??0),0);const mr:MockResult={id:crypto.randomUUID(),config,questions:marked,score,total,percentage:Math.round(score/Math.max(1,total)*100),timeSpent:Math.floor((Date.now()-examStartedAt)/1000),predictedRank:0,band:"Exam Ready evidence",at:Date.now()};setResult(mr);const next=[mr,...history].slice(0,30);setHistory(next);saveHistory(scholarClass,next);toast.success("Mock evaluated. Return to Exam Ready for your preparation analysis.");return;}
+      if(examReady){const value=await examRequest(`/api/exam-ready/${examReady.id}/mock`,{type:"submit",responses});const marked=examQs.map(q=>{const verdict=value.marked.find((x:{id:string})=>x.id===q.id);return {...q,answer:verdict?.answer??"",explanation:verdict?.explanation??"",userAnswer:responses[q.id]??"",aiMarkedScore:verdict?.score??0,aiFeedback:verdict?.feedback??"Unanswered"};});const total=value.total,score=value.score;const mr:MockResult={id:crypto.randomUUID(),config,questions:marked,score,total,percentage:Math.round(score/Math.max(1,total)*100),timeSpent:Math.floor((Date.now()-examStartedAt)/1000),predictedRank:0,band:"Exam Ready evidence",at:Date.now()};setResult(mr);const next=[mr,...history].slice(0,30);setHistory(next);saveHistory(scholarClass,next);toast.success("Mock evaluated. Return to Exam Ready for your preparation analysis.");return;}
       // MCQs are objectively marked. For descriptive, ask AI to mark against the model answer.
       const descriptive = examQs.filter((q) => q.type !== "mcq" && responses[q.id]?.trim());
       let aiMarks: Record<string, { score: number; feedback: string }> = {};
@@ -759,7 +759,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                     {config.chapterIds.length === 0 && <p className="text-[10px] text-amber-300/70 mt-1">⚠ Select at least 1 chapter, or switch to "Full Subject" scope.</p>}
                   </div>
                 )}
-              </div> : <p className="text-sm leading-6 text-white/70">This paper uses your saved preparation settings. Change chapters, available time or materials in Exam Ready before generating. All {examReady.chapterIds.length} selected chapters are included, across subjects when selected.</p>}
+              </div> : <p className="text-sm leading-6 text-white/70">This paper uses your saved preparation settings. Change chapters, available time or materials in Exam Ready before generating. Your {examReady.chapterIds.length} selected chapters define the scope; very short tests may sample only part of it.</p>}
 
               <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/10">
                 <div className="min-w-0 text-xs text-white/50">

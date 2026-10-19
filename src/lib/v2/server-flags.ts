@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { isFlagEnabled, type FlagOverrides, type V2FlagKey } from "@/lib/v2/flags";
+import { localGuestEnabled } from "@/lib/exam-ready/dev-guest-policy";
 
 /**
  * Server-only DB-backed flag overrides (FeatureFlag table). Read with a short
@@ -15,6 +16,9 @@ let generation = 0;
 let inFlight: { generation: number; promise: Promise<FlagOverrides> } | null = null;
 
 export async function serverFlagOverrides(): Promise<FlagOverrides> {
+  // Explicit isolated localhost Guest testing uses the same env/default flags
+  // as the existing DB-failure fallback, without attempting a production DB.
+  if(localGuestEnabled())return {};
   const now = Date.now();
   if (cache && now - cache.at < TTL_MS) return cache.rows;
   if (inFlight?.generation === generation) return inFlight.promise;

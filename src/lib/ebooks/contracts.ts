@@ -1,7 +1,9 @@
 import { z } from "zod";
 
-// Existing persistent-byte adapter and Vercel request budget: one shared limit.
-export const MAX_EBOOK_BYTES = 4 * 1024 * 1024;
+// File cap is distinct from the hosting platform's per-request cap.
+export const MAX_EBOOK_BYTES = 20 * 1024 * 1024;
+export const EBOOK_CHUNK_BYTES = 2 * 1024 * 1024;
+export const EBOOK_READ_BYTES = 1024 * 1024;
 export const MAX_EBOOK_PAGES = 500;
 export const MAX_EBOOK_TEXT = 2_000_000;
 export const EMPTY_READING = { page: 1, bookmarks: [], notes: [], lastOpenedAt: null };
@@ -38,7 +40,7 @@ export function safeEbookName(value: string) {
 }
 export function pdfValidation(file: { name: string; type: string; size: number }, signature?: string) {
   if (file.size < 5) return "This PDF is empty or incomplete. Choose another file.";
-  if (file.size > MAX_EBOOK_BYTES) return `This file is ${(file.size / 1048576).toFixed(1)} MB. The limit is 4 MB; compress it or split it into smaller PDFs.`;
+  if (file.size > MAX_EBOOK_BYTES) return `This file is ${(file.size / 1048576).toFixed(1)} MB. The limit is 20 MB; compress it or split it into smaller PDFs.`;
   if (!/\.pdf$/i.test(file.name) || file.type && file.type !== "application/pdf" || signature !== undefined && signature !== "%PDF-") return "Only genuine PDF files are supported.";
   return null;
 }

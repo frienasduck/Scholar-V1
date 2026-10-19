@@ -3,13 +3,14 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { lockAccount, checkGrade, jsonValue, ProfileError } from "@/lib/personalization/server";
 import { currentTask, restoreMissionCoverage, type ExamSession, type Lesson } from "./model";
+import { eligibleRevisionItems } from "./revision";
 export { ProfileError };
 type Row = {
     state: Prisma.JsonValue;
     revision: number;
 };
 export function publicSession(s: ExamSession): ExamSession {
-    return { ...s, lessons: Object.fromEntries(Object.entries(s.lessons).map(([key, l]) => [key, { ...l, questions: l.questions.map(q => ({ ...q, answer: "", explanation: "" })) }])) };
+    return { ...s, revisionItems:Object.fromEntries(eligibleRevisionItems(s).map(item=>[item.objectiveId,item])),lessons: Object.fromEntries(Object.entries(s.lessons).map(([key, l]) => [key, { ...l, questions: l.questions.map(q => ({ ...q, answer: "", explanation: "", numeric: undefined, rubric: undefined, hints:undefined, algebraic:undefined })) }])) };
 }
 export async function readSession(userId: string, id: string) {
     const rows = await db.$queryRaw<Row[]> `SELECT "state", "revision" FROM "ExamReadySession" WHERE "id"=${id} AND "userId"=${userId}`;
@@ -51,12 +52,23 @@ export async function claimTeacher(userId: string, id: string, revision: number)
 }
 export async function releaseTeacher(userId: string, id: string, revision: number) { await db.$executeRaw `UPDATE "ExamReadySession" SET "leaseUntil"=NULL WHERE "id"=${id} AND "userId"=${userId} AND "revision"=${revision}`; }
 export function storeLesson(s: ExamSession, key: string, lesson: Lesson, question: string) {
+    if (lesson.quality?.status === "validated-structure") {
+        s.revisionItems ??= {};
+        for (const objectiveId of lesson.quality.objectiveIds) s.revisionItems[objectiveId] = { objectiveId, topic: lesson.concept?.title ?? currentTask(s)?.topic ?? "Studied concept", summary: (lesson.concept?.explanation ?? lesson.text).slice(0, 1200), formulas: lesson.formulas.slice(0, 4), example: lesson.example ? `${lesson.example.problem}\n${lesson.example.steps.join("\n")}\n${lesson.example.result}`.slice(0, 2200) : undefined, citations: lesson.citations.slice(0, 4),sourceVersions:lesson.materialTrace?.used.map(source=>({sourceId:source.sourceId,version:source.version})) };
+    }
     s.lessons = Object.fromEntries([...Object.entries(s.lessons).filter(([id]) => id !== key).slice(-11), [key, lesson]]);
     s.chat = [...s.chat, ...(question ? [{ role: "user" as const, content: question }] : []), { role: "assistant" as const, content: lesson.text }].slice(-12);
     s.updatedAt = Date.now();
+    // Keep the current checkpoint and compact objective-level revision history.
+    // Old full chat/lesson variants must not exhaust the aggregate size limit.
+    while (JSON.stringify(s).length > 380000 && Object.keys(s.lessons).length > 1) {
+        const oldest = Object.keys(s.lessons).find(k => k !== key && k !== "exam-ready-mock");
+        if (!oldest) break;
+        delete s.lessons[oldest];
+    }
     return s;
 }
 export function questionFor(s: ExamSession, id: string) {
     const task = currentTask(s);
-    return Object.entries(s.lessons).filter(([key]) => key.startsWith(`${task?.id}:`)).flatMap(([, l]) => l.questions).find(q => q.id === id && q.subjectId === task?.subjectId && q.chapterId === task?.chapterId);
+    return Object.entries(s.lessons).filter(([key]) => key.startsWith(`${task?.id}:`)).reverse().flatMap(([, l]) => l.questions).find(q => q.id === id && q.subjectId === task?.subjectId && q.chapterId === task?.chapterId);
 }

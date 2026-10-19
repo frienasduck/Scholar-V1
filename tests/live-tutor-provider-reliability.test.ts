@@ -72,9 +72,9 @@ describe("LAM AI provider resilience", () => {
     configureNvidia();
     globalThis.fetch = mock(async () => nvidiaResponse('{"error":"raw provider detail"}', 429)) as unknown as typeof fetch;
     await expect(streamLiveTutorText(providerRequest("nvidia", () => undefined))).rejects.toMatchObject({
-      code: "NVIDIA_OVERLOADED",
-      status: 503,
-      message: "NVIDIA is temporarily overloaded. Try Auto or retry shortly.",
+      code: "NVIDIA_RATE_LIMITED",
+      status: 429,
+      message: "NVIDIA is rate-limited. Wait before explicitly retrying.",
     });
   });
 

@@ -113,10 +113,15 @@ describe("Scholar Plus security invariants", () => {
   test("custom E-Books are owner-scoped, PDF-only and quota-reserved server-side", () => {
     const collection = source("src/app/api/ebooks/route.ts");
     const item = source("src/app/api/ebooks/[ebookId]/route.ts");
-    expect(collection).toContain('signature !== "%PDF-"');
-    expect(collection).toContain('feature: "custom_ebook_upload"');
-    expect(collection).toContain("commitMonthlyUsage");
-    expect(collection).toContain("releaseMonthlyUsage");
+    // POST now delegates to the shared upload handler. Verify that wiring AND
+    // every original guard in its actual location, rather than removing checks.
+    const upload = source("src/lib/ebooks/save-upload.ts");
+    expect(collection).toContain('import { saveEbookUpload } from "@/lib/ebooks/save-upload"');
+    expect(collection).toContain('POST(request: NextRequest) { return saveEbookUpload(request); }');
+    expect(upload).toContain('signature !== "%PDF-"');
+    expect(upload).toContain('feature: "custom_ebook_upload"');
+    expect(upload).toContain("commitMonthlyUsage");
+    expect(upload).toContain("releaseMonthlyUsage");
     expect(item).toContain("userId: user.id");
   });
 

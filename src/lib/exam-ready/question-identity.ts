@@ -8,3 +8,5 @@ export function questionIdentity(subjectId: string, chapterId: string, question:
   const content = [subjectId, chapterId, normalize(question), options?.map(normalize).sort()];
   return `ai:${createHash("sha256").update(JSON.stringify(content)).digest("hex").slice(0, 28)}`;
 }
+/** Numbers alone are not a new cognitive pattern or transfer context. */
+export {questionPattern} from "./question-pattern";

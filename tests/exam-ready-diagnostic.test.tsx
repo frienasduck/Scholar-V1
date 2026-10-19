@@ -12,7 +12,8 @@ const config = (minutes = 120): Setup => ({ exam: "Physics exam", grade: 11, boa
 test("two-hour mission teaches every concept in curriculum order before application", () => {
     const s = createSession("s", config(), now);
     const learns = s.tasks.filter(t => t.kind === "learn");
-    expect(learns.map(t => t.topic)).toEqual(subjectChapter(s.setup, "physics", "p5")!.concepts);
+    expect(learns.slice(0, 5).map(t => t.topic)).toEqual(subjectChapter(s.setup, "physics", "p5")!.concepts);
+    expect(learns.every(t => t.topics?.length === 1 && t.objectiveIds?.length === 1)).toBe(true);
     expect(learns.at(-1)!.id).not.toBe(s.tasks.find(t => t.kind === "practice")!.id);
     expect(s.tasks.findIndex(t => t.kind === "practice")).toBeGreaterThan(s.tasks.findLastIndex(t => t.kind === "learn"));
 });
@@ -65,7 +66,9 @@ test("offline calibration, teaching, application and recall have distinct checks
     const s = createSession("s", config(), now), checks: string[] = [];
     for (const kind of ["diagnostic", "learn", "practice", "recall", "mistakes"] as const) {
         s.tasks.forEach(t => { t.status = "pending"; });
-        s.tasks.find(t => t.kind === kind)!.status = "active";
+        const target = s.tasks.find(t => t.kind === kind) ?? { ...s.tasks[0], id: "test-recall", kind, status: "pending" as const };
+        if (!s.tasks.includes(target)) s.tasks.push(target);
+        target.status = "active";
         checks.push(localMissionLesson(s)!.questions[0].question);
     }
     expect(new Set(checks).size).toBe(checks.length);

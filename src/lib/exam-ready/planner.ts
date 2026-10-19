@@ -1,5 +1,7 @@
 import { currentTask, elapsedMs, remainingSeconds, subjectChapter, type Action, type ExamSession, type Setup, type Task, type TaskKind } from "./model";
-export function strategy(minutes: number, untilExam: number) { return Math.min(minutes, untilExam) <= 30 ? "emergency" : Math.min(minutes, untilExam) <= 90 ? "rapid repair" : untilExam <= 420 ? "deep preparation" : untilExam <= 4320 ? "spaced preparation" : "long-horizon preparation"; }
+import { chapterManifest, focusTopics } from "./coverage";
+import type { Evaluation } from "./assessment";
+export function strategy(minutes: number, untilExam: number) { const actual = Math.min(minutes, untilExam); return actual <= 30 ? "emergency" : actual <= 120 ? "rapid repair" : actual <= 480 ? "deep preparation" : untilExam <= 10080 ? "spaced preparation" : "long-horizon preparation"; }
 export function plan(setup: Setup, seconds: number, attempts: ExamSession["attempts"] = [], version = 1, now = Date.now()): Task[] {
     if (seconds < 1)
         return [];
@@ -12,26 +14,34 @@ export function plan(setup: Setup, seconds: number, attempts: ExamSession["attem
         const id = `v${version}-${drafts.length}`, previous = drafts.at(-1)?.id;
         const coverage = topics?.length ? topics : chapter.concepts.length ? chapter.concepts : [chapter.title];
         const objective = kind === "diagnostic" ? `Check your starting understanding of ${chapter.title}; this is a diagnostic, not a repeated lecture.` : kind === "practice" ? `Solve new ${chapter.title} questions using the concepts you just studied. Attempt first, then review the reasoning.` : kind === "recall" ? `Retrieve ${chapter.title} from memory before viewing explanations.` : kind === "mistakes" ? `Repair recorded errors and check common traps in ${chapter.title}, without restarting the chapter.` : kind === "mock" ? "Take a timed final check across your selected chapters, then review the results." : kind === "break" ? "Take a short optional reset." : `Learn and check: ${coverage.join("; ")}.`;
-        drafts.push({ id, subjectId: c.subjectId, chapterId: c.chapterId, topic: coverage.length === 1 ? coverage[0] : `${chapter.title} · ${kind === "diagnostic" ? "baseline" : "chapter coverage"}`, topics: coverage, kind, title: `${title} · ${chapter.title}`, objective, reason, priority, status: "pending", prerequisite: previous, checkpoint: "Answer an inline question before moving on. Completing a card alone does not demonstrate mastery.", weight });
+        const manifest = chapterManifest(setup.grade, c.subjectId, c.chapterId);
+        const revisionWeight=setup.preferences?.revision==="light"?.7:setup.preferences?.revision==="intense"?1.5:1;
+        const actualWeight=weight*(["mistakes","revise"].includes(kind)?revisionWeight:kind==="recall"&&setup.preferences?.recall==="frequent"?1.4:1);
+        drafts.push({ id, subjectId: c.subjectId, chapterId: c.chapterId, topic: coverage.length === 1 ? coverage[0] : `${chapter.title} · ${kind === "diagnostic" ? "baseline" : "focused coverage"}`, topics: coverage, objectiveIds: manifest.objectives.filter(o => coverage.includes(o.topic)).map(o => o.id), kind, title: `${title} · ${chapter.title}`, objective, reason, priority, status: "pending", prerequisite: previous, checkpoint: "Answer an inline question before moving on. Completing a card alone does not demonstrate mastery.", weight:actualWeight });
     };
     const ranked = [...setup.chapters].sort((a, b) => {
-        const weakness = (c: typeof a) => { const evidence = attempts.filter(t => t.subjectId === c.subjectId && t.chapterId === c.chapterId); return evidence.length ? 1 - evidence.filter(t => t.correct).length / evidence.length : (6 - c.confidence) / 5; };
+        const weakness = (c: typeof a) => { const evidence = attempts.filter(t => t.evaluation !== "self-reviewed" && t.subjectId === c.subjectId && t.chapterId === c.chapterId).slice(-12); return evidence.length >= 3 ? 1 - evidence.filter(t => t.correct).length / evidence.length : (6 - c.confidence) / 5; };
         return weakness(b) - weakness(a);
     });
     if (setup.diagnostic && attempts.length === 0 && !emergency)
         add(ranked[0], "diagnostic", .3, "Quick calibration", "Self-reported confidence guides the starting point; answers calibrate it.");
     for (const c of ranked) {
-        const answers = attempts.filter(a => a.subjectId === c.subjectId && a.chapterId === c.chapterId), accuracy = answers.length ? answers.filter(a => a.correct).length / answers.length : null;
+        const answers = attempts.filter(a => a.evaluation !== "self-reviewed" && a.subjectId === c.subjectId && a.chapterId === c.chapterId), accuracy = answers.length >= 3 ? answers.filter(a => a.correct).length / answers.length : null;
         const known = accuracy !== null ? accuracy >= .8 : c.confidence >= 4;
         const kind: TaskKind = emergency ? "revise" : known ? "recall" : c.confidence <= 2 || accuracy !== null && accuracy < .4 ? "learn" : "repair";
-        const concepts = subjectChapter(setup, c.subjectId, c.chapterId)!.concepts;
-        const groups = !emergency && !known && !short && concepts.length ? concepts.map(topic => [topic]) : [concepts];
+        const manifest = chapterManifest(setup.grade, c.subjectId, c.chapterId);
+        const shares = ranked.reduce((n, x) => n + (known ? .65 : 1.4 + (5 - x.confidence) * .2), 0);
+        const share = seconds * .5 * (known ? .65 : 1.4 + (5 - c.confidence) * .2) / shares;
+        const focused = focusTopics(manifest, share, c.confidence, answers);
+        const groupSize = emergency ? Math.max(1, focused.length) : 1;
+        const groups = Array.from({ length: Math.ceil(focused.length / groupSize) }, (_, i) => focused.slice(i * groupSize, (i + 1) * groupSize).map(o => o.topic));
         for (const topics of groups)
-            add(c, kind, (known ? .65 : 1.4 + (5 - c.confidence) * .2) / groups.length, emergency ? "High-yield recall" : groups.length > 1 ? topics[0] : kind === "learn" ? "Teach from foundations" : kind === "repair" ? "Repair the gaps" : "Verify what you know", emergency ? "Short time: essential formulas, definitions and traps first. No long videos." : known ? "Confirm knowledge with retrieval rather than rereading." : "Follow the curriculum concepts in order before adding harder applications.", "critical", topics);
+            add(c, kind, (known ? .65 : 1.4 + (5 - c.confidence) * .2) / groups.length, emergency ? "High-yield recall" : groups.length > 1 ? topics[0] : kind === "learn" ? "Teach from foundations" : kind === "repair" ? "Repair the gaps" : "Verify what you know", `${emergency ? "Short time: essential formulas, definitions and traps first. No long videos." : known ? "Confirm knowledge with retrieval rather than rereading." : "Follow the curriculum concepts in order before adding harder applications."} ${focused.length}/${manifest.objectives.length} objectives prioritised within this budget; omitted objectives are not claimed as learned.`, "critical", topics);
     }
     if (!emergency)
         for (const c of ranked) add(c, "practice", 1, "Apply and check", "Use fresh problems, not the preceding worked example. Difficulty follows checked answers.");
-    if (mode === "spaced preparation" || mode === "long-horizon preparation") {
+    if(!emergency && setup.preferences?.recall==="frequent")for(const c of ranked)add(c,"recall",.4,"Active retrieval","Your recall preference adds an attempt-first retrieval checkpoint.");
+    if ((mode === "spaced preparation" || mode === "long-horizon preparation") && new Set(setup.blocks.map(b => new Date(b.start).toDateString())).size > 1) {
         const cycles = Math.min(3, Math.max(1, Math.floor((setup.examAt - now) / 86400000)));
         for (let cycle = 1; cycle <= cycles; cycle++)
             for (const c of ranked) {
@@ -88,7 +98,7 @@ export function replan(s: ExamSession, seconds: number, reason: string, now = Da
     s.planVersion++;
     const replacement = plan(s.setup, seconds, s.attempts, s.planVersion, now);
     const teaching = (kind: TaskKind) => ["learn", "repair", "revise"].includes(kind);
-    const unfinished = replacement.filter(t => !completed.some(c => c.chapterId === t.chapterId && c.subjectId === t.subjectId && (c.kind === t.kind || teaching(c.kind) && teaching(t.kind)) && (c.title === t.title || teaching(t.kind) && (!c.topics || (t.topics ?? [t.topic]).every(topic => c.topics!.includes(topic))))));
+    const unfinished = replacement.filter(t => !completed.some(c => c.status === "done" && c.chapterId === t.chapterId && c.subjectId === t.subjectId && (c.kind === t.kind || teaching(c.kind) && teaching(t.kind)) && (c.title === t.title || teaching(t.kind) && (!c.topics || (t.topics ?? [t.topic]).every(topic => c.topics!.includes(topic))))));
     const total = unfinished.reduce((n, t) => n + t.seconds, 0);
     let left = seconds;
     if (!s.setup.blocks.length && total > 0)
@@ -152,6 +162,7 @@ export function transition(input: ExamSession, action: Exclude<Action, {
     if (s.status === "completed")
         throw new Error("This session is complete. Start a new session to prepare again.");
     if (action.type === "resume") {
+        if (task?.scheduledAt && task.scheduledAt > now) throw new Error("Your next study block has not started. Adjust its start time in your exam settings if you want to begin earlier.");
         if (s.status !== "active") {
             if (now - previousUpdatedAt > 30 * 60000 || s.tasks.filter(t => t.status === "pending" || t.status === "active").reduce((n, t) => n + t.seconds, 0) > remainingSeconds(s, now))
                 rebalancePath(s, remainingSeconds(s, now), "Rebalanced after time away", now);
@@ -189,9 +200,9 @@ export function transition(input: ExamSession, action: Exclude<Action, {
         task.status = action.type === "skip" ? "skipped" : "done";
     const actual = s.taskElapsedMs + (s.status === "active" ? Math.max(0, now - s.taskSince) : 0);
     const performance = task ? s.attempts.filter(a => a.evaluation !== "self-reviewed" && (a.taskId ? a.taskId === task.id : a.chapterId === task.chapterId && a.subjectId === task.subjectId && a.at >= s.taskSince)) : [];
-    const gap = performance.find(a => !a.correct && s.attempts.filter(x => !x.correct && x.evaluation !== "self-reviewed" && x.subjectId === a.subjectId && x.chapterId === a.chapterId && x.topic === a.topic).length >= 2);
+    const gap = performance.find(a => !a.correct && s.attempts.filter(x => x.evaluation !== "self-reviewed" && x.subjectId === a.subjectId && x.chapterId === a.chapterId && x.topic === a.topic).at(-1)?.correct === false && s.attempts.filter(x => !x.correct && x.evaluation !== "self-reviewed" && x.subjectId === a.subjectId && x.chapterId === a.chapterId && x.topic === a.topic).length >= 2);
     if (task && gap && !s.tasks.some(t => t.title.startsWith("Targeted repair") && t.subjectId === gap.subjectId && t.chapterId === gap.chapterId && t.topic === gap.topic)) {
-        const repair: Task = { ...task, id: `repair:${task.id}`, kind: "repair", topic: gap.topic, topics: [gap.topic], title: `Targeted repair · ${gap.topic}`, objective: `Use a different explanation to repair ${gap.topic}, then attempt a fresh check.`, reason: "Two checked answers revealed this specific gap. This is a bounded repair, not a chapter restart.", status: "pending", seconds: Math.min(300, Math.max(1, Math.floor(remainingSeconds(s, now) * .15))), scheduledAt: undefined };
+        const repair: Task = { ...task, id: `repair:${task.id}`, kind: "repair", topic: gap.topic, topics: [gap.topic], objectiveIds: gap.objectiveId ? [gap.objectiveId] : chapterManifest(s.setup.grade, gap.subjectId, gap.chapterId).objectives.filter(o => o.topic === gap.topic).map(o => o.id), title: `Targeted repair · ${gap.topic}`, objective: `Use a different explanation to repair ${gap.topic}, then attempt a fresh check.`, reason: `Two checked answers revealed this specific gap (${gap.errorCategory ?? gap.mistake ?? "application"}). This is a bounded repair, not a chapter restart.`, status: "pending", seconds: Math.min(300, Math.max(1, Math.floor(remainingSeconds(s, now) * .15))), scheduledAt: undefined };
         s.tasks.splice(s.tasks.findIndex(t => t.id === task.id) + 1, 0, repair);
     }
     if (task && (Math.abs(actual / 1000 - task.seconds) > 60 || performance.length > 0))
@@ -206,11 +217,14 @@ export function transition(input: ExamSession, action: Exclude<Action, {
     if (!currentTask(s)) { s.clock.elapsedMs = elapsedMs(s, now); s.clock.runningSince = null; s.status = "completed"; }
     return s;
 }
-export function recordAnswer(s: ExamSession, q: import("./model").Question, answer: string, correct: boolean, evaluation: import("./model").Attempt["evaluation"], now = Date.now()) {
+export function recordAnswer(s: ExamSession, q: import("./model").Question, answer: string, correct: boolean, evaluation: import("./model").Attempt["evaluation"], now = Date.now(), verdict?: Evaluation) {
     if (s.attempts.some(a => a.questionId === q.id))
         throw new Error("This question has already been answered.");
     const kind = currentTask(s)?.kind;
-    s.attempts.push({ id: `a-${s.attempts.length}`, taskId: currentTask(s)?.id, questionId: q.id, subjectId: q.subjectId, chapterId: q.chapterId, topic: q.topic, correct, answer, expected: q.answer, explanation: q.explanation, at: now, kind: kind === "diagnostic" ? "diagnostic" : kind === "recall" ? "recall" : "practice", evaluation, ...(!correct ? { mistake: /unit/i.test(answer + q.explanation) ? "units / dimensional reasoning" : /sign/i.test(q.explanation) ? "sign convention" : "concept / application gap" } : {}) });
+    s.attempts.push({ id: `a-${s.attempts.length}`, taskId: currentTask(s)?.id, questionId: q.id, question: q.question, subjectId: q.subjectId, chapterId: q.chapterId, topic: q.topic, objectiveId: q.objectiveId, difficulty: q.difficulty, correct, answer, expected: q.answer, explanation: verdict?.feedback ?? q.explanation, score: verdict?.score, maxScore: verdict?.maxScore, errorCategory: verdict?.errorCategory, at: now, kind: kind === "diagnostic" ? "diagnostic" : kind === "recall" ? "recall" : "practice", evaluation, ...(!correct ? { mistake: verdict?.errorCategory && verdict.errorCategory !== "none" ? verdict.errorCategory : /unit/i.test(answer + q.explanation) ? "units / dimensional reasoning" : /sign/i.test(q.explanation) ? "sign convention" : "concept / application gap" } : {}) });
+    // A capped history length is not a unique identity after the 250th answer.
+    s.attempts[s.attempts.length-1].id=`a:${q.id}:${now}`;
+    if(q.assistance) s.attempts[s.attempts.length-1].assistance=q.assistance;
     s.attempts = s.attempts.slice(-250);
     s.updatedAt = now;
     // Finish this checkpoint before adapting. An answer must not replace the

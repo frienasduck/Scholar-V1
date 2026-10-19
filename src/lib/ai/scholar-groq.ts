@@ -4,6 +4,7 @@ import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { AIProviderError } from "@/lib/ai/errors";
 import { structuredResponseFormat } from "./output-schema";
+import { retryAfterSeconds } from "./retry-after";
 
 export type ScholarGroqMessage = ChatCompletionMessageParam;
 export type ScholarGroqRequest = {
@@ -14,6 +15,7 @@ export type ScholarGroqRequest = {
   maxTokens?: number;
   signal?: AbortSignal;
   jsonSchema?: Record<string, unknown>;
+  singleAttempt?: boolean;
 };
 
 export function getScholarGroqConfig(credential?: ScholarGroqRequest["credential"], requestedModel?: string) {
@@ -47,7 +49,7 @@ function normalizeError(error: unknown, signal: AbortSignal): Error {
   const status = statusOf(error);
   if (providerCode(error) === "json_validate_failed") return new AIProviderError("The AI could not produce valid structured data. Retry this saved stage.", 502, "GROQ_INVALID_JSON");
   if (status === 401 || status === 403) return new AIProviderError("Scholar AI is temporarily unavailable. Please contact support.", 503, "GROQ_AUTH_FAILED");
-  if (status === 429) return new AIProviderError("Scholar AI is busy right now. Please retry shortly.", 429, "GROQ_RATE_LIMITED");
+  if (status === 429) return new AIProviderError("Scholar AI is rate-limited. Your saved lesson is retained. Wait before retrying.", 429, "GROQ_RATE_LIMITED", retryAfterSeconds(error));
   if (status === 404) return new AIProviderError("This AI model is unavailable. Please try again.", 503, "GROQ_MODEL_UNAVAILABLE");
   if ([400, 413, 422].includes(status)) return new AIProviderError("This request could not be processed. Shorten the input and try again.", 422, "GROQ_INVALID_REQUEST");
   return new AIProviderError("Scholar AI could not finish this request. Please retry.", 502, "GROQ_REQUEST_FAILED");
@@ -59,7 +61,7 @@ function canFallback(error: unknown) {
   // Use the existing single alternate-model budget; never retry arbitrary 400s.
   if (providerCode(error) === "json_validate_failed") return true;
   const status = statusOf(error);
-  return status === 0 || status === 404 || status === 429 || status >= 500;
+  return status === 0 || status === 404 || status >= 500;
 }
 
 function parameters(request: ScholarGroqRequest, model: string, json: boolean) {
@@ -107,7 +109,7 @@ async function complete(request: ScholarGroqRequest, json: boolean): Promise<str
       return validateCompletion(choice?.message.content, choice?.finish_reason);
     } catch (error) {
       console.warn("[Scholar AI]", { model, status: statusOf(error), code: providerCode(error) });
-      if (!signal.aborted && index < config.models.length - 1 && canFallback(error)) {
+      if (!request.singleAttempt && !signal.aborted && index < config.models.length - 1 && canFallback(error)) {
         schemaRejected = json && providerCode(error) === "json_validate_failed";
         continue;
       }
@@ -160,7 +162,7 @@ export async function streamScholarGroqText(
       return model;
     } catch (error) {
       console.warn("[Scholar AI stream]", { model, status: statusOf(error), partial: Boolean(text), code: error instanceof AIProviderError ? error.code : "PROVIDER_FAILURE" });
-      if (!text && !signal.aborted && index < config.models.length - 1 && canFallback(error)) continue;
+      if (!request.singleAttempt && !text && !signal.aborted && index < config.models.length - 1 && canFallback(error)) continue;
       throw normalizeError(error, attemptSignal);
     } finally {
       clearTimeout(timer);

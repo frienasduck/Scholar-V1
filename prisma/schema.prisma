@@ -20,6 +20,7 @@ enum UserRole {
 }
 
 model User {
+  ebookUploads        EbookUpload[]
   id                  String    @id @default(cuid())
   email               String    @unique
   name                String?
@@ -63,8 +64,31 @@ model User {
   authActionTokens      AuthActionToken[]
   studyResources        StudyResource[]
   examReadySessions     ExamReadySession[]
+  examReadyMaterials    ExamReadyMaterial[]
+  examReadyGenerations  ExamReadyGeneration[]
   aiVideos              AIVideo[]
   studyMusicLibrary     StudyMusicLibrary?
+}
+
+// Short-lived, owner-scoped transfer buffer; completed bytes move into CustomEbook.
+model EbookUpload {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key String
+  name String
+  title String
+  totalBytes Int
+  receivedBytes Int @default(0)
+  bytes Bytes
+  status String @default("uploading")
+  lastOffset Int @default(-1)
+  lastDigest String @default("")
+  leaseUntil DateTime?
+  result Json?
+  expiresAt DateTime
+  @@unique([userId, key])
+  @@index([expiresAt])
 }
 
 // Account-owned bounded music metadata only; never stores YouTube audio/video.
@@ -117,6 +141,7 @@ model ExamReadySession {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generations ExamReadyGeneration[]
 
   @@index([userId, updatedAt])
 }
@@ -370,6 +395,48 @@ model StudyResource {
   @@index([ownerUserId, deletedAt, updatedAt])
   @@index([visibility, state, deletedAt])
   @@index([contentHash])
+}
+
+// Separate Exam Ready ownership; no implicit import from E-Books/Resources.
+model ExamReadyMaterial {
+  id           String @id
+  userId       String
+  grade        Int
+  subjectId    String
+  chapterId    String
+  title        String
+  mime         String
+  sizeBytes    Int
+  contentHash  String
+  revision     Int @default(0)
+  fileBytes    Bytes
+  state        String @default("PROCESSING")
+  pages        Json @default("[]")
+  metadata     Json @default("{}")
+  attempts     Int @default(0)
+  leaseToken   String?
+  leaseUntil   DateTime?
+  errorCode    String?
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  owner        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, grade, subjectId, chapterId, deletedAt])
+  @@index([state, leaseUntil])
+}
+
+model ExamReadyGeneration {
+  id           String @id
+  userId       String
+  sessionId    String
+  contextHash  String
+  segments     Json @default("{}")
+  state        String @default("PARTIAL")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  owner        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session      ExamReadySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@unique([userId, sessionId, contextHash])
 }
 
 model ResourceMapping {
