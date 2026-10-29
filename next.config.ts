@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: false,
   poweredByHeader: false,
+  webpack(config, { isServer, webpack }) {
+    if (!isServer) {
+      // PptxGenJS declares these Node imports as browser:false. Normalize the
+      // node: scheme so Webpack can apply the package's existing browser map.
+      config.plugins.push(new webpack.NormalModuleReplacementPlugin(/^node:(fs|https)$/, (resource: { request: string }) => {
+        resource.request = resource.request.replace(/^node:/, "");
+      }));
+    }
+    return config;
+  },
   // Authorization codes/state must not be printed by Next's development logger.
   logging: { incomingRequests: { ignore: [/\/api\/auth\/google\/callback/] } },
   // OCR launches a native Node worker; its runtime require() tree is not part

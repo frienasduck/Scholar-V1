@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Shared placement hook belongs in global CSS, not a pure CSS module. */
+.lam-living-presence { margin-bottom: 14px; }
+
 /* Crossfade decorative section backgrounds into the shared footer, not the
    foreground UI. Scoped to views that actually render a footer; videos inside
    cards, lesson players, PDF readers and canvas content are never selected. */

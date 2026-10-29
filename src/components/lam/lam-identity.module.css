@@ -151,7 +151,6 @@
 .scene[data-compact="true"] .sceneProp { width: 26px; height: 29px; right: -1px; }
 .scene[data-scene-placement="gallery"] { justify-content: center; }
 .sceneCaption:empty { display: none; }
-:global(.lam-living-presence) { margin-bottom: 14px; }
 :global(.er-lam-visual) .scene { display: block; }
 :global(.er-lam-visual) .sceneProp { right: 2px; bottom: 10%; }
 .scene[data-scene-placement="gallery"] .sceneCaption { display: none; }

@@ -11,7 +11,7 @@ import { RESOURCE_TYPES } from "@/lib/resources/types";
 import { MAX_MATERIAL_BYTES, privateMaterials, privateSummary, processMaterial, uploadMaterial, type PrivateMaterialRow } from "@/lib/exam-ready/knowledge/private-materials";
 export const runtime = "nodejs";
 export const maxDuration = 60;
-export const scopeSchema = z.object({ grade: z.coerce.number().refine(n => n === 9 || n === 11).transform(n => n as 9 | 11), subjectId: z.string().min(1).max(40), chapterId: z.string().min(1).max(60) });
+const scopeSchema = z.object({ grade: z.coerce.number().refine(n => n === 9 || n === 11).transform(n => n as 9 | 11), subjectId: z.string().min(1).max(40), chapterId: z.string().min(1).max(60) });
 export async function GET(request: Request) {
   try {
     const p = new URL(request.url).searchParams, grade = p.get("grade") === "9" ? 9 : 11, user = await getSessionUser();
