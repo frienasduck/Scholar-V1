@@ -297,7 +297,7 @@ const SCHOLAR_UPDATE_LOG = [
       "Ask LAM opens the existing top-bar assistant with private book/page context. Explicit page ranges constrain retrieval, citations retain real pages, and page/range practice clears old answers and cancels stale generation. Rendering and AI errors are shown separately.",
       "Guest upload dialogs fit laptop and phone widths, keep keyboard focus accessible and restore the upload trigger on close. Guest private-feature and Plus-locked screens share their new dark-gold treatments, responsive actions and reduced-motion behavior without relaxing access checks.",
       "LAM closing disables interaction immediately, preserves panel geometry during the exit, restores focus and handles rapid reopening. A bounded developer diagnostic checks LAMTube outline, scene and narration providers without printing keys or lesson content.",
-      "Focused E-Book/security regressions, actual synthetic PDF parser fixtures, TypeScript, repository lint and production build passed. Real signed-in upload, cross-device, live AI and Android acceptance remain pending a working PostgreSQL environment and the additive reading-state migration; scanned-book OCR is not claimed.",
+      "Focused E-Book/security regressions, actual synthetic PDF parser fixtures, TypeScript, code checks and production build passed. Real signed-in upload, cross-device, live AI and Android acceptance remain pending a working PostgreSQL environment and the additive reading-state migration; scanned-book OCR is not claimed.",
     ],
   },
   {
@@ -486,7 +486,7 @@ const SCHOLAR_UPDATE_LOG = [
       "Files persist locally across reloads. Account switching preserves separate local workspaces without deleting the previous account's saved work.",
       "Feature screens load on demand. Background videos pause when hidden, and nonessential playback respects reduced motion.",
       "Improved mobile settings tabs, useful note/file search, public help and privacy pages, and quieter Scholar Plus prompts.",
-      "Unfinished social and visual previews are hidden from normal navigation. The repository worklog distinguishes verified flows from remaining account-dependent checks.",
+      "Unfinished social and visual previews are hidden from normal navigation. Some account-dependent checks remain pending; previews are not evidence of release readiness.",
     ],
   },
   {

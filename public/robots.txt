@@ -7,4 +7,4 @@ Allow: /terms$
 Allow: /updates$
 Allow: /_next/
 Allow: /logo.svg
-Sitemap: https://scholar-v1.vercel.app/sitemap.xml
+Sitemap: https://scholarofficial.vercel.app/sitemap.xml

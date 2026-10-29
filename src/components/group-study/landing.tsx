@@ -34,7 +34,7 @@ const MENU_LINKS: Array<{ label: string; href: string; external?: boolean }> = [
   { label: "Group Study", href: "#join" },
   {
     label: "About",
-    href: "https://scholar-v1.vercel.app/#features",
+    href: "/#experience",
     external: true,
   },
   { label: "Sign in", href: "/?signin=1", external: true },
