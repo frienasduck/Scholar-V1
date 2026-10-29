@@ -13,6 +13,7 @@ interface ReadyBackgroundVideoProps {
   style?: CSSProperties;
   objectPosition?: string;
   readinessId?: string;
+  paused?: boolean;
 }
 
 export function ReadyBackgroundVideo({
@@ -22,6 +23,7 @@ export function ReadyBackgroundVideo({
   style,
   objectPosition,
   readinessId = "page-background",
+  paused = false,
 }: ReadyBackgroundVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,7 +38,7 @@ export function ReadyBackgroundVideo({
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => {
-      const active = visibleRef.current && !document.hidden && !media.matches && !reduceMotion;
+      const active = visibleRef.current && !document.hidden && !media.matches && !reduceMotion && !paused;
       if (active) { setLoadVideo(true); if (videoRef.current?.readyState && videoRef.current.readyState >= 2) void videoRef.current.play().catch(() => undefined); }
       else videoRef.current?.pause();
     };
@@ -56,7 +58,7 @@ export function ReadyBackgroundVideo({
       document.removeEventListener("visibilitychange", sync);
       videoRef.current?.pause();
     };
-  }, [reduceMotion, src]);
+  }, [reduceMotion, src, paused]);
 
   const announceReady = (status: "video" | "poster") => {
     if (announcedRef.current) return;
@@ -68,7 +70,7 @@ export function ReadyBackgroundVideo({
 
   const activateVideo = async () => {
     const video = videoRef.current;
-    if (!video || failed || !visibleRef.current || document.hidden || reduceMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!video || failed || !visibleRef.current || document.hidden || reduceMotion || paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     try {
       await video.play();
       // The poster remains visible until the browser confirms actual playback.

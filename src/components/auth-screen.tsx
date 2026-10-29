@@ -3,18 +3,23 @@ import { notifySessionChanged } from "@/lib/auth/session-events";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Play, BookOpen, Brain, Trophy, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowUpRight, Pause, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { ScholarFooter } from "@/components/scholar-footer";
 import { useStore } from "@/lib/store";
+import "@/components/landing/auth-integration.css";
 const FadingVideo = ReadyBackgroundVideo;
+const LivingHomepage = dynamic(() => import("@/components/landing/living-homepage").then(m => m.LivingHomepage), {
+  loading: () => <div style={{minHeight:500,background:"#08090b"}} role="status" className="grid place-items-center text-white/60">Opening the Scholar experience…</div>,
+});
 
 // ===== BlurText component (word-by-word blur-in) =====
 function BlurText({ text, className }: { text: string; className?: string }) {
   const words = text.split(" ");
   return (
-    <p
+    <h1
       className={className}
       style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", rowGap: "0.1em" }}
     >
@@ -39,7 +44,7 @@ function BlurText({ text, className }: { text: string; className?: string }) {
           {word}
         </motion.span>
       ))}
-    </p>
+    </h1>
   );
 }
 
@@ -56,7 +61,7 @@ const GOOGLE_ERRORS: Record<string, string> = {
   GOOGLE_FAILED: "Google sign-in could not be completed. Please retry or sign in with email.",
   SIGN_IN_REQUIRED: "Sign in to your existing Scholar account before connecting Google.",
 };
-export function AuthScreen() {
+export function AuthScreen({ accountOnly = false }: { accountOnly?: boolean } = {}) {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -67,6 +72,7 @@ export function AuthScreen() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [config, setConfig] = useState<Config | null>(null);
+  const [motionPaused, setMotionPaused] = useState(false);
   const token = useRef("");
   const notice = useRef<HTMLParagraphElement>(null);
   const startGuestSession = useStore((s) => s.startGuestSession);
@@ -136,15 +142,20 @@ export function AuthScreen() {
     changeMode("signup");
     document.getElementById("scholar-auth-form")?.parentElement?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }
+  function openLogin() {
+    changeMode("login");
+    document.getElementById("scholar-auth-form")?.parentElement?.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});
+  }
   function enterGuest() { startGuestSession(); window.location.replace("/"); }
   const accountMode = mode === "login" || mode === "signup";
   const hasPassword = accountMode || mode === "reset";
   const title = { login: "Welcome back", signup: "Create your Scholar account", forgot: "Reset your password", reset: "Choose a new password", verify: "Verify your email" }[mode];
+  const AccountHeading = accountOnly ? "h1" : "h2";
   return (
     <div className="scholar-auth min-h-dvh bg-black overflow-x-clip relative" style={{ borderRadius: 0 }}>
       {/* Liquid glass CSS */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Barlow:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap');
         .lg-glass {
           background: rgba(255,255,255,0.01);
           background-blend-mode: luminosity;
@@ -187,7 +198,7 @@ export function AuthScreen() {
           mask-composite: exclude;
           pointer-events: none;
         }
-        .lg-serif { font-family: 'Instrument Serif', serif; font-style: italic; }
+        .lg-serif { font-family: var(--font-instrument-serif), serif; font-style: italic; }
         .lg-body { font-family: 'Barlow', sans-serif; }
         .lg-input {
           background: transparent !important;
@@ -200,25 +211,22 @@ export function AuthScreen() {
       `}</style>
 
       {/* ===== Section 1: Hero (full viewport) ===== */}
-      <section className="scholar-auth-hero relative min-h-[100svh] w-full overflow-hidden">
+      {!accountOnly && <section className="scholar-auth-hero relative min-h-[100svh] w-full overflow-hidden" aria-label="Welcome to Scholar">
         {/* Background video — 120% width/height, top-aligned */}
         <FadingVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4"
           className="absolute left-1/2 top-0 -translate-x-1/2 object-cover object-top z-0"
           style={{ width: "120%", height: "120%" }}
+          paused={motionPaused}
         />
 
         {/* Navbar */}
         <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-8 lg:px-16 z-50">
           <div className="flex items-center justify-between">
-            <div className="lg-glass grid place-items-center h-12 w-12 rounded-full">
-              <span className="lg-serif text-white text-2xl">n</span>
-            </div>
-            <div className="hidden md:flex lg-glass rounded-full items-center gap-1 px-1.5 py-1.5">
-              {["Dashboard", "AI Tutor", "Notes", "Resources"].map((link) => (
-                <span key={link} className="px-3 py-2 text-sm font-medium text-white/90 lg-body cursor-default">
-                  {link}
-                </span>
+            <a href="#" className="scholar-public-wordmark lg-glass h-12 rounded-full" aria-label="Scholar home"><span>s</span>scholar</a>
+            <div className="scholar-public-links hidden md:flex lg-glass rounded-full items-center gap-1 px-1.5 py-1.5">
+              {[["Experience", "#experience"], ["Meet LAM", "#meet-lam"], ["Library", "#materials"], ["Reading", "#reading"]].map(([label,href]) => (
+                <a key={href} href={href} className="px-3 py-2 text-sm font-medium text-white/90 lg-body">{label}</a>
               ))}
               <button
                 onClick={openSignup}
@@ -227,7 +235,7 @@ export function AuthScreen() {
                 Get Started <ArrowUpRight className="h-4 w-4" />
               </button>
             </div>
-            <div className="h-12 w-12" />
+            <button onClick={openLogin} className="scholar-public-signin">Sign in<ArrowUpRight size={14}/></button>
           </div>
         </nav>
 
@@ -277,7 +285,7 @@ export function AuthScreen() {
               onClick={enterGuest}
               className="text-white text-sm font-medium flex items-center gap-2 lg-body hover:text-white/80 transition-colors"
             >
-              Explore as Guest <Play className="h-4 w-4 fill-white" />
+              Explore as Guest <ArrowUpRight className="h-4 w-4" />
             </button>
             <Link href="/group-study" className="lg-glass-strong rounded-full px-6 py-3 text-sm font-medium text-white flex items-center gap-2 lg-body">
               Group Study <span className="rounded-full border border-white/20 px-2 py-0.5 text-[9px] tracking-widest">BETA</span>
@@ -296,31 +304,20 @@ export function AuthScreen() {
             Powered by advanced AI · Crafted for CBSE excellence
           </div>
           <div className="flex gap-12 md:gap-16">
-            {["NCERT", "CBSE", "AI", "CBSE", "Smart"].map((name, i) => (
-              <span key={i} className="lg-serif text-white text-2xl md:text-3xl tracking-tight">{name}</span>
+            {["CBSE Classes 9 & 11", "NCERT-aligned study context"].map((name) => (
+              <span key={name} className="scholar-curriculum-label">{name}</span>
             ))}
           </div>
         </motion.div>
-      </section>
+        <button className="scholar-hero-motion" onClick={()=>setMotionPaused(!motionPaused)} aria-pressed={motionPaused}><Pause size={11}/>{motionPaused?"Resume background":"Pause background"}</button>
+      </section>}
 
       {/* ===== Section 2: Capabilities (min-h-screen) ===== */}
-      <section className="relative min-h-screen w-full overflow-hidden">
-        {/* Background video — full-bleed */}
-        <FadingVideo
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_094631_d30ab262-45ee-4b7d-99f3-5d5848c8ef13.mp4"
-          className="absolute inset-0 w-full h-full object-cover z-0"
-        />
-
-        {/* Content */}
-        <div className="relative z-10 px-8 md:px-16 lg:px-20 pt-24 pb-10 flex flex-col min-h-screen">
+      {accountOnly && <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-8 z-50" aria-label="Account navigation"><div><Link href="/" className="scholar-public-wordmark lg-glass h-12 rounded-full" aria-label="Scholar home"><span>s</span>scholar</Link></div></nav>}
+      <section id="account-entry" className={`scholar-account-section ${accountOnly?"scholar-account-only":""}`} aria-label="Your Scholar account">
+        <div className="scholar-account-layout">
           {/* Header */}
-          <div className="mb-auto">
-            <p className="text-sm lg-body text-white/80 mb-6">{"// Features"}</p>
-            <BlurText
-              text="Learning evolved"
-              className="lg-serif text-white text-6xl md:text-7xl lg:text-[6rem] leading-[0.9] tracking-[-3px]"
-            />
-          </div>
+          {!accountOnly && <div className="scholar-account-story"><p className="account-eyebrow">A space for your potential</p><h2 className="lg-serif">Every great question deserves somewhere to begin.</h2><p>Your subjects, your pace, your next idea. Sign in to your Scholar, or take a look around as Guest.</p><a href="#experience" className="inline-flex items-center gap-3 text-sm text-amber-100/80 mt-7 lg-body">Discover the experience<ArrowUpRight size={16}/></a></div>}
 
           {/* Original Scholar glass card: authentication capabilities only. */}
           <motion.div
@@ -328,11 +325,11 @@ export function AuthScreen() {
             whileInView={{ filter: "blur(0px)", opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="lg-glass-strong rounded-[1.5rem] p-8 max-w-md w-full mx-auto my-8"
+            className="scholar-auth-card lg-glass-strong rounded-[1.5rem] p-8 max-w-md w-full mx-auto my-8"
             style={{ scrollMarginTop: 96 }}
           >
             <div className="text-center mb-6">
-              <h2 className="lg-serif text-white text-3xl mb-2">{title}</h2>
+              <AccountHeading className="lg-serif text-white text-3xl mb-2">{title}</AccountHeading>
               <p className="text-sm text-white/60 lg-body">{mode === "login" ? "Sign in to continue your Scholar." : mode === "signup" ? "Create your study account." : mode === "verify" ? "Confirm this email belongs to you." : "Keep your saved work. Recover your account."}</p>
             </div>
             {accountMode && <div className="lg-glass rounded-full p-1 flex gap-1 mb-5" role="group" aria-label="Account action">
@@ -383,62 +380,9 @@ export function AuthScreen() {
             </div>
           </motion.div>
 
-          {/* Three feature cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            {[
-              {
-                title: "AI Tutors",
-                body: "Five AI teacher personas — Dr. Meera, Mr. Raj, Sara, Arjun, and slayra — who explain concepts, solve problems, and chat like real mentors.",
-                tags: ["Science", "Maths", "English", "SST"],
-                icon: Brain,
-              },
-              {
-                title: "Smart Notes",
-                body: "Notion-level note-taking with markdown, live preview, AI summaries, voice notes, version history, and PDF export. Organized by subject.",
-                tags: ["Markdown", "AI Summary", "Voice", "PDF Export"],
-                icon: BookOpen,
-              },
-              {
-                title: "Mastery Tracking",
-                body: "Beautiful analytics with study heatmaps, subject mastery radar, quiz performance bars, and AI-powered insights that find your weak spots.",
-                tags: ["Heatmaps", "Radar Charts", "Insights", "Progress"],
-                icon: Trophy,
-              },
-            ].map((card, i) => (
-              <motion.div
-                key={i}
-                initial={{ filter: "blur(10px)", opacity: 0, y: 30 }}
-                whileInView={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: i * 0.15, ease: "easeOut" }}
-                className="lg-glass rounded-[1.25rem] p-6 min-h-[360px] flex flex-col"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="lg-glass grid place-items-center h-11 w-11 rounded-[0.75rem]">
-                    <card.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-1.5 max-w-[70%]">
-                    {card.tags.map((tag) => (
-                      <span key={tag} className="lg-glass rounded-full px-3 py-1 text-[11px] text-white/90 lg-body whitespace-nowrap">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1" />
-                <div className="mt-6">
-                  <h3 className="lg-serif text-white text-3xl md:text-4xl tracking-[-1px] leading-none">
-                    {card.title}
-                  </h3>
-                  <p className="mt-3 text-sm text-white/90 lg-body font-light leading-snug max-w-[32ch]">
-                    {card.body}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
+      {!accountOnly && <LivingHomepage onSignup={openSignup} onGuest={enterGuest} paused={motionPaused} onMotionToggle={()=>setMotionPaused(!motionPaused)}/>}
       <ScholarFooter />
     </div>
   );

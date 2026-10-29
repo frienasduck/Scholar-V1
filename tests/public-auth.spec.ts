@@ -23,10 +23,10 @@ async function fixture(page: Page, options: { signedIn?: boolean; status?: strin
   });
   return { state, errors };
 }
-async function open(page: Page) { await page.goto("/login", { waitUntil: "domcontentloaded" }); await page.locator("#scholar-auth-form").evaluate((form) => form.parentElement?.scrollIntoView({block:"start"})); await expect(page.getByRole("heading", { name: "Welcome back", exact: true })).toBeVisible(); }
+async function open(page: Page) { await page.goto("/login", { waitUntil: "domcontentloaded" }); await expect(page.getByRole("heading", { name: "Welcome back", exact: true })).toBeInViewport(); }
 async function credentials(page: Page) { await page.getByLabel("Email", { exact: true }).fill("public@example.test"); await page.getByLabel("Password", { exact: true }).fill("unit-fixture-password"); }
 async function noOverflow(page: Page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); }
-test("original landing and glass card survive all 12 requested sizes; both auth modes stay reachable", async ({ page }) => {
+test("dedicated login opens immediately at all 12 requested sizes and both auth modes remain reachable", async ({ page }) => {
   const { errors } = await fixture(page); await open(page);
   const sizes = [[1920,1080],[1440,900],[1366,768],[1280,720],[1024,600],[834,1194],[768,1024],[430,932],[390,844],[360,800],[320,568],[844,390]];
   for (const [width, height] of sizes) {
@@ -34,22 +34,37 @@ test("original landing and glass card survive all 12 requested sizes; both auth 
     await page.getByRole("button", { name: "Sign in", exact: true }).first().click(); await noOverflow(page);
     await page.getByLabel("Email", { exact: true }).scrollIntoViewIfNeeded();
     const box = await page.getByLabel("Email", { exact: true }).boundingBox(); expect(box!.y).toBeLessThan(height); expect(box!.width).toBeGreaterThan(190);
-    await expect(page.locator(".scholar-auth-nav")).toBeVisible(); expect(await page.locator('p.lg-serif').filter({hasText:/Learning.*evolved/}).count()).toBe(1);
+    await expect(page.locator(".scholar-auth-nav")).toBeVisible();
+    await expect(page.locator(".scholar-auth-hero")).toHaveCount(0);
+    await expect(page.getByTestId("cinematic-homepage")).toHaveCount(0);
     await expect(page.locator("#scholar-auth-form").locator("..")).toHaveClass(/lg-glass-strong/);
-    const assets = await page.locator("video").evaluateAll((videos) => videos.map((video) => video.getAttribute("data-src") || video.getAttribute("src") || video.querySelector("source")?.src || ""));
-    expect(assets.some((src) => src.includes("hf_20260418_094631"))).toBe(true);
     if ([1440,1366,1024,390,320,844].includes(width)) {
-      await page.evaluate(() => window.scrollTo(0,0)); await page.waitForTimeout(1800);
-      await page.screenshot({ path: `test-artifacts/auth-restored-hero-${width}x${height}.png` });
-      await page.locator("#scholar-auth-form").evaluate((form) => form.parentElement?.scrollIntoView({block:"start",behavior:"instant"}));
-      await page.waitForTimeout(800);
-      await page.screenshot({ path: `test-artifacts/auth-restored-card-${width}x${height}.png` });
+      await page.screenshot({ path: `test-artifacts/cinematic-login-${width}x${height}.png` });
     }
     await page.getByRole("button", { name: "Create account", exact: true }).first().click(); await noOverflow(page); await expect(page.getByLabel("Name", { exact: true })).toBeVisible();
     await page.getByLabel("Confirm password").scrollIntoViewIfNeeded(); await expect(page.getByLabel("Confirm password")).toBeVisible();
     if (width === 390) await page.screenshot({ path: "test-artifacts/public-auth-signup-mobile.png", fullPage: true });
     await page.evaluate(() => window.scrollTo(0,0));
   }
+  expect(errors).toEqual([]);
+});
+test("the public hero and all ten showcases remain connected to the existing account form", async ({ page }) => {
+  const { errors } = await fixture(page);
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".scholar-auth-hero")).toBeVisible();
+  await expect(page.locator(".scholar-auth-content")).toContainText("Learn Past Your Limits Across the Syllabus");
+  await expect(page.getByTestId("cinematic-homepage")).toBeAttached();
+  for (const id of ["experience", "meet-lam", "exam-ready", "materials", "chapters", "practice", "planner", "group-study", "reading", "focus-modes"]) {
+    await expect(page.locator(`section#${id}`)).toHaveCount(1);
+  }
+  for (const [width, height] of [[320,568], [375,812], [390,844], [768,1024], [1024,600], [1366,768], [1440,900], [1920,1080], [844,390]]) {
+    await page.setViewportSize({ width, height });
+    await noOverflow(page);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: "Start Your Journey", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Create your Scholar account", exact: true })).toBeInViewport();
+  await expect(page.getByLabel("Name", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 test("keyboard submit, show-hide password, generic rate-limit recovery and no duplicate submission", async ({ page }) => {
