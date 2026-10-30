@@ -1,0 +1,6 @@
+[build.environment]
+  # These variables are only ever read server-side via process.env (see src/lib/db.ts,
+  # src/lib/ai/gemini-image.ts). They are not hardcoded anywhere in the repo, but Next.js
+  # necessarily bundles them into the server function runtime config, which trips Netlify's
+  # build-output secrets scan as a false positive.
+  SECRETS_SCAN_OMIT_KEYS = "DATABASE_URL,GEMINI_API_KEY,GEMINI_IMAGE_MODEL"
