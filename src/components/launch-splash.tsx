@@ -1,4 +1,7 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import { animateLaunchWordmark, launchFillY, liquidWordmarkPath, type LaunchWordmarkController } from "@/lib/animation/launch-wordmark";
 
 type LaunchSplashProps = {
   overlay?: boolean;
@@ -8,65 +11,73 @@ type LaunchSplashProps = {
   message?: string;
   modeLabel?: string;
   children?: ReactNode;
+  /** The dynamic-import fallback holds the same opening pose; no second intro. */
+  passive?: boolean;
+  repeatVisit?: boolean;
+  onExitComplete?: () => void;
 };
 
+/** Vector-only wordmark from the supplied 5.17 s reference, on requested full black.
+ * Its timing is intentionally NOT copied: readiness owns completion. */
 export function LaunchSplash({
-  overlay = false,
-  visible = true,
-  reducedMotion = false,
-  progress,
-  message = "Preparing your workspace…",
-  modeLabel,
-  children,
+  overlay = false, visible = true, reducedMotion = false, progress,
+  message = "Loading Scholar…", modeLabel, children, passive = false,
+  repeatVisit = false, onExitComplete,
 }: LaunchSplashProps) {
-  const percentage = progress === undefined ? null : Math.round(Math.min(1, Math.max(0, progress)) * 100);
+  const id = useId().replace(/:/g, "");
+  const maskId = "scholar-wordmark-" + id;
+  const root = useRef<HTMLDivElement>(null);
+  const controller = useRef<LaunchWordmarkController | null>(null);
+  const exit = useRef(onExitComplete);
+  useEffect(() => { exit.current = onExitComplete; }, [onExitComplete]);
+  useEffect(() => {
+    const element = root.current;
+    if (!element || passive) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let current: LaunchWordmarkController | null = null;
+    const create = () => {
+      current?.destroy();
+      current = animateLaunchWordmark(element, { reduced: reducedMotion || media.matches, repeat: repeatVisit, onExit: () => exit.current?.() });
+      controller.current = current;
+      current.progress(element.dataset.startupProgress === undefined ? undefined : Number(element.dataset.startupProgress) / 100);
+      // A preference change must not replay or delay an already-ready exit.
+      if (element.dataset.visible === "false") current.complete();
+    };
+    const visibility = () => current?.visibility(document.hidden);
+    create();
+    media.addEventListener("change", create);
+    document.addEventListener("visibilitychange", visibility);
+    return () => { current?.destroy(); controller.current = null; media.removeEventListener("change", create); document.removeEventListener("visibilitychange", visibility); };
+  }, [passive, reducedMotion, repeatVisit]);
+  useLayoutEffect(() => {
+    if (!visible) controller.current?.complete();
+    else controller.current?.progress(progress);
+  }, [progress, visible, reducedMotion, repeatVisit]);
 
+  const percentage = progress === undefined || !Number.isFinite(progress) ? undefined : Math.round(Math.max(0, Math.min(visible ? 0.92 : 1, progress)) * 100);
+  const word = { x: 500, y: 220, textAnchor: "middle" as const, fontSize: 224, fontWeight: 900, letterSpacing: -9, textLength: 840, lengthAdjust: "spacingAndGlyphs" as const };
   return (
-    <div
-      className={`scholar-launch${overlay ? " scholar-launch-overlay" : ""}${reducedMotion ? " scholar-launch-reduced" : ""}`}
-      style={overlay ? { opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transitionDuration: reducedMotion ? "0ms" : "550ms" } : undefined}
-      role="status"
-      aria-live="polite"
-      aria-hidden={!visible}
-      aria-label={message}
-      data-visible={visible}
-      data-startup-progress={percentage ?? undefined}
-      data-startup-mode={modeLabel?.toLowerCase()}
+    <div ref={root}
+      className={"scholar-launch" + (overlay ? " scholar-launch-overlay" : "") + (repeatVisit ? " scholar-launch-reload-cover" : "") + (reducedMotion ? " scholar-launch-reduced" : "")}
+      style={overlay ? { pointerEvents: visible ? "auto" : "none" } : undefined}
+      aria-label="Scholar startup" aria-busy={visible} aria-hidden={!visible}
+      data-visible={visible} data-startup-progress={percentage} data-startup-mode={modeLabel?.toLowerCase()}
+      data-startup-repeat={repeatVisit ? "true" : undefined} data-passive={passive ? "true" : undefined}
     >
-      <div className="scholar-launch-sky" aria-hidden="true">
-        <div className="scholar-launch-stars" />
-        <div className="scholar-launch-aura" />
-        <div className="scholar-launch-planet scholar-launch-planet-left" />
-        <div className="scholar-launch-planet scholar-launch-planet-right" />
-        <div className="scholar-launch-orbit scholar-launch-orbit-one"><span /></div>
-        <div className="scholar-launch-orbit scholar-launch-orbit-two"><span /></div>
-        <div className="scholar-launch-horizon" />
-        <div className="scholar-launch-wave scholar-launch-wave-one" />
-        <div className="scholar-launch-wave scholar-launch-wave-two" />
-      </div>
-
-      <div className="scholar-launch-center">
-        <div className="scholar-launch-emblem" aria-hidden="true">
-          <div className="scholar-launch-emblem-inner">
-            <svg viewBox="0 0 80 80" fill="none" aria-hidden="true">
-              <path d="M40 13 6 29.5 40 46l34-16.5L40 13Z" fill="white" />
-              <path d="M17 39v15c13 10 33 10 46 0V39L40 50 17 39Z" fill="url(#cap-light)" />
-              <path d="M74 30v22" stroke="#D6F7FF" strokeWidth="4" strokeLinecap="round" />
-              <circle cx="74" cy="55" r="4" fill="#D6F7FF" />
-              <defs><linearGradient id="cap-light" x1="17" y1="39" x2="59" y2="66"><stop stopColor="white" /><stop offset="1" stopColor="#96DDF4" /></linearGradient></defs>
+      <div className="scholar-launch-panel">
+        <h1 className="sr-only">Scholar</h1>
+        <div className="scholar-launch-wordmark-wrap">
+            <svg className="scholar-launch-wordmark" viewBox="0 0 1000 280" aria-hidden="true">
+              <defs><clipPath id={maskId}><text {...word}>Scholar</text></clipPath></defs>
+              <text {...word} fill="#383838">Scholar</text>
+              <g clipPath={"url(#" + maskId + ")"}>
+                <g data-liquid-carrier transform={"translate(0 " + launchFillY(0) + ")"}>
+                  <path data-liquid-wave d={liquidWordmarkPath()} fill="#fdfdfd" />
+                </g>
+              </g>
             </svg>
-          </div>
+          <p className="scholar-launch-status" role="status" aria-live="polite" aria-atomic="true">{message}</p>
         </div>
-        <h1 className="scholar-launch-title">Scholar</h1>
-        <p className="scholar-launch-subtitle">Preparing your workspace<span aria-hidden="true">…</span></p>
-
-        <div className="scholar-launch-progress" role="progressbar" aria-label="Scholar startup progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percentage ?? undefined} aria-valuetext={percentage === null ? "Loading" : `${percentage}%`}>
-          <div className={`scholar-launch-progress-fill${percentage === null ? " is-indeterminate" : ""}`} style={percentage === null ? undefined : { width: `${Math.max(3, percentage)}%` }} />
-          {percentage !== null ? <span className="scholar-launch-progress-value" aria-hidden="true">{percentage}%</span> : null}
-        </div>
-        <p className="scholar-launch-status">{message}</p>
-        <p className="scholar-launch-steps" aria-hidden="true">Loading tools <span>•</span> Syncing your study environment <span>•</span> Finalizing your space</p>
-        {modeLabel ? <p className="scholar-launch-mode">{modeLabel} startup</p> : null}
         {children}
       </div>
     </div>

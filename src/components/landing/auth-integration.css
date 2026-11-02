@@ -27,6 +27,9 @@
 .scholar-auth .scholar-auth-partners>div:last-child{gap:28px}
 .scholar-auth .scholar-auth-partners .scholar-curriculum-label{font-size:12px;font-style:normal;letter-spacing:.06em;font-family:'Barlow',sans-serif;color:#c8bfb1}
 .scholar-auth .scholar-auth-hero h1{font-weight:400;text-wrap:balance}
+/* The launch screen already supplied the introduction. Reveal a settled hero,
+   not another 1.9-second blur/CTA sequence, without changing its design or hover. */
+html[data-scholar-launch-seen="true"] .scholar-auth :is(.scholar-auth-content>*,.scholar-auth-content h1>span,.scholar-auth-partners){filter:none!important;transform:none!important;opacity:1!important}
 .scholar-auth .scholar-info-footer{background:radial-gradient(ellipse at 50% 0,#4c536123,transparent 70%),#08090b}
 @media(max-width:800px){.scholar-auth .scholar-account-layout{grid-template-columns:1fr;gap:35px;max-width:460px}.scholar-auth .scholar-account-story .lg-serif{font-size:48px}.scholar-auth .scholar-account-story>p{font-size:15px;margin-top:18px}.scholar-auth .scholar-account-section{padding:65px 24px}.scholar-auth .scholar-auth-nav{padding:0 20px}.scholar-auth .scholar-auth-nav .scholar-public-wordmark{padding:0 14px}.scholar-auth .scholar-hero-motion{bottom:16px;right:16px;font-size:10px}.scholar-auth .scholar-auth-partners{padding-bottom:65px}.scholar-auth .scholar-account-only{padding-top:105px}}
 @media(max-width:420px){.scholar-auth .scholar-account-section{padding-left:17px;padding-right:17px}.scholar-auth .scholar-auth-card{padding:25px!important}.scholar-auth .scholar-account-story .lg-serif{font-size:44px}.scholar-auth .scholar-public-signin{padding:10px 15px}.scholar-auth .scholar-auth-partners>div:last-child{gap:18px}.scholar-auth .scholar-auth-partners .scholar-curriculum-label{font-size:10px}.scholar-auth .scholar-auth-nav .scholar-public-wordmark{font-size:18px}}

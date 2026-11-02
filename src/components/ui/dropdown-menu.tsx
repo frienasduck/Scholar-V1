@@ -5,6 +5,7 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useVelocityPanel } from "@/components/liquid-glass/velocity-motion"
 
 function DropdownMenu({
   ...props
@@ -34,11 +35,14 @@ function DropdownMenuTrigger({
 function DropdownMenuContent({
   className,
   sideOffset = 4,
+  ref: forwardedRef,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  const motionRef = useVelocityPanel(forwardedRef)
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
+        ref={motionRef}
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         className={cn(

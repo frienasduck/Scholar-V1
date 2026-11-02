@@ -22,6 +22,9 @@ export interface GlassPointerOptions {
   reach?: number;
   /** Whether the specular angle should follow the cursor. */
   trackAngle?: boolean;
+  /** Optical-only lenses do not participate in the pointer loop. */
+  pointer?: boolean;
+  priority?: number;
 }
 
 interface Entry {
@@ -30,6 +33,9 @@ interface Entry {
   rect: DOMRect | null;
   rectDirty: boolean;
   active: boolean;
+  visible: boolean;
+  area: number;
+  width: number;
 }
 
 const entries = new Map<HTMLElement, Entry>();
@@ -39,9 +45,32 @@ let loopRunning = false;
 let listenersBound = false;
 let pointerX = Number.NaN;
 let pointerY = Number.NaN;
-let motionAllowed = true;
+let motionAllowed = false;
+let opticsAllowed = false;
+let opticalBudget = 0;
+let visibilityObserver: IntersectionObserver | null = null;
+let sizeObserver: ResizeObserver | null = null;
+let lastMeasured = 0;
 
 const MAX_PULL_PX = 9;
+
+/** Enforced compositor budget, not merely a design token. */
+export function setGlassOpticalBudget(allowed: boolean, budget: number): void {
+  opticsAllowed = allowed;
+  opticalBudget = Math.max(0, Math.min(6, budget));
+  assignOptics();
+}
+
+function assignOptics(): void {
+  let remaining = document.hidden || !opticsAllowed ? 0 : opticalBudget;
+  const sorted = [...entries.values()].sort((a, b) => b.opts.priority - a.opts.priority);
+  for (const entry of sorted) {
+    const active = entry.visible && entry.area > 0 && entry.area <= 180_000 && entry.width <= 640 && remaining > 0;
+    if (active) remaining--;
+    const next = active ? "active" : "off";
+    if (entry.el.dataset.sgOptics !== next) entry.el.dataset.sgOptics = next;
+  }
+}
 
 function clamp(value: number, min: number, max: number): number {
   return value < min ? min : value > max ? max : value;
@@ -79,6 +108,7 @@ function markRectDirty(): void {
 }
 
 function onPointerMove(event: PointerEvent): void {
+  if (event.pointerType === "touch" || !motionAllowed) return;
   pointerX = event.clientX;
   pointerY = event.clientY;
   startLoop();
@@ -94,6 +124,7 @@ function onVisibilityChange(): void {
     stopLoop();
     entries.forEach(resetEntry);
   }
+  assignOptics();
 }
 
 function bindListeners(): void {
@@ -103,6 +134,40 @@ function bindListeners(): void {
   window.addEventListener("scroll", onScrollOrResize, { passive: true, capture: true });
   window.addEventListener("resize", onScrollOrResize, { passive: true });
   document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("pointercancel", onPointerLeave, { passive: true });
+  window.addEventListener("blur", onPointerLeave);
+  if (typeof IntersectionObserver !== "undefined") {
+    visibilityObserver = new IntersectionObserver((changes) => {
+      for (const change of changes) {
+        const entry = entries.get(change.target as HTMLElement);
+        if (!entry) continue;
+        entry.visible = change.isIntersecting;
+        entry.area = change.boundingClientRect.width * change.boundingClientRect.height;
+        entry.width = change.boundingClientRect.width;
+        entry.rectDirty = true;
+        if (!entry.visible) resetEntry(entry);
+      }
+      assignOptics();
+    });
+  }
+  if (typeof ResizeObserver !== "undefined") {
+    sizeObserver = new ResizeObserver((changes) => {
+      for (const change of changes) {
+        const entry = entries.get(change.target as HTMLElement);
+        if (!entry) continue;
+        entry.rectDirty = true;
+        entry.area = change.contentRect.width * change.contentRect.height;
+        entry.width = change.contentRect.width;
+      }
+      assignOptics();
+    });
+  }
+}
+
+function onPointerLeave(): void {
+  pointerX = pointerY = Number.NaN;
+  stopLoop();
+  entries.forEach(resetEntry);
 }
 
 function unbindListeners(): void {
@@ -112,6 +177,10 @@ function unbindListeners(): void {
   window.removeEventListener("scroll", onScrollOrResize, { capture: true } as EventListenerOptions);
   window.removeEventListener("resize", onScrollOrResize);
   document.removeEventListener("visibilitychange", onVisibilityChange);
+  window.removeEventListener("pointercancel", onPointerLeave);
+  window.removeEventListener("blur", onPointerLeave);
+  visibilityObserver?.disconnect(); visibilityObserver = null;
+  sizeObserver?.disconnect(); sizeObserver = null;
 }
 
 function startLoop(): void {
@@ -145,7 +214,9 @@ function runFrame(): void {
 
   // Complete geometry reads before any custom-property writes. Otherwise a
   // newly dirty surface can force layout after the preceding surface's writes.
-  const measured = [...entries.values()].map(entry => ({ entry, rect: rectFor(entry) }));
+  const visible = [...entries.values()].filter(entry => entry.visible && entry.opts.pointer);
+  lastMeasured = visible.length;
+  const measured = visible.map(entry => ({ entry, rect: rectFor(entry) }));
   measured.forEach(({ entry, rect }) => {
     if (!rect || rect.width === 0 || rect.height === 0) return;
 
@@ -207,18 +278,29 @@ export function registerGlassSurface(
       elasticity: options.elasticity,
       reach: options.reach ?? 180,
       trackAngle: options.trackAngle ?? true,
+      pointer: options.pointer ?? true,
+      priority: options.priority ?? 0,
     },
     rect: null,
     rectDirty: true,
     active: false,
+    visible: false,
+    area: 0,
+    width: 0,
   });
 
   bindListeners();
+  visibilityObserver?.observe(el);
+  sizeObserver?.observe(el);
 
   return () => {
     const entry = entries.get(el);
     if (entry) resetEntry(entry);
+    visibilityObserver?.unobserve(el);
+    sizeObserver?.unobserve(el);
+    delete el.dataset.sgOptics;
     entries.delete(el);
+    assignOptics();
     if (entries.size === 0) {
       stopLoop();
       unbindListeners();
@@ -232,6 +314,6 @@ export function markGlassGeometryDirty(): void {
 }
 
 /** Diagnostics for the performance audit (also surfaced in dev tooling). */
-export function glassRuntimeStats(): { registered: number; running: boolean } {
-  return { registered: entries.size, running: loopRunning };
+export function glassRuntimeStats() {
+  return { registered: entries.size, visible: [...entries.values()].filter(e => e.visible).length, optical: [...entries.values()].filter(e => e.el.dataset.sgOptics === "active").length, lastMeasured, running: loopRunning, opticalBudget };
 }

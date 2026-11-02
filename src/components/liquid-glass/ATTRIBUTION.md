@@ -1,5 +1,34 @@
 # Scholar Liquid Glass — attribution
 
+## Liquid Velocity refinement (2026-11-02)
+
+The current five-primitive signed-field renderer and budgeted navigation lens
+are original Scholar implementations. The older multi-channel filter described
+below has been replaced; its historical license notice is deliberately retained.
+No source or demo artwork was copied from the following research references:
+
+- [Sohum Suthar's optical glass](https://github.com/sohumsuthar/liquid-glass):
+  README, `lib/glass-optics.mjs`, `useLiquidLens.jsx`, `useLiquidGlassEffects.jsx`.
+  MIT, copyright 2026 Sohum Suthar. Studied physical edge falloff, ray-tracing,
+  stable degradation and why three-channel passes must be tightly limited.
+- [dpawlikowski/liquid-glass](https://github.com/dpawlikowski/liquid-glass):
+  README and `src/core/liquid-glass.css`; MIT, copyright 2026 liquid-glass
+  contributors. Studied explicit live-backdrop versus replicated-background paths.
+- [kwlck/liquid-glass-web](https://github.com/kwlck/liquid-glass-web): README,
+  `src/liquid-glass.js`; MIT, copyright 2026 kwlck. Studied lifecycle, native
+  controls and conservative Chromium SVG-backdrop support. Its photographs have
+  separate licensing and were not used.
+- [liquidglass.dev](https://liquidglass.dev/docs/) / [gentpan/liquidglass](https://github.com/gentpan/liquidglass):
+  README and `lib/liquid-glass.js`; MIT, copyright 2026 gentpan. Studied dock
+  behaviour, image-aligned replication, map sizing and browser differences.
+  No proprietary assets or demo wallpapers were used.
+
+All four LICENSE files were checked. Scholar intentionally does not install
+these libraries, clone live DOM, duplicate arbitrary private content, or add a
+WebGL canvas over the application. Safari/Firefox retain a readable static/frosted
+material instead of claiming unsupported arbitrary-DOM refraction. Anime.js
+4.5.0 retains its existing package license. See `docs/liquid-velocity-report.md`.
+
 The refractive filter chain in this folder is adapted from the MIT-licensed
 [`liquid-glass-react`](https://github.com/rdev/liquid-glass-react) reference
 implementation used only as a technical and visual reference for this update.

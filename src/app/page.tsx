@@ -11,7 +11,7 @@ const AppContent = dynamic(
   () => import("@/components/app-content").then((m) => m.AppContent),
   {
     ssr: false,
-    loading: () => <LaunchSplash message="Loading Scholar…" />,
+    loading: () => <LaunchSplash passive message="Loading Scholar…" />,
   }
 );
 

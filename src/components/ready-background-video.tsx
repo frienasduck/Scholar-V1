@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { useGlassRuntime } from "@/components/liquid-glass/liquid-glass-provider";
 
 export const BACKGROUND_READY_EVENT = "scholar:background-ready";
 
@@ -30,6 +31,8 @@ export function ReadyBackgroundVideo({
   const visibleRef = useRef(false);
   const [loadVideo, setLoadVideo] = useState(false);
   const reduceMotion = useStore(state => state.settings.reduceMotion);
+  const glass = useGlassRuntime();
+  const still = glass.quality !== "high" || glass.motion === "reduced";
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const announcedRef = useRef(false);
@@ -37,8 +40,10 @@ export function ReadyBackgroundVideo({
   useEffect(() => { if (loadVideo) videoRef.current?.load(); }, [loadVideo, src]);
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const data = window.matchMedia("(prefers-reduced-data: reduce)");
+    const connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection;
     const sync = () => {
-      const active = visibleRef.current && !document.hidden && !media.matches && !reduceMotion && !paused;
+      const active = visibleRef.current && !document.hidden && !media.matches && !reduceMotion && !paused && !still && !data.matches && !connection?.saveData && document.documentElement.dataset.scholarWallpaperActive !== "true";
       if (active) { setLoadVideo(true); if (videoRef.current?.readyState && videoRef.current.readyState >= 2) void videoRef.current.play().catch(() => undefined); }
       else videoRef.current?.pause();
     };
@@ -50,15 +55,22 @@ export function ReadyBackgroundVideo({
     if (typeof media.addEventListener === "function") media.addEventListener("change", sync);
     else media.addListener(sync);
     document.addEventListener("visibilitychange", sync);
+    connection?.addEventListener("change", sync);
+    const preferences = new MutationObserver(sync);
+    preferences.observe(document.documentElement, { attributes: true, attributeFilter: ["data-scholar-wallpaper-active"] });
+    data.addEventListener("change", sync);
     sync();
     return () => {
       observer?.disconnect();
       if (typeof media.removeEventListener === "function") media.removeEventListener("change", sync);
       else media.removeListener(sync);
       document.removeEventListener("visibilitychange", sync);
+      connection?.removeEventListener("change", sync);
+      data.removeEventListener("change", sync);
+      preferences.disconnect();
       videoRef.current?.pause();
     };
-  }, [reduceMotion, src, paused]);
+  }, [reduceMotion, src, paused, still]);
 
   const announceReady = (status: "video" | "poster") => {
     if (announcedRef.current) return;
@@ -70,7 +82,7 @@ export function ReadyBackgroundVideo({
 
   const activateVideo = async () => {
     const video = videoRef.current;
-    if (!video || failed || !visibleRef.current || document.hidden || reduceMotion || paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!video || failed || !visibleRef.current || document.hidden || reduceMotion || paused || still || window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.matchMedia("(prefers-reduced-data: reduce)").matches || (navigator as Navigator & {connection?: {saveData?: boolean}}).connection?.saveData || document.documentElement.dataset.scholarWallpaperActive === "true") return;
     try {
       await video.play();
       // The poster remains visible until the browser confirms actual playback.

@@ -4,6 +4,7 @@ import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
+import { connectVelocityRef, NavigationLens, useNavigationLens } from "@/components/liquid-glass/velocity-motion"
 
 function Tabs({
   className,
@@ -20,17 +21,26 @@ function Tabs({
 
 function TabsList({
   className,
+  children,
+  ref: forwardedRef,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List>) {
+  const root = React.useRef<HTMLDivElement>(null)
+  const lens = useNavigationLens(root, "tabs", "x")
+  const ref = React.useCallback((node: HTMLDivElement | null) => { root.current = node; return connectVelocityRef(forwardedRef, node) }, [forwardedRef])
   return (
     <TabsPrimitive.List
+      ref={ref}
       data-slot="tabs-list"
       className={cn(
-        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
+        "sg-velocity-tabs bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
         className
       )}
       {...props}
-    />
+    >
+      <NavigationLens lensRef={lens} axis="x" />
+      {children}
+    </TabsPrimitive.List>
   )
 }
 

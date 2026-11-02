@@ -27,7 +27,7 @@ import {
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   GraduationCap, Sparkles, Flame, Coins, Zap, Menu, Search, Command as CmdIcon, Bot, X,
-  PanelLeftClose, AlertCircle, Home, BookOpen, ListChecks, Lightbulb, LayoutGrid,
+  PanelLeftClose, AlertCircle, BookOpen, LayoutGrid,
   ChevronUp, ChevronDown,
 } from "lucide-react";
 
@@ -96,9 +96,12 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
 import { SectionShutdown } from "@/components/section-shutdown";
 import { getSectionShutdown } from "@/lib/section-availability";
+import { NavigationLens, useNavigationLens, VelocityPage } from "@/components/liquid-glass/velocity-motion";
+import { MobileLiquidDock } from "@/components/liquid-glass/mobile-liquid-dock";
+import { useGlassRuntime } from "@/components/liquid-glass/liquid-glass-provider";
 
 function ViewLoading() {
-  return <div role="status" aria-live="polite" className="min-h-[45vh] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
+  return <div role="status" aria-live="polite" className="min-h-[calc(100dvh-10rem)] space-y-4 p-6"><div className="h-7 w-44 animate-pulse rounded-lg bg-muted" /><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /><p className="text-sm text-muted-foreground">Opening your workspace…</p></div>;
 }
 
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
@@ -213,9 +216,12 @@ const PLUS_SOURCE_BY_NAV: Record<string, "achievements" | "mind-map" | "concept-
 function NavList({ active, onNavigate, badges, selectionId }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges>; selectionId: "desktop" | "mobile" }) {
   const backgroundTasks = useBackgroundTasks();
   const access = useScholarAccess();
-  const reduceMotion = useStore((state) => state.settings.reduceMotion);
+  const navRoot = useRef<HTMLElement>(null);
+  const lens = useNavigationLens(navRoot, active, "y");
+  const finishedViews = useMemo(() => new Set(backgroundTasks.filter(task => task.status === "complete" && !task.read).map(task => task.viewId)), [backgroundTasks]);
   return (
-    <nav className="flex flex-col gap-6 px-3 py-2">
+    <nav ref={navRoot} data-velocity-nav={selectionId} className="relative isolate flex flex-col gap-6 px-3 py-2">
+      <NavigationLens lensRef={lens} axis="y" />
       {NAV_GROUPS.map((group) => (
         <div key={group}>
           <p className="scholar-nav-section px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p>
@@ -225,12 +231,7 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
               const shutdown = getSectionShutdown(item.id);
               const plusLocked = Boolean(!shutdown && access.authenticated && VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
               const badge = (badges as Record<string, string | null>)[item.id];
-              const hasFinishedTask = backgroundTasks.some(
-                (task) =>
-                  task.viewId === item.id &&
-                  task.status === "complete" &&
-                  !task.read,
-              );
+              const hasFinishedTask = finishedViews.has(item.id);
               if (item.plus) {
                 // Scholar Plus benefit card — opens Scholar Plus rather than the
                 // (not yet built) feature itself.
@@ -271,16 +272,6 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                       "border border-cyan-300/25 bg-cyan-300/[0.07] shadow-[inset_0_0_18px_rgba(34,211,238,.08),0_0_14px_rgba(34,211,238,.11)]",
                   )}
                 >
-                  {/* The moving selection is a paint-cheap glass highlight. A
-                      refractive filter here repaints the entire scrolling menu. */}
-                  {isActive && (
-                    <motion.span
-                      layoutId={`scholar-nav-selection-${selectionId}`}
-                      className="sg-nav-pill-motion"
-                      transition={reduceMotion ? { duration: 0 } : { duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-                      aria-hidden="true"
-                    />
-                  )}
                   <item.icon className={cn("scholar-nav-icon h-4.5 w-4.5 shrink-0", isActive && "text-primary", item.highlight && !isActive && "text-red-400")} />
                   <span className={cn("scholar-nav-label truncate flex-1 text-left", item.highlight && !isActive && "font-bold tracking-wide")}>{item.label}</span>
                   {hasFinishedTask && (
@@ -482,6 +473,8 @@ export function AppShell() {
   const switchClass = useStore((s) => s.switchClass);
   const toggleJeeMode = useStore((s) => s.toggleJeeMode);
   const settings = useStore((s) => s.settings);
+  const glassRuntime = useGlassRuntime();
+  const shellReduceMotion = settings.reduceMotion || glassRuntime.motion === "reduced";
   const { startTransition } = useScholarTransition();
   const access = useScholarAccess();
   const appearanceLabUnlocked = access.has("appearance_lab");
@@ -495,6 +488,7 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [guestBannerVisible, setGuestBannerVisible] = useState(guestMode);
+  const [sidebarInteracted, setSidebarInteracted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     // Persist sidebar open/closed state across reloads. Default to open on desktop.
     if (typeof window === "undefined") return false;
@@ -512,6 +506,7 @@ export function AppShell() {
   const [loadingText, setLoadingText] = useState({ title: "", subtitle: "" });
   const classLoadingTimerRef = useRef<number | null>(null);
   const badges = useNavBadges();
+  useEffect(() => { window.dispatchEvent(new Event("scholar:motion-boundary")); }, [active]);
 
   // Migrate legacy unscoped localStorage keys to profile-scoped keys.
   // Runs once on app load, before any view reads from localStorage. Safe to
@@ -526,8 +521,7 @@ export function AppShell() {
       return;
     }
     setGuestBannerVisible(true);
-    const timer = window.setTimeout(() => setGuestBannerVisible(false), 5_000);
-    return () => window.clearTimeout(timer);
+    // Explicit dismissal avoids moving the whole workspace during reading.
   }, [guestMode]);
 
   // Cross-tab synchronisation for Smart Reminders (re-hydrate on storage events).
@@ -680,10 +674,10 @@ export function AppShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const navigate = useCallback((id: string, updateHistory = true, anchor?: string) => {
+  const navigate = useCallback((id: string, updateHistory = true, anchor?: string, keepDockOpen = false) => {
     setActive(id);
     setMobileOpen(false);
-    setMobileNavOpen(false);
+    if (!keepDockOpen) setMobileNavOpen(false);
     if (updateHistory) {
       const nextPath = `${id === "dashboard" ? "/" : `/${id === "nigtube" ? "lamtube" : id}`}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
       if (`${window.location.pathname}${window.location.hash}` !== nextPath) window.history.pushState({ viewId: id, anchor }, "", nextPath);
@@ -776,10 +770,10 @@ export function AppShell() {
       <AnimatePresence>
         {sidebarOpen && (
           <motion.aside
-            initial={{ width: 0, opacity: 0 }}
+            initial={sidebarInteracted && !shellReduceMotion ? { width: 0, opacity: 0 } : false}
             animate={{ width: 256, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: shellReduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
             data-sg-chrome="sidebar"
             className="scholar-desktop-sidebar hidden lg:flex shrink-0 flex-col border-r border-border/60 sticky top-0 h-screen overflow-hidden z-30 relative"
           >
@@ -823,7 +817,7 @@ export function AppShell() {
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full bg-transparent">
-        <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
+        <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => { setSidebarInteracted(true); setSidebarOpen((o) => !o); }} sidebarOpen={sidebarOpen} />
         <AnimatePresence initial={false}>
           {guestMode && guestBannerVisible ? (
             <motion.section
@@ -845,11 +839,9 @@ export function AppShell() {
         <BackgroundTaskNotifications onNavigate={navigate} />
         <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" || active === "exam-prep" || active === "lab" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
-          <motion.div
+          <VelocityPage
             key={active}
-            initial={settings.pageTransitions === false || settings.reduceMotion ? false : { opacity: 0, y: lockedView ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: settings.pageTransitions === false || settings.reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+            enabled={settings.pageTransitions !== false && !settings.reduceMotion}
             className={cn("w-full", active !== "live-tutor" && active !== "exam-prep" && active !== "lab" && "scholar-footer-view")}
           >
             <ViewErrorBoundary viewName={active}>
@@ -859,7 +851,7 @@ export function AppShell() {
                 <PlusGate {...VIEW_ENTITLEMENTS[active]}><View /></PlusGate>
               ) : <View />}
             </ViewErrorBoundary>
-          </motion.div>
+          </VelocityPage>
           </div>
           <Footer active={active} />
         </main>
@@ -904,32 +896,7 @@ export function AppShell() {
         <div className={cn("scholar-mobile-nav-shell lg:hidden", mobileNavOpen && "is-open")}>
           <AnimatePresence initial={false}>
             {mobileNavOpen ? (
-              <motion.nav
-                id="scholar-mobile-bottom-navigation"
-                className="scholar-bottom-nav"
-                initial={{ opacity: 0, y: 14, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                transition={{ duration: settings.reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
-                aria-label="Primary mobile navigation"
-                data-sg-chrome="mobile-nav"
-              >
-                <button type="button" onClick={() => navigate("dashboard")} className={cn(active === "dashboard" && "active")} aria-label="Home" aria-current={active === "dashboard" ? "page" : undefined}>
-                  <Home /> Home
-                </button>
-                <button type="button" onClick={() => navigate("study")} className={cn(active === "study" && "active")} aria-label="Study" aria-current={active === "study" ? "page" : undefined}>
-                  <BookOpen /> Study
-                </button>
-                <button type="button" onClick={() => navigate("practice")} className={cn(active === "practice" && "active")} aria-label="Practice" aria-current={active === "practice" ? "page" : undefined}>
-                  <ListChecks /> Practice
-                </button>
-                <button type="button" onClick={() => navigate("ai-tools")} className={cn(active === "ai-tools" && "active")} aria-label="AI Tools" aria-current={active === "ai-tools" ? "page" : undefined}>
-                  <Lightbulb /> AI
-                </button>
-                <button type="button" onClick={() => { setMobileNavOpen(false); setMobileOpen(true); }} aria-label="More sections">
-                  <Menu /> More
-                </button>
-              </motion.nav>
+              <MobileLiquidDock active={active} navigate={(id) => navigate(id, true, undefined, true)} more={() => { setMobileNavOpen(false); setMobileOpen(true); }} reduceMotion={shellReduceMotion} />
             ) : null}
           </AnimatePresence>
           <button

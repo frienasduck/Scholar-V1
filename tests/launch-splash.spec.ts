@@ -2,70 +2,101 @@ import { expect, test } from "@playwright/test";
 import { DEFAULT_PREFERENCES } from "../src/lib/personalization/schema";
 
 test.use({
-  baseURL: "http://127.0.0.1:3000",
+  baseURL: process.env.SCHOLAR_QA_URL || "http://127.0.0.1:3000",
   launchOptions: { executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" },
 });
-
-test("initial splash is branded, bounded, and dissolves after readiness", async ({ page }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  await page.addInitScript(() => {
-    localStorage.clear();
-    const timing = { shown: 0, hidden: 0 };
-    Object.assign(window, { __scholarSplashTiming: timing });
-    const observer = new MutationObserver(() => {
-      const splash = document.querySelector('.scholar-launch-overlay');
-      if (!splash) return;
-      if (!timing.shown) timing.shown = performance.now();
-      if (splash.getAttribute('data-visible') === 'false' && !timing.hidden) timing.hidden = performance.now();
-    });
-    observer.observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-visible'] });
-  });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  const splash = page.locator(".scholar-launch-overlay");
-  await expect(splash).toBeVisible();
-  await expect(splash.getByRole("heading", { name: "Scholar" })).toBeVisible();
-  await expect(splash.getByRole("progressbar", { name: "Scholar startup progress" })).toBeVisible();
-  expect(parseFloat(await splash.evaluate((element) => getComputedStyle(element).transitionDuration))).toBeGreaterThanOrEqual(0.5);
-  await expect(splash).toBeHidden({ timeout: 20_000 });
-  const timing = await page.evaluate(() => (window as Window & { __scholarSplashTiming?: { shown: number; hidden: number } }).__scholarSplashTiming);
-  expect(timing?.hidden && timing.hidden - timing.shown).toBeGreaterThanOrEqual(1750);
-  expect(errors).toEqual([]);
+test.setTimeout(90_000);
+test.beforeEach(async ({ page }) => {
+  // Synthetic network fixtures only; never a production account/database.
+  await page.route("**/api/**", route => route.abort("blockedbyclient"));
+  await page.route("**/api/auth/config", route => route.fulfill({ json: { registrationEnabled: true, googleConfigured: false, passwordResetConfigured: false } }));
+  await page.route("**/api/auth/session", route => route.fulfill({ json: { authenticated: false, developerMode: false } }));
+  await page.addInitScript(() => localStorage.setItem("neha-scholar-v5", JSON.stringify({ schema: 6, state: { authed: false, guestMode: false, settings: { startupLoadingMode: "quick" } } })));
 });
 
-test("mobile reduced-motion splash remains readable without overflow", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.addInitScript(() => localStorage.clear());
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  const splash = page.locator(".scholar-launch-overlay");
-  await expect(splash).toBeVisible();
-  const metrics = await splash.evaluate((element) => ({
-    animation: getComputedStyle(element.querySelector(".scholar-launch-emblem")!).animationDuration,
-    width: element.scrollWidth,
-    viewport: window.innerWidth,
-  }));
-  expect(parseFloat(metrics.animation)).toBeLessThan(0.01);
-  expect(metrics.width).toBeLessThanOrEqual(metrics.viewport);
-  await expect(splash).toBeHidden({ timeout: 20_000 });
-});
-
-test("the cinematic intro appears once per tab, not on reload", async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
-  await page.route("**/api/auth/session", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 700));
+test("liquid wordmark follows readiness, then fades and releases the prepared page", async ({ page }) => {
+  const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
+  await page.route("**/api/auth/session", async route => {
+    await new Promise(resolve => setTimeout(resolve, 1400));
     await route.fulfill({ json: { authenticated: false, developerMode: false } });
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".scholar-launch-overlay")).toBeVisible();
-  await expect(page.locator(".scholar-launch-overlay")).toBeHidden({ timeout: 20_000 });
-  expect(await page.evaluate(() => sessionStorage.getItem("scholar:launch-seen:v1"))).toBe("1");
+  const splash = page.locator(".scholar-launch-overlay");
+  await expect(splash).toBeVisible();
+  expect(await splash.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(0, 0, 0)");
+  const panel = splash.locator(".scholar-launch-panel");
+  expect(await panel.evaluate(el => ({ width: el.clientWidth, height: el.clientHeight }))).toEqual(page.viewportSize());
+  await expect(splash.locator(".scholar-launch-background")).toHaveCount(0);
+  await expect(splash.locator("clipPath text")).toHaveText("Scholar");
+  await expect(splash.locator("video, canvas, [role=progressbar]")).toHaveCount(0);
+  const path = splash.locator("[data-liquid-wave]");
+  const initial = await path.getAttribute("d"); await page.waitForTimeout(100);
+  expect(await path.getAttribute("d")).not.toBe(initial);
+  expect(Number(await splash.getAttribute("data-startup-progress"))).toBeLessThan(100);
+  await expect(splash).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByRole("button", { name: "Continue as Guest", exact: true })).toBeVisible();
+  expect(await page.locator(".scholar-auth-cta").evaluate(el => ({ opacity: getComputedStyle(el).opacity, filter: getComputedStyle(el).filter }))).toEqual({ opacity: "1", filter: "none" });
+  expect(await page.locator(".scholar-auth-content h1 > span").first().evaluate(el => getComputedStyle(el).filter)).toBe("none");
+  expect(errors).toEqual([]);
+});
 
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.locator("html")).toHaveAttribute("data-scholar-launch-seen", "true");
-  await expect(page.locator(".scholar-launch-overlay")).toHaveCount(0);
-  await expect(page.locator(".scholar-launch-reload-cover")).toBeVisible();
-  await expect(page.locator(".scholar-launch-reload-cover")).toBeHidden({ timeout: 15_000 });
+test("mobile reduced-motion wordmark stays static and never overflows", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.route("**/api/auth/session", async route => {
+    await new Promise(resolve => setTimeout(resolve, 1000)); await route.fulfill({ json: { authenticated: false, developerMode: false } });
+  });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const splash = page.locator(".scholar-launch-overlay");
+  await expect(splash).toHaveAttribute("data-phase", "static");
+  const path = splash.locator("[data-liquid-wave]"), before = await path.getAttribute("d");
+  await page.waitForTimeout(100); expect(await path.getAttribute("d")).toBe(before);
+  expect(await splash.evaluate(element => element.scrollWidth <= innerWidth)).toBe(true);
+  await expect(splash).toHaveCount(0, { timeout: 15000 });
+});
+
+test("repeat visits use the same static identity without replaying the zoom", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("scholar:launch-seen:v1", "1"));
+  await page.route("**/api/auth/session", async route => {
+    await new Promise(resolve => setTimeout(resolve, 1000)); await route.fulfill({ json: { authenticated: false, developerMode: false } });
+  });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const splash = page.locator(".scholar-launch-overlay");
+  await expect(splash).toHaveAttribute("data-startup-repeat", "true");
+  await expect(splash).toHaveAttribute("data-phase", "static");
+  await expect(splash).toHaveCount(0, { timeout: 15000 });
+});
+
+test("liquid pauses on a hidden-tab event and stops updating after cleanup", async ({ page }) => {
+  await page.route("**/api/auth/session", async route => {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    await route.fulfill({ json: { authenticated: false, developerMode: false } });
+  });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const splash = page.locator(".scholar-launch-overlay");
+  await expect(splash).toBeVisible();
+  // Synthetic visibility events exercise the real controller, without assuming
+  // that a headless browser can put a native OS window into the background.
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  const path = splash.locator("[data-liquid-wave]"), paused = await path.getAttribute("d");
+  await page.waitForTimeout(150); expect(await path.getAttribute("d")).toBe(paused);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForTimeout(100); expect(await path.getAttribute("d")).not.toBe(paused);
+  await splash.evaluate(element => {
+    const state = { mutations: 0 };
+    (window as unknown as { loaderCleanup: typeof state }).loaderCleanup = state;
+    new MutationObserver(list => { state.mutations += list.length; }).observe(element, { subtree: true, attributes: true, attributeFilter: ["d", "transform", "data-liquid-fill"] });
+  });
+  await expect(splash).toHaveCount(0, { timeout: 15000 });
+  await page.waitForTimeout(50);
+  const before = await page.evaluate(() => (window as unknown as { loaderCleanup: { mutations: number } }).loaderCleanup.mutations);
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => (window as unknown as { loaderCleanup: { mutations: number } }).loaderCleanup.mutations)).toBe(before);
 });
 
 test("slow session check stays within the branded splash", async ({ page }) => {

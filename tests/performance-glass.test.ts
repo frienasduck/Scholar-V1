@@ -3,15 +3,21 @@ import { glassRuntimeStats, registerGlassSurface, setGlassPointerMotionAllowed }
 
 test("glass batches all layout reads before writes, coalesces pointer frames and cleans up", () => {
   const win = Object.getOwnPropertyDescriptor(globalThis, "window"), doc = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const io = Object.getOwnPropertyDescriptor(globalThis, "IntersectionObserver");
   const events = new Map<string, (event?: unknown) => void>(); const order: string[] = [];
   let frames = 0, cancelled = 0, frame: (() => void) | undefined;
   const documentMock = { hidden: false, addEventListener: (type: string, fn: () => void) => events.set(type, fn), removeEventListener: (type: string) => events.delete(type) };
   Object.defineProperty(globalThis, "window", { configurable: true, value: { addEventListener: (type: string, fn: () => void) => events.set(type, fn), removeEventListener: (type: string) => events.delete(type), requestAnimationFrame: (fn: () => void) => { frames++; frame = fn; return frames; }, cancelAnimationFrame: () => { cancelled++; frame = undefined; } } });
   Object.defineProperty(globalThis, "document", { configurable: true, value: documentMock });
+  Object.defineProperty(globalThis, "IntersectionObserver", { configurable: true, value: class {
+    constructor(private callback: (entries: unknown[]) => void) {}
+    observe(target: unknown) { this.callback([{ target, isIntersecting: true, boundingClientRect: { width: 100, height: 100 } }]); }
+    unobserve() {} disconnect() {}
+  } });
   const releases: (() => void)[] = [];
   try {
     setGlassPointerMotionAllowed(true);
-    for (let i = 0; i < 3; i++) releases.push(registerGlassSurface({ style: { setProperty: () => order.push(`write:${i}`) }, getBoundingClientRect: () => { order.push(`read:${i}`); return { top: 0, left: 0, width: 100, height: 100 }; } } as unknown as HTMLElement, { elasticity: 1 }));
+    for (let i = 0; i < 3; i++) releases.push(registerGlassSurface({ dataset: {}, style: { setProperty: () => order.push(`write:${i}`) }, getBoundingClientRect: () => { order.push(`read:${i}`); return { top: 0, left: 0, width: 100, height: 100 }; } } as unknown as HTMLElement, { elasticity: 1 }));
     for (let i = 0; i < 10; i++) events.get("pointermove")?.({ clientX: 50, clientY: 50 });
     expect(frames).toBe(1); frame?.();
     expect(order.slice(0,3)).toEqual(["read:0", "read:1", "read:2"]); expect(order.slice(3).every(value => value.startsWith("write:"))).toBe(true);
@@ -22,5 +28,6 @@ test("glass batches all layout reads before writes, coalesces pointer frames and
     releases.forEach(fn => fn());
     if (win) Object.defineProperty(globalThis,"window",win); else Reflect.deleteProperty(globalThis,"window");
     if (doc) Object.defineProperty(globalThis,"document",doc); else Reflect.deleteProperty(globalThis,"document");
+    if (io) Object.defineProperty(globalThis,"IntersectionObserver",io); else Reflect.deleteProperty(globalThis,"IntersectionObserver");
   }
 });

@@ -64,7 +64,7 @@ test("startup warm-up has no AI, microphone, audio, analytics or progress side e
 
   const shell = read("src/components/app-shell.tsx");
   expect(shell).toContain("useScholarStartupReady");
-  expect(shell).toContain("startupReady ? <LamWidget");
+  expect(shell).toContain('startupReady && active !== "live-tutor" ? <LamWidget');
 });
 
 test("background videos retain a poster until usable playback", () => {

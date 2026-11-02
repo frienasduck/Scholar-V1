@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useVelocityPanel } from "@/components/liquid-glass/velocity-motion"
 
 function Dialog({
   ...props
@@ -50,14 +51,17 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  ref: forwardedRef,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const motionRef = useVelocityPanel(forwardedRef)
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
+        ref={motionRef}
         data-slot="dialog-content"
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid max-h-[calc(100dvh-1rem)] w-full max-w-[calc(100%-1rem)] gap-4 overflow-y-auto overscroll-contain rounded-2xl border p-4 shadow-lg duration-200 sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg sm:p-6",

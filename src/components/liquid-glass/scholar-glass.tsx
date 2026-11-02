@@ -72,12 +72,12 @@ export function ScholarGlass({
   const preset: GlassRefraction = refraction === "auto" ? material.refraction : refraction;
 
   useEffect(() => {
-    if (!interactive || preset === "none") return;
+    if (preset === "none") return;
     const element = localRef.current;
     if (!element) return;
     // One shared runtime for the whole product: this registers the node, it does
     // not create a listener of its own.
-    return registerGlassSurface(element, { elasticity: material.elasticity });
+    return registerGlassSurface(element, { elasticity: material.elasticity, pointer: interactive });
   }, [interactive, preset, material.elasticity]);
 
   return (

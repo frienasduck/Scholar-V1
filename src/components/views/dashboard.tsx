@@ -31,6 +31,7 @@ import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { ScholarToday, ScholarTodaySources } from "@/components/personalization/scholar-today";
+import { useVelocityReveal } from "@/components/liquid-glass/velocity-motion";
 
 // ===== Daily Challenge — pending state in localStorage =====
 // XP is NOT awarded on click. Instead, the user is redirected to the
@@ -325,8 +326,9 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
     } catch { printWindow.close(); toast.error("The PDF exporter could not load. Retry when connected."); }
   }
 
+  const revealRoot = useVelocityReveal();
   return (
-    <div className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-4 lg:-m-6">
+    <div ref={revealRoot} className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-4 lg:-m-6">
       <style>{`
         @import url('https://db.onlinewebfonts.com/c/2bf40ab72ea4897a3fd9b6e48b233a19?family=Garamond');
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap');
@@ -437,17 +439,14 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
         {/* Hero content */}
         <div className="scholar-dashboard-hero relative z-10 flex flex-col items-center text-center px-5 sm:px-8 pt-4 sm:pt-8 pb-6">
           {/* Greeting + date */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+          <div data-velocity-reveal
             className="flex items-center gap-3 mb-4"
           >
             <span className="dash-glass rounded-full px-4 py-1.5 text-xs text-white/80 font-geist uppercase tracking-widest">
               {greeting()}, {user.name.split(" ")[0]} · Class {user.scholarClass} CBSE{user.jeeMode ? " · JEE" : ""}
             </span>
             <span className="text-xs text-white/50 font-geist hidden sm:inline">{fmtDate()}</span>
-          </motion.div>
+          </div>
 
           {/* Heading */}
           <h1 className="font-garamond font-normal text-white text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.08] tracking-tight mb-4 sm:mb-6">
@@ -456,20 +455,14 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
           </h1>
 
           {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
+          <p data-velocity-reveal
             className="font-geist font-light text-white/70 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xs sm:max-w-md mb-6 sm:mb-8"
           >
             An odyssey through your study journey, revealed by data and curiosity.
-          </motion.p>
+          </p>
 
           {/* Level ring + badges */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 2.0 }}
+          <div data-velocity-reveal
             className="scholar-dashboard-metrics flex items-center gap-4 mb-6"
           >
             <div className="dash-glass rounded-full px-4 py-2 flex items-center gap-2">
@@ -484,7 +477,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
               <Target className="h-3.5 w-3.5 text-white/70" />
               <span className="text-sm text-white font-geist">{overallMastery}% mastery</span>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Stats row */}
@@ -494,8 +487,8 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             { icon: Zap, label: "XP", value: xp.toLocaleString(), sub: `${level.intoLevel}/${level.needed} to Lv ${level.level + 1}` },
             { icon: Coins, label: "Coins", value: coins.toLocaleString(), sub: "Spend in store" },
             { icon: Target, label: "Mastery", value: `${overallMastery}%`, sub: "All subjects" },
-          ].map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.2 + i * 0.1 }}>
+          ].map((s) => (
+            <div data-velocity-reveal key={s.label}>
               <div className="dash-glass rounded-2xl p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="grid place-items-center h-9 w-9 rounded-xl bg-white/5">
@@ -506,14 +499,14 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
                 <p className="text-2xl font-garamond text-white tabular-nums">{s.value}</p>
                 <p className="text-[11px] text-white/50 mt-0.5 font-geist">{s.sub}</p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* Daily challenge */}
         <div className="relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full mb-6">
           {!dailyChallenge.completed ? (
-            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 2.6 }}>
+            <div data-velocity-reveal>
               <div className="dash-glass-strong rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className="grid place-items-center h-11 w-11 rounded-2xl bg-white/10 text-white shrink-0">
@@ -533,7 +526,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
                   {pendingDaily && !pendingDaily.completed ? "Continue Challenge" : "Start Challenge"}
                 </button>
               </div>
-            </motion.div>
+            </div>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="dash-glass rounded-3xl p-5 flex items-center gap-3">

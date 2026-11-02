@@ -23,7 +23,8 @@ import {
   type StartupReadinessProgress,
   type StartupReadinessResult,
 } from "@/lib/startup/startup-controller";
-import { STARTUP_ROUTE_GROUPS, normaliseStartupMode } from "@/lib/startup/startup-modes";
+import { normaliseStartupMode } from "@/lib/startup/startup-modes";
+import { launchReadinessProgress, WORDMARK_EXIT } from "@/lib/animation/launch-wordmark";
 
 const INITIAL_PROGRESS: StartupReadinessProgress = {
   mode: "long",
@@ -38,7 +39,6 @@ const LaunchContentReadinessContext = createContext({
   reportShellReady: (_ready: boolean) => {},
   reportProfileReady: (_ready: boolean) => {},
 });
-const FIRST_LAUNCH_MINIMUM_MS = 1900;
 const LAUNCH_SEEN_KEY = "scholar:launch-seen:v1";
 let launchShownInDocument = false;
 
@@ -74,6 +74,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   });
   const [result, setResult] = useState<StartupReadinessResult | null>(null);
   const [startupSettled, setStartupSettled] = useState(false);
+  const [startupError, setStartupError] = useState(false);
   const [shellReady, setShellReady] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const readinessReport = useMemo(() => ({ reportShellReady: setShellReady, reportProfileReady: setProfileReady }), []);
@@ -81,8 +82,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const openNowRef = useRef(false);
   const canOpenNowRef = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
-  const startedAtRef = useRef<number | null>(null);
-  const minimumDurationRef = useRef<number | null>(null);
+  const finishExit = useCallback(() => setGateMounted(false), []);
 
   const reveal = useCallback(() => {
     setVisible(false);
@@ -96,8 +96,6 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    startedAtRef.current = performance.now();
-    minimumDurationRef.current = repeatVisit ? 0 : FIRST_LAUNCH_MINIMUM_MS;
     let active = true;
     controllerRef.current = controller;
     openNowRef.current = false;
@@ -130,6 +128,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         if (!active) return;
+        setStartupError(true);
         if (process.env.NODE_ENV === "development") {
           console.warn("[Scholar startup] readiness coordinator recovered", error);
         }
@@ -149,17 +148,18 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!visible || !startupSettled || !shellReady || (requiresProfile && !profileReady)) return;
-    const elapsed = performance.now() - (startedAtRef.current ?? performance.now());
-    const remaining = Math.max(0, (minimumDurationRef.current ?? FIRST_LAUNCH_MINIMUM_MS) - elapsed);
-    const timer = window.setTimeout(() => {
+    let cancelled = false;
+    // Readiness, never an arbitrary branding duration, authorizes the reveal.
+    queueMicrotask(() => {
+      if (cancelled) return;
       launchShownInDocument = true;
       if (!repeatVisit) {
         try { window.sessionStorage.setItem(LAUNCH_SEEN_KEY, "1"); } catch { /* Private storage may be unavailable. */ }
         document.documentElement.dataset.scholarLaunchSeen = "true";
       }
       reveal();
-    }, remaining);
-    return () => window.clearTimeout(timer);
+    });
+    return () => { cancelled = true; };
   }, [visible, startupSettled, shellReady, profileReady, requiresProfile, repeatVisit, reveal]);
 
   useEffect(() => {
@@ -173,33 +173,28 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (visible) return;
-    // Readiness is authoritative: a missed motion exit must never hide or
-    // intercept the ready workspace. CSS fades independently; removal is bounded.
-    const timer = window.setTimeout(() => setGateMounted(false), reduceMotion ? 0 : repeatVisit ? 130 : 600);
+    // Anime's completion removes the overlay first. This independent, short
+    // safety cap still works if an animation callback is interrupted.
+    const timer = window.setTimeout(finishExit, reduceMotion ? 0 : repeatVisit ? WORDMARK_EXIT.repeat + 20 : WORDMARK_EXIT.fallback);
     return () => window.clearTimeout(timer);
-  }, [visible, reduceMotion, repeatVisit]);
+  }, [visible, reduceMotion, repeatVisit, finishExit]);
 
-  const completedCount = progress.tasks.filter((task) =>
-    ["completed", "failed", "skipped", "timed-out"].includes(task.status),
-  ).length;
-  const message = !startupSettled ? progress.message : !shellReady ? session.loading ? "Checking your Scholar session…" : "Opening your account’s workspace…" : requiresProfile && !profileReady ? "Opening your Scholar…" : "Your workspace is ready";
+  const message = !startupSettled ? progress.message : !shellReady ? session.loading ? "Checking your Scholar session…" : "Opening your account’s workspace…" : requiresProfile && !profileReady ? "Opening your Scholar…" : "Opening Scholar…";
+  const visualProgress = launchReadinessProgress(progress.progress, shellReady, requiresProfile, profileReady);
 
   return (
     <>
-      <ScholarStartupReadyContext.Provider value={!visible}>
+      <ScholarStartupReadyContext.Provider value={!gateMounted}>
         <LaunchContentReadinessContext.Provider value={readinessReport}>
           {children}
         </LaunchContentReadinessContext.Provider>
       </ScholarStartupReadyContext.Provider>
-      {gateMounted && (repeatVisit ? (
-        <div className="scholar-launch-reload-cover" role="status" aria-label="Refreshing your Scholar workspace" aria-hidden={!visible} data-startup-repeat="true" style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none", transitionDuration: reduceMotion ? "0ms" : undefined }} />
-      ) : (
-        <LaunchSplash overlay visible={visible} reducedMotion={reduceMotion} progress={progress.progress} message={message} modeLabel={mode}>
+      {gateMounted && (
+        <LaunchSplash overlay visible={visible} repeatVisit={repeatVisit} onExitComplete={finishExit} reducedMotion={reduceMotion} progress={visualProgress} message={message} modeLabel={mode}>
           <div className="scholar-launch-controls">
-            <span className="text-[11px] text-[#9fbbd9]">{completedCount} of {progress.tasks.length || 1} preparation steps</span>
-            <button type="button" onClick={openNow} disabled={!progress.canOpenNow} className="scholar-launch-open">Open now</button>
-            {mode === "full" ? <span className="text-[11px] text-[#829ab5]">Preparing the complete Scholar experience…</span> : null}
+            {mode !== "quick" && progress.canOpenNow ? <button type="button" onClick={openNow} className="scholar-launch-open">Open now</button> : null}
           </div>
+          {startupError && visible ? <div className="scholar-launch-recovery" role="alert">Some startup tools could not load. Your saved work is unchanged. <button type="button" className="scholar-launch-open" onClick={() => window.location.reload()}>Retry safely</button></div> : null}
           {devMode && progress.tasks.length ? (
             <details className="mt-4 w-full rounded-2xl border border-white/15 bg-black/25 p-3 text-left text-[10px] text-white/60">
               <summary className="cursor-pointer font-semibold text-white/75">Startup diagnostics</summary>
@@ -214,7 +209,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
             </details>
           ) : null}
         </LaunchSplash>
-      ))}
+      )}
     </>
   );
 }

@@ -2,11 +2,14 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { GlassFilterDefs } from "./glass-filter";
-import { setGlassPointerMotionAllowed } from "./glass-runtime";
+import { setGlassPointerMotionAllowed, setGlassOpticalBudget } from "./glass-runtime";
+import { nextVelocityQuality } from "@/lib/animation/velocity-policy";
+import { VelocityInteractions } from "./velocity-motion";
 
 export type GlassMaterialMode = "full" | "reduced" | "fallback";
 export type GlassPointerMode = "fine" | "coarse";
 export type GlassMotionMode = "full" | "reduced";
+export type GlassQuality = "high" | "balanced" | "lightweight";
 
 export interface GlassRuntimeState {
   /** How much material fidelity the device can afford. */
@@ -15,6 +18,7 @@ export interface GlassRuntimeState {
   refraction: boolean;
   pointer: GlassPointerMode;
   motion: GlassMotionMode;
+  quality: GlassQuality;
 }
 
 const DEFAULT_STATE: GlassRuntimeState = {
@@ -22,6 +26,7 @@ const DEFAULT_STATE: GlassRuntimeState = {
   refraction: false,
   pointer: "fine",
   motion: "full",
+  quality: "balanced",
 };
 
 const GlassContext = createContext<GlassRuntimeState>(DEFAULT_STATE);
@@ -57,6 +62,11 @@ function supportsBackdrop(): boolean {
   }
 }
 
+/** CSS.supports checks syntax, not rendering. All iOS browsers use WebKit. */
+export function supportsSvgBackdrop(userAgent: string, touchMac = false): boolean {
+  return /Chrome|Chromium|Edg\//i.test(userAgent) && !/iPhone|iPad|iPod|FxiOS|Firefox/i.test(userAgent) && !touchMac;
+}
+
 /**
  * Chooses the cheapest material profile that still looks like Scholar.
  * This is a local rendering decision only — nothing is measured or reported.
@@ -64,16 +74,16 @@ function supportsBackdrop(): boolean {
 export function detectGlassRuntime(): GlassRuntimeState {
   if (typeof window === "undefined") return DEFAULT_STATE;
 
-  const reducedMotion = matches("(prefers-reduced-motion: reduce)");
-  const reducedTransparency = matches("(prefers-reduced-transparency: reduce)");
+  const prefs = document.documentElement.dataset;
+  const reducedMotion = matches("(prefers-reduced-motion: reduce)") || prefs.reduceMotion === "true" || prefs.appearanceMotion === "off";
+  const reducedTransparency = matches("(prefers-reduced-transparency: reduce)") || prefs.appearanceGlass === "off" || prefs.highContrast === "true";
   const coarse = matches("(pointer: coarse)");
   const noHover = matches("(hover: none)");
   const compact = window.innerWidth < 768;
   const backdrop = supportsBackdrop();
 
   const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
-  const isFirefox = /firefox|fxios/i.test(ua);
-  const isWebKitOnly = /safari/i.test(ua) && !/chrome|chromium|crios|edg|opr/i.test(ua);
+  const touchMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
   const nav = typeof navigator === "undefined" ? undefined : (navigator as Navigator & { deviceMemory?: number });
   const lowMemory = typeof nav?.deviceMemory === "number" && nav.deviceMemory <= 4;
   const lowCores = typeof navigator !== "undefined" && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
@@ -93,13 +103,17 @@ export function detectGlassRuntime(): GlassRuntimeState {
   // Safari and Firefox do not render SVG filters through backdrop-filter.
   // Scholar never makes usability depend on refraction, so we simply stop
   // asking the compositor to do the work.
-  const refraction = material === "full" && !coarse && !noHover && !isFirefox && !isWebKitOnly && !(lowCores && compact);
+  const lightweight = prefs.appearancePerformance === "performance" || prefs.appearancePerformance === "battery";
+  // One compact lens may refract on capable touch Chromium. Never enable the
+  // desktop pointer-following system on touch or infer performance from UA.
+  const refraction = material !== "fallback" && !lightweight && supportsSvgBackdrop(ua, touchMac) && !(lowCores && lowMemory);
 
   return {
     material,
     refraction,
     pointer: coarse || noHover ? "coarse" : "fine",
     motion: reducedMotion ? "reduced" : "full",
+    quality: lightweight || reducedTransparency ? "lightweight" : material === "reduced" || reducedMotion || prefs.appearancePerformance === "balanced" ? "balanced" : "high",
   };
 }
 
@@ -110,9 +124,11 @@ function applyToDocument(state: GlassRuntimeState): void {
   root.dataset.sgRefraction = state.refraction ? "on" : "off";
   root.dataset.sgPointer = state.pointer;
   root.dataset.sgMotion = state.motion;
+  root.dataset.sgQuality = state.quality;
+  setGlassOpticalBudget(state.refraction, state.quality === "high" ? 6 : state.quality === "balanced" ? (state.pointer === "coarse" ? 1 : 2) : 0);
 
   setGlassPointerMotionAllowed(
-    state.material !== "fallback" && state.pointer === "fine" && state.motion !== "reduced",
+    state.material !== "fallback" && state.quality !== "lightweight" && state.pointer === "fine" && state.motion !== "reduced" && document.documentElement.dataset.appearancePointer !== "off",
   );
 }
 
@@ -128,17 +144,23 @@ export function ScholarGlassProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let frame = 0;
+    let measuredQuality: GlassQuality = "high";
+    let sampleFrame = 0, lastSample = 0, cooldown = 0, samples = 0, slow = 0, badWindows = 0;
 
     const sync = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const next = detectGlassRuntime();
+        const rank = { high: 2, balanced: 1, lightweight: 0 };
+        if (rank[measuredQuality] < rank[next.quality]) next.quality = measuredQuality;
+        if (next.quality === "lightweight") { next.refraction = false; next.material = next.material === "fallback" ? "fallback" : "reduced"; }
         applyToDocument(next);
         setState((previous) =>
           previous.material === next.material &&
           previous.refraction === next.refraction &&
           previous.pointer === next.pointer &&
           previous.motion === next.motion
+          && previous.quality === next.quality
             ? previous
             : next,
         );
@@ -146,6 +168,27 @@ export function ScholarGlassProvider({ children }: { children: ReactNode }) {
     };
 
     sync();
+
+    // A bounded interaction-triggered sample, never an idle/background FPS loop.
+    // Two bad 90-frame windows are required; quality only steps down this mount.
+    const tick = (now: number) => {
+      sampleFrame = 0;
+      if (document.hidden) return;
+      if (lastSample) { samples++; if (now - lastSample > 34) slow++; }
+      lastSample = now;
+      if (samples < 90) { sampleFrame = requestAnimationFrame(tick); return; }
+      badWindows = slow / samples > 0.22 ? badWindows + 1 : 0;
+      const next = nextVelocityQuality(measuredQuality, badWindows);
+      if (next !== measuredQuality) { measuredQuality = next; badWindows = 0; sync(); }
+    };
+    const sample = () => {
+      if (sampleFrame || document.hidden || performance.now() - cooldown < 5000 || measuredQuality === "lightweight") return;
+      cooldown = performance.now(); lastSample = 0; samples = 0; slow = 0;
+      sampleFrame = requestAnimationFrame(tick);
+    };
+    document.addEventListener("pointerdown", sample, { passive: true });
+    const preferences = new MutationObserver(sync);
+    preferences.observe(document.documentElement, { attributes: true, attributeFilter: ["data-reduce-motion", "data-high-contrast", "data-appearance-glass", "data-appearance-motion", "data-appearance-performance", "data-appearance-pointer"] });
 
     const queries = [
       "(prefers-reduced-motion: reduce)",
@@ -176,6 +219,7 @@ export function ScholarGlassProvider({ children }: { children: ReactNode }) {
     // Pause expensive visuals while the tab is hidden.
     const onVisibility = () => {
       document.documentElement.dataset.sgHidden = document.hidden ? "true" : "false";
+      if (document.hidden) { cancelAnimationFrame(sampleFrame); sampleFrame = 0; }
       if (!document.hidden) sync();
     };
     onVisibility();
@@ -183,11 +227,15 @@ export function ScholarGlassProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(sampleFrame);
+      preferences.disconnect();
+      document.removeEventListener("pointerdown", sample);
       window.clearTimeout(resizeTimer);
       mediaListeners.forEach((off) => off());
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
       setGlassPointerMotionAllowed(false);
+      setGlassOpticalBudget(false, 0);
     };
   }, []);
 
@@ -196,6 +244,7 @@ export function ScholarGlassProvider({ children }: { children: ReactNode }) {
   return (
     <GlassContext.Provider value={value}>
       <GlassFilterDefs />
+      <VelocityInteractions />
       {children}
     </GlassContext.Provider>
   );

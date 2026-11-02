@@ -161,8 +161,12 @@ export const GLASS_RADIUS = {
 export const GLASS_PERFORMANCE_BUDGET = {
   /** Maximum Tier 1 surfaces expected on screen at once. */
   maxTier1Surfaces: 6,
-  /** Refraction is desktop/pointer-driven only. */
-  refractionRequiresFinePointer: true,
+  /** Balanced touch Chromium gets one compact optical lens, no pointer loop. */
+  refractionRequiresFinePointer: false,
+  maxBalancedSurfaces: 2,
+  maxTouchSurfaces: 1,
+  maxOpticalArea: 180_000,
+  maxOpticalWidth: 640,
   /** Pointer attraction magnitude cap in CSS pixels. */
   maxPullPx: 9,
 } as const;
