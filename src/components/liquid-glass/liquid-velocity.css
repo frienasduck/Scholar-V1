@@ -27,6 +27,23 @@
 .sg-velocity-dock > button.active { background: none !important; box-shadow: none !important; }
 .sg-velocity-dock > button:active { transform: none; }
 .sg-velocity-dock .sg-velocity-lens { border-radius: 1rem; }
+/* Only horizontal dock gestures are owned here. Page pan/pinch stays native. */
+.sg-velocity-dock, .sg-velocity-dock > button { touch-action: pan-y pinch-zoom; user-select: none; -webkit-user-select: none; }
+.sg-velocity-dock .sg-velocity-lens {
+  scale: var(--sg-drag-scale-x, 1) var(--sg-drag-scale-y, 1);
+  transition: scale 180ms var(--sg-motion-ease);
+}
+.sg-velocity-dock[data-sg-dragging="true"] .sg-velocity-lens { transition: none; }
+.sg-velocity-dock[data-sg-dragging="true"] .sg-velocity-lens::after {
+  background: radial-gradient(ellipse at var(--sg-drag-light, 50%) 0%, rgb(255 255 255 / 38%), transparent 72%);
+}
+.sg-velocity-dock[data-sg-dragging="true"] .sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic {
+  backdrop-filter: url("#sg-refraction-dock") saturate(135%);
+}
+.sg-velocity-dock[data-sg-dragging="true"] > button.active:not([data-dock-preview]) { color: var(--sg-muted-text); }
+.sg-velocity-dock[data-sg-dragging="true"] > button[data-dock-preview] { color: var(--sg-ink-text); }
+html[data-sg-motion="reduced"] .sg-velocity-dock .sg-velocity-lens { transition: none; }
+@media (prefers-reduced-motion: reduce) { .sg-velocity-dock .sg-velocity-lens { transition: none; } }
 .sg-velocity-tabs > [data-slot="tabs-trigger"] { position: relative; z-index: 1; }
 .sg-velocity-tabs > [data-slot="tabs-trigger"][data-state="active"] { background: none; box-shadow: none; border-color: transparent; }
 .sg-velocity-tabs > .sg-velocity-lens { border-radius: inherit; }

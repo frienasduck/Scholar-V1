@@ -14,21 +14,25 @@ export const REFRACTION_PRESETS = {
 export type RefractionPreset = (typeof REFRACTION_PRESETS)[keyof typeof REFRACTION_PRESETS];
 
 /** Small inline SVGs cached once; no canvas, texture updates or frame work. */
-function axisMap(vertical: boolean) {
+function axisMap(vertical: boolean, edge = .035) {
   const colors = vertical ? ["#000000", "#000080", "#0000ff"] : ["#000000", "#800000", "#ff0000"];
-  const gradient = '<linearGradient id="s" x1="0" y1="0" x2="' + (vertical ? 0 : 1) + '" y2="' + (vertical ? 1 : 0) + '"><stop stop-color="' + colors[0] + '"/><stop offset=".035" stop-color="' + colors[1] + '"/><stop offset=".965" stop-color="' + colors[1] + '"/><stop offset="1" stop-color="' + colors[2] + '"/></linearGradient>';
+  const start = String(edge).replace(/^0\./, "."), end = String(1 - edge).replace(/^0\./, ".");
+  const gradient = '<linearGradient id="s" x1="0" y1="0" x2="' + (vertical ? 0 : 1) + '" y2="' + (vertical ? 1 : 0) + '"><stop stop-color="' + colors[0] + '"/><stop offset="' + start + '" stop-color="' + colors[1] + '"/><stop offset="' + end + '" stop-color="' + colors[1] + '"/><stop offset="1" stop-color="' + colors[2] + '"/></linearGradient>';
   return "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><defs>' + gradient + '</defs><rect width="256" height="256" fill="url(#s)"/></svg>');
 }
 const MAP_X = axisMap(false), MAP_Y = axisMap(true);
+// The original 3.5% rim is barely a pixel on a phone-sized lens. This static
+// compact field widens its bend while leaving every existing preset intact.
+const DOCK_MAP_X = axisMap(false, .18), DOCK_MAP_Y = axisMap(true, .18);
 export function displacementMapX() { return MAP_X; }
 export function displacementMapY() { return MAP_Y; }
 
-function RefractionFilter({ preset }: { preset: RefractionPreset }) {
+function RefractionFilter({ preset, compact = false }: { preset: { id: string; displacement: number }; compact?: boolean }) {
   // Explicit object units are essential: feImage percentages otherwise resolve
   // against the zero-size SVG viewport and silently produce an empty field.
   return <filter id={"sg-refraction-" + preset.id} x="0" y="0" width="100%" height="100%" primitiveUnits="objectBoundingBox" colorInterpolationFilters="sRGB">
-    <feImage x="0" y="0" width="1" height="1" href={MAP_X} preserveAspectRatio="none" result="X" />
-    <feImage x="0" y="0" width="1" height="1" href={MAP_Y} preserveAspectRatio="none" result="Y" />
+    <feImage x="0" y="0" width="1" height="1" href={compact ? DOCK_MAP_X : MAP_X} preserveAspectRatio="none" result="X" />
+    <feImage x="0" y="0" width="1" height="1" href={compact ? DOCK_MAP_Y : MAP_Y} preserveAspectRatio="none" result="Y" />
     <feComposite in="X" in2="Y" operator="arithmetic" k2="1" k3="1" result="FIELD" />
     <feDisplacementMap in="SourceGraphic" in2="FIELD" scale={preset.displacement} xChannelSelector="R" yChannelSelector="B" result="BENT" />
     <feComponentTransfer in="BENT">
@@ -37,6 +41,14 @@ function RefractionFilter({ preset }: { preset: RefractionPreset }) {
       <feFuncB type="linear" slope="0.96" intercept="0.018" />
     </feComponentTransfer>
   </filter>;
+}
+
+/** One extra static definition only while the dock is mounted. It does not
+ * register another optical surface or bypass engine/user/budget gates. */
+export function DockRefractionDefs() {
+  return <svg className="sg-filter-defs" aria-hidden="true" focusable="false"><defs>
+    <RefractionFilter preset={{ id: "dock", displacement: .14 }} compact />
+  </defs></svg>;
 }
 
 export function GlassFilterDefs() {

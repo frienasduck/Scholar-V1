@@ -42,16 +42,20 @@ export function useVelocityReveal() {
 }
 
 /** One persistent lens. React selects; Anime owns geometry; no state per frame. */
-export function useNavigationLens(root: RefObject<HTMLElement | null>, selected: string, axis: "x" | "y") {
+export type NavigationLensBox = { x: number; y: number; width: number; height: number };
+export type NavigationLensControl = { track: (box: NavigationLensBox) => void; settle: (target?: HTMLElement) => void };
+
+export function useNavigationLens(root: RefObject<HTMLElement | null>, selected: string, axis: "x" | "y", interactionRef?: RefObject<NavigationLensControl | null>) {
   const lens = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const host = root.current, node = lens.current;
     if (!host || !node) return;
-    let pending = 0, initialized = false;
+    let pending = 0, initialized = false, tracking = false;
     let animation: ReturnType<typeof animate> | undefined;
     const scope = createScope({ root: host });
-    const place = (smooth: boolean) => {
-      const target = host.querySelector<HTMLElement>('[aria-current="page"], [data-state="active"]');
+    const place = (smooth: boolean, override?: HTMLElement) => {
+      if (tracking) return;
+      const target = override ?? host.querySelector<HTMLElement>('[aria-current="page"], [data-state="active"]');
       if (!target) { node.style.opacity = "0"; return; }
       // Complete all geometry reads before writes. Resize/scroll is one RAF.
       const a = host.getBoundingClientRect(), b = target.getBoundingClientRect();
@@ -59,6 +63,7 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
       animation?.cancel();
       node.style.opacity = "1";
       if (!smooth || !initialized || !velocityMotionAllowed()) {
+        node.style.willChange = "";
         Object.assign(node.style, { transform: `translate(${x}px, ${y}px)`, width: `${b.width}px`, height: `${b.height}px` });
       } else {
         node.style.willChange = "transform";
@@ -70,6 +75,17 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
       }
       initialized = true;
     };
+    // The same geometry owner handles direct manipulation and release. A drag
+    // never fights a second transform/CSS-offset animation or updates React.
+    const interaction: NavigationLensControl = {
+      track: ({ x, y, width, height }) => {
+        tracking = true; animation?.cancel();
+        node.style.willChange = "transform";
+        Object.assign(node.style, { opacity: "1", transform: `translate(${x}px, ${y}px)`, width: `${width}px`, height: `${height}px` });
+      },
+      settle: (target) => { tracking = false; place(true, target); },
+    };
+    if (interactionRef) interactionRef.current = interaction;
     const schedule = () => { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => place(false)); };
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
     observer?.observe(host);
@@ -84,9 +100,9 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
     document.addEventListener("visibilitychange", stop);
     const off = registerGlassSurface(node, { elasticity: 0, pointer: false, priority: axis === "x" ? 100 : 80 });
     place(false);
-    return () => { cancelAnimationFrame(pending); animation?.cancel(); scope.revert(); observer?.disconnect(); mutations.disconnect(); preferences.disconnect(); off(); host.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); document.removeEventListener("visibilitychange", stop); node.style.willChange = ""; };
+    return () => { if (interactionRef?.current === interaction) interactionRef.current = null; cancelAnimationFrame(pending); animation?.cancel(); scope.revert(); observer?.disconnect(); mutations.disconnect(); preferences.disconnect(); off(); host.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); document.removeEventListener("visibilitychange", stop); node.style.willChange = ""; };
     // Selection is observed on the stable DOM; this effect must not rebuild the lens on each selection.
-  }, [root, axis]);
+  }, [root, axis, interactionRef]);
   // selected intentionally stays a render-level dependency of the parent only.
   void selected;
   return lens;
