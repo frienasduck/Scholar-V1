@@ -107,7 +107,7 @@ export function PracticeView() {
             <span className="text-white font-semibold text-lg">Question Practice</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <button data-velocity-control="practice"
               onClick={() => setShowPdfReview(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-200 hover:bg-violet-500/25 transition-colors"
               title="Review and edit PDF-imported Physics questions"
@@ -146,7 +146,7 @@ export function PracticeView() {
             const Icon = meta.icon;
             const isActive = activeSubject === s;
             return (
-              <button key={s} onClick={() => { setActiveSubject(s); setActiveChapter(null); }}
+              <button data-velocity-control="practice" key={s} onClick={() => { setActiveSubject(s); setActiveChapter(null); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? "text-white" : "text-white/50 hover:text-white"}`}
                 style={isActive ? { background: `${meta.accent}20`, border: `1px solid ${meta.accent}40` } : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <Icon className="h-4 w-4" style={{ color: meta.accent }} />
@@ -278,13 +278,13 @@ function QuestionList({ subject, chapterId, onBack, filter, setFilter, addXP, pu
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4">
       <div className="aura-glass rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-white/60 hover:text-white">
+        <button data-velocity-control="practice" onClick={onBack} className="flex items-center gap-2 text-sm text-white/60 hover:text-white">
           <ArrowLeft className="h-4 w-4" /> Back to Chapters
         </button>
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
             {(["all", "mcq", "subjective"] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full transition-colors ${filter === f ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "text-white/50 border border-white/10 hover:text-white"}`}>
+              <button data-velocity-control="practice" key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full transition-colors ${filter === f ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "text-white/50 border border-white/10 hover:text-white"}`}>
                 {f === "all" ? "All" : f === "mcq" ? "MCQ" : "Subjective"}
               </button>
             ))}
@@ -370,7 +370,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
       )}
       {!isMCQ && (
         <div className="ml-10 mt-3">
-          <button onClick={() => setShowAnswer(!showAnswer)} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+          <button data-velocity-control="practice" onClick={() => setShowAnswer(!showAnswer)} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors">
             {showAnswer ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{showAnswer ? "Hide Answer" : "Show Answer"}
           </button>
         </div>
@@ -388,7 +388,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
             </div>
           )}
           <div>
-            <button onClick={handleGetAIExplanation} disabled={aiLoading} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors">
+            <button data-velocity-control="practice" onClick={handleGetAIExplanation} disabled={aiLoading} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors">
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}{aiLoading ? "AI explaining…" : "Get AI Explanation"}
             </button>
             {aiExplanation && (

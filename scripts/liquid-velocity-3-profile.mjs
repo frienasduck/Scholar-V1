@@ -1,0 +1,20 @@
+// Quiescent production comparison; no video encoder, screenshots or test suites
+// run alongside this profile. One cold context + three same-context reloads.
+import { chromium } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true}),results=[];
+try{for(const [phase,port] of [['before',3025],['after',3024]]){
+ const context=await browser.newContext({viewport:{width:1440,height:900}});await context.route('**/api/**',r=>r.abort('blockedbyclient'));
+ await context.addInitScript(()=>{const key='neha-scholar-v5',saved=JSON.parse(localStorage.getItem(key)||'{"schema":6,"state":{"authed":false,"guestMode":false}}');saved.state.settings={...saved.state.settings,startupLoadingMode:'quick',elamEnabled:false,mobileLamMode:'off'};localStorage.setItem(key,JSON.stringify(saved));window.__profile={lcp:[],cls:[],long:[],events:[],removedAt:null};for(const type of ['largest-contentful-paint','layout-shift','longtask','event'])try{new PerformanceObserver(list=>{for(const e of list.getEntries()){const s=window.__profile;if(type==='largest-contentful-paint')s.lcp.push(e.startTime);if(type==='layout-shift'&&!e.hadRecentInput)s.cls.push(e.value);if(type==='longtask')s.long.push(e.duration);if(type==='event')s.events.push(e.duration);}}).observe({type,buffered:true,durationThreshold:16});}catch{}let seen=false;new MutationObserver(()=>{if(document.querySelector('.scholar-launch-overlay'))seen=true;else if(seen&&window.__profile.removedAt===null)window.__profile.removedAt=performance.now();}).observe(document,{childList:true,subtree:true});});
+ const page=await context.newPage();page.setDefaultTimeout(30000);
+ async function ready(){await page.waitForFunction(()=>performance.now()>5200||document.querySelector('.scholar-launch-overlay'));await page.waitForFunction(()=>!document.querySelector('.scholar-launch-overlay'));}
+ async function sample(kind){
+  await page.evaluate(()=>{window.__motionFrames=[];window.__motionDone=false;let last=performance.now();const tick=now=>{window.__motionFrames.push(now-last);last=now;if(window.__motionFrames.length<120)requestAnimationFrame(tick);else window.__motionDone=true;};requestAnimationFrame(tick);});
+  if(kind.startsWith('dashboard')){await page.getByRole('button',{name:'Hide sidebar',exact:true}).click();await page.waitForTimeout(350);await page.getByRole('button',{name:'Show sidebar',exact:true}).click();}
+  await page.waitForFunction(()=>window.__motionDone);
+  const data=await page.evaluate(()=>{const frames=window.__motionFrames.sort((a,b)=>a-b),d=window.__profile;return{lcpMs:d.lcp.at(-1),cls:d.cls.reduce((a,b)=>a+b,0),longTasks:d.long.length,longTaskMs:d.long.reduce((a,b)=>a+b,0),eventMaxMs:Math.max(0,...d.events),frameP95Ms:frames[Math.floor(frames.length*.95)],framesOver34:frames.filter(v=>v>34).length,overlayRemovedAtMs:d.removedAt,scriptDecodedBytes:performance.getEntriesByType('resource').filter(r=>r.initiatorType==='script').reduce((sum,r)=>sum+r.decodedBodySize,0)};});results.push({phase,kind,...data});
+ }
+ await page.goto(`http://127.0.0.1:${port}`,{waitUntil:'domcontentloaded'});await ready();await sample('public-cold');await page.getByRole('button',{name:'Continue as Guest',exact:true}).click();await page.locator('#main-scroll').waitFor();await ready();
+ for(let i=0;i<3;i++){await page.goto(`http://127.0.0.1:${port}/dashboard`,{waitUntil:'domcontentloaded'});await ready();await sample('dashboard-warm-'+(i+1));}
+ await context.close();await writeFile('test-artifacts/liquid-velocity-3/quiescent-profile.json',JSON.stringify({browser:browser.version(),viewport:[1440,900],cpuThrottle:1,network:'unthrottled localhost',recording:false,scope:'production builds; all APIs blocked; same source snapshot used for before; diagnostic event maximum is not INP; SVG loader can be absent from LCP candidates',results},null,2));
+}}finally{await browser.close();}console.log(JSON.stringify(results,null,2));

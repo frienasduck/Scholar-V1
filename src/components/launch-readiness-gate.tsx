@@ -24,7 +24,7 @@ import {
   type StartupReadinessResult,
 } from "@/lib/startup/startup-controller";
 import { normaliseStartupMode } from "@/lib/startup/startup-modes";
-import { launchReadinessProgress, WORDMARK_EXIT } from "@/lib/animation/launch-wordmark";
+import { launchReadinessProgress, WORDMARK_EXIT, WORDMARK_FILL_DURATION } from "@/lib/animation/launch-wordmark";
 
 const INITIAL_PROGRESS: StartupReadinessProgress = {
   mode: "long",
@@ -68,6 +68,8 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const mode = repeatVisit ? "quick" : normaliseStartupMode(configuredMode);
   const [visible, setVisible] = useState(true);
   const [gateMounted, setGateMounted] = useState(true);
+  const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const presentationStartedAt = useRef<number | null>(null);
   const [progress, setProgress] = useState<StartupReadinessProgress>({
     ...INITIAL_PROGRESS,
     mode,
@@ -79,6 +81,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   const [profileReady, setProfileReady] = useState(false);
   const readinessReport = useMemo(() => ({ reportShellReady: setShellReady, reportProfileReady: setProfileReady }), []);
   const requiresProfile = session.authenticated && Boolean(session.user);
+  const contentReady = startupSettled && shellReady && (!requiresProfile || profileReady);
   const openNowRef = useRef(false);
   const canOpenNowRef = useRef(false);
   const controllerRef = useRef<AbortController | null>(null);
@@ -147,9 +150,18 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!visible || !startupSettled || !shellReady || (requiresProfile && !profileReady)) return;
+    if (presentationStartedAt.current === null) presentationStartedAt.current = performance.now();
+    const reduced = reduceMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const remaining = reduced ? 0 : Math.max(0, WORDMARK_FILL_DURATION - (performance.now() - presentationStartedAt.current));
+    const timer = window.setTimeout(() => setMinimumElapsed(true), remaining);
+    return () => window.clearTimeout(timer);
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    if (!visible || !startupSettled || !shellReady || (requiresProfile && !profileReady) || !minimumElapsed) return;
     let cancelled = false;
-    // Readiness, never an arbitrary branding duration, authorizes the reveal.
+    // Both real readiness and the explicitly requested five-second reveal are
+    // required. The presentation minimum never substitutes for auth/profile.
     queueMicrotask(() => {
       if (cancelled) return;
       launchShownInDocument = true;
@@ -160,7 +172,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
       reveal();
     });
     return () => { cancelled = true; };
-  }, [visible, startupSettled, shellReady, profileReady, requiresProfile, repeatVisit, reveal]);
+  }, [visible, startupSettled, shellReady, profileReady, requiresProfile, repeatVisit, minimumElapsed, reveal]);
 
   useEffect(() => {
     if (visible) return;
@@ -175,7 +187,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
     if (visible) return;
     // Anime's completion removes the overlay first. This independent, short
     // safety cap still works if an animation callback is interrupted.
-    const timer = window.setTimeout(finishExit, reduceMotion ? 0 : repeatVisit ? WORDMARK_EXIT.repeat + 20 : WORDMARK_EXIT.fallback);
+    const timer = window.setTimeout(finishExit, reduceMotion ? 0 : WORDMARK_EXIT.fallback);
     return () => window.clearTimeout(timer);
   }, [visible, reduceMotion, repeatVisit, finishExit]);
 
@@ -190,7 +202,7 @@ export function LaunchReadinessGate({ children }: { children: ReactNode }) {
         </LaunchContentReadinessContext.Provider>
       </ScholarStartupReadyContext.Provider>
       {gateMounted && (
-        <LaunchSplash overlay visible={visible} repeatVisit={repeatVisit} onExitComplete={finishExit} reducedMotion={reduceMotion} progress={visualProgress} message={message} modeLabel={mode}>
+        <LaunchSplash overlay visible={visible} contentReady={contentReady} repeatVisit={repeatVisit} onExitComplete={finishExit} reducedMotion={reduceMotion} progress={visualProgress} message={message} modeLabel={mode}>
           <div className="scholar-launch-controls">
             {mode !== "quick" && progress.canOpenNow ? <button type="button" onClick={openNow} className="scholar-launch-open">Open now</button> : null}
           </div>

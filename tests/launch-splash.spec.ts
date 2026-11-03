@@ -33,6 +33,16 @@ test("liquid wordmark follows readiness, then fades and releases the prepared pa
   const initial = await path.getAttribute("d"); await page.waitForTimeout(100);
   expect(await path.getAttribute("d")).not.toBe(initial);
   expect(Number(await splash.getAttribute("data-startup-progress"))).toBeLessThan(100);
+  // The real page is ready well before this, but the requested fluid reveal
+  // must continue gradually instead of chasing completed tasks in 520 ms.
+  await page.waitForTimeout(1900);
+  await expect(splash).toBeVisible();
+  const halfway = Number(await splash.getAttribute("data-liquid-fill"));
+  expect(halfway).toBeGreaterThan(.15); expect(halfway).toBeLessThan(.85);
+  await expect(splash).toHaveAttribute("data-content-ready", "true");
+  const started = Number(await splash.getAttribute("data-fill-started-at"));
+  await page.waitForFunction(() => document.querySelector<HTMLElement>(".scholar-launch-overlay")?.dataset.visible === "false");
+  expect(await page.evaluate(time => performance.now() - time, started)).toBeGreaterThanOrEqual(4950);
   await expect(splash).toHaveCount(0, { timeout: 15000 });
   await expect(page.getByRole("button", { name: "Continue as Guest", exact: true })).toBeVisible();
   expect(await page.locator(".scholar-auth-cta").evaluate(el => ({ opacity: getComputedStyle(el).opacity, filter: getComputedStyle(el).filter }))).toEqual({ opacity: "1", filter: "none" });
@@ -54,7 +64,7 @@ test("mobile reduced-motion wordmark stays static and never overflows", async ({
   await expect(splash).toHaveCount(0, { timeout: 15000 });
 });
 
-test("repeat visits use the same static identity without replaying the zoom", async ({ page }) => {
+test("reloads also use the requested five-second liquid reveal, without zoom", async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("scholar:launch-seen:v1", "1"));
   await page.route("**/api/auth/session", async route => {
     await new Promise(resolve => setTimeout(resolve, 1000)); await route.fulfill({ json: { authenticated: false, developerMode: false } });
@@ -62,7 +72,10 @@ test("repeat visits use the same static identity without replaying the zoom", as
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const splash = page.locator(".scholar-launch-overlay");
   await expect(splash).toHaveAttribute("data-startup-repeat", "true");
-  await expect(splash).toHaveAttribute("data-phase", "static");
+  await expect(splash).toHaveAttribute("data-phase", "filling");
+  await page.waitForTimeout(3000);
+  await expect(splash).toBeVisible();
+  expect(Number(await splash.getAttribute("data-liquid-fill"))).toBeLessThan(1);
   await expect(splash).toHaveCount(0, { timeout: 15000 });
 });
 
@@ -102,13 +115,13 @@ test("liquid pauses on a hidden-tab event and stops updating after cleanup", asy
 test("slow session check stays within the branded splash", async ({ page }) => {
   await page.addInitScript(() => localStorage.clear());
   await page.route("**/api/auth/session", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 7000));
     await route.fulfill({ json: { authenticated: false, developerMode: false } });
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const splash = page.locator(".scholar-launch-overlay");
   await expect(splash).toBeVisible();
-  await page.waitForTimeout(2200);
+  await page.waitForTimeout(5500);
   await expect(splash).toBeVisible();
   await expect(splash).toContainText("Checking your Scholar session");
   await expect(splash).toBeHidden({ timeout: 15_000 });
@@ -132,13 +145,13 @@ test("slow personalization load stays within the branded splash", async ({ page 
     access: { plan: "FREE", source: "free", entitlementsLoaded: true, entitlements: [] },
   } }));
   await page.route("**/api/personalization", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 7000));
     await route.fulfill({ json: { required: false, status: "SKIPPED", stage: 0, revision: 0, preferences: DEFAULT_PREFERENCES, result: null, bonus: { total: 0, used: 0, closed: true }, jobStartedAt: null } });
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const splash = page.locator(".scholar-launch-overlay");
   await expect(splash).toBeVisible();
-  await page.waitForTimeout(2200);
+  await page.waitForTimeout(5500);
   await expect(splash).toBeVisible();
   await expect(splash).toContainText("Opening your Scholar");
   await expect(splash).toBeHidden({ timeout: 15_000 });

@@ -48,8 +48,7 @@
 }
 .scholar-launch[data-visible="false"] { pointer-events: none !important; }
 .scholar-launch[data-phase="done"] { opacity: 0; }
-.scholar-launch-reduced [data-liquid-carrier],
-.scholar-launch[data-startup-repeat="true"] [data-liquid-carrier] { transform: translateY(24px); }
+.scholar-launch-reduced [data-liquid-carrier] { transform: translateY(24px); }
 @media (max-width: 600px) {
   .scholar-launch-wordmark-wrap { width: 81%; }
   .scholar-launch-status { top: calc(85% + 7px); right: 8%; max-width: 90%; font-size: 11px; }

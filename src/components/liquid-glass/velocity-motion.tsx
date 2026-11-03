@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type ReactNode, type RefObject, type Ref } from "react";
-import { animate, createScope, createTimeline, stagger } from "animejs";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject, type Ref } from "react";
+import { animate, createScope, createTimeline, spring, stagger } from "animejs";
 import { waapi } from "animejs/waapi";
-import { velocityMotionAllowed, VELOCITY_TIMING } from "@/lib/animation/velocity-policy";
+import { velocityMotionAllowed, VELOCITY_TIMING, VELOCITY_CONTROL_SELECTOR } from "@/lib/animation/velocity-policy";
 import { registerGlassSurface } from "./glass-runtime";
 
 function observeMotionStop(revert: () => void, kind: "page" | "panel") {
@@ -96,6 +96,35 @@ export function NavigationLens({ lensRef, axis }: { lensRef: RefObject<HTMLSpanE
   return <span ref={lensRef} className="sg-velocity-lens" data-axis={axis} aria-hidden="true"><span className="sg-velocity-lens-optic" /></span>;
 }
 
+/** Anime alone owns sidebar width; the rail stays mounted so selection and
+ * keyboard focus survive collapse. No app-wide FLIP measurements are needed. */
+export function VelocitySidebar({ expanded, reduced, children }: { expanded: boolean; reduced: boolean; children: ReactNode }) {
+  const root = useRef<HTMLElement>(null);
+  const [initialWidth] = useState(expanded ? 256 : 76);
+  const mounted = useRef(false);
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    const width = expanded ? 256 : 76;
+    const scope = createScope({ root: node });
+    const immediate = () => { scope.revert(); node.style.width = `${width}px`; node.style.willChange = ""; };
+    if (!mounted.current || reduced || !velocityMotionAllowed("panel")) immediate();
+    else {
+      node.style.willChange = "width";
+      scope.execute(() => animate(node, { width, duration: 300, ease: "out(3)", onComplete: () => { node.style.willChange = ""; } }));
+    }
+    mounted.current = true;
+    const off = observeMotionStop(immediate, "panel");
+    return () => {
+      const currentWidth = node.getBoundingClientRect().width;
+      off(); scope.revert(); node.style.width = `${currentWidth}px`; node.style.willChange = "";
+    };
+  }, [expanded, reduced]);
+  return <aside ref={root} id="scholar-desktop-navigation" data-sg-chrome="sidebar" data-sidebar-expanded={expanded}
+    className="scholar-desktop-sidebar sg-navigation-shell hidden lg:flex shrink-0 flex-col sticky top-0 h-dvh overflow-hidden z-30 relative"
+    style={{ width: initialWidth }}>{children}</aside>;
+}
+
 /** Content is never held for an exit animation or hidden until an observer fires. */
 export function VelocityPage({ children, className, enabled = true }: { children: ReactNode; className?: string; enabled?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -120,7 +149,7 @@ export function useVelocityPanel(forwardedRef?: Ref<HTMLDivElement>) {
     if (!node || !velocityMotionAllowed("panel")) return releaseRef;
     const scope = createScope({ root: node }).add(() => {
       // Individual translate/scale preserve Radix's positional transform.
-      const entry = waapi.animate(node, { opacity: [0.6, 1], scale: [0.985, 1], duration: VELOCITY_TIMING.panel, ease: "out(3)" });
+      const entry = waapi.animate(node, { opacity: [0.6, 1], scale: [0.965, 1], duration: VELOCITY_TIMING.panel, ease: "out(3)" });
       const items = [...node.querySelectorAll<HTMLElement>('[role="menuitem"], [data-slot="dialog-header"]')].slice(0, 8);
       if (items.length) animate(items, { opacity: [0.7, 1], duration: 130, delay: stagger(12) });
       return () => entry.revert();
@@ -140,32 +169,39 @@ export function VelocityInteractions() {
     let pressed: HTMLElement | null = null;
     const cancel = (node: HTMLElement) => { running.get(node)?.revert(); running.delete(node); node.style.willChange = ""; };
     const reset = () => { pressed = null; [...running.keys()].forEach(cancel); };
-    const down = (event: PointerEvent) => {
+    const targetControl = (target: EventTarget | null) => {
+      const node = target instanceof Element ? target.closest<HTMLElement>(VELOCITY_CONTROL_SELECTOR) : null;
+      return !node || node.matches(':disabled, [aria-disabled="true"], [aria-busy="true"]') || node.closest('[data-velocity-press="off"], [inert]') ? null : node;
+    };
+    const press = (node: HTMLElement | null) => {
       reset();
-      if (!event.isPrimary || event.button !== 0 || !velocityMotionAllowed()) return;
-      const node = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-slot="button"], .sg-button, .scholar-bottom-nav button') : null;
-      if (!node || node.matches(':disabled, [aria-disabled="true"]') || node.closest('[data-velocity-press="off"]')) return;
+      if (!node || !velocityMotionAllowed()) return;
       pressed = node;
-      const instance = waapi.animate(node, { scale: 0.97, duration: VELOCITY_TIMING.press, ease: "out(2)" });
+      const instance = waapi.animate(node, { scale: 0.965, duration: VELOCITY_TIMING.press, ease: "out(2)" });
       running.set(node, instance);
     };
+    const down = (event: PointerEvent) => { if (event.isPrimary && event.button === 0) press(targetControl(event.target)); };
     const up = () => {
       const node = pressed; pressed = null;
       if (!node) return;
       cancel(node);
       if (!node.isConnected || !velocityMotionAllowed()) return;
-      const instance = waapi.animate(node, { scale: [0.97, 1], duration: VELOCITY_TIMING.release, ease: "out(4)", onComplete: () => { if (running.get(node) === instance) cancel(node); } });
+      const instance = waapi.animate(node, { scale: [0.965, 1], ease: spring({ bounce: 0.08, duration: VELOCITY_TIMING.release }), onComplete: () => { if (running.get(node) === instance) cancel(node); } });
       running.set(node, instance);
     };
+    const keydown = (event: KeyboardEvent) => { if (!event.repeat && (event.key === " " || event.key === "Enter")) press(targetControl(event.target)); };
+    const keyup = (event: KeyboardEvent) => { if (event.key === " " || event.key === "Enter") up(); };
     const preferences = new MutationObserver(() => { if (!velocityMotionAllowed()) reset(); });
     preferences.observe(document.documentElement, { attributes: true, attributeFilter: ["data-sg-motion", "data-reduce-motion", "data-appearance-motion"] });
     document.addEventListener("pointerdown", down, { passive: true });
     document.addEventListener("pointerup", up, { passive: true });
     document.addEventListener("pointercancel", reset, { passive: true });
+    document.addEventListener("keydown", keydown);
+    document.addEventListener("keyup", keyup);
     document.addEventListener("visibilitychange", reset);
     window.addEventListener("blur", reset);
     window.addEventListener("scholar:motion-boundary", reset);
-    return () => { reset(); preferences.disconnect(); document.removeEventListener("pointerdown", down); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", reset); document.removeEventListener("visibilitychange", reset); window.removeEventListener("blur", reset); window.removeEventListener("scholar:motion-boundary", reset); };
+    return () => { reset(); preferences.disconnect(); document.removeEventListener("pointerdown", down); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", reset); document.removeEventListener("keydown", keydown); document.removeEventListener("keyup", keyup); document.removeEventListener("visibilitychange", reset); window.removeEventListener("blur", reset); window.removeEventListener("scholar:motion-boundary", reset); };
   }, []);
   return null;
 }

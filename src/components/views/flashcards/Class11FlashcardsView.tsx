@@ -548,7 +548,7 @@ export function Class11FlashcardsView() {
 
 function RevisionModeButton({ icon, label, desc, color, onClick }: { icon: React.ReactNode; label: string; desc: string; color: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="group flex flex-col items-start gap-1 p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all hover:-translate-y-0.5 text-left" style={{ boxShadow: `inset 0 -2px 0 0 ${color}` }}>
+    <button data-velocity-control="revision" onClick={onClick} className="group flex flex-col items-start gap-1 p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all hover:-translate-y-0.5 text-left" style={{ boxShadow: `inset 0 -2px 0 0 ${color}` }}>
       <div className="flex items-center gap-2 text-sm font-medium text-white">
         <span style={{ color }}>{icon}</span>
         {label}

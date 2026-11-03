@@ -250,6 +250,8 @@ export function NotesView() {
 
           {/* Right: New Note button */}
           <button
+            type="button"
+            data-velocity-control="primary"
             onClick={handleNewNote}
             className="mindloop-glass rounded-full px-5 py-2 text-sm text-white mindloop-font-sans font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5"
           >
@@ -480,6 +482,8 @@ export function NotesView() {
                       Pick a note from the list, or create a new one to start writing.
                     </p>
                     <button
+                      type="button"
+                      data-velocity-control="primary"
                       onClick={handleNewNote}
                       className="mindloop-glass rounded-full px-5 py-2 text-sm text-white inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
                     >
@@ -956,6 +960,9 @@ function Editor({
 function ToolbarBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
   return (
     <button
+      type="button"
+      data-velocity-control="toolbar"
+      aria-label={title}
       onClick={onClick}
       title={title}
       className="mindloop-glass grid place-items-center h-8 w-8 rounded-lg text-white/70 hover:text-white transition-colors"

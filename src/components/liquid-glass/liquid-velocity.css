@@ -68,3 +68,138 @@ html[data-appearance-theme="light"] .sg-velocity-lens { background: linear-gradi
 @media (prefers-reduced-motion: reduce) { [data-slot="tabs-content"] { animation: none; } .sg-velocity-lens-optic { transition: none; translate: none; } }
 @media (pointer: coarse) { [data-slot="button"], [data-slot="select-trigger"], [data-slot="dropdown-menu-item"] { min-height: 44px; } }
 @media (prefers-contrast: more) { .sg-velocity-lens { border: 2px solid currentColor; background: color-mix(in srgb, var(--primary) 22%, var(--sg-plate-ink)); } }
+
+/* Velocity 3: the WHOLE navigation plane, not an opaque column surrounding a
+   single pill. Static environmental reflections; no cloned scene or idle loop.
+   Large shell = Tier 2. Only its compact persistent lens runs displacement. */
+:root {
+  --sg-nav-tint: rgb(23 35 48 / 66%);
+  --sg-nav-edge: rgb(214 240 255 / 30%);
+  --sg-control-edge: rgb(219 239 252 / 24%);
+}
+.scholar-desktop-sidebar.sg-navigation-shell,
+[data-slot="sheet-content"][data-sg-chrome="sidebar"] {
+  isolation: isolate;
+  background-color: var(--sg-nav-tint) !important;
+  background-image:
+    radial-gradient(ellipse at 0% 2%, rgb(197 229 248 / 24%), transparent 46%),
+    linear-gradient(112deg, rgb(219 240 255 / 13%), transparent 28%, transparent 74%, rgb(208 234 248 / 9%)),
+    radial-gradient(ellipse at 100% 94%, rgb(122 187 205 / 14%), transparent 55%) !important;
+  border: 1px solid var(--sg-nav-edge);
+  border-left: 0;
+  border-radius: 0 25px 25px 0;
+  box-shadow: inset -1px 0 1px rgb(240 251 255 / 30%), inset 0 1px 0 rgb(255 255 255 / 24%), 12px 0 38px -24px rgb(0 0 0 / 75%);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+}
+.sg-navigation-shell::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(165deg, rgb(255 255 255 / 8%), transparent 24%, transparent 75%, rgb(177 225 244 / 6%));
+  box-shadow: inset -5px 0 10px -9px white;
+}
+.sg-navigation-header { position: relative; border-bottom: 1px solid rgb(221 241 255 / 15%); background: linear-gradient(145deg, rgb(255 255 255 / 9%), transparent); }
+.sg-navigation-brand { flex-shrink: 0; color: #e0f5ff; border: 1px solid rgb(221 244 255 / 42%); background: linear-gradient(145deg, rgb(213 242 255 / 29%), rgb(95 155 183 / 16%)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 48%), 0 3px 8px rgb(0 0 0 / 20%); }
+.sg-navigation-shell .scholar-sidebar-title { min-width: 0; white-space: nowrap; transition: opacity 140ms ease; }
+.sg-navigation-shell .scholar-nav-section { color: rgb(205 229 244 / 64%); letter-spacing: .16em; }
+[data-velocity-nav] .scholar-nav-item { color: rgb(216 232 244 / 78%); min-height: 40px; border: 1px solid transparent; }
+[data-velocity-nav] .scholar-nav-item:hover { color: var(--sg-ink-text); background: linear-gradient(105deg, rgb(233 249 255 / 13%), rgb(233 249 255 / 3%)); border-color: rgb(231 247 255 / 13%); }
+[data-velocity-nav] .scholar-nav-item[aria-current="page"] { color: var(--sg-ink-text); background: transparent; }
+.sg-velocity-lens { border-color: rgb(221 247 255 / 55%); background: linear-gradient(125deg, rgb(235 249 255 / 34%), rgb(180 217 239 / 14%) 42%, rgb(210 238 255 / 8%) 75%, rgb(240 250 255 / 20%)); box-shadow: inset 0 1px 1px rgb(255 255 255 / 65%), inset 1px 0 1px rgb(255 255 255 / 28%), inset 0 -1px 0 rgb(170 217 246 / 27%), 0 6px 12px -7px rgb(0 0 0 / 55%); }
+.sg-navigation-shell[data-sidebar-expanded="false"] .scholar-sidebar-title { opacity: 0; pointer-events: none; }
+.sg-navigation-shell[data-sidebar-expanded="false"] .sg-navigation-header { padding-inline: 19px; }
+.sg-navigation-shell[data-sidebar-expanded="false"] .scholar-nav-label,
+.sg-navigation-shell[data-sidebar-expanded="false"] .scholar-nav-badge,
+.sg-navigation-shell[data-sidebar-expanded="false"] .scholar-nav-section,
+.sg-navigation-shell[data-sidebar-expanded="false"] [data-velocity-control="navigation"] > span:not(.scholar-nav-icon) { display: none; }
+.sg-navigation-shell[data-sidebar-expanded="false"] [data-velocity-nav] { gap: 20px; padding-inline: 10px; }
+.sg-navigation-shell[data-sidebar-expanded="false"] [data-velocity-control="navigation"] { justify-content: center; padding-inline: 10px; min-height: 44px; }
+.sg-navigation-shell[data-sidebar-expanded="false"] .scholar-nav-icon { width: 20px; height: 20px; }
+html[data-appearance-theme="light"] { --sg-nav-tint: rgb(238 247 252 / 76%); --sg-nav-edge: rgb(55 90 116 / 26%); --sg-control-edge: rgb(55 90 116 / 22%); }
+html[data-appearance-theme="light"] [data-velocity-nav] .scholar-nav-item { color: #354d62; }
+html[data-appearance-theme="light"] .sg-navigation-shell .scholar-nav-section { color: #536b7d; }
+html[data-appearance-theme="light"] .sg-navigation-brand { color: #214d6b; }
+html[data-sg-material="fallback"] .sg-navigation-shell { background-color: var(--sg-plate-ink) !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
+@media (prefers-reduced-motion: reduce) { .sg-navigation-shell .scholar-sidebar-title { transition: none; } }
+@media (forced-colors: active) { .sg-navigation-shell, .sg-velocity-lens { background: Canvas !important; border: 1px solid ButtonText; box-shadow: none; } }
+
+/* A floating, readable dock. The shell is a single cheap blur; only the compact
+   lens may receive the runtime's one-surface touch optical budget. */
+.scholar-bottom-nav.sg-velocity-dock[data-sg-chrome] {
+  border-color: rgb(226 245 255 / 42%) !important;
+  background-color: rgb(28 43 57 / 73%) !important;
+  background-image: linear-gradient(135deg, rgb(224 244 255 / 22%), transparent 48%, rgb(187 219 235 / 11%)) !important;
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 48%), inset 0 -1px 0 rgb(211 237 252 / 15%), 0 9px 28px -9px rgb(0 0 0 / 65%) !important;
+}
+.sg-velocity-dock > button:not(.active) { color: #c2d2e0; }
+.sg-velocity-dock > button.active { color: #f4fbff; }
+.sg-velocity-dock > button:focus-visible { outline-offset: -3px; }
+html[data-appearance-theme="light"] .scholar-bottom-nav.sg-velocity-dock { background-color: rgb(240 247 252 / 88%) !important; }
+html[data-appearance-theme="light"] .sg-velocity-dock > button { color: #304e65; }
+html[data-sg-material="fallback"] .scholar-bottom-nav.sg-velocity-dock { background-color: var(--sg-plate-ink) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html[data-sg-quality="lightweight"] .scholar-bottom-nav.sg-velocity-dock { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* Explicit shared control vocabulary. No broad selector for all native buttons
+   and no per-button filter/observer. Destructive/link semantics stay intact. */
+.sg-action { border-radius: 12px; touch-action: manipulation; }
+.sg-action--default {
+  border: 1px solid rgb(198 237 255 / 48%); color: #effaff;
+  background-color: #274754;
+  background-image: linear-gradient(145deg, rgb(199 235 255 / 30%), transparent 58%, rgb(215 248 255 / 9%));
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 48%), inset 0 -1px 0 rgb(10 34 52 / 40%), 0 5px 12px -6px rgb(0 0 0 / 55%);
+}
+.mindloop-glass[data-velocity-control="primary"] {
+  border: 1px solid rgb(198 237 255 / 48%); color: #effaff;
+  background: linear-gradient(145deg, rgb(199 235 255 / 30%), transparent 58%), #274754;
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 48%), 0 5px 12px -6px rgb(0 0 0 / 55%);
+}
+.sg-action--outline, .sg-action--secondary {
+  border: 1px solid var(--sg-control-edge); color: var(--sg-ink-text);
+  background-color: color-mix(in srgb, var(--sg-plate-ink) 74%, transparent);
+  background-image: linear-gradient(145deg, rgb(220 241 255 / 13%), transparent 65%);
+  box-shadow: inset 0 1px 0 rgb(240 250 255 / 18%), 0 3px 7px -5px rgb(0 0 0 / 50%);
+}
+.sg-action:not(:disabled):not(.sg-action--link):hover { border-color: color-mix(in srgb, var(--sg-control-edge) 40%, white); box-shadow: inset 0 1px 1px rgb(255 255 255 / 38%), 0 4px 12px -6px rgb(0 0 0 / 45%); }
+.sg-action--ghost:not(:disabled):hover { background-color: rgb(210 236 252 / 11%); }
+.sg-action:disabled, [data-velocity-control]:disabled { opacity: .42; cursor: not-allowed; }
+[data-velocity-control]:focus-visible, .ccc-primary:focus-visible, .ccc-secondary:focus-visible, .er-root button:focus-visible, .eb-reader-tools > button:focus-visible { outline: 2px solid var(--scholar-focus, #67e8f9); outline-offset: 3px; }
+[data-velocity-control="toolbar"], .eb-reader-tools > button { border: 1px solid var(--sg-control-edge); background-image: linear-gradient(145deg, rgb(219 241 255 / 13%), transparent); box-shadow: inset 0 1px 0 rgb(255 255 255 / 17%); }
+.eb-reader-tools > button { min-height: 36px; min-width: 36px; }
+html[data-appearance-theme="light"] .sg-action--default { background-color: #315e73; }
+
+/* Portal surfaces have a stable readable plate. No displacement on dialog text.
+   Anime owns opening opacity/individual scale; Radix owns placement/focus. */
+[data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"] {
+  border-color: var(--sg-control-edge);
+  background-color: color-mix(in srgb, var(--sg-plate-ink) 88%, transparent) !important;
+  background-image: linear-gradient(145deg, rgb(220 241 255 / 15%), transparent 45%);
+  backdrop-filter: blur(14px) saturate(125%); -webkit-backdrop-filter: blur(14px) saturate(125%);
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 28%), 0 18px 50px -22px rgb(0 0 0 / 75%);
+}
+.sg-velocity-tabs { border-color: var(--sg-control-edge); background-image: linear-gradient(145deg, rgb(217 237 252 / 12%), transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%); }
+.scholar-top-search:focus-visible { box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 0 0 3px rgb(139 211 247 / 24%); }
+
+/* Repeated panels are paint-only glass. A toolbar/menu gets the blur, not every
+   card or question. These named existing families were inspected individually. */
+.sg-workspace-panel[data-slot="card"], .scholar-dashboard .dash-glass, .scholar-dashboard .dash-glass-strong,
+.er-root.er-v4 .er-plate, .ccc-card.ccc-glass, .ccc-metric.ccc-glass {
+  border-color: var(--sg-control-edge);
+  background-image: linear-gradient(145deg, rgb(209 236 253 / 11%), transparent 47%, rgb(180 216 239 / 3%));
+  box-shadow: inset 0 1px 0 rgb(239 251 255 / 22%), inset 0 -1px 0 rgb(0 0 0 / 18%), 0 9px 25px -18px rgb(0 0 0 / 55%);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.er-root :is(.er-primary, .er-secondary-toolbar, .er-icon-button),
+.ccc-primary, .ccc-secondary, .ccc-mode-arrow { box-shadow: inset 0 1px 0 rgb(231 249 255 / 26%), 0 3px 9px -6px rgb(0 0 0 / 55%); border-color: var(--sg-control-edge); }
+.er-root .er-primary, .ccc-primary { background-image: linear-gradient(145deg, rgb(221 241 255 / 22%), transparent 60%); }
+.scholar-ebook .eb-reader-topbar, .lam-mini-composer { border-color: var(--sg-control-edge); background-image: linear-gradient(145deg, rgb(207 238 255 / 13%), transparent 60%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%); }
+.lam-mini-composer > button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 1px; }
+@media (pointer: coarse) { .eb-reader-tools > button, [data-velocity-control="toolbar"] { min-height: 44px; min-width: 44px; } }
+@media (prefers-reduced-transparency: reduce) { .sg-navigation-shell, .scholar-bottom-nav.sg-velocity-dock, [data-slot="dialog-content"], [data-slot="dropdown-menu-content"] { background-color: var(--sg-plate-ink) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; } }
+@media (prefers-contrast: more) { .sg-action, [data-velocity-control], .sg-navigation-shell { border-color: currentColor; } }
+@media (forced-colors: active) { .sg-action, [data-velocity-control], .scholar-bottom-nav.sg-velocity-dock { color: ButtonText !important; background: ButtonFace !important; border: 1px solid ButtonText; box-shadow: none !important; } }
+/* Explicit Anime press ownership replaces legacy CSS squash on these audited
+   Exam controls only; Framer choices and assessment options are not opted in. */
+.er-root button[data-velocity-control]:active { transform: none; }
+html[data-sg-motion="reduced"] .sg-navigation-shell .scholar-sidebar-title { transition: none; }
+html[data-sg-material="fallback"] :is(.sg-action--outline,.sg-action--secondary,.sg-workspace-panel,[data-slot="dialog-content"],[data-slot="dropdown-menu-content"]) { background-color: var(--sg-plate-ink) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }

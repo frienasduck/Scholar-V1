@@ -96,7 +96,7 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
 import { SectionShutdown } from "@/components/section-shutdown";
 import { getSectionShutdown } from "@/lib/section-availability";
-import { NavigationLens, useNavigationLens, VelocityPage } from "@/components/liquid-glass/velocity-motion";
+import { NavigationLens, useNavigationLens, VelocityPage, VelocitySidebar } from "@/components/liquid-glass/velocity-motion";
 import { MobileLiquidDock } from "@/components/liquid-glass/mobile-liquid-dock";
 import { useGlassRuntime } from "@/components/liquid-glass/liquid-glass-provider";
 
@@ -238,6 +238,10 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                 return (
                   <button
                     key={item.id}
+                    type="button"
+                    title={item.label}
+                    aria-label={item.label}
+                    data-velocity-control="navigation"
                     onClick={() =>
                       openScholarPlus({
                         source: PLUS_SOURCE_BY_NAV[item.id] ?? "nav",
@@ -258,6 +262,9 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                 <button
                   key={item.id}
                   type="button"
+                  title={item.label}
+                  aria-label={item.label}
+                  data-velocity-control="navigation"
                   aria-current={isActive ? "page" : undefined}
                   onClick={() => {
                     markBackgroundTasksViewed(item.id);
@@ -317,7 +324,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
           <Button id="scholar-mobile-menu" variant="ghost" size="icon" className="size-11 shrink-0 lg:hidden" onClick={onOpenMobile} aria-label="Open navigation menu" aria-haspopup="dialog">
             <Menu className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden lg:flex" onClick={onToggleSidebar} aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
+          <Button variant="ghost" size="icon" className="hidden lg:flex" onClick={onToggleSidebar} aria-expanded={sidebarOpen} aria-controls="scholar-desktop-navigation" aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}>
             <PanelLeftClose className={`h-5 w-5 transition-transform ${sidebarOpen ? "" : "rotate-180"}`} />
           </Button>
 
@@ -488,7 +495,6 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [guestBannerVisible, setGuestBannerVisible] = useState(guestMode);
-  const [sidebarInteracted, setSidebarInteracted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     // Persist sidebar open/closed state across reloads. Default to open on desktop.
     if (typeof window === "undefined") return false;
@@ -767,18 +773,9 @@ export function AppShell() {
       <div className="sg-environment" aria-hidden="true" />
       <a href="#main-scroll" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[11000] focus:rounded-xl focus:bg-background focus:p-3">Skip to study content</a>
       {/* Desktop sidebar */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.aside
-            initial={sidebarInteracted && !shellReduceMotion ? { width: 0, opacity: 0 } : false}
-            animate={{ width: 256, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: shellReduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
-            data-sg-chrome="sidebar"
-            className="scholar-desktop-sidebar hidden lg:flex shrink-0 flex-col border-r border-border/60 sticky top-0 h-screen overflow-hidden z-30 relative"
-          >
-            <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border/60 shrink-0">
-              <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
+      <VelocitySidebar expanded={sidebarOpen} reduced={shellReduceMotion}>
+            <div className="sg-navigation-header h-16 flex items-center gap-2.5 px-5 shrink-0">
+              <div className="sg-navigation-brand grid place-items-center h-9 w-9 rounded-xl text-white">
                 <GraduationCap className="h-5 w-5" />
               </div>
               <div className="scholar-sidebar-title">
@@ -789,9 +786,7 @@ export function AppShell() {
             <div className="flex-1 overflow-y-auto no-scrollbar">
               <NavList active={active} onNavigate={navigate} badges={badges} selectionId="desktop" />
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+      </VelocitySidebar>
 
       {/* Mobile sidebar */}
       <Sheet open={mobileOpen} onOpenChange={(open) => {
@@ -817,7 +812,7 @@ export function AppShell() {
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full bg-transparent">
-        <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => { setSidebarInteracted(true); setSidebarOpen((o) => !o); }} sidebarOpen={sidebarOpen} />
+        <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
         <AnimatePresence initial={false}>
           {guestMode && guestBannerVisible ? (
             <motion.section

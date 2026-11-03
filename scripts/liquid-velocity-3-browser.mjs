@@ -1,0 +1,63 @@
+// Actual local UI only. No account setup, private data, AI calls or API success fixtures.
+import { chromium, expect } from '@playwright/test';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
+const phase=process.argv[2]||'before',base=process.env.SCHOLAR_QA_URL||'http://127.0.0.1:3020';
+if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))throw Error('Localhost only');
+const out=`test-artifacts/liquid-velocity-3/${phase}`;await mkdir(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true});
+const errors=[],consoleErrors=[],checks=[],clips=[];let origin=0;
+const tail=process.argv.includes('--tail');
+async function fixture(options={}){
+ const context=await browser.newContext({viewport:{width:1440,height:900},...options});
+ await context.route('**/api/**',route=>route.abort('blockedbyclient'));
+ await context.addInitScript(()=>{const key='neha-scholar-v5',saved=JSON.parse(localStorage.getItem(key)||'{"schema":6,"state":{"authed":false,"guestMode":false}}');saved.state.settings={...saved.state.settings,startupLoadingMode:'quick',elamEnabled:false,mobileLamMode:'off'};localStorage.setItem(key,JSON.stringify(saved));
+ window.__lv3={lcp:[],shifts:[],long:[],events:[]};for(const type of ['largest-contentful-paint','layout-shift','longtask','event'])try{new PerformanceObserver(list=>{for(const e of list.getEntries()){const d=window.__lv3;if(type==='largest-contentful-paint')d.lcp.push(e.startTime);if(type==='layout-shift'&&!e.hadRecentInput)d.shifts.push(e.value);if(type==='longtask')d.long.push(e.duration);if(type==='event')d.events.push(e.duration);}}).observe({type,buffered:true,durationThreshold:16});}catch{}
+ });
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('net::ERR_BLOCKED_BY_CLIENT'))consoleErrors.push(m.text());});return{context,page};
+}
+async function ready(page){await page.waitForFunction(()=>performance.now()>5200||document.querySelector('.scholar-launch-overlay'),{timeout:15000});await expect(page.locator('.scholar-launch-overlay')).toHaveCount(0,{timeout:25000});}
+async function stats(page){return page.evaluate(async()=>{const frames=[];let last=performance.now();await new Promise(resolve=>{const tick=now=>{frames.push(now-last);last=now;if(frames.length<90)requestAnimationFrame(tick);else resolve();};requestAnimationFrame(tick);});frames.sort((a,b)=>a-b);const d=window.__lv3;return{lcpMs:d.lcp.at(-1),cls:d.shifts.reduce((a,b)=>a+b,0),longTasks:d.long.length,longTaskMs:d.long.reduce((a,b)=>a+b,0),eventMaxMs:Math.max(0,...d.events),frameP95Ms:frames[Math.floor(frames.length*.95)],framesOver34:frames.filter(v=>v>34).length,domNodes:document.querySelectorAll('*').length,optics:document.querySelectorAll('[data-sg-optics="active"]').length,flags:{...document.documentElement.dataset}};});}
+async function snap(page,name){if(['dialog','dropdown','tabs'].includes(name))await page.waitForTimeout(250);await page.screenshot({path:`${out}/${name}.png`});}
+async function routeTo(page,id){await page.evaluate(viewId=>window.dispatchEvent(new CustomEvent('neha-scholar:navigate',{detail:{viewId}})),id);await page.locator(`#main-scroll[data-active-view="${id}"]`).waitFor();await page.waitForTimeout(400);}
+async function nav(page,title){const button=page.locator('[data-velocity-nav="desktop"] .scholar-nav-item').filter({hasText:title}).first();await button.click();await page.waitForTimeout(480);}
+async function mark(name,fn){const start=(Date.now()-origin)/1000;await fn();clips.push({name,start,end:(Date.now()-origin)/1000});}
+let result={phase,base,browser:browser.version(),scope:'actual local production UI; all APIs blocked; Guest-only disposable contexts; no hardware certification',clips,checks,errors,consoleErrors};
+try{
+ const {context,page}=await fixture({recordVideo:{dir:out,size:{width:1440,height:900}}});origin=Date.now();
+ if(tail){const previous=JSON.parse(await readFile(out+'/results.json','utf8'));Object.assign(result,{cold:previous.cold,publicWarm:previous.publicWarm,guest:previous.guest,baselineRouteChecks:previous.checks,baselineHarnessFailure:previous.failure});}
+ await page.goto(base,{waitUntil:'domcontentloaded'});await ready(page);if(!tail){result.cold=await stats(page);await snap(page,'homepage');await page.reload({waitUntil:'domcontentloaded'});await ready(page);result.publicWarm=await stats(page);}
+ await page.getByRole('button',{name:'Continue as Guest',exact:true}).click();await page.locator('#main-scroll').waitFor();await page.waitForTimeout(700);if(!tail){result.guest=await stats(page);await snap(page,'dashboard');}
+ if(!tail){
+ await mark('sidebar',async()=>{
+  for(const title of ['Dashboard','Group Study','Scholar Intelligence','Chapter Command Center','Notes','Dashboard']){await nav(page,title);await page.waitForTimeout(180);}
+  await page.locator('.scholar-desktop-sidebar').screenshot({path:`out.png`.replace('out.png',`${out}/sidebar.png`)});
+  await page.locator('[data-velocity-nav="desktop"] [aria-current="page"]').screenshot({path:`${out}/active-item.png`});
+  await page.getByRole('button',{name:'Hide sidebar',exact:true}).click();await page.waitForTimeout(400);await snap(page,'sidebar-collapsed');
+  await page.getByRole('button',{name:'Show sidebar',exact:true}).click();await page.waitForTimeout(400);
+  const navRoot=page.locator('[data-velocity-nav="desktop"]');await navRoot.getByRole('button',{name:'Notes',exact:true}).hover().catch(()=>navRoot.locator('.scholar-nav-item').filter({hasText:'Notes'}).first().hover());await page.waitForTimeout(250);
+  for(const title of ['Study','Notes','Chapter Command Center','Dashboard'])await navRoot.locator('.scholar-nav-item').filter({hasText:title}).first().click();await page.waitForTimeout(500);
+  const target=navRoot.locator('[aria-current="page"]');await target.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');
+ });
+ await mark('route-transitions',async()=>{for(const title of ['Notes','Study','Dashboard'])await nav(page,title);});
+ // The real public/Guest states of each workspace, not fabricated account success.
+ const routes=['exam-prep','chapter-command','notes','ebook','practice','mock-exam','planner','flashcards','resources','settings','group-study'];
+ for(const route of routes){await routeTo(page,route);await snap(page,route);checks.push({route,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),text:(await page.locator('#main-scroll').innerText()).slice(0,150)});}
+ }
+ await routeTo(page,'notes');
+ await mark('buttons',async()=>{const button=page.getByRole('button',{name:/New Note|Create your first note/i}).first();await button.hover();await page.waitForTimeout(180);await button.focus();await snap(page,'primary-button');await button.dispatchEvent('pointerdown',{pointerId:1,pointerType:'mouse',isPrimary:true,button:0,buttons:1,bubbles:true});await page.waitForTimeout(150);await snap(page,'button-pressed');await button.dispatchEvent('pointerup',{pointerId:1,pointerType:'mouse',isPrimary:true,button:0,bubbles:true});await page.waitForTimeout(350);await button.click();await page.getByPlaceholder('Start writing in Markdown…',{exact:false}).fill('Visual QA only: F = ma.');await snap(page,'notes-editor');const secondary=page.getByRole('button',{name:/Preview/i}).first();if(await secondary.count())await secondary.screenshot({path:`${out}/secondary-button.png`});});
+ await mark('shared-controls',async()=>{await page.locator('#main-scroll [data-slot="dropdown-menu-trigger"]:visible').first().click();await page.getByRole('menu').waitFor();await snap(page,'dropdown');await page.waitForTimeout(350);await page.keyboard.press('Escape');await page.keyboard.press('Control+k');await page.getByRole('dialog').waitFor();await snap(page,'dialog');await page.waitForTimeout(400);await page.keyboard.press('Escape');await routeTo(page,'settings');const tabs=page.locator('.sg-velocity-tabs:visible').first();if(await tabs.count()){await tabs.getByRole('tab').last().click();await page.waitForTimeout(400);await tabs.getByRole('tab').first().focus();await page.keyboard.press('ArrowRight');await snap(page,'tabs');}});
+ await routeTo(page,'dashboard');
+ const lam=page.getByRole('button',{name:'LAM',exact:true}).first();if(await lam.count()){await lam.click();const root=page.getByRole('complementary',{name:'LAM personal assistant'});if(await root.getByRole('heading',{name:'Meet LAM',exact:true}).count()){for(let i=0;i<3;i++)await root.getByRole('button',{name:'Continue',exact:true}).click();await root.getByRole('button',{name:'Start using LAM',exact:true}).click();}await page.getByLabel('Message LAM',{exact:true}).waitFor();await snap(page,'lam');await page.getByRole('button',{name:'Close LAM',exact:true}).last().click();}
+ await mark('lightweight',async()=>{await page.evaluate(()=>document.documentElement.dataset.appearancePerformance='performance');await page.waitForTimeout(500);await nav(page,'Notes');await snap(page,'lightweight');checks.push({mode:'lightweight',optics:await page.locator('[data-sg-optics="active"]').count()});await page.evaluate(()=>delete document.documentElement.dataset.appearancePerformance);});
+ await page.goto(base+'/dashboard',{waitUntil:'domcontentloaded'});await ready(page);result.warm=await stats(page);
+ for(const [width,height] of [[320,700],[360,800],[375,812],[390,844],[430,932],[768,1024],[844,390],[1024,768],[1366,768],[1440,900],[1920,1080]]){await page.setViewportSize({width,height});await page.waitForTimeout(240);checks.push({viewport:[width,height],overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)});await snap(page,`dashboard-${width}x${height}`);}
+ await page.setViewportSize({width:1440,height:900});const cdp=await context.newCDPSession(page);await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});await cdp.send('Network.enable');await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:200000,uploadThroughput:90000});await page.reload({waitUntil:'domcontentloaded'});await ready(page);result.throttled=await stats(page);
+ const video=page.video();await context.close();await video.saveAs(`${out}/desktop-runtime.webm`);
+ const mobile=await fixture({viewport:{width:390,height:844},isMobile:true,hasTouch:true,recordVideo:{dir:out,size:{width:390,height:844}}});const mp=mobile.page;await mp.goto(base);await ready(mp);await mp.getByRole('button',{name:'Continue as Guest',exact:true}).click();await mp.locator('#main-scroll').waitFor();await mp.getByRole('button',{name:'Open bottom menu',exact:true}).tap();const dock=mp.getByRole('navigation',{name:'Primary mobile navigation'});await dock.waitFor();
+ for(const name of ['Study','Practice','Home','AI Tools','Home']){await dock.getByRole('button',{name,exact:true}).tap();await mp.waitForTimeout(350);}await snap(mp,'mobile-dock');await snap(mp,'mobile-dashboard');
+ const control=dock.getByRole('button',{name:'Study',exact:true});await control.dispatchEvent('pointerdown',{pointerId:9,pointerType:'touch',isPrimary:true,button:0,buttons:1,bubbles:true});await mp.waitForTimeout(100);await control.dispatchEvent('pointercancel',{pointerId:9,pointerType:'touch',bubbles:true});await mp.waitForTimeout(350);checks.push({touchCancellationScale:await control.evaluate(el=>getComputedStyle(el).scale)});
+ await mp.evaluate(()=>document.documentElement.dataset.scholarKeyboardOpen='true');await expect(dock).not.toBeVisible();await mp.evaluate(()=>document.documentElement.dataset.scholarKeyboardOpen='false');await mp.setViewportSize({width:844,height:390});await mp.waitForTimeout(350);await snap(mp,'mobile-landscape');await dock.getByRole('button',{name:'More sections'}).tap();await mp.getByRole('dialog').waitFor();await snap(mp,'mobile-menu');await mp.keyboard.press('Escape');await expect(mp.getByRole('dialog')).toHaveCount(0);
+ await mp.emulateMedia({reducedMotion:'reduce'});await mp.waitForTimeout(180);checks.push({reducedMotion:await mp.evaluate(()=>document.documentElement.dataset.sgMotion)});const mv=mp.video();await mobile.context.close();await mv.saveAs(`${out}/mobile-runtime.webm`);
+ expect(errors).toEqual([]);expect(consoleErrors).toEqual([]);expect(checks.filter(c=>c.overflow)).toEqual([]);
+ await writeFile(out+'/results.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
+}catch(error){result.failure=String(error);await writeFile(out+'/results.json',JSON.stringify(result,null,2));throw error;}finally{await browser.close();}

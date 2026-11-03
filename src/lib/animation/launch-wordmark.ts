@@ -1,6 +1,15 @@
 import { animate, createScope, createTimeline, waapi } from "animejs";
 
-export const WORDMARK_EXIT = Object.freeze({ fill: 90, fade: 160, fallback: 380, repeat: 80 });
+export const WORDMARK_FILL_DURATION = 5_000;
+export const WORDMARK_EXIT = Object.freeze({ fill: 90, fade: 160, fallback: 380 });
+
+/** Five seconds of steady physical rise. Readiness may hold the last cap, but
+ * preparation updates can never rush the liquid or certify an unready page. */
+export function launchTimedFill(elapsedMs: number, contentReady: boolean): number {
+  const travel = Math.max(0, Math.min(1, elapsedMs / WORDMARK_FILL_DURATION)) * 216;
+  const value = travel <= 160 ? travel / 160 * .92 : .92 + (travel - 160) / 56 * .08;
+  return Math.min(contentReady ? 1 : .92, value);
+}
 
 /** Preparation is only one boundary; session/shell and profile own the rest.
  * This is visual weighting, never an assertion of exact backend percent. */
@@ -38,6 +47,7 @@ export function liquidWordmarkPath(phase = 0, amplitude = 16): string {
 
 export interface LaunchWordmarkController {
   progress: (value: number | undefined) => void;
+  readiness: (ready: boolean) => void;
   complete: () => void;
   visibility: (hidden: boolean) => void;
   destroy: () => void;
@@ -49,14 +59,18 @@ export function animateLaunchWordmark(root: HTMLElement, options: { reduced: boo
   const path = root.querySelector<SVGPathElement>("[data-liquid-wave]")!;
   const status = root.querySelector<HTMLElement>(".scholar-launch-status")!;
   const scope = createScope({ root });
-  const fill = { value: 0 }, water = { phase: 0 };
+  const fill = { value: 0 }, water = { phase: 0 }, clock = { elapsed: 0 };
+  let contentReady = false;
   let disposed = false, completing = false, exited = false;
   let level: ReturnType<typeof animate> | undefined;
   let waves: ReturnType<typeof animate> | undefined;
   let entrance: ReturnType<typeof animate> | undefined;
   let exit: ReturnType<typeof createTimeline> | undefined;
   let fade: ReturnType<typeof waapi.animate> | ReturnType<typeof animate> | undefined;
-  const still = options.reduced || options.repeat;
+  // The requested five-second reveal also runs on reloads. Reduced motion is
+  // the sole static/immediate-exit exception.
+  const still = options.reduced;
+  root.dataset.fillStartedAt = performance.now().toFixed(2);
   const drawFill = () => {
     if (disposed) return;
     carrier.setAttribute("transform", `translate(0 ${launchFillY(fill.value).toFixed(2)})`);
@@ -82,27 +96,27 @@ export function animateLaunchWordmark(root: HTMLElement, options: { reduced: boo
   else scope.execute(() => {
     entrance = animate(panel, { opacity: [0.85, 1], duration: 160, ease: "out(3)" });
     waves = animate(water, { phase: [0, Math.PI * 2], duration: 3300, ease: "linear", loop: true, onUpdate: drawWave });
+    level = animate(clock, { elapsed: WORDMARK_FILL_DURATION, duration: WORDMARK_FILL_DURATION, ease: "linear", onUpdate: () => {
+      fill.value = launchTimedFill(clock.elapsed, contentReady); drawFill();
+    } });
   });
 
   return {
     progress(value) {
       if (disposed || completing || still) return;
-      level?.cancel();
       const target = launchFillTarget(value);
-      level = scope.execute(() => target === null
-        ? animate(fill, { value: [fill.value, 0.48], duration: 1900, alternate: true, loop: true, ease: "inOut(2)", onUpdate: drawFill })
-        : animate(fill, { value: Math.max(fill.value, target), duration: 520, ease: "out(2)", onUpdate: drawFill }));
+      // Retain actual preparation diagnostics; visual timing is intentionally
+      // separate and never restarts when a task/session message changes.
+      if (target === null) delete root.dataset.preparationProgress;
+      else root.dataset.preparationProgress = target.toFixed(3);
     },
+    readiness(ready) { contentReady = ready; },
     complete() {
       if (disposed || completing) return;
       completing = true; entrance?.cancel(); level?.cancel();
       panel.style.opacity = "1"; panel.style.transform = "none";
       root.style.pointerEvents = "none";
       if (options.reduced || document.hidden) { fill.value = 1; drawFill(); finish(); return; }
-      if (options.repeat) {
-        fadeOut(0, WORDMARK_EXIT.repeat);
-        return;
-      }
       root.dataset.phase = "completing";
       root.style.willChange = "opacity";
       exit = scope.execute(() => {

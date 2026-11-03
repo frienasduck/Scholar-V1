@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { LaunchSplash } from "../src/components/launch-splash";
-import { launchFillTarget, launchFillY, launchReadinessProgress, liquidWordmarkPath, WORDMARK_EXIT } from "../src/lib/animation/launch-wordmark";
+import { launchFillTarget, launchFillY, launchReadinessProgress, launchTimedFill, liquidWordmarkPath, WORDMARK_EXIT, WORDMARK_FILL_DURATION } from "../src/lib/animation/launch-wordmark";
 import { readFileSync } from "node:fs";
 
 test("task progress can never visually certify whole-app readiness", () => {
@@ -20,6 +20,16 @@ test("one smooth connected wave loops without a seam", () => {
   const numbers = (path: string) => path.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
   numbers(a).forEach((value, index) => expect(Math.abs(value - numbers(b)[index])).toBeLessThan(.01));
   expect(liquidWordmarkPath(.8)).not.toBe(a); expect(a).not.toContain("NaN");
+});
+
+test("the requested reveal takes five seconds with steady bottom-to-top travel", () => {
+  expect(WORDMARK_FILL_DURATION).toBe(5000);
+  for (const time of [0, 1000, 2000, 3000, 4000, 5000]) {
+    expect(launchFillY(launchTimedFill(time, true))).toBeCloseTo(240 - time / 5000 * 216, 5);
+    if (time < 5000) expect(launchTimedFill(time, true)).toBeLessThan(1);
+  }
+  expect(launchTimedFill(9000, false)).toBe(.92);
+  expect(launchTimedFill(9000, true)).toBe(1);
 });
 
 test("session and profile boundaries reserve visible liquid headroom", () => {
@@ -48,6 +58,8 @@ test("completion is short and the real shell/profile readiness guards remain", (
   const gate = readFileSync("src/components/launch-readiness-gate.tsx", "utf8");
   expect(gate).toContain("!startupSettled || !shellReady || (requiresProfile && !profileReady)");
   expect(gate).not.toContain("FIRST_LAUNCH_MINIMUM_MS"); expect(gate).not.toContain("1900");
+  expect(gate).toContain("|| !minimumElapsed");
+  expect(gate).toContain("WORDMARK_FILL_DURATION - (performance.now()");
   expect(gate).toContain("WORDMARK_EXIT.fallback");
   expect(gate.match(/<LaunchSplash /g)).toHaveLength(1);
 });

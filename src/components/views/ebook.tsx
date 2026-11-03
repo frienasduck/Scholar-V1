@@ -773,7 +773,7 @@ export function EBookView() {
           <p className="text-sm text-white/50 mb-3">Select Book</p>
           <div className="eb-book-grid grid grid-cols-2 gap-3 mb-6">
             {BOOKS.map((book) => (
-              <button
+              <button data-velocity-control="reader"
                 key={book.id}
                 onClick={() => {
                   setActiveBookId(book.id);
@@ -919,7 +919,7 @@ export function EBookView() {
       {showSidebar && !fullscreen && (
         <aside className="hidden lg:flex flex-col w-64 border-r border-white/10 bg-black/40 backdrop-blur-xl shrink-0 h-[calc(100dvh-4rem)] sticky top-0">
           <div className="p-4 border-b border-white/10">
-            <button
+            <button data-velocity-control="reader"
               onClick={() => setView("home")}
               className="flex items-center gap-2 text-sm text-white/60 hover:text-white"
             >
@@ -932,7 +932,7 @@ export function EBookView() {
               Chapters
             </p>
             {chapters.map((ch) => (
-              <button
+              <button data-velocity-control="reader"
                 key={ch.id}
                 onClick={() => jumpTo(ch.startPage)}
                 className={`w-full text-left text-xs px-3 py-2 rounded-lg transition-colors mb-1 ${currentChapter?.id === ch.id ? "bg-indigo-500/20 text-indigo-300" : "text-white/50 hover:bg-white/5"}`}
@@ -954,7 +954,7 @@ export function EBookView() {
                 const hasBm = bookmarks.some((b) => b.page === pg);
                 const hasOcr = ocrReviewed[pg] !== undefined;
                 return (
-                  <button
+                  <button data-velocity-control="reader"
                     key={pg}
                     onClick={() => jumpTo(pg)}
                     className={`relative text-[10px] py-1.5 rounded transition-colors ${pg === activePage ? "bg-indigo-500/30 text-indigo-300 font-bold" : "bg-white/5 text-white/40 hover:bg-white/10"}`}
@@ -996,7 +996,7 @@ export function EBookView() {
               </>
             )}
           </ScrollArea>
-          <button
+          <button data-velocity-control="reader"
             onClick={() => setShowSidebar(false)}
             className="p-3 border-t border-white/10 text-xs text-white/40 hover:text-white flex items-center gap-1"
           >
@@ -1010,11 +1010,11 @@ export function EBookView() {
         {/* Top bar */}
         <div className="eb-reader-topbar sticky top-0 z-20 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="eb-reader-meta flex items-center gap-3 min-w-0">
-            <button onClick={() => setView("home")} className="lg:hidden inline-flex min-h-10 items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 text-xs text-white/75" aria-label="Return to e-book library">
+            <button data-velocity-control="reader" onClick={() => setView("home")} className="lg:hidden inline-flex min-h-10 items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 text-xs text-white/75" aria-label="Return to e-book library">
               <ChevronLeft className="h-4 w-4" /> Library
             </button>
             {!showSidebar && !fullscreen && (
-              <button
+              <button data-velocity-control="reader"
                 onClick={() => setShowSidebar(true)}
                 className="text-white/50 hover:text-white"
               >
@@ -1047,7 +1047,7 @@ export function EBookView() {
             )}
           </div>
           <div className="eb-reader-tools flex items-center gap-1.5" aria-label="Reader tools">
-            <button
+            <button data-velocity-control="reader"
               onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
               aria-label="Zoom out"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
@@ -1057,7 +1057,7 @@ export function EBookView() {
             <span className="text-xs text-white/40 w-10 text-center">
               {Math.round(zoom * 100)}%
             </span>
-            <button
+            <button data-velocity-control="reader"
               onClick={() => setZoom(Math.min(3, zoom + 0.1))}
               aria-label="Zoom in"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
@@ -1065,14 +1065,14 @@ export function EBookView() {
               <ZoomIn className="h-4 w-4" />
             </button>
             <div className="eb-tool-divider w-px h-6 bg-white/10 mx-1" />
-            <button
+            <button data-velocity-control="reader"
               onClick={() => setRotation((rotation + 90) % 360)}
               aria-label="Rotate page"
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
             >
               <RotateCw className="h-4 w-4" />
             </button>
-            <button
+            <button data-velocity-control="reader"
               onClick={() => setFullscreen(!fullscreen)}
               aria-label={fullscreen ? "Exit fullscreen reader" : "Expand reader"}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/5"
@@ -1083,7 +1083,7 @@ export function EBookView() {
                 <Maximize2 className="h-4 w-4" />
               )}
             </button>
-            <button
+            <button data-velocity-control="reader"
               onClick={() => setBookModeOpen(true)}
               className="text-white/80 hover:text-white p-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30"
               aria-label="Enter Book Mode"
@@ -1092,7 +1092,7 @@ export function EBookView() {
               <BookOpen className="h-4 w-4" />
             </button>
             <div className="eb-tool-divider w-px h-6 bg-white/10 mx-1" />
-            <button
+            <button data-velocity-control="reader"
               onClick={() => toggleBookmark(activePage)}
               aria-label={isBookmarked ? "Remove page bookmark" : "Bookmark page"}
               aria-pressed={isBookmarked}
@@ -1104,7 +1104,7 @@ export function EBookView() {
                 <Bookmark className="h-4 w-4" />
               )}
             </button>
-            <button
+            <button data-velocity-control="reader"
               onClick={() => {
                 setPageNoteModal(activePage);
                 setNoteText(pageNote?.text ?? "");
@@ -1115,7 +1115,7 @@ export function EBookView() {
             >
               <PenLine className="h-4 w-4" />
             </button>
-            <button
+            <button data-velocity-control="reader"
               onClick={() => {
                 setOcrModal(activePage);
                 setOcrText(ocrReviewed[activePage] ?? "");
@@ -1125,7 +1125,7 @@ export function EBookView() {
             >
               <Eye className="h-4 w-4" />
             </button>
-            <button
+            <button data-velocity-control="reader"
               onClick={openPageLam}
               className="text-cyan-100 hover:text-white p-1.5 rounded-lg bg-cyan-300/10 hover:bg-cyan-300/15"
               aria-label="Ask LAM about this page"
@@ -1381,7 +1381,7 @@ export function EBookView() {
             <p className="text-xs text-white/40 mb-2">Tags:</p>
             <div className="flex flex-wrap gap-1.5">
               {PAGE_TAGS.map((tag) => (
-                <button
+                <button data-velocity-control="reader"
                   key={tag}
                   onClick={() =>
                     setNoteTags((prev) =>

@@ -14,6 +14,7 @@ type LaunchSplashProps = {
   /** The dynamic-import fallback holds the same opening pose; no second intro. */
   passive?: boolean;
   repeatVisit?: boolean;
+  contentReady?: boolean;
   onExitComplete?: () => void;
 };
 
@@ -22,7 +23,7 @@ type LaunchSplashProps = {
 export function LaunchSplash({
   overlay = false, visible = true, reducedMotion = false, progress,
   message = "Loading Scholar…", modeLabel, children, passive = false,
-  repeatVisit = false, onExitComplete,
+  repeatVisit = false, contentReady, onExitComplete,
 }: LaunchSplashProps) {
   const id = useId().replace(/:/g, "");
   const maskId = "scholar-wordmark-" + id;
@@ -39,6 +40,7 @@ export function LaunchSplash({
       current?.destroy();
       current = animateLaunchWordmark(element, { reduced: reducedMotion || media.matches, repeat: repeatVisit, onExit: () => exit.current?.() });
       controller.current = current;
+      current.readiness(element.dataset.contentReady === "true");
       current.progress(element.dataset.startupProgress === undefined ? undefined : Number(element.dataset.startupProgress) / 100);
       // A preference change must not replay or delay an already-ready exit.
       if (element.dataset.visible === "false") current.complete();
@@ -50,9 +52,10 @@ export function LaunchSplash({
     return () => { current?.destroy(); controller.current = null; media.removeEventListener("change", create); document.removeEventListener("visibilitychange", visibility); };
   }, [passive, reducedMotion, repeatVisit]);
   useLayoutEffect(() => {
+    controller.current?.readiness(contentReady ?? !visible);
     if (!visible) controller.current?.complete();
     else controller.current?.progress(progress);
-  }, [progress, visible, reducedMotion, repeatVisit]);
+  }, [progress, visible, reducedMotion, repeatVisit, contentReady]);
 
   const percentage = progress === undefined || !Number.isFinite(progress) ? undefined : Math.round(Math.max(0, Math.min(visible ? 0.92 : 1, progress)) * 100);
   const word = { x: 500, y: 220, textAnchor: "middle" as const, fontSize: 224, fontWeight: 900, letterSpacing: -9, textLength: 840, lengthAdjust: "spacingAndGlyphs" as const };
@@ -63,6 +66,7 @@ export function LaunchSplash({
       aria-label="Scholar startup" aria-busy={visible} aria-hidden={!visible}
       data-visible={visible} data-startup-progress={percentage} data-startup-mode={modeLabel?.toLowerCase()}
       data-startup-repeat={repeatVisit ? "true" : undefined} data-passive={passive ? "true" : undefined}
+      data-content-ready={contentReady ?? !visible}
     >
       <div className="scholar-launch-panel">
         <h1 className="sr-only">Scholar</h1>
