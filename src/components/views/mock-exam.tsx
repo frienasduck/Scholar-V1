@@ -583,9 +583,9 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .me-font-serif { font-family: 'Instrument Serif', serif; }
         .me-font-body { font-family: 'Inter', sans-serif; }
-        .me-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
-        .me-glass-strong { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.16); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); color: white; }
-        .me-glass input, .me-glass textarea, .me-glass select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.15) !important; color: white !important; }
+        .me-glass { background: rgba(11, 16, 26, 0.82); backdrop-filter: blur(24px) saturate(140%); -webkit-backdrop-filter: blur(24px) saturate(140%); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 16px 40px -12px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.22); color: white; }
+        .me-glass-strong { background: rgba(8, 12, 22, 0.90); backdrop-filter: blur(28px) saturate(145%); -webkit-backdrop-filter: blur(28px) saturate(145%); border: 1px solid rgba(255,255,255,0.18); box-shadow: 0 24px 50px -14px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.28); color: white; }
+        .me-glass input, .me-glass textarea, .me-glass select { background: rgba(15, 22, 36, 0.75) !important; border-color: rgba(255,255,255,0.18) !important; color: white !important; }
         .me-glass input::placeholder, .me-glass textarea::placeholder { color: rgba(255,255,255,0.4) !important; }
         .me-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .me-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }

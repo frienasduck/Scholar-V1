@@ -235,7 +235,7 @@ export function WorkspaceView() {
               </DialogTitle>
               <DialogDescription className="text-white/70">Pick from {WIDGETS.length} widgets to add to your workspace.</DialogDescription>
             </DialogHeader>
-            <div className="flex gap-2 overflow-x-auto pb-3 pt-2 [scrollbar-width:thin]" aria-label="Available study widgets">
+            <div className="flex gap-2 overflow-x-auto pb-3 pt-2 ws-liquid-scroll" aria-label="Available study widgets">
               {WIDGETS.map((w) => {
                 const inLayout = layout.includes(w.type);
                 return (

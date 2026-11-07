@@ -242,9 +242,9 @@ html:not(.dark) .sg-environment {
 }
 
 /* Refraction presets — three shared filters, not one filter per surface. */
-.sg-glass[data-sg-refraction="subtle"] > .sg-warp { filter: url(#sg-refraction-subtle); }
-.sg-glass[data-sg-refraction="standard"] > .sg-warp { filter: url(#sg-refraction-standard); }
-.sg-glass[data-sg-refraction="prominent"] > .sg-warp { filter: url(#sg-refraction-prominent); }
+.sg-glass[data-sg-refraction="subtle"] > .sg-warp { backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%); }
+.sg-glass[data-sg-refraction="standard"] > .sg-warp { backdrop-filter: blur(16px) saturate(138%); -webkit-backdrop-filter: blur(16px) saturate(138%); }
+.sg-glass[data-sg-refraction="prominent"] > .sg-warp { backdrop-filter: blur(20px) saturate(142%); -webkit-backdrop-filter: blur(20px) saturate(142%); }
 
 /* Tier 3: when refraction is off the surface keeps its material, and a cheap
    chromatic edge ring stands in for the aberration the filter would produce. */
@@ -1033,7 +1033,7 @@ html[data-sg-refraction="on"] .lam-liquid-glass:not(.lam-premium-panel)::before 
   border-radius: inherit;
   -webkit-backdrop-filter: blur(20px) saturate(150%) brightness(0.95);
   backdrop-filter: blur(20px) saturate(150%) brightness(0.95);
-  filter: url(#sg-refraction-standard);
+  backdrop-filter: blur(16px) saturate(138%);
 }
 
 html[data-sg-material="reduced"] .lam-liquid-glass:not(.lam-premium-panel)::before,

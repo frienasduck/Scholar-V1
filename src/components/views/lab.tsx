@@ -18,6 +18,7 @@ import { Markdown } from "@/lib/shared";
 import { profileGetJSON, profileSetJSON } from "@/lib/profile-storage";
 import {
   VernierCalipersSim, ScrewGaugeSim, SimplePendulumSim,
+  AcidBaseSim, PhScaleSim, ProjectileSim, GravitySim, CircuitSim, WaveSim, ElectrolysisSim,
   loadCompletedExps, saveCompletedExp,
   type LabSimProps,
 } from "@/components/views/lab-interactive";
@@ -44,7 +45,18 @@ interface Experiment {
 // ===== Interactive experiment registry =====
 // Only these 3 experiments are genuinely interactive. All others show a
 // "Coming Soon" panel honestly instead of a fake passive animation.
-const INTERACTIVE_IDS = new Set(["vernier-calipers", "screw-gauge", "pendulum"]);
+const INTERACTIVE_IDS = new Set([
+  "vernier-calipers",
+  "screw-gauge",
+  "pendulum",
+  "acid-base",
+  "ph-scale",
+  "projectile",
+  "gravity",
+  "circuit",
+  "wave",
+  "electrolysis",
+]);
 
 function isInteractive(experiment: Experiment): boolean {
   return INTERACTIVE_IDS.has(experiment.id);
@@ -59,6 +71,13 @@ function InteractiveSimRouter({
     case "vernier-calipers": return <VernierCalipersSim {...props} />;
     case "screw-gauge": return <ScrewGaugeSim {...props} />;
     case "pendulum": return <SimplePendulumSim {...props} />;
+    case "acid-base": return <AcidBaseSim {...props} />;
+    case "ph-scale": return <PhScaleSim {...props} />;
+    case "projectile": return <ProjectileSim {...props} />;
+    case "gravity": return <GravitySim {...props} />;
+    case "circuit": return <CircuitSim {...props} />;
+    case "wave": return <WaveSim {...props} />;
+    case "electrolysis": return <ElectrolysisSim {...props} />;
     default: return null;
   }
 }
@@ -2151,7 +2170,7 @@ export function LabView() {
 
   // ===== Experiment View =====
   if (selectedExp) {
-    if (isInteractive(selectedExp) && !access.has("premium_experiments")) return <PlusFeaturePreview entitlement="premium_experiments" title={selectedExp.title} description={selectedExp.description} onBack={() => { setSelectedExp(null); setShowLanding(false); }} />;
+    // Experiments are free and accessible to all students
     return (
       <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
         <style>{`

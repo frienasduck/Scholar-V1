@@ -21,6 +21,7 @@ import type { PracticeQuestion } from "@/lib/question-bank";
 import { toast } from "@/lib/notifications/notification-api";
 import { getFlashcardCountByChapter } from "@/lib/flashcards-class11-meta";
 import { openChapterDestination, practiceChapterId } from "@/lib/chapter-navigation";
+import { ChapterDiagnosticCard } from "./chapter-diagnostic";
 import "./workspace.css";
 
 type Mode = "overview" | "mastery" | "resources" | "practice" | "lam" | "revision" | "analytics" | "planner" | "mock" | "recommendations";
@@ -310,6 +311,7 @@ function Overview({ ctx }: { ctx: WorkspaceContext }) {
   return <div className="ccc-stack">
     <div className="ccc-section-intro"><div><span className="ccc-eyebrow">01 / CHAPTER HOME</span><h2>Everything starts here.</h2><p>Know what is done, what needs work, and your next useful move.</p></div></div>
     <GuidedFlow ctx={ctx}/>
+    <ChapterDiagnosticCard data={data} />
     <div className="ccc-action-grid"><Action primary title="Resume study" description="Pick up this chapter" icon={Play} onClick={() => openChapterBook(data)}/><Action title="Ask LAM" description="Clear a chapter doubt" icon={Sparkles} onClick={() => go("lam")}/><Action title="Practice" description="Get instant explanations" icon={ListChecks} onClick={() => go("practice")}/><Action title="Resource vault" description="Notes, video and more" icon={BookOpen} onClick={() => go("resources")}/></div>
     <div className="ccc-grid-two"><Card title="Chapter progress" icon={Target} action={{ label: "Mastery map", onClick: () => go("mastery") }}><div className="ccc-progress-card"><ProgressRing value={data.studyProgressPct} label="Reading"/><div className="ccc-progress-lines"><p><strong>{data.studyProgressPct}%</strong> of chapter study recorded</p><p><strong>{accuracy === null ? "—" : `${accuracy}%`}</strong> practice accuracy {totalAnswered ? `across ${totalAnswered} questions` : "· no attempts yet"}</p><p><strong>{data.concepts.length}</strong> concepts in this chapter</p></div></div><p className="ccc-fine-print">Accuracy appears after you complete practice or a mock exam here.</p></Card>
     <Card title="Quick summary" icon={FileText} action={{ label: "Revision board", onClick: () => go("revision") }}><p className="ccc-body-copy">{data.overview || "A chapter overview has not been added yet. Start with the textbook and use LAM to explore a concept."}</p><div className="ccc-chip-row">{data.concepts.slice(0, 6).map((concept) => <span className="ccc-chip" key={concept}>{concept}</span>)}</div></Card></div>
@@ -323,9 +325,75 @@ function Mastery({ ctx }: { ctx: WorkspaceContext }) {
   const attemptedIds = new Set(attempts.flatMap((attempt) => attempt.questions.filter((question) => attempt.responses[question.id] !== undefined).map((question) => question.id)));
   const chapterQuestions = data.questions.questions;
   const questionCoverage = chapterQuestions.length ? Math.round((attemptedIds.size / chapterQuestions.length) * 100) : 0;
-  return <div className="ccc-stack"><div className="ccc-section-intro"><div><span className="ccc-eyebrow">02 / PROGRESS & MASTERY</span><h2>A clearer view of progress.</h2><p>Reading, question coverage and accuracy are measured separately—without invented topic scores.</p></div></div>
-    <div className="ccc-metric-grid"><Metric icon={BookOpen} label="Study progress" value={`${data.studyProgressPct}%`} note="Recorded by Scholar"/><Metric icon={ListChecks} label="Questions attempted" value={String(totalAnswered)} note={`${questionCoverage}% of available set covered`}/><Metric icon={Target} label="Practice accuracy" value={accuracy === null ? "Not measured" : `${accuracy}%`} note={accuracy === null ? "Complete a practice set" : `${attempts.length} completed set${attempts.length === 1 ? "" : "s"}`}/></div>
-    <div className="ccc-grid-two"><Card title="Concept map" icon={Layers3}><p className="ccc-body-copy">Use these concepts as your chapter route. Topic-level mastery appears only when Scholar has question-level evidence.</p><div className="ccc-concept-grid">{data.concepts.length ? data.concepts.map((concept, index) => <button key={`${concept}-${index}`} className="ccc-concept" onClick={() => go("lam")}><span>{String(index + 1).padStart(2, "0")}</span><strong>{concept}</strong><ChevronRight size={15}/></button>) : <Empty text="A concept outline is not available for this chapter yet."/>}</div></Card><Card title="Chapter milestones" icon={CheckCircle2}><div className="ccc-milestones">{[{ label: "Start learning", done: data.studyProgressPct > 0 }, { label: "Reach halfway in study", done: data.studyProgressPct >= 50 }, { label: "Complete a practice set", done: attempts.some((attempt) => !attempt.title.includes("Mock")) }, { label: "Take a chapter mock", done: attempts.some((attempt) => attempt.title.includes("Mock")) }].map((item) => <div key={item.label} className={`ccc-milestone ${item.done ? "is-done" : ""}`}><span>{item.done ? <Check size={16}/> : <span/>}</span><strong>{item.label}</strong></div>)}</div><button className="ccc-primary" onClick={() => go(accuracy === null ? "practice" : "recommendations")}>What should I do next? <ArrowRight size={16}/></button></Card></div>
+  const [masteredConcepts, setMasteredConcepts] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem(`scholar:mastery:${data.chapterId}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleConcept = (concept: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = { ...masteredConcepts, [concept]: !masteredConcepts[concept] };
+    setMasteredConcepts(next);
+    try {
+      localStorage.setItem(`scholar:mastery:${data.chapterId}`, JSON.stringify(next));
+    } catch {}
+    if (next[concept]) {
+      ctx.addXP(5);
+      toast.success("+5 XP", { description: `Marked "${concept}" as understood!` });
+    }
+  };
+
+  const masteredCount = Object.values(masteredConcepts).filter(Boolean).length;
+
+  return <div className="ccc-stack"><div className="ccc-section-intro"><div><span className="ccc-eyebrow">02 / PROGRESS & MASTERY</span><h2>A clearer view of progress.</h2><p>Reading, question coverage, concept checklists and accuracy are measured separately.</p></div></div>
+    <div className="ccc-metric-grid">
+      <Metric icon={BookOpen} label="Study progress" value={`${data.studyProgressPct}%`} note="Recorded by Scholar"/>
+      <Metric icon={Target} label="Concepts mastered" value={`${masteredCount}/${data.concepts.length}`} note={data.concepts.length ? `${Math.round((masteredCount / data.concepts.length) * 100)}% checklist complete` : "No concepts listed"}/>
+      <Metric icon={ListChecks} label="Questions attempted" value={String(totalAnswered)} note={`${questionCoverage}% of available set covered`}/>
+      <Metric icon={Target} label="Practice accuracy" value={accuracy === null ? "Not measured" : `${accuracy}%`} note={accuracy === null ? "Complete a practice set" : `${attempts.length} completed set${attempts.length === 1 ? "" : "s"}`}/>
+    </div>
+    <div className="ccc-grid-two"><Card title="Concept map" icon={Layers3}><p className="ccc-body-copy">Check off concepts you have mastered for +5 XP each, or tap any concept to drill it with LAM AI.</p><div className="ccc-concept-grid">{data.concepts.length ? data.concepts.map((concept, index) => {
+      const isMastered = !!masteredConcepts[concept];
+      return (
+        <div
+          key={`${concept}-${index}`}
+          className={`ccc-concept ${isMastered ? "is-mastered" : ""}`}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "0.6rem 0.8rem" }}
+          onClick={() => go("lam")}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <button
+              type="button"
+              onClick={(e) => toggleConcept(concept, e)}
+              style={{
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: isMastered ? "1.5px solid #10b981" : "1.5px solid rgba(255,255,255,0.25)",
+                background: isMastered ? "rgba(16, 185, 129, 0.2)" : "transparent",
+                color: "#10b981",
+                cursor: "pointer",
+              }}
+              title={isMastered ? "Mark unmastered" : "Mark mastered (+5 XP)"}
+            >
+              {isMastered ? <Check size={13} /> : <span style={{ fontSize: "10px", opacity: 0.6 }}>{index + 1}</span>}
+            </button>
+            <strong style={{ textDecoration: isMastered ? "line-through" : "none", opacity: isMastered ? 0.8 : 1 }}>{concept}</strong>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", opacity: 0.7 }}>
+            <small style={{ fontSize: "11px" }}>Ask LAM</small>
+            <ChevronRight size={14} />
+          </div>
+        </div>
+      );
+    }) : <Empty text="A concept outline is not available for this chapter yet."/>}</div></Card><Card title="Chapter milestones" icon={CheckCircle2}><div className="ccc-milestones">{[{ label: "Start learning", done: data.studyProgressPct > 0 }, { label: "Reach halfway in study", done: data.studyProgressPct >= 50 }, { label: "Complete a practice set", done: attempts.some((attempt) => !attempt.title.includes("Mock")) }, { label: "Take a chapter mock", done: attempts.some((attempt) => attempt.title.includes("Mock")) }].map((item) => <div key={item.label} className={`ccc-milestone ${item.done ? "is-done" : ""}`}><span>{item.done ? <Check size={16}/> : <span/>}</span><strong>{item.label}</strong></div>)}</div><button className="ccc-primary" onClick={() => go(accuracy === null ? "practice" : "recommendations")}>What should I do next? <ArrowRight size={16}/></button></Card></div>
   </div>;
 }
 

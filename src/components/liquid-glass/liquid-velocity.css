@@ -12,9 +12,9 @@
 /* Refraction samples the actual live backdrop, not a filtered blurred sprite.
    No filter on content, no distorted text and no second independent blur. */
 .sg-glass > .sg-warp { filter: none !important; }
-.sg-glass[data-sg-optics="active"][data-sg-refraction="subtle"] > .sg-warp { backdrop-filter: url("#sg-refraction-subtle") blur(1.5px) saturate(125%); }
-.sg-glass[data-sg-optics="active"][data-sg-refraction="standard"] > .sg-warp { backdrop-filter: url("#sg-refraction-standard") blur(2px) saturate(128%); }
-.sg-glass[data-sg-optics="active"][data-sg-refraction="prominent"] > .sg-warp { backdrop-filter: url("#sg-refraction-prominent") blur(2px) saturate(128%); }
+.sg-glass[data-sg-optics="active"][data-sg-refraction="subtle"] > .sg-warp { backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%); }
+.sg-glass[data-sg-optics="active"][data-sg-refraction="standard"] > .sg-warp { backdrop-filter: blur(16px) saturate(138%); -webkit-backdrop-filter: blur(16px) saturate(138%); }
+.sg-glass[data-sg-optics="active"][data-sg-refraction="prominent"] > .sg-warp { backdrop-filter: blur(20px) saturate(142%); -webkit-backdrop-filter: blur(20px) saturate(142%); }
 .sg-glass[data-sg-optics="active"] > .sg-chroma { opacity: .22; }
 
 /* The parent lens carrier has NO border or inset shadow behind .sg-velocity-lens-optic,
@@ -56,7 +56,7 @@
 .sg-velocity-dock > button.active { background: none !important; box-shadow: none !important; }
 .sg-velocity-dock > button:active { transform: none; }
 .sg-velocity-dock .sg-velocity-lens { border-radius: 1rem; }
-.sg-velocity-dock .sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic { backdrop-filter:url("#sg-refraction-dock") saturate(125%); }
+.sg-velocity-dock .sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic { backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%); }
 /* Only horizontal dock gestures are owned here. Page pan/pinch stays native. */
 .sg-velocity-dock, .sg-velocity-dock > button { touch-action: pan-y pinch-zoom; user-select: none; -webkit-user-select: none; }
 .sg-velocity-dock .sg-velocity-lens {
@@ -305,7 +305,7 @@ html[data-appearance-theme="light"] [data-sg-control-optics="true"] { background
   box-shadow:inset 0 1px 0 rgb(255 255 255 / 30%),0 15px 45px rgb(0 0 0 / 35%) !important;
   backdrop-filter:blur(12px) saturate(125%); -webkit-backdrop-filter:blur(12px) saturate(125%);
 }
-[data-velocity-panel="true"][data-sg-optics="active"]:not([data-slot="dialog-content"]):not([data-slot="sheet-content"]) { backdrop-filter:url("#sg-refraction-standard") blur(4px) saturate(125%); }
+[data-velocity-panel="true"][data-sg-optics="active"]:not([data-slot="dialog-content"]):not([data-slot="sheet-content"]) { backdrop-filter: blur(16px) saturate(135%); -webkit-backdrop-filter: blur(16px) saturate(135%); }
 [data-velocity-panel="true"][data-velocity-animating="true"] { backdrop-filter:blur(6px) saturate(125%) !important; }
 html[data-sg-refraction="off"] [data-velocity-panel="true"],html[data-sg-quality="lightweight"] [data-velocity-panel="true"] { backdrop-filter:none !important; }
 html[data-sg-motion="reduced"] [data-velocity-panel="true"][data-state="closed"] { animation-duration:1ms !important; }

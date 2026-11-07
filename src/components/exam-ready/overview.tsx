@@ -66,6 +66,7 @@ export function PreparationHome({
   const tasks = useStore((s) => s.tasks);
 
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<"paths" | "syllabus" | "radar" | "mistakes">("paths");
   const [now] = useState(() => Date.now());
 
   const mistakes = useMemo(() => loadQuizMistakes(scholarClass), [scholarClass]);
@@ -209,7 +210,51 @@ export function PreparationHome({
 
   return (
     <>
-      <section className="er-welcome er-plate">
+      {/* Progressive Step Tabs: One after the other */}
+      <nav className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-xl" aria-label="Exam Ready Stages">
+        <button
+          type="button"
+          onClick={() => setActiveTab("paths")}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "paths" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+        >
+          <Target size={14} className={activeTab === "paths" ? "text-indigo-300" : ""} />
+          <span>1. Active Paths & Plans</span>
+          {sessions.length > 0 && <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px]">{sessions.length}</span>}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("syllabus")}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "syllabus" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+        >
+          <Layers size={14} className={activeTab === "syllabus" ? "text-indigo-300" : ""} />
+          <span>2. Syllabus & Mastery</span>
+          <span className="text-[10px] text-white/50">{analytics.completedChapters}/{analytics.totalChapters}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("radar")}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "radar" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+        >
+          <Flame size={14} className={activeTab === "radar" ? "text-indigo-300" : ""} />
+          <span>3. High-Yield Radar</span>
+          {analytics.priorityChapters.length > 0 && <span className="rounded-full bg-amber-500/20 text-amber-300 px-1.5 py-0.2 text-[10px]">{analytics.priorityChapters.length}</span>}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("mistakes")}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "mistakes" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+        >
+          <AlertTriangle size={14} className={activeTab === "mistakes" ? "text-indigo-300" : ""} />
+          <span>4. Mistake Notebook</span>
+          {mistakes.length > 0 && <span className="rounded-full bg-rose-500/20 text-rose-300 px-1.5 py-0.2 text-[10px]">{mistakes.length}</span>}
+        </button>
+      </nav>
+      {activeTab === "paths" && (
+        <div className="space-y-6">
+          <section className="er-welcome er-plate">
         <div>
           <span className="er-eyebrow">Your teacher. Your time. A clearer next step.</span>
           <h2>
@@ -464,9 +509,22 @@ export function PreparationHome({
         })}
       </div>
 
-      {/* Subject & Chapter-Wise Syllabus Tracker + Weak Topic Radar */}
-      <div className="er-syllabus-radar-grid">
-        <section className="er-plate" aria-label="Subject and chapter syllabus progress">
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setActiveTab("syllabus")}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-white/15"
+            >
+              Next Step: Review Syllabus & Mastery →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 2: Syllabus & Mastery */}
+      {activeTab === "syllabus" && (
+        <div className="space-y-6">
+          <section className="er-plate" aria-label="Subject and chapter syllabus progress">
           <div className="er-card-title">
             <div>
               <span className="er-eyebrow">Syllabus tracker</span>
@@ -536,9 +594,30 @@ export function PreparationHome({
               </article>
             ))}
           </div>
-        </section>
+          </section>
+          <div className="mt-6 flex justify-between">
+            <button
+              type="button"
+              onClick={() => setActiveTab("paths")}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs text-white/70 hover:text-white"
+            >
+              ← Back to Active Plans
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("radar")}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-white/15"
+            >
+              Next Step: High-Yield Priority Radar →
+            </button>
+          </div>
+        </div>
+      )}
 
-        <section className="er-plate" aria-label="Weak topics and revision priorities">
+      {/* Tab 3: High-Yield Radar */}
+      {activeTab === "radar" && (
+        <div className="space-y-6">
+          <section className="er-plate" aria-label="Weak topics and revision priorities">
           <div className="er-card-title">
             <div>
               <span className="er-eyebrow">Weak-topic radar</span>
@@ -627,8 +706,91 @@ export function PreparationHome({
               </div>
             </>
           ) : null}
-        </section>
-      </div>
+          </section>
+          <div className="mt-6 flex justify-between">
+            <button
+              type="button"
+              onClick={() => setActiveTab("syllabus")}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs text-white/70 hover:text-white"
+            >
+              ← Back to Syllabus
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("mistakes")}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-white/15"
+            >
+              Next Step: Inspect Mistake Notebook →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Mistake Notebook */}
+      {activeTab === "mistakes" && (
+        <div className="space-y-6">
+          <section className="er-plate" aria-label="Mistake Notebook and Targeted Repair">
+            <div className="er-card-title">
+              <div>
+                <span className="er-eyebrow">Mistake Notebook</span>
+                <h3>Targeted Gap Repair & Accuracy Drill</h3>
+              </div>
+              <small>{mistakes.length} recorded mistake{mistakes.length === 1 ? "" : "s"}</small>
+            </div>
+            {mistakes.length > 0 ? (
+              <div className="er-weak-list">
+                {mistakes.map((mistake) => (
+                  <article key={mistake.id} className="er-weak-item">
+                    <div>
+                      <small className="er-priority-label">{mistake.subject} · {mistake.chapter || "General"}</small>
+                      <strong>{mistake.question}</strong>
+                      <small className="text-rose-200">Your answer: {mistake.userAnswer} · Correct: {mistake.correctAnswer}</small>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openLamPluginFromExamReady(
+                          "mistake-analyzer",
+                          `Explain why "${mistake.userAnswer}" is wrong for "${mistake.question}" (correct answer: "${mistake.correctAnswer}") and give me 2 similar practice questions.`
+                        )
+                      }
+                    >
+                      Repair with LAM <ArrowRight size={13} />
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-xs text-white/50">
+                <p>No quiz mistakes recorded yet! Take a diagnostic quiz or Question Practice drill to calibrate your gap analysis.</p>
+                <button
+                  type="button"
+                  onClick={() => navigateTo("quiz")}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/15"
+                >
+                  Take a Quick Quiz <ArrowRight size={13} />
+                </button>
+              </div>
+            )}
+          </section>
+          <div className="mt-6 flex justify-between">
+            <button
+              type="button"
+              onClick={() => setActiveTab("radar")}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs text-white/70 hover:text-white"
+            >
+              ← Back to Radar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateTo("mock-exam")}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:brightness-110"
+            >
+              Launch Timed Mock Exam →
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="er-home-features">
         {[

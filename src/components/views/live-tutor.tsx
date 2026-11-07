@@ -38,6 +38,9 @@ import { useCurriculum } from "@/lib/use-curriculum";
 import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
 import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
 import { pluginById, searchLamPlugins, type LamPlugin } from "@/lib/lam/plugin-registry";
+import { InChatPluginWidget } from "@/components/lam/in-chat-plugin-widget";
+import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
+import { generatePluginPayload, resolvePluginOutputType } from "@/lib/lam/in-chat-plugins";
 import { setLamPluginTarget, setWorkspaceMode } from "@/lib/shrinking-scholar";
 import {
   LAM_ATTACHMENT_ACCEPT,
@@ -94,6 +97,7 @@ export function LiveTutorView({
   const [studyPlan, setStudyPlan] = useState<ProposedStudyPlan | null>(null);
   const openingRef = useRef<HTMLDivElement>(null);
   useEffect(() => { const node = openingRef.current; const mark = node?.querySelector<HTMLElement>(".lt-scholar-mark"); if (mark && node) return animateLamWakeReveal(mark, Array.from(node.querySelectorAll<HTMLElement>(".lt-nav-tab,.lt-nav-beta")), resolveScholarAnimationQuality()); }, []);
+  const access = useScholarAccess();
   const user = useStore((state) => state.user);
   const addNote = useStore((state) => state.addNote);
   const profileId = `class-${user.scholarClass}`;
@@ -391,27 +395,77 @@ export function LiveTutorView({
     } catch (caught) { setError(microphoneErrorMessage(caught)); setStatus("error"); }
   }, [listening, startRecording]);
 
+  const executePluginInChat = useCallback((plugin: LamPlugin, promptText: string) => {
+    const isPlus = plugin.entitlement !== undefined || plugin.plus === true;
+    const hasAccess = !isPlus || access.has(plugin.entitlement ?? "workspace_ai");
+    const userPrompt = promptText.trim();
+    const userContent = userPrompt ? `[@${plugin.name}] ${userPrompt}` : `[@${plugin.name}] Generate study tools for my curriculum`;
+
+    const userMsg: LamMessage = {
+      id: uid(),
+      role: "user",
+      content: userContent,
+      createdAt: now(),
+    };
+
+    if (!hasAccess) {
+      const lockedMsg: LamMessage = {
+        id: uid(),
+        role: "assistant",
+        content: `I am ready to run **${plugin.name}**! This tool requires Scholar Plus. Unlock Plus below to generate full interactive decks and auto-evaluated study materials.`,
+        createdAt: now(),
+        pluginExecution: {
+          pluginId: plugin.id,
+          pluginName: plugin.name,
+          category: plugin.category,
+          isPlus: true,
+          status: "locked",
+          outputType: resolvePluginOutputType(plugin.id),
+        },
+      };
+      setMessagesByPersona((current) => ({
+        ...current,
+        [personality]: [...(current[personality] || []), userMsg, lockedMsg],
+      }));
+      return;
+    }
+
+    const { content, execution } = generatePluginPayload(
+      plugin,
+      userPrompt,
+      context.subjectTitle ?? "Science",
+      context.chapterTitle ?? "Curriculum Topics",
+      user.scholarClass
+    );
+
+    const assistMsg: LamMessage = {
+      id: uid(),
+      role: "assistant",
+      content,
+      createdAt: now(),
+      pluginExecution: execution,
+    };
+
+    setMessagesByPersona((current) => ({
+      ...current,
+      [personality]: [...(current[personality] || []), userMsg, assistMsg],
+    }));
+  }, [access, context.chapterTitle, context.subjectTitle, personality, user.scholarClass]);
+
   const submitDraft = useCallback(() => {
     if (pluginChip) {
       const prompt = composeLamMessage(draft.trim(), attachments, 4_000);
-      const toolId = pluginChip.toolId;
+      const plugin = pluginChip;
       setPluginChip(null);
       setDraft("");
       setAttachments([]);
       setAttachmentError("");
       setFailedFiles([]);
-      if (!toolId) return;
-      if (onOpenPlugin) {
-        onOpenPlugin(toolId, prompt);
-        return;
-      }
-      setLamPluginTarget(toolId, prompt);
-      setWorkspaceMode("lam-ai", "plugins");
-      navigateTo("lam-ai", { pluginId: toolId, prompt });
+      executePluginInChat(plugin, prompt);
       return;
     }
     void sendMessage(draft);
-  }, [attachments, draft, onOpenPlugin, pluginChip, sendMessage]);
+  }, [attachments, draft, executePluginInChat, pluginChip, sendMessage]);
 
   const executeAction = useCallback(() => {
     if (!pendingAction) return; setStatus("using-tool");
@@ -441,7 +495,7 @@ export function LiveTutorView({
     {(listening || status === "transcribing" || status === "speaking") ? <div className="lt-voice-pill" data-state={status} role="status"><span className="lt-voice-dot" />{status === "listening" ? "Listening" : status === "transcribing" ? "Processing…" : "LAM is speaking…"}</div> : null}
 
     <div className="lt-canvas">{messages.length || streaming ? <div className="lt-canvas-scroll" ref={scrollRef} role="log" aria-live="polite" aria-label="LAM AI conversation"><div className="lt-convo-col"><div className="mb-5"><LamScene state={avatarState} placement="tutor" size={100} compact target={draft.trim() ? "input" : "content"}/></div>
-      {captions && messages.map((message) => <article className="lt-turn" data-role={message.role} key={message.id}><div className="lt-turn-meta">{message.role === "assistant" ? <><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state="idle" animate={false}/></span>{copy.label}</> : <>You{message.inputMode === "voice" ? " · voice" : ""}</>}</div><div className="lt-bubble">{message.role === "assistant" ? <LamResponse content={message.content} optimized /> : message.content}</div>{message.role === "assistant" ? <div className="lt-msg-actions"><button className="lt-msg-act" onClick={() => void navigator.clipboard.writeText(message.content)}><Copy />Copy</button><button className="lt-msg-act" onClick={() => void remember(message.content)}><MemoryStick />Remember</button><button className="lt-msg-act" onClick={() => { setPendingAction({ type: "create-note", title: `LAM AI — ${context.chapterTitle ?? context.subjectTitle ?? "study note"}`, content: message.content }); setStatus("waiting-confirmation"); }}><FileText />Save to Notes</button></div> : null}</article>)}
+      {captions && messages.map((message) => <article className="lt-turn" data-role={message.role} key={message.id}><div className="lt-turn-meta">{message.role === "assistant" ? <><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state="idle" animate={false}/></span>{copy.label}</> : <>You{message.inputMode === "voice" ? " · voice" : ""}</>}</div><div className="lt-bubble">{message.role === "assistant" ? <><LamResponse content={message.content} optimized />{message.pluginExecution ? <InChatPluginWidget execution={message.pluginExecution} /> : null}</> : message.content}</div>{message.role === "assistant" ? <div className="lt-msg-actions"><button className="lt-msg-act" onClick={() => void navigator.clipboard.writeText(message.content)}><Copy />Copy</button><button className="lt-msg-act" onClick={() => void remember(message.content)}><MemoryStick />Remember</button><button className="lt-msg-act" onClick={() => { setPendingAction({ type: "create-note", title: `LAM AI — ${context.chapterTitle ?? context.subjectTitle ?? "study note"}`, content: message.content }); setStatus("waiting-confirmation"); }}><FileText />Save to Notes</button></div> : null}</article>)}
       {captions && streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state={avatarState}/></span>{copy.label}</div><div className="lt-bubble"><LamResponse content={streaming} optimized streaming /></div></article> : null}
       {status === "thinking" && !streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state={avatarState}/></span>{copy.label}</div><div className="lt-bubble"><span className="lt-thinking"><span /><span /><span /></span></div></article> : null}
     </div></div> : prepared ? <div className="lt-empty-state"><LamScene size={150} placement="tutor" state={avatarState} label="Ready when you are."/><h1 className="lt-empty-title">{copy.idleHeading}</h1><p className="lt-empty-sub">{copy.idleSubcopy}</p><div className="lt-empty-chips">{UNIFIED_QUICK.map((item) => <button key={item.label} className="lt-empty-chip" onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-empty-chips mt-1.5" aria-label="Quick LAM plugins">{(["concept-explainer", "pdf-generator", "flashcard-generator", "mistake-analyzer"] as const).map((id) => { const plugin = pluginById(id); return plugin ? <button key={plugin.id} type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => choosePlugin(plugin)}>@{plugin.name}</button> : null; })}<button type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => { setWorkspaceMode("lam-ai", "plugins"); navigateTo("lam-ai"); }}>All 23 plugins →</button></div></div> : null}</div>

@@ -46,12 +46,11 @@ function chapterName(chapter: Chapter, subject: Subject) {
 const AURA_STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 .aura-glass {
-  background: rgba(255,255,255,0.01);
-  background-blend-mode: luminosity;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: none;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+  background: rgba(10, 15, 26, 0.84);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -67,17 +66,18 @@ const AURA_STYLE = `
   pointer-events: none;
 }
 .aura-glass-card {
-  background: rgba(14,16,20,0.9);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(12, 18, 30, 0.88);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   border-radius: 16px;
 }
 .aura-font { font-family: 'Inter', system-ui, sans-serif; }
 .aura-glass .text-muted-foreground { color: rgba(255,255,255,0.6) !important; }
 .aura-glass input, .aura-glass textarea, .aura-glass select {
-  background: rgba(255,255,255,0.05) !important;
-  border-color: rgba(255,255,255,0.15) !important;
+  background: rgba(16, 24, 38, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
   color: white !important;
 }
 .aura-glass .bg-muted { background: rgba(255,255,255,0.05) !important; }

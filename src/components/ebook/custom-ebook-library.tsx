@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText, Loader2, LockKeyhole, Trash2, Upload, Pencil, X } from "lucide-react";
+import { FileText, Loader2, LockKeyhole, Trash2, Upload, Pencil, X, Sparkles, BookOpen } from "lucide-react";
 import { ebookFailure, pdfValidation } from "@/lib/ebooks/contracts";
 import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";

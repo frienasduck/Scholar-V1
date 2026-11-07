@@ -285,40 +285,10 @@ export function LamAIView() {
       <WorkspaceTabs workspaceId={WORKSPACE} active={mode} onSelect={select} flush />
       <WorkspacePanel workspaceId={WORKSPACE} mode={mode} flush className="flex flex-col">
         {mode === "chat" ? (
-          guestMode ? (
-            <GuestFeatureGate
-              onSignIn={() => setAuthed(false)}
-              onBack={() => select("plugins")}
-              reduceMotion={reduceMotion}
-            />
-          ) : (
-            <PlusGate
-              entitlement="lam_ai"
-              title="LAM AI"
-              description="Use LAM AI with live tutoring personalities, memory, and provider choice."
-              anchor="ai"
-            >
-              <LiveTutorView embedded onOpenPlugin={openPlugin} />
-            </PlusGate>
-          )
+          <LiveTutorView embedded onOpenPlugin={openPlugin} />
         ) : null}
         {mode === "tutor" ? (
-          guestMode ? (
-            <GuestFeatureGate
-              onSignIn={() => setAuthed(false)}
-              onBack={() => select("plugins")}
-              reduceMotion={reduceMotion}
-            />
-          ) : (
-            <PlusGate
-              entitlement="lam_ai"
-              title="AI Tutor"
-              description="Learn with Scholar's context-aware premium AI tutor."
-              anchor="ai"
-            >
-              <AITutorView />
-            </PlusGate>
-          )
+          <AITutorView />
         ) : null}
         {mode === "plugins" ? (
           <LamPluginsPanel

@@ -27,6 +27,48 @@ export interface LamPageContext {
   recentQuizScore?: string;
 }
 
+export interface LamPluginQuizQuestion {
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+}
+
+export interface LamPluginFlashcard {
+  front: string;
+  back: string;
+  tip?: string;
+}
+
+export interface LamPluginSlide {
+  title: string;
+  bullets: string[];
+  takeaway: string;
+  note?: string;
+}
+
+export interface LamPluginFormula {
+  name: string;
+  formula: string;
+  units: string;
+  condition?: string;
+}
+
+export interface LamPluginExecution {
+  pluginId: string;
+  pluginName: string;
+  category?: string;
+  isPlus?: boolean;
+  status: "idle" | "running" | "ready" | "locked";
+  outputType: "quiz" | "flashcards" | "slideshow" | "formula-sheet" | "pdf" | "explainer" | "generic";
+  quiz?: LamPluginQuizQuestion[];
+  flashcards?: LamPluginFlashcard[];
+  slides?: LamPluginSlide[];
+  formulas?: LamPluginFormula[];
+  pdfData?: { title: string; subtitle: string; sections: Array<{ heading: string; body: string }> };
+  explainerData?: { concept: string; intuition: string; definition: string; derivation?: string; mistakes: string[] };
+}
+
 export interface LamMessage {
   id: string;
   role: "user" | "assistant" | "tool";
@@ -34,6 +76,7 @@ export interface LamMessage {
   inputMode?: "text" | "voice";
   createdAt: string;
   sources?: Array<{ label: string; route?: string }>;
+  pluginExecution?: LamPluginExecution;
 }
 
 export interface LamConversation {

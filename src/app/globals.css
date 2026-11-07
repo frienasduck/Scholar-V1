@@ -340,22 +340,44 @@ html[data-scholar-theme="theme-paper"] {
     font-feature-settings: "cv11", "ss01";
     font-variation-settings: "opsz" 32;
   }
-  /* Refined scrollbar */
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  /* Sleek Liquid Glass Scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-button { display: none !important; width: 0 !important; height: 0 !important; }
+  ::-webkit-scrollbar-corner { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.5 0.02 250 / 0.25);
+    background: rgba(255, 255, 255, 0.18);
     border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.5 0.02 250 / 0.45);
-    background-clip: padding-box;
+    background: rgba(255, 255, 255, 0.35);
   }
   .dark ::-webkit-scrollbar-thumb {
-    background: oklch(0.7 0.02 250 / 0.18);
-    background-clip: padding-box;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .ws-liquid-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.28) rgba(255, 255, 255, 0.03);
+  }
+  .ws-liquid-scroll::-webkit-scrollbar { height: 6px; }
+  .ws-liquid-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+    margin: 0 4px;
+  }
+  .ws-liquid-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.25), rgba(103, 232, 249, 0.4));
+    border-radius: 999px;
+    border: none;
+  }
+  .ws-liquid-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(103, 232, 249, 0.65));
   }
 }
 
