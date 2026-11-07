@@ -1,0 +1,15 @@
+import{readFileSync,writeFileSync,readdirSync,existsSync}from'node:fs';
+import{createHash}from'node:crypto';
+import{execFileSync}from'node:child_process';
+import{join}from'node:path';
+const backup='C:/Users/Lenovo/Desktop/SCHOLAR/.rollback-backups/2026-11-04-liquid-velocity-3-1';
+const files=(root)=>readdirSync(root,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(join(root,e.name)):[join(root,e.name)]);
+const hash=p=>createHash('sha256').update(readFileSync(p)).digest('hex');
+const baseline=files(backup+'/src').concat(files(backup+'/tests'));
+const relative=p=>p.slice(backup.length+1).replaceAll('\\','/');
+const missing=baseline.filter(p=>!existsSync(relative(p))).map(relative);
+const critical=baseline.filter(p=>{const r=relative(p);return r.startsWith('src/lib/')&&r!=='src/lib/animation/dock-swipe.ts'||r.startsWith('src/app/api/')||r.startsWith('src/components/exam-ready/')||/src\/components\/(launch-|account-security|appearance-runtime)/.test(r)||r==='src/components/liquid-glass/liquid-glass-provider.tsx'||r.startsWith('src/components/landing/');});
+const mismatches=critical.filter(p=>hash(p)!==hash(relative(p))).map(relative);
+const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim();
+const report={head:git('rev-parse','HEAD'),branch:git('branch','--show-current'),indexEmpty:git('diff','--cached','--name-only')==='',backup,baselineFiles:baseline.length,missingBaselineFiles:missing,criticalFilesCompared:critical.length,criticalMismatches:mismatches,changedTrackedFiles:git('-c','core.safecrlf=false','diff','--name-only').split(/\r?\n/),noPublicationPerformed:true,noDatabaseOrPaidAICallsPerformed:true};
+writeFileSync('test-artifacts/liquid-velocity-3-1/safety-final.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));if(missing.length||mismatches.length||!report.indexEmpty||report.head!=='91554372aff1e692ee8009b7165c8cb3209894e1')process.exitCode=1;

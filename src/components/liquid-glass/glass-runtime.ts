@@ -72,6 +72,13 @@ function assignOptics(): void {
   }
 }
 
+/** An already registered lens can take interaction priority without duplicate
+ * registrations, a second surface, or relaxing the shared compositor budget. */
+export function setGlassSurfacePriority(el: HTMLElement, priority: number): void {
+  const entry=entries.get(el);
+  if (entry && entry.opts.priority!==priority) { entry.opts.priority=priority; assignOptics(); }
+}
+
 function clamp(value: number, min: number, max: number): number {
   return value < min ? min : value > max ? max : value;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
+import { useSettingsNavigation } from "@/components/settings/settings-navigation";
 
 import { useStore, getLevelInfo } from "@/lib/store";
 import { Card } from "@/components/ui/card";
@@ -26,6 +28,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LearningProfileSettings } from "@/components/personalization/learning-profile-settings";
 import { LamIdentitySettings } from "@/components/lam/lam-identity-settings";
+import { ScholarIntelligenceSettings } from "@/components/settings/scholar-intelligence-settings";
+import { DownloadsSettings } from "@/components/settings/downloads-settings";
 import { AccountSecurity } from "@/components/account-security";
 import {
   User,
@@ -689,8 +693,7 @@ function CinematicVideoBg() {
 }
 
 export function SettingsView() {
-  const [settingsTab, setSettingsTab] = useState("account");
-  useEffect(() => { if (new URLSearchParams(location.search).has("drive") || location.hash === "#plugins-connections") setSettingsTab("connections"); }, []);
+  const {category:settingsTab,select:setSettingsTab}=useSettingsNavigation();
   const user = useStore((s) => s.user);
   const settings = useStore((s) => s.settings);
   const updateUser = useStore((s) => s.updateUser);
@@ -885,7 +888,7 @@ export function SettingsView() {
   }
 
   return (
-    <div className="scholar-settings scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-settings scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6" data-scene-connected="true" data-settings-page="true">
       {/* Liquid glass + cinematic CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
@@ -935,14 +938,14 @@ export function SettingsView() {
       `}</style>
 
       {/* Video background */}
-      <CinematicVideoBg />
+      <SceneBackdrop><CinematicVideoBg /></SceneBackdrop>
       {/* Dark overlay */}
       <div className="absolute inset-0 z-0 bg-black/50" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
         {/* Navigation bar */}
-        <nav className="relative z-20 pl-6 pr-6 py-6">
+        <nav className="sg-settings-brand-nav relative z-20 pl-6 pr-6 py-6">
           <div className="asme-glass rounded-full px-6 py-3 flex items-center justify-between max-w-5xl mx-auto">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
@@ -981,7 +984,7 @@ export function SettingsView() {
         </nav>
 
         {/* Hero heading */}
-        <div className="relative z-10 flex flex-col items-center justify-center px-6 pt-4 pb-8 text-center">
+        <div className="sg-settings-intro relative z-10 flex flex-col items-center justify-center px-6 pt-4 pb-8 text-center">
           <h1
             className="asme-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white mb-3 tracking-tight text-balance"
             style={{ fontFamily: "'Instrument Serif', serif" }}
@@ -1013,6 +1016,9 @@ export function SettingsView() {
               <TabsTrigger value="lam" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Bot className="h-3.5 w-3.5" />LAM
               </TabsTrigger>
+              <TabsTrigger value="intelligence" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
+                <Brain className="h-3.5 w-3.5" />Intelligence
+              </TabsTrigger>
               <TabsTrigger value="connections" className="asme-tab rounded-full text-xs px-3 py-2">Plugins &amp; Connections</TabsTrigger>
               <TabsTrigger value="privacy" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Shield className="h-3.5 w-3.5" />Privacy
@@ -1026,6 +1032,9 @@ export function SettingsView() {
               <TabsTrigger value="data" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Database className="h-3.5 w-3.5" />Data
               </TabsTrigger>
+              <TabsTrigger value="downloads" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
+                <Download className="h-3.5 w-3.5" />Downloads
+              </TabsTrigger>
               <TabsTrigger value="developer" className="asme-tab rounded-full gap-1.5 text-xs px-4 py-2">
                 <Code2 className="h-3.5 w-3.5" />Developer
               </TabsTrigger>
@@ -1035,7 +1044,8 @@ export function SettingsView() {
             <TabsContent value="connections"><PluginConnections /></TabsContent>
             <TabsContent value="personalization"><LearningProfileSettings /></TabsContent>
             <TabsContent value="account" className="mt-2">
-              <AccountSecurity />
+              {guestMode&&<p role="note" className="sg-guest-account-note">Guest learning is not account-synced. Some notes and work last only for this session; export important work before leaving or signing in.</p>}
+              <div data-velocity-press="off"><AccountSecurity /></div>
               <div className="asme-glass rounded-3xl p-6 space-y-6">
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
@@ -1050,7 +1060,7 @@ export function SettingsView() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="asme-glass rounded-full px-4 py-1.5 text-xs text-white hover:bg-white/5 transition-colors flex items-center gap-1.5"
+                        className="asme-glass rounded-full px-4 py-1.5 text-xs text-white hover:bg-white/5 transition-colors flex items-center gap-1.5" data-velocity-control="audited-v31"
                       >
                         <Upload className="h-3 w-3" /> Upload photo
                       </button>
@@ -1058,7 +1068,7 @@ export function SettingsView() {
                         <button
                           type="button"
                           onClick={() => { setForm({ ...form, avatar: "🦋" }); updateUser({ avatar: "🦋" }); }}
-                          className="text-xs text-white/60 hover:text-white px-2 py-1.5"
+                          className="text-xs text-white/60 hover:text-white px-2 py-1.5" data-velocity-control="audited-v31"
                         >
                           Remove
                         </button>
@@ -1074,7 +1084,7 @@ export function SettingsView() {
                           className={cn(
                             "grid place-items-center h-8 w-8 rounded-lg text-lg transition-all hover:bg-white/10",
                             form.avatar === em ? "bg-white/15 ring-1 ring-white/30" : ""
-                          )}
+                          )} data-velocity-control="audited-v31"
                         >
                           {em}
                         </button>
@@ -1105,10 +1115,10 @@ export function SettingsView() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-white/10">
-                  <button onClick={saveProfile} className="asme-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-1.5">
+                  <button onClick={saveProfile} className="asme-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-1.5" data-velocity-control="audited-v31">
                     <Save className="h-3.5 w-3.5" /> Save changes
                   </button>
-                  <button onClick={() => setForm(user)} className="text-white/60 hover:text-white text-sm px-3 py-2">Reset</button>
+                  <button onClick={() => setForm(user)} className="text-white/60 hover:text-white text-sm px-3 py-2" data-velocity-control="audited-v31">Reset</button>
                 </div>
               </div>
             </TabsContent>
@@ -1123,10 +1133,10 @@ export function SettingsView() {
                     <p className="mt-2 text-sm text-white/55">{access.access?.source === "plus" ? "Active" : access.access?.source === "developer" ? "All features unlocked for this secure session." : access.access?.source === "subscriptions_disabled" ? "Subscriptions are currently disabled." : "3 quiz generations · 3 slideshow generations · 30 MB file storage"}</p>
                     {access.pendingPayment && <p className="mt-3 rounded-xl border border-amber-300/15 bg-amber-300/5 px-3 py-2 text-xs text-amber-100">Scholar Plus verification {access.pendingPayment.status.replaceAll("_", " ")} · {access.pendingPayment.publicReference}</p>}
                   </div>
-                  {access.config?.subscriptionsEnabled && <button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }))} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">{access.access?.source === "plus" ? "View Scholar Plus plan" : "View Scholar Plus"}</button>}
+                  {access.config?.subscriptionsEnabled && <button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "plus" } }))} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black" data-velocity-control="audited-v31">{access.access?.source === "plus" ? "View Scholar Plus plan" : "View Scholar Plus"}</button>}
                 </div>
                 <div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-white/5 p-4"><p className="text-xs text-white/40">Quiz generations</p><p className="mt-1 font-semibold text-white">{access.usage?.quiz.used ?? 0} / {access.usage?.quiz.limit === -1 ? "Unlimited" : access.usage?.quiz.limit ?? 3}</p></div><div className="rounded-2xl bg-white/5 p-4"><p className="text-xs text-white/40">Slideshows</p><p className="mt-1 font-semibold text-white">{access.usage?.slideshow.used ?? 0} / {access.usage?.slideshow.limit === -1 ? "Unlimited" : access.usage?.slideshow.limit ?? 3}</p></div><div className="rounded-2xl bg-white/5 p-4"><p className="text-xs text-white/40">Files storage</p><p className="mt-1 font-semibold text-white">{((access.storage?.usedBytes ?? 0) / 1024 / 1024).toFixed(1)} MB / {((access.storage?.limitBytes ?? 30 * 1024 * 1024) / 1024 / 1024).toFixed(0)} MB</p></div></div>
-                <div className="mt-5 flex flex-wrap gap-3"><button onClick={() => { window.dispatchEvent(new Event("scholar:install-app")); }} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white">Install Scholar App</button><button onClick={() => void access.refresh()} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white">Restore / recheck access</button>{access.pendingPayment && <button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "subscription-payment" } }))} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">Manage payment request</button>}</div>
+                <div className="mt-5 flex flex-wrap gap-3"><button onClick={() => { window.dispatchEvent(new Event("scholar:install-app")); }} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white" data-velocity-control="audited-v31">Install Scholar App</button><button onClick={() => void access.refresh()} className="rounded-full border border-white/15 px-4 py-2 text-sm text-white" data-velocity-control="audited-v31">Restore / recheck access</button>{access.pendingPayment && <button onClick={() => window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "subscription-payment" } }))} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100" data-velocity-control="audited-v31">Manage payment request</button>}</div>
               </div>
             </TabsContent>
 
@@ -1159,7 +1169,7 @@ export function SettingsView() {
                       user.scholarClass === 9
                         ? "border-indigo-400 bg-indigo-500/15"
                         : "border-white/15 bg-white/5 hover:border-white/30"
-                    }`}
+                    }`} data-velocity-control="audited-v31"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-3xl">📘</span>
@@ -1185,7 +1195,7 @@ export function SettingsView() {
                       user.scholarClass === 11
                         ? "border-blue-400 bg-blue-500/15"
                         : "border-white/15 bg-white/5 hover:border-white/30"
-                    }`}
+                    }`} data-velocity-control="audited-v31"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-3xl">⚛️</span>
@@ -1354,7 +1364,7 @@ export function SettingsView() {
                           selected
                             ? "border-cyan-300/45 bg-cyan-300/[0.09] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_24px_rgba(34,211,238,.08)]"
                             : "border-white/10 bg-white/[0.035] hover:border-white/20 hover:bg-white/[0.06]",
-                        )}
+                        )} data-velocity-control="audited-v31"
                       >
                         <span className="flex items-center justify-between gap-3">
                           <span className="text-sm font-semibold text-white">{option.label}</span>
@@ -1497,7 +1507,7 @@ export function SettingsView() {
                   <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Speech pitch" desc={lamPreferences.speechPitch.toFixed(1)}><Slider className="w-32" min={0.6} max={1.5} step={0.1} value={[lamPreferences.speechPitch]} onValueChange={([value]) => updateLam({ speechPitch: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Volume" desc={`${Math.round(lamPreferences.speechVolume * 100)}%`}><Slider className="w-32" min={0} max={1} step={0.1} value={[lamPreferences.speechVolume]} onValueChange={([value]) => updateLam({ speechVolume: value })} /></GlassSettingRow>
                   <GlassSettingRow icon={<Volume2 className="h-4 w-4 text-white/70" />} title="Preferred voice" desc="Choose a voice installed by your browser or device."><Select value={lamPreferences.selectedVoice || "system"} onValueChange={(value) => updateLam({ selectedVoice: value === "system" ? "" : value })}><SelectTrigger aria-label="LAM preferred voice" className="w-48 asme-glass-input"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="system">System default</SelectItem>{speechVoices.map((voice) => <SelectItem key={voice.voiceURI} value={voice.name}>{voice.name} · {voice.lang}</SelectItem>)}</SelectContent></Select></GlassSettingRow>
-                  <button onClick={() => { if (!("speechSynthesis" in window)) return toast.error("Speech synthesis is unavailable"); window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance("Hi, I’m LAM. Your voice settings are working."); utterance.rate = lamPreferences.speechRate; utterance.pitch = lamPreferences.speechPitch; utterance.volume = lamPreferences.speechVolume; window.speechSynthesis.speak(utterance); }} className="mt-4 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-white hover:bg-white/10">Test voice</button>
+                  <button onClick={() => { if (!("speechSynthesis" in window)) return toast.error("Speech synthesis is unavailable"); window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance("Hi, I’m LAM. Your voice settings are working."); utterance.rate = lamPreferences.speechRate; utterance.pitch = lamPreferences.speechPitch; utterance.volume = lamPreferences.speechVolume; window.speechSynthesis.speak(utterance); }} className="mt-4 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-white hover:bg-white/10" data-velocity-control="audited-v31">Test voice</button>
                 </div>
               </div>
 
@@ -1527,6 +1537,11 @@ export function SettingsView() {
               </div>
 
               <div className="asme-glass rounded-3xl p-6"><h3 className="font-semibold text-white">Privacy controls</h3><p className="mt-1 text-sm text-white/50">Clearing LAM removes conversations, preferences, memory, and action history for this Class {user.scholarClass} profile only. Scholar notes created through LAM remain in Notes.</p><button onClick={() => { if (!window.confirm(`Clear all LAM data for ${user.name}'s Class ${user.scholarClass} profile?`)) return; clearLamProfile(lamProfileId); setLamPreferences(loadLamState(lamProfileId).preferences); toast.success("LAM profile data cleared"); }} className="mt-4 rounded-full border border-rose-300/25 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-500/20">Clear this profile’s LAM data</button></div>
+            </TabsContent>
+
+            {/* ===== Scholar Intelligence ===== */}
+            <TabsContent value="intelligence" className="mt-2 space-y-4">
+              <ScholarIntelligenceSettings scholarClass={user.scholarClass} />
             </TabsContent>
 
             {/* ===== Privacy ===== */}
@@ -1595,10 +1610,10 @@ export function SettingsView() {
                   <p className="text-sm text-white/50 mt-1">Export your entire study data as JSON, or restore from a backup file.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button onClick={exportData} className="asme-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-1.5">
+                  <button onClick={exportData} className="asme-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-1.5" data-velocity-control="audited-v31">
                     <Download className="h-3.5 w-3.5" /> Export all data
                   </button>
-                  <button onClick={() => importRef.current?.click()} className="asme-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-1.5">
+                  <button onClick={() => importRef.current?.click()} className="asme-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-1.5" data-velocity-control="audited-v31">
                     <Upload className="h-3.5 w-3.5" /> Import data
                   </button>
                   <input ref={importRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importData(f); e.target.value = ""; }} />
@@ -1632,8 +1647,13 @@ export function SettingsView() {
               </div>
             </TabsContent>
 
+            {/* ===== Downloads ===== */}
+            <TabsContent value="downloads" className="mt-2 space-y-4">
+              <DownloadsSettings scholarClass={user.scholarClass} />
+            </TabsContent>
+
             {/* ===== Developer ===== */}
-            <TabsContent value="developer" className="mt-2 space-y-4">
+            <TabsContent value="developer" className="mt-2 space-y-4" data-velocity-press="off">
               <div className="asme-glass rounded-3xl p-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
@@ -1693,11 +1713,11 @@ export function SettingsView() {
                   <Gamepad2 className="h-4 w-4 text-white/70" /> Quick Actions
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <button onClick={doCompleteDailyChallenge} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5"><Trophy className="h-3.5 w-3.5" /> Complete daily</button>
-                  <button onClick={() => { addCoins(10000); toast.success("+10,000 coins"); }} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5"><Coins className="h-3.5 w-3.5" /> +10,000 coins</button>
-                  <button onClick={() => { addXP(5000); toast.success("+5,000 XP"); }} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5"><Zap className="h-3.5 w-3.5" /> +5,000 XP</button>
-                  <button onClick={() => applyLevel(getLevelInfo(xp).level + 5)} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5"><Star className="h-3.5 w-3.5" /> +5 levels</button>
-                  <button onClick={() => applyStreak(streak + 30)} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5"><Flame className="h-3.5 w-3.5" /> +30 streak</button>
+                  <button onClick={doCompleteDailyChallenge} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5" data-velocity-control="audited-v31"><Trophy className="h-3.5 w-3.5" /> Complete daily</button>
+                  <button onClick={() => { addCoins(10000); toast.success("+10,000 coins"); }} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5" data-velocity-control="audited-v31"><Coins className="h-3.5 w-3.5" /> +10,000 coins</button>
+                  <button onClick={() => { addXP(5000); toast.success("+5,000 XP"); }} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5" data-velocity-control="audited-v31"><Zap className="h-3.5 w-3.5" /> +5,000 XP</button>
+                  <button onClick={() => applyLevel(getLevelInfo(xp).level + 5)} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5" data-velocity-control="audited-v31"><Star className="h-3.5 w-3.5" /> +5 levels</button>
+                  <button onClick={() => applyStreak(streak + 30)} className="asme-glass rounded-2xl px-3 py-2.5 text-white text-xs font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5" data-velocity-control="audited-v31"><Flame className="h-3.5 w-3.5" /> +30 streak</button>
                 </div>
               </div>
 
@@ -1722,7 +1742,7 @@ export function SettingsView() {
             { Icon: Twitter, label: "Twitter" },
             { Icon: Globe, label: "Website" },
           ].map(({ Icon, label }) => (
-            <button key={label} type="button" aria-label={label} onClick={() => toast.info(`${label} link is not configured yet`, { description: "No page was opened. Scholar will publish verified official links here when available." })} className="asme-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all">
+            <button key={label} type="button" aria-label={label} onClick={() => toast.info(`${label} link is not configured yet`, { description: "No page was opened. Scholar will publish verified official links here when available." })} className="asme-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all" data-velocity-control="audited-v31">
               <Icon size={20} className="h-5 w-5" />
             </button>
           ))}
@@ -1780,7 +1800,7 @@ function GlassField({ label, children }: { label: string; children: React.ReactN
 
 function GlassSettingRow({ icon, title, desc, children }: { icon: React.ReactNode; title: string; desc: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+    <div className="sg-setting-row flex items-center gap-4 py-4 first:pt-0 last:pb-0">
       <div className="grid place-items-center h-9 w-9 rounded-lg bg-white/5 text-white/70 shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white">{title}</p>
@@ -1797,11 +1817,11 @@ function GlassDevNumberInput({ label, icon, value, onChange, presets, onApply }:
       <span className="text-xs font-medium uppercase tracking-wider text-white/50 flex items-center gap-1.5">{icon}{label}</span>
       <div className="flex gap-2">
         <Input type="number" value={value} onChange={(e) => onChange(e.target.value)} className="asme-glass-input font-mono" />
-        <button onClick={onApply} className="asme-glass rounded-full px-4 py-2 text-white text-xs font-medium hover:bg-white/5 transition-colors shrink-0">Apply</button>
+        <button onClick={onApply} className="asme-glass rounded-full px-4 py-2 text-white text-xs font-medium hover:bg-white/5 transition-colors shrink-0" data-velocity-control="audited-v31">Apply</button>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {presets.map((p) => (
-          <button key={p.label} onClick={p.onClick} className="px-2 py-1 text-[10px] font-medium rounded-md bg-white/5 hover:bg-white/10 text-white/60 transition">{p.label}</button>
+          <button key={p.label} onClick={p.onClick} className="px-2 py-1 text-[10px] font-medium rounded-md bg-white/5 hover:bg-white/10 text-white/60 transition" data-velocity-control="audited-v31">{p.label}</button>
         ))}
       </div>
     </div>
@@ -1898,7 +1918,7 @@ function ResetEverythingDialog({ onConfirm }: { onConfirm: () => void }) {
         <DialogFooter className="gap-2 sm:gap-2">
           <button
             onClick={() => setOpen(false)}
-            className="rounded-full px-5 py-2 text-white text-sm hover:bg-white/5 border border-white/10 transition-colors"
+            className="rounded-full px-5 py-2 text-white text-sm hover:bg-white/5 border border-white/10 transition-colors" data-velocity-control="audited-v31"
           >
             Cancel
           </button>

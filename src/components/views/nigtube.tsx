@@ -1,5 +1,4 @@
 "use client";
-import { ResourceShelf } from "@/components/resources/resource-library";
 import { LamTubeCompanion } from "@/components/lam/lamtube-companion";
 import { AIVideoFeedCard } from "@/components/lamtube/feed-card";
 import { useVideoLibrary, videoScope } from "@/lib/lamtube/library";
@@ -952,7 +951,7 @@ export function NigtubeView() {
               )}
             </>
           )}
-          {!selectedVideo && <div className="mt-8"><ResourceShelf grade={scholarClass} subjectId={({ Physics: "physics", Chemistry: "chemistry", Mathematics: "maths" } as Record<string, string>)[activeSubject]} type="video" title="Curated lecture sources"/></div>}
+          {!selectedVideo && <></>}
         </div>
 
         {/* Floating Mini Player */}

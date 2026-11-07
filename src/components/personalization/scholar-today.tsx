@@ -6,7 +6,6 @@ import { navigateTo } from "@/lib/nav-event";
 import { GlassSurface } from "@/components/liquid-glass/glass-surface";
 import { GlassButton } from "@/components/liquid-glass/glass-button";
 import type { StudyAction } from "@/lib/personalization/engine";
-import { ResourceShelf } from "@/components/resources/resource-library";
 export function ScholarToday() {
   const {profile,open}=useLearningProfile();const sessions=useStore(s=>s.sessions);
   const access=useScholarAccess();
@@ -41,5 +40,5 @@ export function ScholarTodaySources() {
   const activeGrade = useStore(s => s.user.scholarClass);
   const enabled = useStore(s => s.settings.yourScholarEnabled === true);
   if (!enabled || !profile?.result || profile.result.grade !== activeGrade) return null;
-  return <ResourceShelf grade={activeGrade} subjectId={profile.result.priorities[0]?.id} title="Sources for your next useful step"/>;
+  return <></>;
 }

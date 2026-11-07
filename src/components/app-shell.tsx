@@ -1,13 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ResourceSearchCommands } from "@/components/resources/resource-search-commands";
+import { InlineSearch } from "@/components/inline-search";
 import { LamTubeBackgroundJobs } from "@/components/lamtube/background-jobs";
 import { ScholarFooter } from "@/components/scholar-footer";
 import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore, getLevelInfo } from "@/lib/store";
 import { NAV_ITEMS, NAV_GROUPS } from "@/lib/nav";
+import {
+  pathForDestination,
+  peekSettingsTarget,
+  resolveScholarDestination,
+  setLamPluginTarget,
+  setSettingsTarget,
+  setWorkspaceMode,
+  type ScholarDestination,
+} from "@/lib/shrinking-scholar";
 import { cn } from "@/lib/utils";
 import { migrateLegacyStorage } from "@/lib/profile-storage";
 import { FloatingMusicWidget } from "@/components/views/music-widget";
@@ -22,9 +31,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
+  Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   GraduationCap, Sparkles, Flame, Coins, Zap, Menu, Search, Command as CmdIcon, Bot, X,
   PanelLeftClose, AlertCircle, BookOpen, LayoutGrid,
@@ -33,14 +41,14 @@ import {
 
 const DashboardView = dynamic(() => import("@/components/views/dashboard").then((module) => module.DashboardView), { loading: ViewLoading });
 const GroupStudyView = dynamic(() => import("@/components/views/group-study").then((module) => module.GroupStudyView), { loading: ViewLoading });
-const IntelligenceView = dynamic(() => import("@/components/views/intelligence").then((module) => module.IntelligenceView), { loading: ViewLoading });
 const ChapterCommandCenter = dynamic(() => import("@/components/chapter-command/workspace").then((module) => module.ChapterCommandCenter), { loading: ViewLoading });
-const AITutorView = dynamic(() => import("@/components/views/ai-tutor").then((module) => module.AITutorView), { loading: ViewLoading });
-const LiveTutorView = dynamic(() => import("@/components/views/live-tutor").then((module) => module.LiveTutorView), { loading: ViewLoading });
-const AIToolsView = dynamic(() => import("@/components/views/ai-tools").then((module) => module.AIToolsView), { loading: ViewLoading });
+const QuestionPracticeView = dynamic(() => import("@/components/views/question-practice").then((module) => module.QuestionPracticeView), { loading: ViewLoading });
+const DoubtLabView = dynamic(() => import("@/components/views/doubt-lab").then((module) => module.DoubtLabView), { loading: ViewLoading });
+const ExperimentLabView = dynamic(() => import("@/components/views/experiment-lab").then((module) => module.ExperimentLabView), { loading: ViewLoading });
+const StudyMediaView = dynamic(() => import("@/components/views/study-media").then((module) => module.StudyMediaView), { loading: ViewLoading });
+const LamAIView = dynamic(() => import("@/components/views/lam-ai").then((module) => module.LamAIView), { loading: ViewLoading });
 const NotesView = dynamic(() => import("@/components/views/notes").then((module) => module.NotesView), { loading: ViewLoading });
 const FlashcardsView = dynamic(() => import("@/components/views/flashcards").then((module) => module.FlashcardsView), { loading: ViewLoading });
-const QuizView = dynamic(() => import("@/components/views/quiz").then((module) => module.QuizView), { loading: ViewLoading });
 const PlannerView = dynamic(() => import("@/components/views/planner").then((module) => module.PlannerView), { loading: ViewLoading });
 const FocusView = dynamic(() => import("@/components/views/focus").then((module) => module.FocusView), { loading: ViewLoading });
 const ResourcesView = dynamic(() => import("@/components/views/resources").then((module) => module.ResourcesView), { loading: ViewLoading });
@@ -56,26 +64,17 @@ const GalaxyView = dynamic(() => import("@/components/views/galaxy").then((modul
 const FormulaExplorerView = dynamic(() => import("@/components/views/formulas").then((module) => module.FormulaExplorerView), { loading: ViewLoading });
 const StudyView = dynamic(() => import("@/components/views/study").then((module) => module.StudyView), { loading: ViewLoading });
 const EBookView = dynamic(() => import("@/components/views/ebook").then((module) => module.EBookView), { loading: ViewLoading });
-const PracticeView = dynamic(() => import("@/components/views/practice").then((module) => module.PracticeView), { loading: ViewLoading });
 const SettingsView = dynamic(() => import("@/components/views/settings").then((module) => module.SettingsView), { loading: ViewLoading });
 const FriendsView = dynamic(() => import("@/components/views/friends").then((module) => module.FriendsView), { loading: ViewLoading });
-const NigtubeView = dynamic(() => import("@/components/views/nigtube").then((module) => module.NigtubeView), { loading: ViewLoading });
-const LabView = dynamic(() => import("@/components/views/lab").then((module) => module.LabView), { loading: ViewLoading });
 const LevelsView = dynamic(() => import("@/components/views/levels").then((module) => module.LevelsView), { loading: ViewLoading });
-const PastPapersView = dynamic(() => import("@/components/views/past-papers").then((module) => module.PastPapersView), { loading: ViewLoading });
-const AnswerLabView = dynamic(() => import("@/components/views/answer-lab").then((module) => module.AnswerLabView), { loading: ViewLoading });
 const RevisionHubView = dynamic(() => import("@/components/views/revision-hub").then((module) => module.RevisionHubView), { loading: ViewLoading });
 const MockExamView = dynamic(() => import("@/components/views/mock-exam").then((module) => module.MockExamView), { loading: ViewLoading });
 const GoalCenterView = dynamic(() => import("@/components/views/goal-center").then((module) => module.GoalCenterView), { loading: ViewLoading });
 const RemindersView = dynamic(() => import("@/components/views/reminders").then((module) => module.RemindersView), { loading: ViewLoading });
-const DoubtHistoryView = dynamic(() => import("@/components/views/doubt-history").then((module) => module.DoubtHistoryView), { loading: ViewLoading });
-const DownloadsView = dynamic(() => import("@/components/views/downloads").then((module) => module.DownloadsView), { loading: ViewLoading });
 const AssignmentsView = dynamic(() => import("@/components/views/assignments").then((module) => module.AssignmentsView), { loading: ViewLoading });
 const WorkspaceView = dynamic(() => import("@/components/views/workspace").then((module) => module.WorkspaceView), { loading: ViewLoading });
-const MusicView = dynamic(() => import("@/components/views/music").then((module) => module.MusicView), { loading: ViewLoading });
 const CanvasView = dynamic(() => import("@/components/views/canvas").then((module) => module.CanvasView), { loading: ViewLoading });
 const ToolboxView = dynamic(() => import("@/components/views/toolbox").then((module) => module.ToolboxView), { loading: ViewLoading });
-const PracticalsView = dynamic(() => import("@/components/views/practicals").then((module) => module.PracticalsView), { loading: ViewLoading });
 const PythonView = dynamic(() => import("@/components/views/python").then((module) => module.PythonView), { loading: ViewLoading });
 const DerivationsView = dynamic(() => import("@/components/views/derivations").then((module) => module.DerivationsView), { loading: ViewLoading });
 import { LamWidget } from "@/components/lam-widget";
@@ -96,7 +95,11 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
 import { SectionShutdown } from "@/components/section-shutdown";
 import { getSectionShutdown } from "@/lib/section-availability";
-import { NavigationLens, useNavigationLens, VelocityPage, VelocitySidebar } from "@/components/liquid-glass/velocity-motion";
+import { NavigationLens, useNavigationLens, VelocityPage, VelocitySidebar, type NavigationLensControl } from "@/components/liquid-glass/velocity-motion";
+import { useSidebarTouch } from "@/components/liquid-glass/use-sidebar-touch";
+import { SceneBackdropContext, SidebarOptic } from "@/components/liquid-glass/scene-backdrop";
+import { GuestSessionNotice } from "@/components/guest/guest-session-notice";
+import { ScholarIntelligenceConsentPrompt } from "@/components/personalization/intelligence-consent-prompt";
 import { MobileLiquidDock } from "@/components/liquid-glass/mobile-liquid-dock";
 import { useGlassRuntime } from "@/components/liquid-glass/liquid-glass-provider";
 
@@ -107,14 +110,14 @@ function ViewLoading() {
 const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   dashboard: DashboardView,
   "group-study": GroupStudyView,
-  intelligence: IntelligenceView,
   "chapter-command": ChapterCommandCenter,
-  "ai-tutor": AITutorView,
-  "live-tutor": LiveTutorView,
-  "ai-tools": AIToolsView,
+  "question-practice": QuestionPracticeView,
+  "doubt-lab": DoubtLabView,
+  "experiment-lab": ExperimentLabView,
+  "study-media": StudyMediaView,
+  "lam-ai": LamAIView,
   notes: NotesView,
   flashcards: FlashcardsView,
-  quiz: QuizView,
   planner: PlannerView,
   focus: FocusView,
   resources: ResourcesView,
@@ -129,26 +132,17 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
   formulas: FormulaExplorerView,
   study: StudyView,
   ebook: EBookView,
-  practice: PracticeView,
   settings: SettingsView,
   friends: FriendsView,
-  nigtube: NigtubeView,
-  lab: LabView,
   levels: LevelsView,
-  "past-papers": PastPapersView,
-  "answer-lab": AnswerLabView,
   "revision-hub": RevisionHubView,
   "mock-exam": MockExamView,
   "goal-center": GoalCenterView,
   reminders: RemindersView,
-  "doubt-history": DoubtHistoryView,
-  downloads: DownloadsView,
   assignments: AssignmentsView,
   workspace: WorkspaceView,
-  music: MusicView,
   canvas: CanvasView,
   toolbox: ToolboxView,
-  practicals: PracticalsView,
   python: PythonView,
   derivations: DerivationsView,
   plus: ScholarPlusView,
@@ -156,18 +150,13 @@ const VIEW_COMPONENTS: Record<string, React.ComponentType> = {
 };
 
 const VIEW_ENTITLEMENTS: Record<string, { entitlement: ScholarEntitlement; title: string; description: string; anchor?: string }> = {
-  music: { entitlement: "study_music_ad_free", title: "Study Music", description: "Build your study soundtrack with music, playlists, focus sessions and native ambience.", anchor: "music" },
   levels: { entitlement: "levels", title: "Levels", description: "Unlock Scholar progression, advanced rewards, and full level insights." },
   assignments: { entitlement: "assignments", title: "Assignments", description: "Create, manage, and improve assignments with Scholar’s advanced workflow." },
-  practicals: { entitlement: "practical_lab", title: "Practical Lab", description: "Explore practical procedures, observations, and interactive laboratory guidance." },
   derivations: { entitlement: "derivation_library", title: "Derivation Library", description: "Study complete derivations with guided steps and focused practice." },
   formulas: { entitlement: "formula_explorer", title: "Formula Explorer", description: "Explore formulas visually, understand each symbol, and generate guided practice." },
   python: { entitlement: "python_workspace", title: "Python Workspace", description: "Write, run, and learn Python in browser with an interactive CPython environment and AI code assistance." },
-  intelligence: { entitlement: "scholar_intelligence", title: "Scholar Intelligence", description: "Turn your learning evidence into mastery, revision, and weakness insights.", anchor: "ai" },
-  "ai-tutor": { entitlement: "lam_ai", title: "AI Tutor", description: "Learn with Scholar's context-aware premium AI tutor.", anchor: "ai" },
-  "live-tutor": { entitlement: "lam_ai", title: "LAM AI", description: "Use LAM AI with live tutoring personalities, memory, and provider choice.", anchor: "ai" },
 };
-const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment", "live-tutor", "ai-tutor"]);
+const GUEST_RESTRICTED_VIEWS = new Set(["files", "store", "plus", "subscription-payment"]);
 
 function useNavBadges() {
   const flashcards = useStore((s) => s.flashcards);
@@ -191,7 +180,7 @@ function useNavBadges() {
       return {
         flashcards: due > 0 ? (due > 9 ? "9+" : String(due)) : null,
         planner: dueTasks > 0 ? String(dueTasks) : null,
-        quiz: dc ? "•" : null,
+        "question-practice": dc ? "•" : null,
         community: communityActivity > 0 ? String(communityActivity) : null,
         friends: pendingReqs > 0 ? String(pendingReqs) : null,
       };
@@ -199,7 +188,7 @@ function useNavBadges() {
       return {
         flashcards: null,
         planner: null,
-        quiz: null,
+        "question-practice": null,
         community: null,
         friends: null,
       };
@@ -217,7 +206,9 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
   const backgroundTasks = useBackgroundTasks();
   const access = useScholarAccess();
   const navRoot = useRef<HTMLElement>(null);
-  const lens = useNavigationLens(navRoot, active, "y");
+  const lensControl = useRef<NavigationLensControl | null>(null);
+  const lens = useNavigationLens(navRoot, active, "y", lensControl);
+  useSidebarTouch(navRoot, lensControl, active, selectionId === "mobile");
   const finishedViews = useMemo(() => new Set(backgroundTasks.filter(task => task.status === "complete" && !task.read).map(task => task.viewId)), [backgroundTasks]);
   return (
     <nav ref={navRoot} data-velocity-nav={selectionId} className="relative isolate flex flex-col gap-6 px-3 py-2">
@@ -309,7 +300,7 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
   );
 }
 
-function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onOpenCmd: () => void; onOpenMobile: () => void; onToggleSidebar: () => void; sidebarOpen: boolean }) {
+function TopBar({ onNavigate, onOpenMobile, onToggleSidebar, sidebarOpen }: { onNavigate: (id:string)=>void; onOpenMobile: () => void; onToggleSidebar: () => void; sidebarOpen: boolean }) {
   const user = useStore((s) => s.user);
   const guestMode = useStore((s) => s.guestMode);
   const xp = useStore((s) => s.xp);
@@ -330,7 +321,7 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
 
           {/* Class badge — small indicator only, switcher is in Settings */}
           <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
+            className="scholar-class-indicator flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
             style={{
               background: user.scholarClass === 11 ? "rgba(59,130,246,0.12)" : "rgba(99,102,241,0.12)",
               color: user.scholarClass === 11 ? "#60a5fa" : "#818cf8",
@@ -341,17 +332,11 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             {user.jeeMode && <span className="px-1 py-0.5 rounded-full bg-orange-500 text-white text-[8px]">JEE</span>}
           </div>
 
-          <Button variant="outline" size="sm" onClick={onOpenCmd} aria-label="Search or jump to…" className="scholar-top-search min-w-0 max-w-xs flex-1 lg:w-72 lg:flex-none justify-start text-muted-foreground font-normal">
-            <Search className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Search or jump to…</span>
-          <kbd className="ml-auto hidden lg:inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono">
-            <CmdIcon className="h-3 w-3" />K
-          </kbd>
-        </Button>
+          <InlineSearch onNavigate={onNavigate}/>
 
         <div id="scholar-lam-dock" className="scholar-lam-dock hidden min-w-0 flex-1 items-center justify-center lg:flex" />
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="scholar-top-actions ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="hidden min-[390px]:block"><StudyMusicQuickAccess /></div>
           <div className="hidden sm:block"><FeedbackButton /></div>
           <NotificationCenter />
@@ -371,81 +356,25 @@ function TopBar({ onOpenCmd, onOpenMobile, onToggleSidebar, sidebarOpen }: { onO
             <span className="text-sm font-semibold tabular-nums">Lv {li.level}</span>
           </div>
           </div>
-          <div className="scholar-top-profile shrink-0 grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
+          <button type="button" onClick={()=>onNavigate("settings")} aria-label="Account and session settings" title={guestMode?"Guest: some work lasts only for this session. Account & session information":"Account settings"} className="scholar-top-profile shrink-0 grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
             {user.avatar.startsWith("data:") ? (
               <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
             ) : (
               <span>{user.avatar}</span>
             )}
-          </div>
+          </button>
         </div>
       </div>
     </header>
   );
 }
 
-function CommandPalette({ open, onOpenChange, onNavigate }: { open: boolean; onOpenChange: (o: boolean) => void; onNavigate: (id: string) => void }) {
-  const [resourceQuery, setResourceQuery] = useState("");
-  return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search views, actions and study sources…" value={resourceQuery} onValueChange={setResourceQuery}/>
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        {open && <ResourceSearchCommands query={resourceQuery} onNavigate={() => { onNavigate("resources"); onOpenChange(false); }}/>}
-        <CommandGroup heading="Navigate">
-          {NAV_ITEMS.filter((item) => !item.preview).map((item) => (
-            <CommandItem
-              key={item.id}
-              onSelect={() => { onNavigate(item.id); onOpenChange(false); }}
-              className="cursor-pointer"
-            >
-              <item.icon className="h-4 w-4 mr-2 text-muted-foreground" />
-              {item.label}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Class 11 E-Books">
-          <CommandItem onSelect={() => { try { sessionStorage.setItem("scholar:ebook:target", JSON.stringify({ bookId: "chemistry-pt1", destination: "Reader" })); } catch {} onNavigate("ebook"); onOpenChange(false); }}>
-            <BookOpen className="h-4 w-4 mr-2 text-rose-400" /> Chemistry Part 1 — Some Basic Concepts · Structure of Atom · Clean PDF · Original Scan
-          </CommandItem>
-          <CommandItem onSelect={() => { try { sessionStorage.setItem("scholar:ebook:target", JSON.stringify({ bookId: "maths-pt1", destination: "Reader" })); } catch {} onNavigate("ebook"); onOpenChange(false); }}>
-            <BookOpen className="h-4 w-4 mr-2 text-indigo-400" /> Mathematics Part 1 — Sets · Relations and Functions
-          </CommandItem>
-        </CommandGroup>
-        <CommandGroup heading="Quick Actions">
-          <CommandItem onSelect={() => { onNavigate("ai-tutor"); onOpenChange(false); }}>
-            <Bot className="h-4 w-4 mr-2 text-muted-foreground" /> Ask AI Tutor
-          </CommandItem>
-          <CommandItem onSelect={() => { onNavigate("quiz"); onOpenChange(false); }}>
-            <Sparkles className="h-4 w-4 mr-2 text-muted-foreground" /> Take a Quiz
-          </CommandItem>
-          <CommandItem onSelect={() => { onNavigate("focus"); onOpenChange(false); }}>
-            <Zap className="h-4 w-4 mr-2 text-muted-foreground" /> Start Focus Timer
-          </CommandItem>
-        </CommandGroup>
-      </CommandList>
-    </CommandDialog>
-  );
-}
 
 // Lightweight command dialog wrapper using the available Dialog primitives
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-function CommandDialog({ open, onOpenChange, children }: { open: boolean; onOpenChange: (o: boolean) => void; children: React.ReactNode }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-glass-dialog="command" className="sg-dialog overflow-hidden p-0 shadow-2xl max-w-xl" showCloseButton={true}>
-        <DialogTitle className="sr-only">Command palette</DialogTitle>
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
-          {children}
-        </Command>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function Footer({ active }: { active: string }) {
-  if (active === "live-tutor" || active === "exam-prep") return null;
-  return <ScholarFooter compact={["ebook", "mock-exam", "subscription-payment", "ai-tutor"].includes(active)} />;
+  if (active === "lam-ai" || active === "exam-prep") return null;
+  return <ScholarFooter compact={["ebook", "mock-exam", "subscription-payment"].includes(active)} />;
 }
 
 // ===== Error Boundary — prevents view crashes from taking down the sidebar =====
@@ -472,6 +401,37 @@ class ViewErrorBoundary extends Component<{ children: ReactNode; viewName: strin
   }
 }
 
+function readLocationDestination(): ScholarDestination {
+  if (typeof window === "undefined") return { viewId: "dashboard", legacy: false };
+  const segment = window.location.pathname.split("/").filter(Boolean)[0];
+  if (!segment) return { viewId: "dashboard", legacy: false };
+  let hash = "";
+  try {
+    hash = decodeURIComponent(window.location.hash.slice(1));
+  } catch {
+    hash = "";
+  }
+  const params = new URLSearchParams(window.location.search);
+  return resolveScholarDestination({
+    viewId: segment,
+    mode: params.get("mode") ?? undefined,
+    settingsCategory: params.get("category") ?? (hash || undefined),
+    pluginId: params.get("plugin") ?? params.get("tool") ?? undefined,
+    prompt: params.get("prompt") ?? undefined,
+  });
+}
+
+function takePendingAiTool(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const pending = sessionStorage.getItem("scholar-ai-tools-open");
+    sessionStorage.removeItem("scholar-ai-tools-open");
+    return pending || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function AppShell() {
   const startupReady = useScholarStartupReady();
   const user = useStore((s) => s.user);
@@ -487,14 +447,19 @@ export function AppShell() {
   const appearanceLabUnlocked = access.has("appearance_lab");
   const [active, setActive] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
-    const pathSegment = window.location.pathname.split("/").filter(Boolean)[0];
-    const segment = pathSegment === "lamtube" ? "nigtube" : pathSegment;
-    return segment && VIEW_COMPONENTS[segment] ? segment : "dashboard";
+    const destination = readLocationDestination();
+    if (destination.mode) setWorkspaceMode(destination.viewId, destination.mode);
+    if (destination.settingsCategory) setSettingsTarget(destination.settingsCategory);
+    let pluginId = destination.pluginId;
+    if (destination.viewId === "lam-ai" && destination.mode === "plugins" && !pluginId) {
+      pluginId = takePendingAiTool();
+    }
+    if (pluginId) setLamPluginTarget(pluginId, destination.prompt ?? "");
+    return destination.viewId && VIEW_COMPONENTS[destination.viewId] ? destination.viewId : "dashboard";
   });
-  const [cmdOpen, setCmdOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [guestBannerVisible, setGuestBannerVisible] = useState(guestMode);
+  const [sceneHost, setSceneHost] = useState<HTMLDivElement | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     // Persist sidebar open/closed state across reloads. Default to open on desktop.
     if (typeof window === "undefined") return false;
@@ -521,14 +486,6 @@ export function AppShell() {
     migrateLegacyStorage();
   }, []);
 
-  useEffect(() => {
-    if (!guestMode) {
-      setGuestBannerVisible(false);
-      return;
-    }
-    setGuestBannerVisible(true);
-    // Explicit dismissal avoids moving the whole workspace during reading.
-  }, [guestMode]);
 
   // Cross-tab synchronisation for Smart Reminders (re-hydrate on storage events).
   useEffect(() => {
@@ -669,24 +626,44 @@ export function AppShell() {
   }, [access, startTransition, switchClass, toggleJeeMode, user.jeeMode, user.scholarClass]);
 
   // Keyboard shortcut for command palette
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setCmdOpen((o) => !o);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
-  const navigate = useCallback((id: string, updateHistory = true, anchor?: string, keepDockOpen = false) => {
-    setActive(id);
+  const navigate = useCallback((
+    id: string,
+    updateHistory = true,
+    anchor?: string,
+    keepDockOpen = false,
+    detail?: { mode?: string; settingsCategory?: string; pluginId?: string; prompt?: string },
+  ) => {
+    const destination = resolveScholarDestination({
+      viewId: id,
+      mode: detail?.mode,
+      settingsCategory: detail?.settingsCategory ?? (id === "settings" ? peekSettingsTarget() ?? undefined : undefined),
+      pluginId: detail?.pluginId,
+      prompt: detail?.prompt,
+    });
+    let pluginId = destination.pluginId;
+    if (destination.viewId === "lam-ai" && destination.mode === "plugins" && !pluginId) {
+      pluginId = takePendingAiTool();
+    }
+    const viewId = VIEW_COMPONENTS[destination.viewId] ? destination.viewId : "dashboard";
+    if (destination.mode) setWorkspaceMode(viewId, destination.mode);
+    if (destination.viewId === "settings") setSettingsTarget(destination.settingsCategory ?? "account");
+    if (pluginId) setLamPluginTarget(pluginId, destination.prompt ?? "");
+
+    setActive(viewId);
     setMobileOpen(false);
-    if (!keepDockOpen) setMobileNavOpen(false);
+    if (keepDockOpen) setMobileNavOpen(true);
     if (updateHistory) {
-      const nextPath = `${id === "dashboard" ? "/" : `/${id === "nigtube" ? "lamtube" : id}`}${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
-      if (`${window.location.pathname}${window.location.hash}` !== nextPath) window.history.pushState({ viewId: id, anchor }, "", nextPath);
+      const basePath = pathForDestination({
+        viewId,
+        settingsCategory: destination.viewId === "settings" ? destination.settingsCategory ?? "account" : undefined,
+      });
+      const nextPath = anchor
+        ? `${basePath}${basePath.includes("#") ? "" : "#"}${encodeURIComponent(anchor)}`
+        : basePath;
+      if (`${window.location.pathname}${window.location.hash}` !== nextPath) {
+        window.history.pushState({ viewId, anchor }, "", nextPath);
+      }
     }
     const main = document.getElementById("main-scroll");
     if (main) main.scrollTo({ top: 0, behavior: "auto" });
@@ -694,9 +671,13 @@ export function AppShell() {
 
   useEffect(() => {
     const onPopState = () => {
-      const pathSegment = window.location.pathname.split("/").filter(Boolean)[0];
-      const segment = pathSegment === "lamtube" ? "nigtube" : pathSegment;
-      navigate(segment && VIEW_COMPONENTS[segment] ? segment : "dashboard", false);
+      const destination = readLocationDestination();
+      navigate(destination.viewId, false, undefined, false, {
+        mode: destination.mode,
+        settingsCategory: destination.settingsCategory,
+        pluginId: destination.pluginId,
+        prompt: destination.prompt,
+      });
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -705,10 +686,33 @@ export function AppShell() {
   // Listen for global nav events (from views — enables interconnections)
   useEffect(() => {
     const onNav = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.viewId && VIEW_COMPONENTS[detail.viewId]) {
-        navigate(detail.viewId, true, typeof detail.anchor === "string" ? detail.anchor : typeof detail.payload?.feature === "string" ? detail.payload.feature : undefined);
-      }
+      const detail = (e as CustomEvent).detail as {
+        viewId?: string;
+        anchor?: string;
+        payload?: Record<string, unknown>;
+      } | undefined;
+      if (!detail?.viewId || typeof detail.viewId !== "string") return;
+      const payload = detail.payload ?? {};
+      const tool = typeof payload.tool === "string" ? payload.tool : undefined;
+      const subject = typeof payload.subject === "string" ? payload.subject : "";
+      const chapter = typeof payload.chapter === "string" ? payload.chapter : "";
+      const contextPrompt = [subject, chapter].filter(Boolean).join(" · ");
+      navigate(
+        detail.viewId,
+        true,
+        typeof detail.anchor === "string"
+          ? detail.anchor
+          : typeof payload.feature === "string"
+            ? payload.feature
+            : undefined,
+        false,
+        {
+          mode: typeof payload.mode === "string" ? payload.mode : undefined,
+          settingsCategory: typeof payload.settingsCategory === "string" ? payload.settingsCategory : undefined,
+          pluginId: typeof payload.pluginId === "string" ? payload.pluginId : tool,
+          prompt: typeof payload.prompt === "string" ? payload.prompt : contextPrompt || undefined,
+        },
+      );
     };
     window.addEventListener("neha-scholar:navigate", onNav);
     return () => window.removeEventListener("neha-scholar:navigate", onNav);
@@ -717,13 +721,17 @@ export function AppShell() {
   const View = VIEW_COMPONENTS[active] ?? DashboardView;
   const shutdown = getSectionShutdown(active);
   const lockedView = Boolean(shutdown || (VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement)));
+  const immersiveView = active === "group-study" || active === "lam-ai" || active === "exam-prep" || active === "experiment-lab";
 
   // Per-view gradient background classes
   const viewBg: Record<string, string> = {
     dashboard: "bg-gradient-to-br from-indigo-500/5 via-transparent to-teal-500/5",
     "chapter-command": "bg-gradient-to-br from-violet-500/5 via-transparent to-fuchsia-500/5",
-    "ai-tutor": "bg-gradient-to-br from-fuchsia-500/5 via-transparent to-indigo-500/5",
-    "ai-tools": "bg-gradient-to-br from-violet-500/5 via-transparent to-indigo-500/5",
+    "question-practice": "bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5",
+    "doubt-lab": "bg-gradient-to-br from-violet-500/5 via-transparent to-purple-500/5",
+    "experiment-lab": "bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5",
+    "study-media": "bg-gradient-to-br from-red-500/5 via-transparent to-fuchsia-500/5",
+    "lam-ai": "bg-gradient-to-br from-fuchsia-500/5 via-transparent to-indigo-500/5",
     notes: "bg-gradient-to-br from-amber-500/5 via-transparent to-orange-500/5",
     resources: "bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5",
     study: "bg-gradient-to-br from-teal-500/5 via-transparent to-emerald-500/5",
@@ -766,14 +774,16 @@ export function AppShell() {
   };
 
   return (
-    <div className="scholar-shell flex h-dvh w-full overflow-hidden" data-mobile-nav-open={mobileNavOpen ? "true" : "false"}>
+    <SceneBackdropContext.Provider value={sceneHost}>
+    <div className="scholar-shell flex h-dvh w-full overflow-hidden" data-mobile-nav-open={mobileNavOpen ? "true" : "false"} data-mobile-drawer-open={mobileOpen ? "true" : "false"}>
       {!getSectionShutdown("nigtube") && <LamTubeBackgroundJobs />}
       {/* Ambient glass environment. Glass needs something coherent to refract:
           deep graphite with a few very soft fields instead of neon gradients. */}
-      <div className="sg-environment" aria-hidden="true" />
+      <div ref={setSceneHost} className={`sg-environment transition-colors duration-500 ${viewBg[active] ?? ""}`} data-scholar-scene={active} aria-hidden="true" />
       <a href="#main-scroll" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[11000] focus:rounded-xl focus:bg-background focus:p-3">Skip to study content</a>
       {/* Desktop sidebar */}
       <VelocitySidebar expanded={sidebarOpen} reduced={shellReduceMotion}>
+            <SidebarOptic />
             <div className="sg-navigation-header h-16 flex items-center gap-2.5 px-5 shrink-0">
               <div className="sg-navigation-brand grid place-items-center h-9 w-9 rounded-xl text-white">
                 <GraduationCap className="h-5 w-5" />
@@ -793,12 +803,14 @@ export function AppShell() {
         setMobileOpen(open);
         if (!open) window.setTimeout(() => document.getElementById("scholar-mobile-menu")?.focus(), 0);
       }}>
-        <SheetContent side="left" data-sg-chrome="sidebar" className="w-72 p-0">
+        <SheetContent side="left" data-sg-chrome="sidebar" className="sg-mobile-drawer w-72 p-0">
+          <SidebarOptic />
           <SheetHeader className="h-16 flex-row items-center gap-2.5 px-5 border-b border-border/60 space-y-0">
             <div className="grid place-items-center h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-white shadow-md">
               <GraduationCap className="h-5 w-5" />
             </div>
             <SheetTitle className="text-left">{guestMode ? "Guest workspace" : `${user.name.split(" ")[0] || "Your"}’s Scholar`}</SheetTitle>
+            <SheetDescription className="sr-only">Choose a Scholar section. Scroll for more destinations, or close this menu to return to your work.</SheetDescription>
           </SheetHeader>
           <div className="scholar-mobile-drawer-body overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-3 sm:hidden" aria-label="Quick controls">
@@ -812,32 +824,16 @@ export function AppShell() {
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-20 w-full bg-transparent">
-        <TopBar onOpenCmd={() => setCmdOpen(true)} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
-        <AnimatePresence initial={false}>
-          {guestMode && guestBannerVisible ? (
-            <motion.section
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12, height: 0, paddingTop: 0, paddingBottom: 0, borderWidth: 0 }}
-              transition={{ duration: settings.reduceMotion ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="scholar-guest-banner"
-              aria-label="Guest session information"
-            >
-              <p className="scholar-guest-copy"><strong>Guest session</strong><span>Your progress is saved only on this device until you create an account.</span></p>
-              <div className="scholar-guest-actions">
-                <button type="button" onClick={() => setAuthed(false)} className="scholar-guest-action">Create account or Sign in</button>
-                <button type="button" onClick={() => setGuestBannerVisible(false)} className="scholar-guest-dismiss" aria-label="Dismiss guest session banner"><X className="h-4 w-4" /></button>
-              </div>
-            </motion.section>
-          ) : null}
-        </AnimatePresence>
+        <TopBar onNavigate={navigate} onOpenMobile={() => setMobileOpen(true)} onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
+        <GuestSessionNotice guest={guestMode} ready={startupReady} reduced={Boolean(settings.reduceMotion)} onSignIn={()=>setAuthed(false)}/>
+        <ScholarIntelligenceConsentPrompt />
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${active === "live-tutor" || active === "exam-prep" || active === "lab" ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${immersiveView ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
           <div className="flex-1" style={{ position: "relative", width: "100%" }}>
           <VelocityPage
             key={active}
             enabled={settings.pageTransitions !== false && !settings.reduceMotion}
-            className={cn("w-full", active !== "live-tutor" && active !== "exam-prep" && active !== "lab" && "scholar-footer-view")}
+            className={cn("flex w-full flex-1 flex-col [&>*]:flex-1", !immersiveView && "scholar-footer-view")}
           >
             <ViewErrorBoundary viewName={active}>
               {shutdown ? <SectionShutdown viewId={active} /> : guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (
@@ -853,9 +849,8 @@ export function AppShell() {
       </div>
 
       {startupReady && <LamPresenceRuntime page={active}/>}
-      {startupReady && active !== "live-tutor" ? <LamWidget currentView={active} /> : null}
+      {startupReady && active !== "lam-ai" ? <LamWidget currentView={active} /> : null}
 
-      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={navigate} />
 
       {/* JEE mode keeps its existing short, silent transition. Academic class
           switching is handled by the shared transition provider. */}
@@ -886,12 +881,12 @@ export function AppShell() {
         </motion.div>
       )}
 
-      {/* Mobile bottom navigation — collapsed by default to keep study content clear. */}
+      {/* Mobile dock is initially visible; users can collapse it without opening the drawer. */}
       {active !== "subscription-payment" && (
         <div className={cn("scholar-mobile-nav-shell lg:hidden", mobileNavOpen && "is-open")}>
           <AnimatePresence initial={false}>
-            {mobileNavOpen ? (
-              <MobileLiquidDock active={active} navigate={(id) => navigate(id, true, undefined, true)} more={() => { setMobileNavOpen(false); setMobileOpen(true); }} reduceMotion={shellReduceMotion} />
+            {mobileNavOpen && !mobileOpen ? (
+              <MobileLiquidDock active={active} navigate={(id) => navigate(id, true, undefined, true)} more={() => setMobileOpen(true)} reduceMotion={shellReduceMotion} />
             ) : null}
           </AnimatePresence>
           <button
@@ -918,5 +913,6 @@ export function AppShell() {
       <PWAInstallPrompt />
       <PlusPromotion />
     </div>
+    </SceneBackdropContext.Provider>
   );
 }

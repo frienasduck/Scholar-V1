@@ -70,7 +70,7 @@ export function PracticalsView() {
   const generateViva = async (exp: Experiment) => {
     setSelectedExp(exp); setVivaLoading(true); setVivaQA(null);
     try {
-      const r = await askAIJSON<{ questions: VivaQA[] }>(`Generate 5 viva questions with detailed answers for the CBSE Class 11 practical: "${exp.title}" (${exp.subject}). Key topics: ${exp.viva.join(", ")}. JSON: {questions:[{q,a}]}`, "default");
+      const r = await askAIJSON<{ questions: VivaQA[] }>(`Generate 5 viva questions with detailed answers for the CBSE Class 11 practical: "${exp.title}" (${exp.subject}). Key topics: ${exp.viva.join(", ")}. JSON: {questions:[{q,a}]}`, "default", { feature: "practical_lab" });
       setVivaQA(r?.questions ?? null);
     } catch { toast.error("Failed to generate viva"); }
     finally { setVivaLoading(false); }
@@ -92,9 +92,9 @@ export function PracticalsView() {
       <div className="relative z-10 p-4 md:p-8 text-white">
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} className="mb-6">
-            <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Class 11 • PCM + CS Practical Lab</p>
-            <h1 className="pr-serif text-4xl md:text-5xl text-white leading-tight">Practical Lab</h1>
-            <p className="text-sm text-white/50 mt-2">Complete CBSE Class 11 practical experiments with viva preparation.</p>
+            <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Experiment Lab • PCM + CS Practicals (Plus)</p>
+            <h1 className="pr-serif text-4xl md:text-5xl text-white leading-tight">Experiment Lab · Practicals</h1>
+            <p className="text-sm text-white/50 mt-2">Complete CBSE Class 11 practical procedures, viva preparation, and exportable lab records.</p>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             {[{ label: "Experiments", value: EXPERIMENTS.length }, { label: "Completed", value: completed.length }, { label: "Physics", value: EXPERIMENTS.filter(e=>e.subject==="Physics").length }, { label: "Chemistry", value: EXPERIMENTS.filter(e=>e.subject==="Chemistry").length }, { label: "CS", value: EXPERIMENTS.filter(e=>e.subject==="Computer Science").length }].map((s, i) => (

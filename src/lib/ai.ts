@@ -82,7 +82,7 @@ type AIOptions = {
   timeoutMs?: number;
   mode?: AIMode;
   signal?: AbortSignal;
-  feature?: "aisig" | "homework_scanner" | "workspace_ai" | "lam_ai" | "slideshow_generation_plus" | "premium_experiments";
+  feature?: "aisig" | "homework_scanner" | "workspace_ai" | "lam_ai" | "slideshow_generation_plus" | "premium_experiments" | "practical_lab";
   usage?: "quiz_generation" | "slideshow_generation";
 };
 

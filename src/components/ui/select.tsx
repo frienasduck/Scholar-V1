@@ -5,11 +5,16 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useVelocityPanel } from "@/components/liquid-glass/velocity-motion"
+import { useRetainedSelect } from "@/components/liquid-glass/use-retained-select"
+const SelectClosingContext = React.createContext(false)
 
 function Select({
+  open, defaultOpen, onOpenChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+  const presence=useRetainedSelect(open,defaultOpen,onOpenChange)
+  return <SelectClosingContext.Provider value={presence.closing}><SelectPrimitive.Root data-slot="select" {...props} open={presence.open} onOpenChange={presence.onOpenChange}/></SelectClosingContext.Provider>
 }
 
 function SelectGroup({
@@ -54,11 +59,17 @@ function SelectContent({
   className,
   children,
   position = "popper",
+  ref: forwardedRef,
+  onKeyDownCapture,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  const motionRef=useVelocityPanel(forwardedRef), closing=React.useContext(SelectClosingContext)
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
+        ref={motionRef}
+        data-velocity-state={closing?"closed":"open"}
+        onKeyDownCapture={event=>{if(closing){event.preventDefault();event.stopPropagation();}else onKeyDownCapture?.(event)}}
         data-slot="select-content"
         className={cn(
           "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md",

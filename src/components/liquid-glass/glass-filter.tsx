@@ -7,9 +7,9 @@
  * subtle colour rim is painted by CSS, not three full backdrop displacements.
  */
 export const REFRACTION_PRESETS = {
-  subtle: { id: "subtle", displacement: 0.04, aberration: 0 },
-  standard: { id: "standard", displacement: 0.06, aberration: 0 },
-  prominent: { id: "prominent", displacement: 0.08, aberration: 0 },
+  subtle: { id: "subtle", displacement: 0.02, aberration: 0 },
+  standard: { id: "standard", displacement: 0.032, aberration: 0 },
+  prominent: { id: "prominent", displacement: 0.05, aberration: 0 },
 } as const;
 export type RefractionPreset = (typeof REFRACTION_PRESETS)[keyof typeof REFRACTION_PRESETS];
 
@@ -34,7 +34,8 @@ function RefractionFilter({ preset, compact = false }: { preset: { id: string; d
     <feImage x="0" y="0" width="1" height="1" href={compact ? DOCK_MAP_X : MAP_X} preserveAspectRatio="none" result="X" />
     <feImage x="0" y="0" width="1" height="1" href={compact ? DOCK_MAP_Y : MAP_Y} preserveAspectRatio="none" result="Y" />
     <feComposite in="X" in2="Y" operator="arithmetic" k2="1" k3="1" result="FIELD" />
-    <feDisplacementMap in="SourceGraphic" in2="FIELD" scale={preset.displacement} xChannelSelector="R" yChannelSelector="B" result="BENT" />
+    <feGaussianBlur in="FIELD" stdDeviation="0.018" result="SMOOTH_FIELD" />
+    <feDisplacementMap in="SourceGraphic" in2="SMOOTH_FIELD" scale={preset.displacement} xChannelSelector="R" yChannelSelector="B" result="BENT" />
     <feComponentTransfer in="BENT">
       <feFuncR type="linear" slope="0.96" intercept="0.018" />
       <feFuncG type="linear" slope="0.96" intercept="0.018" />
@@ -43,8 +44,8 @@ function RefractionFilter({ preset, compact = false }: { preset: { id: string; d
   </filter>;
 }
 
-/** One extra static definition only while the dock is mounted. It does not
- * register another optical surface or bypass engine/user/budget gates. */
+/** Shared compact definition, also available to an active button/menu. It does
+ * not register another optical surface or bypass engine/user/budget gates. */
 export function DockRefractionDefs() {
   return <svg className="sg-filter-defs" aria-hidden="true" focusable="false"><defs>
     <RefractionFilter preset={{ id: "dock", displacement: .14 }} compact />
@@ -54,5 +55,6 @@ export function DockRefractionDefs() {
 export function GlassFilterDefs() {
   return <svg className="sg-filter-defs" aria-hidden="true" focusable="false"><defs>
     {Object.values(REFRACTION_PRESETS).map(preset => <RefractionFilter key={preset.id} preset={preset} />)}
+    <RefractionFilter preset={{ id: "dock", displacement: .14 }} compact />
   </defs></svg>;
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObjec
 import { animate, createScope, createTimeline, spring, stagger } from "animejs";
 import { waapi } from "animejs/waapi";
 import { velocityMotionAllowed, VELOCITY_TIMING, VELOCITY_CONTROL_SELECTOR } from "@/lib/animation/velocity-policy";
-import { registerGlassSurface } from "./glass-runtime";
+import { registerGlassSurface, setGlassSurfacePriority } from "./glass-runtime";
 
 function observeMotionStop(revert: () => void, kind: "page" | "panel") {
   const stop = () => { if (!velocityMotionAllowed(kind)) revert(); };
@@ -79,11 +79,12 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
     // never fights a second transform/CSS-offset animation or updates React.
     const interaction: NavigationLensControl = {
       track: ({ x, y, width, height }) => {
+        if (!tracking) setGlassSurfacePriority(node,125);
         tracking = true; animation?.cancel();
         node.style.willChange = "transform";
         Object.assign(node.style, { opacity: "1", transform: `translate(${x}px, ${y}px)`, width: `${width}px`, height: `${height}px` });
       },
-      settle: (target) => { tracking = false; place(true, target); },
+      settle: (target) => { tracking = false; setGlassSurfacePriority(node,axis === "x" ? 100 : 80); place(true, target); },
     };
     if (interactionRef) interactionRef.current = interaction;
     const schedule = () => { cancelAnimationFrame(pending); pending = requestAnimationFrame(() => place(false)); };
@@ -123,17 +124,18 @@ export function VelocitySidebar({ expanded, reduced, children }: { expanded: boo
     if (!node) return;
     const width = expanded ? 256 : 76;
     const scope = createScope({ root: node });
-    const immediate = () => { scope.revert(); node.style.width = `${width}px`; node.style.willChange = ""; };
+    const immediate = () => { scope.revert(); node.style.width = `${width}px`; node.style.willChange = ""; delete node.dataset.sidebarResizing; };
     if (!mounted.current || reduced || !velocityMotionAllowed("panel")) immediate();
     else {
       node.style.willChange = "width";
-      scope.execute(() => animate(node, { width, duration: 300, ease: "out(3)", onComplete: () => { node.style.willChange = ""; } }));
+      node.dataset.sidebarResizing="true";
+      scope.execute(() => animate(node, { width, duration: 300, ease: "out(3)", onComplete: () => { node.style.willChange = ""; delete node.dataset.sidebarResizing; } }));
     }
     mounted.current = true;
     const off = observeMotionStop(immediate, "panel");
     return () => {
       const currentWidth = node.getBoundingClientRect().width;
-      off(); scope.revert(); node.style.width = `${currentWidth}px`; node.style.willChange = "";
+      off(); scope.revert(); node.style.width = `${currentWidth}px`; node.style.willChange = ""; delete node.dataset.sidebarResizing;
     };
   }, [expanded, reduced]);
   return <aside ref={root} id="scholar-desktop-navigation" data-sg-chrome="sidebar" data-sidebar-expanded={expanded}
@@ -159,23 +161,39 @@ export function VelocityPage({ children, className, enabled = true }: { children
 }
 
 /** Narrow portal entry, composable with Radix focus management and exit CSS. */
-export function useVelocityPanel(forwardedRef?: Ref<HTMLDivElement>) {
+export function useVelocityPanel(forwardedRef?: Ref<HTMLDivElement>, kind: "panel" | "drawer" = "panel") {
   return useCallback((node: HTMLDivElement | null) => {
     const releaseRef = connectVelocityRef(forwardedRef, node);
-    if (!node || !velocityMotionAllowed("panel")) return releaseRef;
-    const scope = createScope({ root: node }).add(() => {
-      // Individual translate/scale preserve Radix's positional transform.
-      const entry = waapi.animate(node, { opacity: [0.6, 1], scale: [0.965, 1], duration: VELOCITY_TIMING.panel, ease: "out(3)" });
-      const items = [...node.querySelectorAll<HTMLElement>('[role="menuitem"], [data-slot="dialog-header"]')].slice(0, 8);
-      if (items.length) animate(items, { opacity: [0.7, 1], duration: 130, delay: stagger(12) });
-      return () => entry.revert();
-    });
-    const stop = () => { if (document.hidden || !velocityMotionAllowed("panel")) scope.revert(); };
+    if (!node) return releaseRef;
+    const scope = createScope({ root: node });
+    let entry: ReturnType<typeof waapi.animate> | undefined, first = true;
+    const play = () => {
+      const closed=(node.dataset.velocityState??node.dataset.state)==="closed";
+      const style=getComputedStyle(node), opacity=first?.65:parseFloat(style.opacity)||0, scale=first?.97:parseFloat(style.scale)||1;
+      const side=node.dataset.side??"left",entryTranslate=side==="right"?"48px 0px":side==="top"?"0px -48px":side==="bottom"?"0px 48px":"-48px 0px",exitTranslate=side==="right"?"32px 0px":side==="top"?"0px -32px":side==="bottom"?"0px 32px":"-32px 0px";
+      entry?.cancel();
+      if (!velocityMotionAllowed("panel")) { delete node.dataset.velocityAnimating; return; }
+      node.dataset.velocityAnimating="true";
+      entry=scope.execute(()=>waapi.animate(node,{
+        opacity:[opacity,closed?0:1],scale:kind==="drawer"?1:[scale,closed?.975:1],
+        ...(kind==="drawer"?{translate:[first?entryTranslate:style.translate==="none"?"0px 0px":style.translate,closed?exitTranslate:"0px 0px"]}:{}),
+        duration:closed?150:180,ease:closed?"in(2)":"out(3)",
+        onComplete:()=>{delete node.dataset.velocityAnimating;},
+      }));
+      first=false;
+    };
+    play();
+    const state = new MutationObserver(play);
+    state.observe(node,{attributes:true,attributeFilter:["data-state","data-velocity-state"]});
+    const offOptics=registerGlassSurface(node,{elasticity:0,pointer:false,priority:110});
+    node.dataset.velocityPanel="true";
+    window.dispatchEvent(new Event("scholar:motion-boundary"));
+    const stop = () => { if (document.hidden || !velocityMotionAllowed("panel")) { scope.revert();delete node.dataset.velocityAnimating; } };
     const preferences = new MutationObserver(stop);
     preferences.observe(document.documentElement, { attributes: true, attributeFilter: ["data-sg-motion", "data-reduce-motion", "data-appearance-panel-transitions"] });
     document.addEventListener("visibilitychange", stop);
-    return () => { scope.revert(); preferences.disconnect(); document.removeEventListener("visibilitychange", stop); releaseRef(); };
-  }, [forwardedRef]);
+    return () => { entry?.revert();scope.revert();state.disconnect();offOptics();delete node.dataset.velocityPanel;delete node.dataset.velocityAnimating; preferences.disconnect(); document.removeEventListener("visibilitychange", stop); releaseRef(); };
+  }, [forwardedRef,kind]);
 }
 
 /** One delegated press system, no per-button listeners or React pointer state. */
@@ -183,41 +201,61 @@ export function VelocityInteractions() {
   useEffect(() => {
     const running = new Map<HTMLElement, ReturnType<typeof waapi.animate>>();
     let pressed: HTMLElement | null = null;
-    const cancel = (node: HTMLElement) => { running.get(node)?.revert(); running.delete(node); node.style.willChange = ""; };
+    let optical: HTMLElement | null = null, releaseOptic: (()=>void) | undefined, opticTimer = 0;
+    const clearOptic = () => { window.clearTimeout(opticTimer); releaseOptic?.(); releaseOptic=undefined; optical?.removeAttribute("data-sg-control-optics"); optical=null; };
+    const activateOptic = (node: HTMLElement | null) => {
+      if (!node || node===optical || node.matches('[data-sg-glass="true"], [data-velocity-control="navigation"]') || node.closest('[data-velocity-nav], .sg-velocity-tabs, .sg-velocity-dock')) return;
+      const r=node.getBoundingClientRect();
+      if (r.width>420 || r.height>96 || r.width*r.height>30000) return;
+      clearOptic(); optical=node; node.dataset.sgControlOptics="true";
+      releaseOptic=registerGlassSurface(node,{elasticity:0,pointer:false,priority:120});
+    };
+    const cancel = (node: HTMLElement) => { running.get(node)?.revert(); running.delete(node); delete node.dataset.sgPressed; node.style.removeProperty("--sg-press-radius"); node.style.willChange = ""; };
     const reset = () => { pressed = null; [...running.keys()].forEach(cancel); };
     const targetControl = (target: EventTarget | null) => {
       const node = target instanceof Element ? target.closest<HTMLElement>(VELOCITY_CONTROL_SELECTOR) : null;
-      return !node || node.matches(':disabled, [aria-disabled="true"], [aria-busy="true"]') || node.closest('[data-velocity-press="off"], [inert]') ? null : node;
+      return !node || node.matches(':disabled, [aria-disabled="true"], [aria-busy="true"]') || node.closest('[data-velocity-press="off"], [inert], [data-slot="alert-dialog-content"]') ? null : node;
     };
     const press = (node: HTMLElement | null) => {
       reset();
       if (!node || !velocityMotionAllowed()) return;
+      const box=node.getBoundingClientRect(), radius=parseFloat(getComputedStyle(node).borderTopLeftRadius)||12;
+      activateOptic(node);
       pressed = node;
-      const instance = waapi.animate(node, { scale: 0.965, duration: VELOCITY_TIMING.press, ease: "out(2)" });
+      node.dataset.sgPressed="true";node.style.setProperty("--sg-press-radius",`${Math.min(radius,box.height/2)*.86}px`);
+      const scale=box.width<120&&box.height<=56?.925:box.width<320&&box.height<90?.95:.985;
+      const instance = waapi.animate(node, { scale, duration: 70, ease: "out(2)" });
       running.set(node, instance);
     };
     const down = (event: PointerEvent) => { if (event.isPrimary && event.button === 0) press(targetControl(event.target)); };
     const up = () => {
       const node = pressed; pressed = null;
       if (!node) return;
+      const scale=getComputedStyle(node).scale;
       cancel(node);
       if (!node.isConnected || !velocityMotionAllowed()) return;
-      const instance = waapi.animate(node, { scale: [0.965, 1], ease: spring({ bounce: 0.08, duration: VELOCITY_TIMING.release }), onComplete: () => { if (running.get(node) === instance) cancel(node); } });
+      const instance = waapi.animate(node, { scale: [parseFloat(scale)||.95, 1], ease: spring({ bounce: 0.08, duration: VELOCITY_TIMING.release }), onComplete: () => { if (running.get(node) === instance) cancel(node); } });
       running.set(node, instance);
+      window.clearTimeout(opticTimer);opticTimer=window.setTimeout(()=>{if(optical && (document.documentElement.dataset.sgPointer==="coarse" || !optical.matches(":hover,:focus-visible")))clearOptic();},240);
     };
     const keydown = (event: KeyboardEvent) => { if (!event.repeat && (event.key === " " || event.key === "Enter")) press(targetControl(event.target)); };
     const keyup = (event: KeyboardEvent) => { if (event.key === " " || event.key === "Enter") up(); };
+    const over=(event:PointerEvent)=>{if(event.pointerType!=="touch")activateOptic(targetControl(event.target));};
+    const focus=(event:FocusEvent)=>activateOptic(targetControl(event.target));
+    const leave=()=>{window.clearTimeout(opticTimer);opticTimer=window.setTimeout(()=>{if(optical&&!optical.matches(":hover,:focus-visible"))clearOptic();},140);};
+    const boundary=()=>{reset();clearOptic();};
     const preferences = new MutationObserver(() => { if (!velocityMotionAllowed()) reset(); });
     preferences.observe(document.documentElement, { attributes: true, attributeFilter: ["data-sg-motion", "data-reduce-motion", "data-appearance-motion"] });
     document.addEventListener("pointerdown", down, { passive: true });
     document.addEventListener("pointerup", up, { passive: true });
-    document.addEventListener("pointercancel", reset, { passive: true });
+    document.addEventListener("pointercancel", boundary, { passive: true });
     document.addEventListener("keydown", keydown);
     document.addEventListener("keyup", keyup);
-    document.addEventListener("visibilitychange", reset);
-    window.addEventListener("blur", reset);
-    window.addEventListener("scholar:motion-boundary", reset);
-    return () => { reset(); preferences.disconnect(); document.removeEventListener("pointerdown", down); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", reset); document.removeEventListener("keydown", keydown); document.removeEventListener("keyup", keyup); document.removeEventListener("visibilitychange", reset); window.removeEventListener("blur", reset); window.removeEventListener("scholar:motion-boundary", reset); };
+    document.addEventListener("pointerover",over,{passive:true});document.addEventListener("pointerout",leave,{passive:true});document.addEventListener("focusin",focus);document.addEventListener("focusout",leave);
+    document.addEventListener("visibilitychange", boundary);
+    window.addEventListener("blur", boundary);
+    window.addEventListener("scholar:motion-boundary", boundary);
+    return () => { boundary(); preferences.disconnect(); document.removeEventListener("pointerover",over);document.removeEventListener("pointerout",leave);document.removeEventListener("focusin",focus);document.removeEventListener("focusout",leave);document.removeEventListener("pointerdown", down); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", boundary); document.removeEventListener("keydown", keydown); document.removeEventListener("keyup", keyup); document.removeEventListener("visibilitychange", boundary); window.removeEventListener("blur", boundary); window.removeEventListener("scholar:motion-boundary", boundary); };
   }, []);
   return null;
 }

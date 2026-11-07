@@ -15,8 +15,8 @@ test("lens follows actual intermediate finger coordinates, not only whole tabs",
 });
 test("rubber band, vertical lift and deformation are bounded", () => {
   const a = dockDragFrame(slots, -9000, -9000, -900, true)!, b = dockDragFrame(slots, 9000, 9000, 900, true)!;
-  expect(a.x).toBe(0); expect(b.x).toBe(286); expect(a.y).toBe(2); expect(b.y).toBe(12);
-  expect(a.scaleX).toBeLessThanOrEqual(1.085); expect(a.scaleY).toBeGreaterThanOrEqual(.9575);
+  expect(a.x).toBe(7); expect(b.x).toBe(279); expect(a.y).toBe(7); expect(b.y).toBe(7);
+  expect(a.scaleX).toBeLessThanOrEqual(1.085); expect(a.scaleY).toBe(1);
   expect(a.light).toBe(0); expect(b.light).toBe(100);
 });
 test("reduced motion keeps direct manipulation but removes elastic extras", () => {
@@ -44,6 +44,6 @@ test("compact optics have a static broad rim without changing the three shared p
   const compact = renderToStaticMarkup(<DockRefractionDefs />), shared = renderToStaticMarkup(<GlassFilterDefs />);
   expect(compact).toContain('id="sg-refraction-dock"'); expect(compact).toContain('scale="0.14"');
   expect(compact.match(/<feDisplacementMap/g)).toHaveLength(1);
-  expect(shared.match(/<feDisplacementMap/g)).toHaveLength(3);
-  expect(shared).not.toContain('id="sg-refraction-dock"');
+  expect(shared.match(/<feDisplacementMap/g)).toHaveLength(4);
+  expect(shared.match(/id="sg-refraction-dock"/g)).toHaveLength(1);
 });

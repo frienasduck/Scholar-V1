@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
-import { ResourceShelf } from "@/components/resources/resource-library";
 import { CURRICULUM } from "@/lib/curriculum";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { useUserName } from "@/lib/use-user-name";
@@ -757,7 +756,7 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
           </TabsContent>
         </Tabs>
 
-        <div className="mt-8"><ResourceShelf grade={scholarClass} aid="summary" title="Source-backed revision notes"/></div>
+        <></>
 
         {/* SESSION DIALOG */}
         <Dialog open={!!activeTopic} onOpenChange={(o) => { if (!o) setActiveTopic(null); }}>

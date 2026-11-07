@@ -1,6 +1,14 @@
 /* Liquid Velocity: one optical and interaction family, layered after legacy CSS. */
 :root { --sg-motion-fast: 130ms; --sg-motion-settle: 220ms; --sg-motion-ease: cubic-bezier(.16, 1, .3, 1); }
 
+/* 3.1: closed mobile navigation never reserves desktop layout space. */
+@media (max-width:1023px) { .scholar-desktop-sidebar { display:none !important; width:0 !important; } }
+.sg-mobile-drawer[data-slot="sheet-content"] { width:min(86vw,304px); max-width:calc(100vw - 28px); height:var(--scholar-vvh,100dvh); padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); overflow:hidden; }
+.sg-mobile-drawer .scholar-mobile-drawer-body { flex:1; min-height:0; overscroll-behavior:contain; padding-bottom:20px; touch-action:pan-y pinch-zoom; }
+.sg-mobile-drawer [data-velocity-nav] { touch-action:pan-y pinch-zoom; }
+[data-slot="sheet-overlay"] { background-color:rgb(0 0 0 / 25%); }
+.sg-velocity-dock .sg-velocity-lens { transform-origin:50% 50%; }
+
 /* Refraction samples the actual live backdrop, not a filtered blurred sprite.
    No filter on content, no distorted text and no second independent blur. */
 .sg-glass > .sg-warp { filter: none !important; }
@@ -9,17 +17,38 @@
 .sg-glass[data-sg-optics="active"][data-sg-refraction="prominent"] > .sg-warp { backdrop-filter: url("#sg-refraction-prominent") blur(2px) saturate(128%); }
 .sg-glass[data-sg-optics="active"] > .sg-chroma { opacity: .22; }
 
+/* The parent lens carrier has NO border or inset shadow behind .sg-velocity-lens-optic,
+   so the SVG displacement filter never samples and pinches the pill's own border into
+   a 4-pointed star. The crisp border, specular rim and glass sheen live on ::after
+   (z-index: 2), painted cleanly ABOVE the refractive optic (z-index: 1). */
 .sg-velocity-lens {
   position: absolute; left: 0; top: 0; z-index: 0; display: block;
   pointer-events: none; opacity: 0; overflow: hidden; border-radius: 13px;
-  border: 1px solid color-mix(in srgb, var(--primary) 36%, rgb(235 249 255 / 30%));
-  background: linear-gradient(135deg, rgb(235 249 255 / 23%), color-mix(in srgb, var(--primary) 12%, transparent) 55%, rgb(235 249 255 / 6%));
-  box-shadow: inset 0 1px 1px rgb(255 255 255 / 48%), inset 0 -1px 1px rgb(166 215 255 / 12%), 0 5px 16px -9px rgb(0 0 0 / 65%);
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: 0 8px 22px -10px rgb(0 0 0 / 58%);
   contain: paint;
 }
-.sg-velocity-lens::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; background: linear-gradient(110deg, rgb(255 255 255 / 14%), transparent 40%); }
-.sg-velocity-lens-optic { position: absolute; inset: 0; border-radius: inherit; translate: var(--sg-touch-x, 0) var(--sg-touch-y, 0); transition: translate 160ms var(--sg-motion-ease); }
-.sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic { backdrop-filter: url("#sg-refraction-subtle") saturate(125%); }
+.sg-velocity-lens::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
+  border: 1px solid rgb(221 247 255 / 54%);
+  background:
+    radial-gradient(120% 140% at 14% 0%, rgb(255 255 255 / 26%), transparent 52%),
+    linear-gradient(125deg, rgb(235 249 255 / 28%), rgb(180 217 239 / 14%) 44%, rgb(210 238 255 / 8%) 75%, rgb(240 250 255 / 20%));
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 68%),
+    inset 1px 0 1px rgb(255 255 255 / 26%),
+    inset 0 -1px 1px rgb(166 218 250 / 28%);
+}
+.sg-velocity-lens-optic {
+  position: absolute; inset: -6px -12px; z-index: 1; border-radius: 0;
+  translate: var(--sg-touch-x, 0) var(--sg-touch-y, 0);
+  transition: translate 160ms var(--sg-motion-ease);
+}
+.sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic {
+  backdrop-filter: url("#sg-refraction-subtle") blur(4px) saturate(135%);
+  -webkit-backdrop-filter: blur(4px) saturate(135%);
+}
 [data-velocity-nav] .scholar-nav-item { min-height: 38px; transition: color 130ms ease, background-color 130ms ease; }
 [data-velocity-nav] .scholar-nav-item[aria-current="page"] { color: var(--sg-ink-text); }
 .sg-velocity-dock { position: relative; isolation: isolate; }
@@ -27,6 +56,7 @@
 .sg-velocity-dock > button.active { background: none !important; box-shadow: none !important; }
 .sg-velocity-dock > button:active { transform: none; }
 .sg-velocity-dock .sg-velocity-lens { border-radius: 1rem; }
+.sg-velocity-dock .sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic { backdrop-filter:url("#sg-refraction-dock") saturate(125%); }
 /* Only horizontal dock gestures are owned here. Page pan/pinch stays native. */
 .sg-velocity-dock, .sg-velocity-dock > button { touch-action: pan-y pinch-zoom; user-select: none; -webkit-user-select: none; }
 .sg-velocity-dock .sg-velocity-lens {
@@ -74,24 +104,24 @@ html[data-sg-quality="lightweight"] :is(.sg-material, [data-sg-chrome], [data-sl
 html[data-sg-quality="lightweight"] :is(.glass, [data-slot="card"], [class*="-glass"]):not(.lam-glass-reflection):not([class*="-glass-reflection"]) { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 html[data-sg-quality="lightweight"] :is(.glass, [data-slot="card"], .sg-material) { background-color: color-mix(in srgb, var(--sg-plate-ink) 86%, transparent); }
 .sg-button:active { --sg-press: 1; } /* Anime owns individual scale; no double squash. */
-html[data-sg-material="fallback"] .sg-velocity-lens { background: color-mix(in srgb, var(--primary) 20%, var(--sg-plate-ink)); border-color: var(--primary); }
+html[data-sg-material="fallback"] .sg-velocity-lens::after { background: color-mix(in srgb, var(--primary) 20%, var(--sg-plate-ink)); border-color: var(--primary); }
 html[data-sg-material="fallback"] [data-sg-chrome] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background-color: var(--sg-plate-ink) !important; }
 html[data-sg-hidden="true"] .sg-glass > .sg-warp,
 html[data-sg-hidden="true"] .sg-velocity-lens-optic { backdrop-filter: none !important; }
 html[data-sg-hidden="true"] .sg-loading::after { animation-play-state: paused; }
 html[data-sg-motion="reduced"] [data-slot="tabs-content"], html[data-reduce-motion="true"] [data-slot="tabs-content"] { animation: none; }
 html[data-sg-motion="reduced"] .sg-velocity-lens-optic { translate: none; transition: none; }
-html[data-appearance-theme="light"] .sg-velocity-lens { background: linear-gradient(130deg, rgb(255 255 255 / 80%), color-mix(in srgb, var(--primary) 12%, rgb(255 255 255 / 45%))); box-shadow: inset 0 1px 0 white, 0 3px 10px rgb(15 23 42 / 9%); }
+html[data-appearance-theme="light"] .sg-velocity-lens::after { border-color: rgb(55 90 116 / 28%); background: linear-gradient(130deg, rgb(255 255 255 / 80%), color-mix(in srgb, var(--primary) 12%, rgb(255 255 255 / 45%))); box-shadow: inset 0 1px 0 white, 0 3px 10px rgb(15 23 42 / 9%); }
 @media (prefers-reduced-motion: reduce) { [data-slot="tabs-content"] { animation: none; } .sg-velocity-lens-optic { transition: none; translate: none; } }
 @media (pointer: coarse) { [data-slot="button"], [data-slot="select-trigger"], [data-slot="dropdown-menu-item"] { min-height: 44px; } }
-@media (prefers-contrast: more) { .sg-velocity-lens { border: 2px solid currentColor; background: color-mix(in srgb, var(--primary) 22%, var(--sg-plate-ink)); } }
+@media (prefers-contrast: more) { .sg-velocity-lens::after { border: 2px solid currentColor; background: color-mix(in srgb, var(--primary) 22%, var(--sg-plate-ink)); } }
 
 /* Velocity 3: the WHOLE navigation plane, not an opaque column surrounding a
    single pill. Static environmental reflections; no cloned scene or idle loop.
    Large shell = Tier 2. Only its compact persistent lens runs displacement. */
 :root {
-  --sg-nav-tint: rgb(23 35 48 / 66%);
-  --sg-nav-edge: rgb(214 240 255 / 30%);
+  --sg-nav-tint: rgb(11 18 29 / 42%);
+  --sg-nav-edge: rgb(216 241 255 / 26%);
   --sg-control-edge: rgb(219 239 252 / 24%);
 }
 .scholar-desktop-sidebar.sg-navigation-shell,
@@ -106,8 +136,8 @@ html[data-appearance-theme="light"] .sg-velocity-lens { background: linear-gradi
   border-left: 0;
   border-radius: 0 25px 25px 0;
   box-shadow: inset -1px 0 1px rgb(240 251 255 / 30%), inset 0 1px 0 rgb(255 255 255 / 24%), 12px 0 38px -24px rgb(0 0 0 / 75%);
-  backdrop-filter: blur(14px) saturate(135%);
-  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 .sg-navigation-shell::after {
   content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
@@ -120,8 +150,7 @@ html[data-appearance-theme="light"] .sg-velocity-lens { background: linear-gradi
 .sg-navigation-shell .scholar-nav-section { color: rgb(205 229 244 / 64%); letter-spacing: .16em; }
 [data-velocity-nav] .scholar-nav-item { color: rgb(216 232 244 / 78%); min-height: 40px; border: 1px solid transparent; }
 [data-velocity-nav] .scholar-nav-item:hover { color: var(--sg-ink-text); background: linear-gradient(105deg, rgb(233 249 255 / 13%), rgb(233 249 255 / 3%)); border-color: rgb(231 247 255 / 13%); }
-[data-velocity-nav] .scholar-nav-item[aria-current="page"] { color: var(--sg-ink-text); background: transparent; }
-.sg-velocity-lens { border-color: rgb(221 247 255 / 55%); background: linear-gradient(125deg, rgb(235 249 255 / 34%), rgb(180 217 239 / 14%) 42%, rgb(210 238 255 / 8%) 75%, rgb(240 250 255 / 20%)); box-shadow: inset 0 1px 1px rgb(255 255 255 / 65%), inset 1px 0 1px rgb(255 255 255 / 28%), inset 0 -1px 0 rgb(170 217 246 / 27%), 0 6px 12px -7px rgb(0 0 0 / 55%); }
+[data-velocity-nav] .scholar-nav-item[aria-current="page"] { color: var(--sg-ink-text); background: transparent; border-color: transparent; }
 .sg-navigation-shell[data-sidebar-expanded="false"] .scholar-sidebar-title { opacity: 0; pointer-events: none; }
 .sg-navigation-shell[data-sidebar-expanded="false"] .sg-navigation-header { padding-inline: 19px; }
 .sg-navigation-shell[data-sidebar-expanded="false"] .scholar-nav-label,
@@ -137,7 +166,7 @@ html[data-appearance-theme="light"] .sg-navigation-shell .scholar-nav-section { 
 html[data-appearance-theme="light"] .sg-navigation-brand { color: #214d6b; }
 html[data-sg-material="fallback"] .sg-navigation-shell { background-color: var(--sg-plate-ink) !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
 @media (prefers-reduced-motion: reduce) { .sg-navigation-shell .scholar-sidebar-title { transition: none; } }
-@media (forced-colors: active) { .sg-navigation-shell, .sg-velocity-lens { background: Canvas !important; border: 1px solid ButtonText; box-shadow: none; } }
+@media (forced-colors: active) { .sg-navigation-shell, .sg-velocity-lens::after { background: Canvas !important; border: 1px solid ButtonText; box-shadow: none; } }
 
 /* A floating, readable dock. The shell is a single cheap blur; only the compact
    lens may receive the runtime's one-surface touch optical budget. */
@@ -198,13 +227,21 @@ html[data-appearance-theme="light"] .sg-action--default { background-color: #315
 .scholar-top-search:focus-visible { box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 0 0 3px rgb(139 211 247 / 24%); }
 
 /* Repeated panels are paint-only glass. A toolbar/menu gets the blur, not every
-   card or question. These named existing families were inspected individually. */
+   card or question. Using !important ensures legacy view-local inline <style>
+   rules do not force 20+ per-card backdrop-filter passes over 1080p video. */
 .sg-workspace-panel[data-slot="card"], .scholar-dashboard .dash-glass, .scholar-dashboard .dash-glass-strong,
-.er-root.er-v4 .er-plate, .ccc-card.ccc-glass, .ccc-metric.ccc-glass {
+.er-root.er-v4 .er-plate, .ccc-card.ccc-glass, .ccc-metric.ccc-glass,
+.aura-glass, .aura-glass-card, .dh-glass, .dh-glass-strong, .cinema-glass,
+.pp-glass, .pp-glass-strong, .rh-glass, .rh-glass-strong, .al-glass, .al-glass-strong,
+.as-glass, .as-glass-strong, .dl-glass, .dl-glass-strong, .me-glass, .me-glass-strong,
+.sr-glass, .sr-glass-strong, .gc-glass, .gc-glass-strong, .tb-glass, .tb-glass-strong,
+.ws-glass, .ws-glass-strong, .pr-glass, .pr-glass-strong, .py-glass, .py-glass-strong,
+.dv-glass, .dv-glass-strong, .eb-glass, .lab-glass {
   border-color: var(--sg-control-edge);
+  background-color: color-mix(in srgb, var(--sg-plate-ink) 54%, transparent) !important;
   background-image: linear-gradient(145deg, rgb(209 236 253 / 11%), transparent 47%, rgb(180 216 239 / 3%));
   box-shadow: inset 0 1px 0 rgb(239 251 255 / 22%), inset 0 -1px 0 rgb(0 0 0 / 18%), 0 9px 25px -18px rgb(0 0 0 / 55%);
-  backdrop-filter: none; -webkit-backdrop-filter: none;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
 }
 .er-root :is(.er-primary, .er-secondary-toolbar, .er-icon-button),
 .ccc-primary, .ccc-secondary, .ccc-mode-arrow { box-shadow: inset 0 1px 0 rgb(231 249 255 / 26%), 0 3px 9px -6px rgb(0 0 0 / 55%); border-color: var(--sg-control-edge); }
@@ -220,3 +257,93 @@ html[data-appearance-theme="light"] .sg-action--default { background-color: #315
 .er-root button[data-velocity-control]:active { transform: none; }
 html[data-sg-motion="reduced"] .sg-navigation-shell .scholar-sidebar-title { transition: none; }
 html[data-sg-material="fallback"] :is(.sg-action--outline,.sg-action--secondary,.sg-workspace-panel,[data-slot="dialog-content"],[data-slot="dropdown-menu-content"]) { background-color: var(--sg-plate-ink) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* 3.1 scene continuity: genuine route media now lives ONCE beneath both columns.
+   Remove the unrelated blue plate; content stays above an independent optic.
+   On desktop, .scholar-desktop-sidebar.sg-navigation-shell already provides the
+   single backdrop blur, so .sg-sidebar-optic does not double-blur or displace it. */
+[data-slot="sheet-content"].sg-mobile-drawer[data-sg-chrome="sidebar"] {
+  background-color:rgb(9 15 21 / 48%) !important;
+  background-image:linear-gradient(110deg,rgb(255 255 255 / 7%),transparent 45%,rgb(255 255 255 / 3%)) !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  border-color:rgb(229 244 251 / 24%) !important;
+}
+.sg-sidebar-optic { position:absolute; inset:0 0 auto; height:min(100%,540px); pointer-events:none; border-radius:inherit; z-index:0; backdrop-filter:none; -webkit-backdrop-filter:none; mask-image:linear-gradient(#000 calc(100% - 36px),transparent); }
+.sg-mobile-drawer .sg-sidebar-optic { backdrop-filter:blur(12px) saturate(125%); -webkit-backdrop-filter:blur(12px) saturate(125%); }
+.sg-navigation-shell > :not(.sg-sidebar-optic), .sg-mobile-drawer > :not(.sg-sidebar-optic) { position:relative; z-index:1; }
+.sg-mobile-drawer > [data-slot="sheet-close"] { position:absolute; }
+.sg-environment > * { pointer-events:none; }
+.scholar-main-scroll [data-scene-connected="true"], .scholar-shell:has([data-scene-connected="true"]) #main-scroll { background-color:transparent !important; background-image:none !important; }
+.scholar-shell[data-mobile-drawer-open="true"] .scholar-mobile-nav-shell { visibility:hidden; pointer-events:none; }
+html[data-sg-refraction="off"] .sg-mobile-drawer .sg-sidebar-optic { backdrop-filter:blur(8px) saturate(115%); }
+html[data-sg-material="fallback"] .sg-sidebar-optic, html[data-sg-quality="lightweight"] .sg-sidebar-optic { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+html[data-sg-material="fallback"] :is(.sg-navigation-shell,.sg-mobile-drawer) { background-color:var(--sg-plate-ink) !important; }
+html[data-appearance-theme="light"] :is(.sg-navigation-shell,.sg-mobile-drawer) { background-color:rgb(240 246 250 / 65%) !important; }
+
+/* Idle surfaces are cheap; only the current eligible hovered/focused/pressed
+   control is registered for live optics. Text remains above backdrop filtering. */
+[data-sg-control-optics="true"][data-sg-optics="active"] {
+  background-color:rgb(20 32 43 / 36%) !important;
+  background-image:linear-gradient(120deg,rgb(255 255 255 / 18%),transparent 50%,rgb(255 255 255 / 6%)) !important;
+  backdrop-filter:blur(6px) saturate(130%) !important;
+  -webkit-backdrop-filter:blur(6px) saturate(130%) !important;
+}
+[data-sg-pressed="true"] { border-radius:var(--sg-press-radius) !important; box-shadow:inset 0 2px 5px rgb(0 0 0 / 22%),inset 0 1px 0 rgb(255 255 255 / 70%) !important; border-color:rgb(224 248 255 / 80%) !important; }
+:where([data-velocity-control]):not([data-velocity-control="navigation"]) { background-image:linear-gradient(125deg,rgb(231 247 255 / 9%),transparent 62%); box-shadow:inset 0 1px 0 rgb(236 248 255 / 12%); }
+html[data-sg-refraction="off"] [data-sg-control-optics],html[data-sg-quality="lightweight"] [data-sg-control-optics],html[data-sg-hidden="true"] [data-sg-control-optics] { backdrop-filter:none !important; }
+html[data-appearance-theme="light"] [data-sg-control-optics="true"] { background-color:rgb(238 246 251 / 70%) !important; }
+
+/* Real Radix content stays mounted for this non-visual Presence clock. Anime
+   alone owns its opacity/scale; no cloned menu, second input or delayed action. */
+@keyframes sg-presence-exit { from { visibility:visible; } to { visibility:visible; } }
+[data-velocity-panel="true"][data-state="open"] { animation:none !important; }
+[data-velocity-panel="true"][data-state="closed"] { animation:sg-presence-exit 160ms linear !important; pointer-events:none !important; }
+[data-velocity-state="closed"] { pointer-events:none !important; }
+:is([data-slot="dropdown-menu-content"],[data-slot="dropdown-menu-sub-content"],[data-slot="select-content"],[data-slot="popover-content"],[data-slot="context-menu-content"],[data-slot="context-menu-sub-content"],[data-slot="menubar-content"],[data-slot="menubar-sub-content"]) {
+  isolation:isolate; border:1px solid rgb(223 241 255 / 35%) !important; border-radius:16px !important;
+  background-color:rgb(13 20 29 / 80%) !important; background-image:linear-gradient(145deg,rgb(255 255 255 / 10%),transparent 50%) !important;
+  box-shadow:inset 0 1px 0 rgb(255 255 255 / 30%),0 15px 45px rgb(0 0 0 / 35%) !important;
+  backdrop-filter:blur(12px) saturate(125%); -webkit-backdrop-filter:blur(12px) saturate(125%);
+}
+[data-velocity-panel="true"][data-sg-optics="active"]:not([data-slot="dialog-content"]):not([data-slot="sheet-content"]) { backdrop-filter:url("#sg-refraction-standard") blur(4px) saturate(125%); }
+[data-velocity-panel="true"][data-velocity-animating="true"] { backdrop-filter:blur(6px) saturate(125%) !important; }
+html[data-sg-refraction="off"] [data-velocity-panel="true"],html[data-sg-quality="lightweight"] [data-velocity-panel="true"] { backdrop-filter:none !important; }
+html[data-sg-motion="reduced"] [data-velocity-panel="true"][data-state="closed"] { animation-duration:1ms !important; }
+@media(prefers-reduced-motion:reduce){[data-velocity-panel="true"][data-state="closed"]{animation-duration:1ms !important;}}
+
+.sg-inline-search { display:flex; align-items:center; gap:9px; min-width:0; flex:1; max-width:320px; padding:6px 10px; min-height:42px; border:1px solid rgb(222 240 255 / 24%); border-radius:16px; background:rgb(15 24 33 / 60%); }
+.sg-inline-search:focus-within { border-color:var(--scholar-focus,#67e8f9); box-shadow:0 0 0 2px rgb(103 232 249 / 12%); }
+.sg-inline-search input { min-width:0; width:100%; background:transparent; border:0; outline:none; color:inherit; font-size:14px; }
+.sg-inline-search button { min-width:28px; min-height:28px; display:grid; place-items:center; }
+.sg-inline-search kbd { white-space:nowrap; font-size:10px; opacity:.5; }
+.sg-inline-results[data-slot="popover-content"] { width:var(--radix-popover-trigger-width,320px); max-width:calc(100vw - 20px); max-height:min(var(--radix-popover-content-available-height,60dvh),480px); overflow:auto; padding:8px; z-index:90; }
+.sg-search-caption,.sg-search-status { padding:8px 10px; font-size:11px; color:var(--sg-muted-text); }
+.sg-inline-option { display:flex; width:100%; align-items:center; gap:10px; text-align:left; min-height:48px; padding:9px 10px; border-radius:10px; }
+.sg-inline-option span { flex:1; min-width:0; }
+.sg-inline-option strong { display:block; font-size:13px; font-weight:600; }
+.sg-inline-option small { display:block; font-size:11px; opacity:.65; overflow-wrap:anywhere; }
+.sg-inline-option[aria-selected="true"] { background:rgb(159 211 239 / 18%); box-shadow:inset 0 0 0 1px rgb(220 244 255 / 25%); }
+@media(max-width:767px){ .sg-inline-search input{font-size:16px;} .sg-inline-search kbd{display:none;} .scholar-mobile-topbar:has([data-search-open="true"]) :is(.scholar-class-indicator,.scholar-top-actions){display:none;} .sg-inline-search[data-search-open="true"]{max-width:none;} }
+.sg-guest-account-note { padding:14px 16px; margin-bottom:16px; border:1px solid rgb(103 232 249 / 25%); border-radius:14px; background:rgb(15 35 43 / 65%); font-size:13px; line-height:1.6; color:#cce8ef; }
+.scholar-settings-tabs[data-slot="tabs-list"] { border-radius:20px !important; overflow:visible !important; max-height:none !important; flex-shrink:0; }
+@media(max-width:1023px){
+  /* Original Settings pills and cards, with breathing room rather than a new selector UI. */
+  .scholar-settings-tabs[data-slot="tabs-list"] { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; height:auto; padding:8px; }
+  .scholar-settings-tabs > [data-slot="tabs-trigger"] { min-width:0; min-height:46px; height:auto; padding:8px 10px; font-size:12px; line-height:1.35; white-space:normal; overflow-wrap:anywhere; }
+  .sg-setting-row { display:grid; grid-template-columns:36px minmax(0,1fr); align-items:start; gap:10px; }
+  .sg-setting-row >:last-child { grid-column:2; max-width:100%; }
+  .sg-setting-row [data-slot="select-trigger"] { width:100%; max-width:100%; white-space:normal; }
+  [data-settings-page] { overflow:visible !important; padding-bottom:100px; }
+  [data-settings-page] [data-slot="tabs-content"] { min-width:0; }
+  [data-settings-page] :is(input,textarea,[data-slot="select-trigger"]) { max-width:100%; }
+  [data-settings-page] .asme-glass { min-width:0; max-width:100%; }
+}
+@media(min-width:480px) and (max-width:1023px){.scholar-settings-tabs[data-slot="tabs-list"]{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:1023px) and (max-height:500px){
+  .sg-settings-brand-nav { padding:6px 12px; }
+  .sg-settings-brand-nav > .asme-glass { padding:7px 14px; }
+  .sg-settings-intro { padding:2px 12px 6px; }
+  .sg-settings-intro h1 { font-size:28px; line-height:32px; margin-bottom:0; }
+  .sg-settings-intro > p { display:none; }
+  .scholar-settings-tabs[data-slot="tabs-list"] { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+}

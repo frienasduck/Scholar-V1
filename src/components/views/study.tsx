@@ -1,5 +1,4 @@
 "use client";
-import { ResourceShelf } from "@/components/resources/resource-library";
 
 import { useStore } from "@/lib/store";
 import { CURRICULUM } from "@/lib/curriculum";
@@ -847,7 +846,7 @@ export function StudyView() {
           </div>
         </div>
 
-        <div className="mt-8"><ResourceShelf grade={scholarClass} subjectId={subjectId} chapterId={chapter.id} title="Your chapter source path"/></div>
+        <></>
 
         {/* Explain dialog */}
         <Dialog open={!!explainOpen} onOpenChange={(o) => !o && setExplainOpen(null)}>

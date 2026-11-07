@@ -1,4 +1,5 @@
 "use client"
+import { useVelocityPanel } from "@/components/liquid-glass/velocity-motion"
 
 import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
@@ -23,11 +24,14 @@ function HoverCardContent({
   className,
   align = "center",
   sideOffset = 4,
+  ref: forwardedRef,
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Content>) {
+  const motionRef=useVelocityPanel(forwardedRef)
+
   return (
     <HoverCardPrimitive.Portal data-slot="hover-card-portal">
-      <HoverCardPrimitive.Content
+      <HoverCardPrimitive.Content ref={motionRef}
         data-slot="hover-card-content"
         align={align}
         sideOffset={sideOffset}

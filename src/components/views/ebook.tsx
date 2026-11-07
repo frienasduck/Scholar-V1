@@ -1,6 +1,6 @@
 "use client";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
 import { useLamActivity } from "@/components/lam/lam-avatar";
-import { ResourceLibrary } from "@/components/resources/resource-library";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -567,13 +567,13 @@ export function EBookView() {
   if (uploadedBook) return <UploadedBookReader key={uploadedBook.id} book={uploadedBook} onClose={() => { setUploadedReader(null); setLamPageContext({}); const url = new URL(location.href); url.searchParams.delete("book"); history.replaceState(null, "", url); }} />;
   if (view === "home") {
     return (
-      <div className="scholar-ebook scholar-responsive-page relative bg-[#0a0a0f] overflow-hidden -m-3 sm:-m-4 lg:-m-6 text-white eb-font">
+      <div className="scholar-ebook scholar-responsive-page relative bg-[#0a0a0f] overflow-hidden -m-3 sm:-m-4 lg:-m-6 text-white eb-font" data-scene-connected="true">
         <style>{EB_STYLE}</style>
-        <ReadyBackgroundVideo
+        <SceneBackdrop><ReadyBackgroundVideo
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
           className="fixed z-0 pointer-events-none opacity-20"
           readinessId="ebook-library"
-        />
+        /></SceneBackdrop>
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Nav */}
@@ -642,7 +642,7 @@ export function EBookView() {
           </div>
 
           <CustomEbookLibrary onOpenBook={openUploadedBook} />
-          <ResourceLibrary type="textbook" title="Built-in chapter textbooks"/>
+          <></>
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">

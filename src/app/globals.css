@@ -4,6 +4,25 @@
 /* Shared placement hook belongs in global CSS, not a pure CSS module. */
 .lam-living-presence { margin-bottom: 14px; }
 
+/* Section pages own the full canvas. Paused services are page-level notices,
+   not inset cards, so they carry no outline or rounded frame. */
+section[data-section-shutdown] {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex: 1;
+}
+
+section[data-section-shutdown] > div {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 /* Crossfade decorative section backgrounds into the shared footer, not the
    foreground UI. Scoped to views that actually render a footer; videos inside
    cards, lesson players, PDF readers and canvas content are never selected. */
@@ -761,12 +780,38 @@ html[data-scholar-theme="theme-paper"] {
 
 /* --- Mobile compact top bar --- */
 @media (max-width: 639px) {
-  .scholar-mobile-topbar .scholar-top-search {
+  .scholar-mobile-topbar .scholar-top-search:not([data-search-open="true"]) {
+    position: relative;
     flex: 0 0 44px;
     width: 44px;
     height: 44px;
     padding: 0;
     justify-content: center;
+  }
+  .scholar-mobile-topbar .scholar-top-search:not([data-search-open="true"]) input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .scholar-mobile-topbar .scholar-top-search[data-search-open="true"] {
+    flex: 1 1 0%;
+    width: auto;
+    max-width: none;
+    height: 44px;
+    padding: 0 10px;
+    justify-content: flex-start;
+  }
+  .scholar-mobile-topbar .scholar-top-search[data-search-open="true"] input {
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
   }
   .scholar-mobile-topbar .sm-quick-access,
   .scholar-mobile-topbar button[aria-label^="Notifications"],
@@ -783,11 +828,11 @@ html[data-scholar-theme="theme-paper"] {
     flex: 0 0 var(--scholar-topbar-height);
     padding-top: var(--safe-area-top) !important;
   }
-  .scholar-main-scroll:not([data-active-view="live-tutor"]) {
+  .scholar-main-scroll:not([data-active-view="live-tutor"]):not([data-active-view="lam-ai"]) {
     padding-bottom: calc(3.6rem + var(--safe-area-bottom));
     scroll-padding-bottom: calc(4.25rem + var(--safe-area-bottom));
   }
-  .scholar-shell[data-mobile-nav-open="true"] .scholar-main-scroll:not([data-active-view="live-tutor"]) {
+  .scholar-shell[data-mobile-nav-open="true"] .scholar-main-scroll:not([data-active-view="live-tutor"]):not([data-active-view="lam-ai"]) {
     padding-bottom: calc(7.5rem + var(--safe-area-bottom));
     scroll-padding-bottom: calc(8rem + var(--safe-area-bottom));
   }
@@ -849,7 +894,7 @@ body.immersive-mode .scholar-mobile-nav-shell {
   html[data-scholar-keyboard-open="true"] .pwa-install-prompt {
     display: none !important;
   }
-  html[data-scholar-keyboard-open="true"] .scholar-main-scroll:not([data-active-view="live-tutor"]) {
+  html[data-scholar-keyboard-open="true"] .scholar-main-scroll:not([data-active-view="live-tutor"]):not([data-active-view="lam-ai"]) {
     padding-bottom: 1rem;
   }
 }

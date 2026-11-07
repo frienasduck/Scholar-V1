@@ -4,8 +4,8 @@ import { GraduationCap, MessageCircle, Play, Sparkles, UsersRound } from "lucide
 import styles from "./scholar-footer.module.css";
 
 const groups = [
-  { title: "Product", links: [["AI Tools", "/ai-tools"], ["E-Books", "/ebook"], ["Study Plan", "/planner"], ["Canvas", "/canvas"], ["Experiments", "/lab"]] },
-  { title: "Resources", links: [["Study", "/study"], ["AI Tutor", "/ai-tutor"], ["Quiz", "/quiz"], ["Flashcards", "/flashcards"], ["Help Center", "/help"]] },
+  { title: "Product", links: [["LAM AI", "/lam-ai"], ["Question Practice", "/question-practice"], ["Doubt Lab", "/doubt-lab"], ["Experiment Lab", "/experiment-lab"], ["Canvas", "/canvas"]] },
+  { title: "Resources", links: [["Study", "/study"], ["Resources & Downloads", "/resources"], ["Study Plan", "/planner"], ["Flashcards", "/flashcards"], ["Help Center", "/help"]] },
   { title: "Your Scholar", links: [["Settings & profile", "/settings"], ["Scholar Plus", "/plus"], ["Notes", "/notes"], ["Files", "/files"], ["Reminders", "/reminders"], ["Changelog", "/updates"]] },
   { title: "Legal", links: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"], ["Help & feedback", "/help"]] },
 ];

@@ -1,4 +1,5 @@
 "use client";
+import { ResourcesHomeLink } from "@/components/resources/resources-home-link";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -260,7 +261,7 @@ export function ChapterCommandCenter() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ResourcesPanel data={data} />
+            <ResourcesHomeLink data={data} />
             <MistakePanel data={data} />
           </div>
 

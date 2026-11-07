@@ -11,6 +11,7 @@
  */
 
 import { profileGetJSON, profileSetJSON, type ProfileId } from "@/lib/profile-storage";
+import { isIntelligenceEnabled } from "./consent";
 import { loadQuizMistakes, type SavedQuizMistake } from "@/lib/quiz-mistakes";
 import { useStore, type QuizAttempt, type Task } from "@/lib/store";
 import type {
@@ -390,10 +391,12 @@ export function subjectScoresFromMastery(estimates: Array<{ subject: string; sco
 // Server sync (best-effort)
 // ============================================================================
 
-export type SyncState = "idle" | "syncing" | "synced" | "offline" | "guest";
+export type SyncState = "off" | "idle" | "syncing" | "synced" | "offline" | "guest";
 
 export function loadSyncState(scholarClass: 9 | 11): SyncState {
-  return profileGetJSON<SyncState>(scholarClass, KEY_SYNC_STATE, "idle");
+  if (!isIntelligenceEnabled(scholarClass)) return "off";
+  const state = profileGetJSON<SyncState>(scholarClass, KEY_SYNC_STATE, "idle");
+  return state === "off" ? "idle" : state;
 }
 
 export function saveSyncState(scholarClass: 9 | 11, state: SyncState): void {
@@ -417,6 +420,10 @@ export async function isAuthenticated(): Promise<boolean> {
  * failures degrade to the local (offline) experience.
  */
 export async function syncEvidence(scholarClass: 9 | 11): Promise<SyncState> {
+  if (!isIntelligenceEnabled(scholarClass)) {
+    saveSyncState(scholarClass, "off");
+    return "off";
+  }
   saveSyncState(scholarClass, "syncing");
   try {
     const authed = await isAuthenticated();

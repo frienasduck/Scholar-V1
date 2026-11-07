@@ -29,8 +29,9 @@ test("optical fields have signed edges and a wide neutral centre", () => {
   expect(Object.keys(REFRACTION_PRESETS)).toHaveLength(3);
   expect(REFRACTION_PRESETS.prominent.displacement).toBeLessThanOrEqual(0.08);
   const html = renderToStaticMarkup(createElement(GlassFilterDefs));
-  expect(html.match(/primitiveUnits="objectBoundingBox"/g)).toHaveLength(3);
-  expect(html.match(/width="1" height="1"/g)).toHaveLength(6);
+  expect(html.match(/primitiveUnits="objectBoundingBox"/g)).toHaveLength(4);
+  expect(html.match(/width="1" height="1"/g)).toHaveLength(8);
+  expect(html.match(/id="sg-refraction-dock"/g)).toHaveLength(1);
 });
 
 test("offscreen surfaces are not measured; real optical budget and hidden cleanup", () => {

@@ -1,4 +1,5 @@
 "use client";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
 
 import { useStore, getLevelInfo } from "@/lib/store";
 import { useCurriculum } from "@/lib/use-curriculum";
@@ -328,9 +329,8 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
 
   const revealRoot = useVelocityReveal();
   return (
-    <div ref={revealRoot} className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-4 lg:-m-6">
+    <div ref={revealRoot} className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-4 lg:-m-6" data-scene-connected="true">
       <style>{`
-        @import url('https://db.onlinewebfonts.com/c/2bf40ab72ea4897a3fd9b6e48b233a19?family=Garamond');
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap');
         /* Dashboard surfaces use the shared Scholar Liquid Glass material.
            The dashboard's cinematic video gives the glass real depth to
@@ -357,7 +357,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
           -webkit-mask-composite: xor;
           mask-composite: exclude;
           pointer-events: none;
-          mix-blend-mode: screen;
+          opacity: 0.72;
         }
         .dash-glass-strong {
           position: relative;
@@ -379,7 +379,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
           -webkit-mask-composite: xor;
           mask-composite: exclude;
           pointer-events: none;
-          mix-blend-mode: screen;
+          opacity: 0.72;
         }
         .font-garamond { font-family: 'Garamond', 'Times New Roman', serif; }
         .font-geist { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -402,11 +402,11 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
       `}</style>
 
       {/* Background video */}
-      <ReadyBackgroundVideo
+      <SceneBackdrop><ReadyBackgroundVideo
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260619_191346_9d19d66e-86a4-47f7-8dc6-712c1788c3b2.mp4"
         className="z-0"
         readinessId="dashboard"
-      />
+      /></SceneBackdrop>
       <div className="absolute inset-0 z-0 bg-black/40" />
 
       {/* Content */}

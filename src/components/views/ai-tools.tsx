@@ -33,41 +33,28 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { SlideshowMaker } from "@/components/views/slideshow-maker";
+import {
+  AnswerEvaluatorPlugin,
+  ChapterSummarizerPlugin,
+  ConceptExplainerPlugin,
+  DiagramFlowchartBuilderPlugin,
+  FlashcardMakerPlugin,
+  FormulaSheetGeneratorPlugin,
+  MistakePatternTrackerPlugin,
+  NcertQuestionGeneratorPlugin,
+  NotesToQuizPlugin,
+  PYQSolverPlugin,
+  RevisionPlannerPlugin,
+} from "@/components/views/lam-academic-plugins";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
 import { setLamDraft } from "@/lib/lam-context";
 import { navigateTo } from "@/lib/nav-event";
+import { TOOLS } from "@/lib/ai-tools/catalog";
 import {
   beginBackgroundTask,
   completeBackgroundTask,
   failBackgroundTask,
 } from "@/lib/background-tasks";
-
-// ===== Tool metadata =====
-interface ToolMeta {
-  id: string;
-  name: string;
-  blurb: string;
-  icon: typeof Brain;
-  accent: string;
-  gradient: string;
-  highlight?: boolean;
-  badge?: string;
-}
-
-const TOOLS: ToolMeta[] = [
-  { id: "ai-pdf-studio", name: "AI PDF Studio", blurb: "Turn a single prompt into a stunning, publication-ready PDF — Canva + Notion + AI for students.", icon: FileText, accent: "#f43f5e", gradient: "from-rose-500 to-orange-500", highlight: true, badge: "FLAGSHIP" },
-  { id: "mistake-analyzer", name: "Mistake Analyzer", blurb: "Paste wrong answers — find the root cause.", icon: AlertTriangle, accent: "#f59e0b", gradient: "from-amber-500 to-orange-500" },
-  { id: "memory-predictor", name: "Memory Predictor", blurb: "See what you're about to forget.", icon: Brain, accent: "#8b5cf6", gradient: "from-violet-500 to-fuchsia-500" },
-  { id: "academic-coach", name: "Academic Coach", blurb: "Personalised improvement plan.", icon: Target, accent: "#6366f1", gradient: "from-indigo-500 to-blue-500" },
-  { id: "one-night-exam", name: "One-Night Exam Mode", blurb: "Cram plan for tomorrow's exam.", icon: Sunrise, accent: "#ec4899", gradient: "from-pink-500 to-rose-500" },
-  { id: "homework-scanner", name: "Homework Scanner", blurb: "Snap a question, get a hint + solution.", icon: Camera, accent: "#14b8a6", gradient: "from-teal-500 to-emerald-500" },
-  { id: "daily-briefing", name: "Daily Briefing", blurb: "Your 4-part morning study brief.", icon: Sunrise, accent: "#f97316", gradient: "from-orange-500 to-amber-500" },
-  { id: "chapter-builder", name: "Chapter Builder", blurb: "Generate a full study unit, export to PDF.", icon: Hammer, accent: "#10b981", gradient: "from-emerald-500 to-teal-500" },
-  { id: "life-saver", name: "Life Saver Button", blurb: "Panicking? Tap once, get calm + a plan.", icon: LifeBuoy, accent: "#ef4444", gradient: "from-red-500 to-rose-500" },
-  { id: "study-companion", name: "Study Companion", blurb: "Casual mini-chat with a friendly AI.", icon: Users, accent: "#06b6d4", gradient: "from-cyan-500 to-sky-500" },
-  { id: "aisig", name: "AISIG", blurb: "AI Study Image Generator — turn ideas into educational images.", icon: ImageIcon, accent: "#7c3aed", gradient: "from-violet-500 to-purple-500" },
-  { id: "slideshow-maker", name: "AI Slideshow Maker", blurb: "Turn topics, notes, or chapters into beautiful editable slide decks. Included with Scholar Plus.", icon: Presentation, accent: "#06b6d4", gradient: "from-cyan-500 to-violet-500", highlight: true, badge: "PLUS" },
-];
 
 // ===== Shared bits =====
 function Loading({ label }: { label?: string }) {
@@ -126,8 +113,9 @@ function useUserStats() {
 }
 
 // ===== Tool 1: Mistake Analyzer =====
-function MistakeAnalyzer() {
-  const [text, setText] = useState("");
+function MistakeAnalyzer({ initialPrompt }: { initialPrompt?: string }) {
+  const [text, setText] = useState(initialPrompt ?? "");
+
   const [subject, setSubject] = useState("general");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -462,7 +450,7 @@ function HomeworkScanner() {
             {ocrStatus === "preparing" || ocrStatus === "reading" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
             {ocrStatus === "preparing" ? "Preparing image…" : ocrStatus === "reading" ? "Reading text…" : ocrStatus === "done" ? "Run OCR again" : "Extract text with OCR"}
           </Button>
-          {(ocrStatus === "preparing" || ocrStatus === "reading") && <button type="button" onClick={() => ocrAbort.current?.abort()} className="w-full text-xs text-muted-foreground hover:text-foreground">Cancel OCR</button>}
+          {(ocrStatus === "preparing" || ocrStatus === "reading") && <button type="button" onClick={() => ocrAbort.current?.abort()} className="w-full text-xs text-muted-foreground hover:text-foreground" data-velocity-control="audited-v31">Cancel OCR</button>}
           {ocrError && <p role="alert" className="rounded-lg border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">{ocrError}</p>}
           {confidence !== null && <p className="text-xs text-muted-foreground">OCR confidence: <span className="font-semibold text-foreground">{confidence}%</span>. Review the editable text before using it.</p>}
         </div>
@@ -497,7 +485,7 @@ function HomeworkScanner() {
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
           <button
             className="flex items-center gap-2 text-xs font-semibold text-amber-600 w-full"
-            onClick={() => setShowHint((v) => !v)}
+            onClick={() => setShowHint((v) => !v)} data-velocity-control="audited-v31"
           >
             <Lightbulb className="h-3.5 w-3.5" />
             {showHint ? "Hide hint" : "Show hint first"}
@@ -706,7 +694,7 @@ function StudyCompanion() {
                     {isUser ? <p className="whitespace-pre-wrap">{m.content}</p> : <Markdown content={m.content} />}
                   </div>
                   {!isUser && (
-                    <button onClick={() => speak(m.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                    <button onClick={() => speak(m.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground mt-1 flex items-center gap-1" data-velocity-control="audited-v31">
                       <Volume2 className="h-3 w-3" /> read aloud
                     </button>
                   )}
@@ -1002,7 +990,7 @@ function AISIG() {
               <button
                 key={i}
                 onClick={() => { setInput(h.prompt); setEnhanced(h.enhanced); setImage(h.image || null); setImageError(null); }}
-                className="block w-full text-left text-xs p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                className="block w-full text-left text-xs p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors" data-velocity-control="audited-v31"
               >
                 <p className="font-medium truncate">{h.prompt}</p>
                 <p className="text-muted-foreground line-clamp-2 mt-0.5">{h.enhanced}</p>
@@ -1087,9 +1075,9 @@ const PDF_ENHANCEMENTS = [
 
 const PDF_STAGES = ["Designing layout", "Generating content", "Formatting sections", "Polishing & exporting"];
 
-function AIPDFStudio() {
+function AIPDFStudio({ initialPrompt = "" }: { initialPrompt?: string }) {
   const { scholarClass } = useUserStats();
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [doc, setDoc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
@@ -1119,13 +1107,13 @@ function AIPDFStudio() {
       if (Array.isArray(saved)) {
         setHistory(saved);
         const latest = saved[0] as PDFStudioEntry | undefined;
-        if (latest?.doc) {
+        if (latest?.doc && !initialPrompt) {
           setDoc(latest.doc);
           setPrompt(latest.prompt || "");
         }
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [initialPrompt]);
 
   // Stage cycling animation while loading
   useEffect(() => {
@@ -1271,7 +1259,7 @@ Keep tables and equations within a printable A4 content width. Be accurate to NC
             <button
               key={ex}
               onClick={() => setPrompt(ex)}
-              className="px-2.5 py-1 rounded-full text-[11px] bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
+              className="px-2.5 py-1 rounded-full text-[11px] bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 transition-colors border border-rose-500/20" data-velocity-control="audited-v31"
             >
               {ex}
             </button>
@@ -1283,7 +1271,7 @@ Keep tables and equations within a printable A4 content width. Be accurate to NC
       <div className="rounded-xl border border-border overflow-hidden">
         <button
           onClick={() => setShowConfig((v) => !v)}
-          className="w-full flex items-center gap-2 px-4 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors text-sm font-medium"
+          className="w-full flex items-center gap-2 px-4 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors text-sm font-medium" data-velocity-control="audited-v31"
         >
           <Settings2 className="h-4 w-4" /> Configuration (7 options + AI Visuals)
           <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showConfig && "rotate-180")} />
@@ -1370,7 +1358,7 @@ Keep tables and equations within a printable A4 content width. Be accurate to NC
                   key={en.label}
                   onClick={() => applyEnhancement(en.add)}
                   disabled={enhancing}
-                  className="px-2.5 py-1 rounded-full text-[11px] bg-muted/40 hover:bg-muted/70 transition-colors border border-border disabled:opacity-50 flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-full text-[11px] bg-muted/40 hover:bg-muted/70 transition-colors border border-border disabled:opacity-50 flex items-center gap-1" data-velocity-control="audited-v31"
                 >
                   <en.icon className="h-3 w-3" /> {en.label}
                 </button>
@@ -1400,7 +1388,7 @@ Keep tables and equations within a printable A4 content width. Be accurate to NC
       <div className="rounded-xl border border-border overflow-hidden">
         <button
           onClick={() => setShowTemplates((v) => !v)}
-          className="w-full flex items-center gap-2 px-4 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors text-sm font-medium"
+          className="w-full flex items-center gap-2 px-4 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors text-sm font-medium" data-velocity-control="audited-v31"
         >
           <LayoutTemplate className="h-4 w-4" /> Templates Gallery ({PDF_TEMPLATES.length})
           <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showTemplates && "rotate-180")} />
@@ -1415,7 +1403,7 @@ Keep tables and equations within a printable A4 content width. Be accurate to NC
               <button
                 key={t.name}
                 onClick={() => { setPrompt(`Create a ${t.name.toLowerCase()} for: ${t.desc.toLowerCase()}.`); setShowTemplates(false); }}
-                className="text-left p-3 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors border border-border"
+                className="text-left p-3 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors border border-border" data-velocity-control="audited-v31"
               >
                 <div className="text-xl mb-1">{t.icon}</div>
                 <p className="text-xs font-medium">{t.name}</p>
@@ -1438,7 +1426,7 @@ Keep tables and equations within a printable A4 content width. Be accurate to NC
               <button
                 key={h.id}
                 onClick={() => loadHistory(h)}
-                className="block w-full text-left text-xs p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                className="block w-full text-left text-xs p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors" data-velocity-control="audited-v31"
               >
                 <p className="font-medium truncate">{h.prompt}</p>
                 <p className="text-muted-foreground text-[10px] mt-0.5">{new Date(h.at).toLocaleString()} · {h.doc.length} chars</p>
@@ -1471,10 +1459,10 @@ function ConfigSelect({ label, value, onChange, options }: {
 }
 
 // ===== Tool content router =====
-function ToolContent({ id }: { id: string }) {
+export function ToolContent({ id, initialPrompt }: { id: string; initialPrompt?: string }) {
   switch (id) {
-    case "ai-pdf-studio": return <AIPDFStudio />;
-    case "mistake-analyzer": return <MistakeAnalyzer />;
+    case "ai-pdf-studio": return <AIPDFStudio key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "mistake-analyzer": return <MistakeAnalyzer key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
     case "memory-predictor": return <MemoryPredictor />;
     case "academic-coach": return <AcademicCoach />;
     case "one-night-exam": return <OneNightExam />;
@@ -1485,6 +1473,17 @@ function ToolContent({ id }: { id: string }) {
     case "study-companion": return <StudyCompanion />;
     case "aisig": return <AISIG />;
     case "slideshow-maker": return <SlideshowMaker />;
+    case "concept-explainer": return <ConceptExplainerPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "chapter-summarizer": return <ChapterSummarizerPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "flashcard-maker": return <FlashcardMakerPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "formula-sheet-generator": return <FormulaSheetGeneratorPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "notes-to-quiz": return <NotesToQuizPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "answer-evaluator": return <AnswerEvaluatorPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "revision-planner": return <RevisionPlannerPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "diagram-flowchart-builder": return <DiagramFlowchartBuilderPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "pyq-solver": return <PYQSolverPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "ncert-question-generator": return <NcertQuestionGeneratorPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
+    case "mistake-pattern-tracker": return <MistakePatternTrackerPlugin key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
     default: return null;
   }
 }
@@ -1594,7 +1593,7 @@ export function AIToolsView() {
           <nav className="flex items-center justify-between px-4 md:px-8 py-4">
             <button
               onClick={() => setOpenId(null)}
-              className="bloom-glass rounded-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:text-white"
+              className="bloom-glass rounded-full px-4 py-2 flex items-center gap-2 text-sm text-white/80 hover:text-white" data-velocity-control="audited-v31"
             >
               <ChevronRight className="h-4 w-4 rotate-180" /> Back to Tools
             </button>
@@ -1664,7 +1663,7 @@ export function AIToolsView() {
                 </div>
                 <span className="bloom-display text-2xl tracking-tighter text-white font-semibold">bloom</span>
               </div>
-              <button type="button" onClick={() => document.getElementById("bloom-tools-menu")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="bloom-glass rounded-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform" aria-label="Jump to AI tools menu">
+              <button type="button" onClick={() => document.getElementById("bloom-tools-menu")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="bloom-glass rounded-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform" aria-label="Jump to AI tools menu" data-velocity-control="audited-v31">
                 <span className="text-sm text-white/80">Menu</span>
               </button>
             </div>

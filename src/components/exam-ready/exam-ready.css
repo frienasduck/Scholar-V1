@@ -30,3 +30,27 @@
 .er-root[data-mode=study] .er-time-detail{gap:12px;flex-wrap:wrap;margin:0;font-size:13px}
 @media(max-width:1250px){.er-root[data-mode=study] .er-context-header{grid-template-columns:1fr 1fr}.er-root[data-mode=study] .er-compact-evidence{grid-column:1/-1}}
 @media(max-width:760px){.er-root[data-mode=study] .er-context-header{grid-template-columns:1fr}.er-workspace-root{border-radius:0}.er-root[data-mode=study] .er-clocks strong{font-size:23px}}
+
+/* Exam Ready Command Center & Syllabus Radar */
+.er-readiness-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}
+.er-metric-card{display:flex;flex-direction:column;justify-content:space-between;gap:8px;padding:18px}
+.er-metric-value{font-size:clamp(22px,2.2vw,30px);font-weight:700;letter-spacing:-.03em;color:#e9f4ff;line-height:1.15}
+.er-command-split{margin:16px 0 22px}
+.er-next-action-banner{display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.er-next-action-banner h3{font-size:clamp(18px,1.8vw,24px);line-height:1.3}
+.er-quick-toolkit{display:flex;flex-direction:column;gap:12px}
+.er-toolkit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.er-toolkit-grid button{justify-content:flex-start;text-align:left;padding:10px 12px;border-radius:14px}
+.er-toolkit-grid button span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.er-toolkit-grid button strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.er-toolkit-grid button small{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.er-syllabus-radar-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px;margin:20px 0}
+.er-syllabus-chapter-card{display:flex;flex-direction:column;justify-content:space-between;gap:6px}
+.er-syllabus-chapter-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.er-syllabus-chapter-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.er-weak-list{display:flex;flex-direction:column;gap:10px}
+.er-weak-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:14px;background:#051326b0;border:1px solid #5981c32b}
+.er-weak-item>div{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.er-weak-item strong{font-size:12px;line-height:1.4}
+@media(max-width:1100px){.er-readiness-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.er-syllabus-radar-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.er-readiness-command-grid{grid-template-columns:1fr}.er-toolkit-grid{grid-template-columns:1fr}.er-weak-item{flex-direction:column;align-items:flex-start}}

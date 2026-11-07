@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, BookOpen, BrainCircuit, Check, CircleStop, Copy, Eye, FileText, History, Loader2, MemoryStick, Mic, Plus, Settings2, Sparkles, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowUp, AtSign, BookOpen, BrainCircuit, Check, CircleStop, Copy, Eye, FileText, History, Loader2, MemoryStick, Mic, Paperclip, Plus, Settings2, Sparkles, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { PersonalityBackground } from "@/components/live-tutor/personality-background";
 import { LamScene } from "@/components/lam/lam-scene";
 import { LamAvatar, useLamActivity } from "@/components/lam/lam-avatar";
@@ -22,6 +22,15 @@ import { StudyPlanProposal } from "@/components/lam/study-plan-proposal";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { animateLamWakeReveal } from "@/lib/animation/lam-animations";
 import { resolveScholarAnimationQuality } from "@/lib/animation/animation-preferences";
+import { pluginById, searchLamPlugins, type LamPlugin } from "@/lib/lam/plugin-registry";
+import { setLamPluginTarget, setWorkspaceMode } from "@/lib/shrinking-scholar";
+import {
+  LAM_ATTACHMENT_ACCEPT,
+  composeLamMessage,
+  formatAttachmentSize,
+  readLamAttachment,
+  type LamAttachment,
+} from "@/lib/lam/attachments";
 import "@/components/live-tutor/live-tutor.css";
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> };
@@ -59,7 +68,13 @@ function actionCopy(action: LamAction) {
   return { title: "Use a Scholar tool", detail: "LAM needs confirmation before changing anything." };
 }
 
-export function LiveTutorView() {
+export function LiveTutorView({
+  embedded = false,
+  onOpenPlugin,
+}: {
+  embedded?: boolean;
+  onOpenPlugin?: (pluginId: string, prompt: string) => void;
+} = {}) {
   const curriculum = useCurriculum();
   const [studyPlan, setStudyPlan] = useState<ProposedStudyPlan | null>(null);
   const openingRef = useRef<HTMLDivElement>(null);
@@ -82,6 +97,12 @@ export function LiveTutorView() {
   const [prepared, setPrepared] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [draft, setDraft] = useState("");
+  const [attachments, setAttachments] = useState<LamAttachment[]>([]);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const [processingNames, setProcessingNames] = useState<string[]>([]);
+  const [failedFiles, setFailedFiles] = useState<File[]>([]);
+  const [attachmentError, setAttachmentError] = useState("");
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { const pending = consumeLamDraft(); if (pending) setDraft(pending.prompt); }, []);
   const pendingPlanning = useRef("");
   const [streaming, setStreaming] = useState("");
@@ -109,6 +130,55 @@ export function LiveTutorView() {
   const listening = status === "listening";
   const patchPreferences = useCallback((patch: Partial<LamPreferences>) => updateLamPreferences(profileId, patch), [profileId]);
   const append = useCallback((persona: LiveTutorPersonality, message: LamMessage) => setMessagesByPersona((current) => ({ ...current, [persona]: [...current[persona], message].slice(-100) })), []);
+
+  const pluginMention = draft.match(/(?:^|\s)@([\w -]*)$/);
+  const pluginQuery = pluginMention ? pluginMention[1].trim().toLowerCase() : null;
+  const [pluginChip, setPluginChip] = useState<LamPlugin | null>(null);
+  const [pluginIndex, setPluginIndex] = useState(0);
+  const pluginMatches = useMemo(() => {
+    if (pluginQuery === null) return [];
+    return searchLamPlugins(pluginQuery).slice(0, 6);
+  }, [pluginQuery]);
+  useEffect(() => { setPluginIndex(0); }, [pluginQuery]);
+  const choosePlugin = useCallback((plugin: LamPlugin) => {
+    const rest = pluginMention ? draft.slice(0, pluginMention.index).trim() : draft.trim();
+    setDraft(rest);
+    setPluginChip(plugin);
+  }, [draft, pluginMention]);
+
+  const processFiles = useCallback(async (fileArray: File[]) => {
+    if (!fileArray.length) return;
+    setAttachmentError("");
+    setFailedFiles([]);
+    setAttachmentBusy(true);
+    setProcessingNames(fileArray.map((f) => f.name));
+    try {
+      const next = [...attachments];
+      for (const file of fileArray) {
+        if (next.length >= 4) throw new Error("You can attach up to four files to one LAM message.");
+        const attachment = await readLamAttachment(file);
+        next.push(attachment);
+      }
+      setAttachments(next);
+    } catch (caught) {
+      setFailedFiles(fileArray);
+      setAttachmentError(caught instanceof Error ? caught.message : "That file could not be read.");
+    } finally {
+      setAttachmentBusy(false);
+      setProcessingNames([]);
+      if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+    }
+  }, [attachments]);
+
+  const addAttachments = useCallback(async (files: FileList | null) => {
+    if (!files?.length) return;
+    await processFiles(Array.from(files));
+  }, [processFiles]);
+
+  const retryAttachments = useCallback(() => {
+    if (!failedFiles.length) return;
+    void processFiles(failedFiles);
+  }, [failedFiles, processFiles]);
 
   useEffect(() => {
     const sync = (event: Event) => setContext((event as CustomEvent<LamRuntimeContext>).detail ?? {});
@@ -189,21 +259,30 @@ export function LiveTutorView() {
   }, [context.chapterTitle, context.subjectTitle]);
 
   const sendMessage = useCallback(async (raw: string, inputMode: "text" | "voice" = "text") => {
-    const message = raw.trim(); if (!message || busy) return;
+    const message = raw.trim();
+    if ((!message && !attachments.length) || busy) return;
+    const outgoingAttachments = attachments;
+    const composedMessage = composeLamMessage(
+      message || "Please explain and summarise the attached study material.",
+      outgoingAttachments,
+    );
+    const visibleMessage = outgoingAttachments.length
+      ? `${message || "Please explain and summarise the attached study material."}\n\n📎 ${outgoingAttachments.map((item) => item.name).join(", ")}`
+      : message;
     interacted.current = true;
-    const persona = personality; setError(""); setDraft(""); window.speechSynthesis?.cancel();
+    const persona = personality; setError(""); setDraft(""); setAttachments([]); setAttachmentError(""); window.speechSynthesis?.cancel();
     const isDateReply = Boolean(pendingPlanning.current && isPlanningDateReply(message));
     const planningMessage = isDateReply ? pendingPlanning.current : message;
     const proposed = proposeStudyPlan(planningMessage, planningContext(planningMessage, { subject: context.subjectTitle, chapter: context.chapterTitle, weakTopics: memorySummary?.weakTopics.filter(item => !context.subjectTitle || item.subject === context.subjectTitle).map(item => item.topic || item.chapter), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, examDateText: isDateReply ? message : undefined }, curriculum));
     pendingPlanning.current = proposed?.clarification ? planningMessage : "";
-    if (proposed) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); if (proposed.plan) { setStudyPlan(proposed.plan); append(persona, { id: uid(), role: "assistant", content: "I’ve prepared a study plan for review. Nothing has been added to Planner yet; use Add to Planner when the dates and coverage look right.", createdAt: now() }); } else { append(persona, { id: uid(), role: "assistant", content: proposed.clarification || "Please clarify your exam date.", createdAt: now() }); } setStatus("idle"); return; }
+    if (proposed) { append(persona, { id: uid(), role: "user", content: visibleMessage, inputMode, createdAt: now() }); if (proposed.plan) { setStudyPlan(proposed.plan); append(persona, { id: uid(), role: "assistant", content: "I’ve prepared a study plan for review. Nothing has been added to Planner yet; use Add to Planner when the dates and coverage look right.", createdAt: now() }); } else { append(persona, { id: uid(), role: "assistant", content: proposed.clarification || "Please clarify your exam date.", createdAt: now() }); } setStatus("idle"); return; }
     const action = parseLocalCommand(message);
-    if (action) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); setPendingAction(action); setStatus("waiting-confirmation"); return; }
-    if (/\b(create|make|generate) (a )?(quiz|questions?)\b/i.test(message)) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); setPendingAction({ type: "create-quiz", subject: context.subjectTitle, chapter: context.chapterTitle }); setStatus("waiting-confirmation"); return; }
-    if (/\b(create|make|generate) (a )?(slide ?show|presentation|slides?)\b/i.test(message)) { append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() }); setPendingAction({ type: "create-slideshow", subject: context.subjectTitle, chapter: context.chapterTitle }); setStatus("waiting-confirmation"); return; }
+    if (action) { append(persona, { id: uid(), role: "user", content: visibleMessage, inputMode, createdAt: now() }); setPendingAction(action); setStatus("waiting-confirmation"); return; }
+    if (/\b(create|make|generate) (a )?(quiz|questions?)\b/i.test(message)) { append(persona, { id: uid(), role: "user", content: visibleMessage, inputMode, createdAt: now() }); setPendingAction({ type: "create-quiz", subject: context.subjectTitle, chapter: context.chapterTitle }); setStatus("waiting-confirmation"); return; }
+    if (/\b(create|make|generate) (a )?(slide ?show|presentation|slides?)\b/i.test(message)) { append(persona, { id: uid(), role: "user", content: visibleMessage, inputMode, createdAt: now() }); setPendingAction({ type: "create-slideshow", subject: context.subjectTitle, chapter: context.chapterTitle }); setStatus("waiting-confirmation"); return; }
     if (/\b(save|add) (this|that|the answer) (as|to) (a )?note(s)?\b/i.test(message)) {
       const latestAnswer = [...messages].reverse().find((item) => item.role === "assistant")?.content;
-      append(persona, { id: uid(), role: "user", content: message, inputMode, createdAt: now() });
+      append(persona, { id: uid(), role: "user", content: visibleMessage, inputMode, createdAt: now() });
       if (!latestAnswer) { setError("Ask LAM something first, then save the answer to Notes."); setStatus("error"); return; }
       setPendingAction({ type: "create-note", title: `LAM AI — ${context.chapterTitle ?? context.subjectTitle ?? "study note"}`, content: latestAnswer }); setStatus("waiting-confirmation"); return;
     }
@@ -218,13 +297,13 @@ export function LiveTutorView() {
     }
     const turnId = uid(); const sessionId = sessionIds[persona] || uid();
     if (!sessionIds[persona]) setSessionIds((current) => ({ ...current, [persona]: sessionId }));
-    append(persona, { id: turnId, role: "user", content: message, inputMode, createdAt: now() }); setStatus("thinking"); setStreaming("");
+    append(persona, { id: turnId, role: "user", content: visibleMessage, inputMode, createdAt: now() }); setStatus("thinking"); setStreaming("");
     const controller = new AbortController(); abortRef.current = controller; let full = ""; let sources: Array<{ label: string; route?: string }> = [];
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined; let timedOut = false; let finished = false;
     const deadline = window.setTimeout(() => { timedOut = true; controller.abort(); }, 55_000);
     try {
       const response = await fetch("/api/lam/chat", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal, body: JSON.stringify({
-        profileId, message, inputMode, assistantMode: mode === "examiner" ? "question-coach" : mode === "rapid-revision" ? "revision-coach" : "tutor",
+        profileId, message: composedMessage, inputMode, assistantMode: mode === "examiner" ? "question-coach" : mode === "rapid-revision" ? "revision-coach" : "tutor",
         pageContext: { profileId, profileName: user.name || `Class ${user.scholarClass} learner`, scholarClass: user.scholarClass, currentView: "live-tutor", currentRoute: "/live-tutor", ...context },
         messages: messages.filter((item) => item.role !== "tool").slice(-10).map(({ role, content }) => ({ role: role as "user" | "assistant", content })), responseDetail: prefs.responseDetail,
         liveTutor: { sessionId, turnId, provider, ...(provider !== "auto" && model ? { model } : {}), personality: persona, mode },
@@ -258,7 +337,7 @@ export function LiveTutorView() {
       append(persona, { id: `${turnId}:assistant`, role: "assistant", content: full, createdAt: now(), sources }); setStreaming(""); setStatus("complete"); speak(full);
     } catch (caught) { if (controller.signal.aborted && !timedOut) return; setStreaming(""); setStatus("error"); setError(timedOut ? "LAM took too long. Please retry or ask a shorter question." : caught instanceof Error ? caught.message : "LAM could not complete this turn."); }
     finally { window.clearTimeout(deadline); await reader?.cancel().catch(() => undefined); reader?.releaseLock(); if (abortRef.current === controller) abortRef.current = null; }
-  }, [append, busy, context, curriculum, memorySummary, messages, mode, model, patchPreferences, personality, prefs.responseDetail, profileId, provider, sessionIds, speak, user.name, user.scholarClass]);
+  }, [append, attachments, busy, context, curriculum, memorySummary, messages, mode, model, patchPreferences, personality, prefs.responseDetail, profileId, provider, sessionIds, speak, user.name, user.scholarClass]);
 
   const startRecording = useCallback((stream: MediaStream) => {
     const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
@@ -283,6 +362,28 @@ export function LiveTutorView() {
     } catch (caught) { setError(microphoneErrorMessage(caught)); setStatus("error"); }
   }, [listening, startRecording]);
 
+  const submitDraft = useCallback(() => {
+    if (pluginChip) {
+      const prompt = composeLamMessage(draft.trim(), attachments, 4_000);
+      const toolId = pluginChip.toolId;
+      setPluginChip(null);
+      setDraft("");
+      setAttachments([]);
+      setAttachmentError("");
+      setFailedFiles([]);
+      if (!toolId) return;
+      if (onOpenPlugin) {
+        onOpenPlugin(toolId, prompt);
+        return;
+      }
+      setLamPluginTarget(toolId, prompt);
+      setWorkspaceMode("lam-ai", "plugins");
+      navigateTo("lam-ai", { pluginId: toolId, prompt });
+      return;
+    }
+    void sendMessage(draft);
+  }, [attachments, draft, onOpenPlugin, pluginChip, sendMessage]);
+
   const executeAction = useCallback(() => {
     if (!pendingAction) return; setStatus("using-tool");
     if (pendingAction.type === "navigate") navigateTo(pendingAction.view);
@@ -298,7 +399,7 @@ export function LiveTutorView() {
   const newConversation = () => { if (!window.confirm(`Start a new ${copy.label} conversation? Other personality sessions are kept.`)) return; setMessagesByPersona((current) => ({ ...current, [personality]: [] })); setSessionIds((current) => ({ ...current, [personality]: uid() })); setResolvedModel(""); setError(""); setPanel(null); };
   const quick = (item: { label: string; mode: LiveTutorMode }) => { setMode(item.mode); patchPreferences({ liveTutorMode: item.mode }); void sendMessage(item.label); };
 
-  return <section ref={openingRef} className={`lt-root lt-${personality} ${switching ? "is-switching" : ""}`} data-personality={personality} aria-label="LAM AI">
+  return <section ref={openingRef} className={`lt-root lt-${personality} ${switching ? "is-switching" : ""} ${embedded ? "lt-embedded" : ""}`} data-personality={personality} aria-label="LAM AI">
     <PersonalityBackground personality={personality} /><div className="lt-environment-scrim" aria-hidden="true" />
     <nav className="lt-nav" aria-label="LAM AI navigation"><span className="lt-nav-brand"><span className="lt-scholar-mark"><BrainCircuit /></span>Scholar<span className="lt-nav-beta">LAM AI · BETA</span></span><span className="lt-nav-div" /><div className="lt-nav-tabs" role="group" aria-label="Personality">{LIVE_TUTOR_PERSONALITIES.map((item) => <button key={item} className="lt-nav-tab" aria-pressed={personality === item} onClick={() => switchPersonality(item)}>{PERSONALITY_COPY[item].shortLabel}</button>)}</div><span className="lt-nav-div" /><button className="lt-nav-new" onClick={newConversation} aria-label="New conversation"><Plus /></button></nav>
     {(listening || status === "transcribing" || status === "speaking") ? <div className="lt-voice-pill" data-state={status} role="status"><span className="lt-voice-dot" />{status === "listening" ? "Listening" : status === "transcribing" ? "Processing…" : "LAM is speaking…"}</div> : null}
@@ -307,13 +408,74 @@ export function LiveTutorView() {
       {captions && messages.map((message) => <article className="lt-turn" data-role={message.role} key={message.id}><div className="lt-turn-meta">{message.role === "assistant" ? <><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state="idle" animate={false}/></span>{copy.label}</> : <>You{message.inputMode === "voice" ? " · voice" : ""}</>}</div><div className="lt-bubble">{message.role === "assistant" ? <LamResponse content={message.content} optimized /> : message.content}</div>{message.role === "assistant" ? <div className="lt-msg-actions"><button className="lt-msg-act" onClick={() => void navigator.clipboard.writeText(message.content)}><Copy />Copy</button><button className="lt-msg-act" onClick={() => void remember(message.content)}><MemoryStick />Remember</button><button className="lt-msg-act" onClick={() => { setPendingAction({ type: "create-note", title: `LAM AI — ${context.chapterTitle ?? context.subjectTitle ?? "study note"}`, content: message.content }); setStatus("waiting-confirmation"); }}><FileText />Save to Notes</button></div> : null}</article>)}
       {captions && streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state={avatarState}/></span>{copy.label}</div><div className="lt-bubble"><LamResponse content={streaming} optimized streaming /></div></article> : null}
       {status === "thinking" && !streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state={avatarState}/></span>{copy.label}</div><div className="lt-bubble"><span className="lt-thinking"><span /><span /><span /></span></div></article> : null}
-    </div></div> : prepared ? <div className="lt-empty-state"><LamScene size={150} placement="tutor" state={avatarState} label="Ready when you are."/><h1 className="lt-empty-title">{copy.idleHeading}</h1><p className="lt-empty-sub">{copy.idleSubcopy}</p><div className="lt-empty-chips">{QUICK[personality].map((item) => <button key={item.label} className="lt-empty-chip" onClick={() => quick(item)}>{item.label}</button>)}</div></div> : null}</div>
+    </div></div> : prepared ? <div className="lt-empty-state"><LamScene size={150} placement="tutor" state={avatarState} label="Ready when you are."/><h1 className="lt-empty-title">{copy.idleHeading}</h1><p className="lt-empty-sub">{copy.idleSubcopy}</p><div className="lt-empty-chips">{QUICK[personality].map((item) => <button key={item.label} className="lt-empty-chip" onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-empty-chips mt-1.5" aria-label="Quick LAM plugins">{(["concept-explainer", "pdf-generator", "flashcard-generator", "mistake-analyzer"] as const).map((id) => { const plugin = pluginById(id); return plugin ? <button key={plugin.id} type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => choosePlugin(plugin)}>@{plugin.name}</button> : null; })}<button type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => { setWorkspaceMode("lam-ai", "plugins"); navigateTo("lam-ai"); }}>All 23 plugins →</button></div></div> : null}</div>
 
     {studyPlan && <div className="lt-confirm max-h-[65dvh] overflow-y-auto"><StudyPlanProposal key={studyPlan.id} plan={studyPlan} onClose={() => setStudyPlan(null)} /></div>}
     {pendingAction ? <div className="lt-confirm"><h4>{actionCopy(pendingAction).title}</h4><p>{actionCopy(pendingAction).detail}</p><div className="lt-confirm-actions"><button className="lt-btn lt-btn-primary" onClick={executeAction}><Check />Approve</button><button className="lt-btn lt-btn-ghost" onClick={() => { setPendingAction(null); setStatus("idle"); }}>Cancel</button></div></div> : null}
     {error ? <div className="lt-error" role="alert">{error}<button onClick={() => setError("")} aria-label="Dismiss error"><X /></button></div> : null}
 
-    <div className="lt-composer">{busy ? <button className="lt-stop" onClick={stopEverything}><span className="lt-stop-sq" />Stop</button> : null}<form className="lt-composer-card" onSubmit={(event) => { event.preventDefault(); void sendMessage(draft); }}><textarea className="lt-composer-input" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={copy.prompt} aria-label="Message LAM AI" rows={1} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendMessage(draft); } }} /><div className="lt-composer-bar"><div className="lt-composer-chips">{QUICK[personality].slice(0, 2).map((item) => <button key={item.label} type="button" className="lt-composer-chip" aria-pressed={mode === item.mode} onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-composer-actions"><select className="lt-cmp-prov" value={provider} onChange={(event) => { const value = event.target.value as LiveTutorProvider; setProvider(value); setModel(""); patchPreferences({ liveTutorProvider: value }); }} aria-label="Model provider">{providers.length ? providers.map((item) => <option key={item.id} value={item.id} disabled={!item.available}>{item.label}{item.available ? "" : " · unavailable"}</option>) : <option value="auto">Auto</option>}</select><button type="button" className="lt-cmp-btn" aria-pressed={listening} onClick={() => void startListening()} aria-label={listening ? "Stop listening" : "Talk to LAM"}>{status === "transcribing" ? <Loader2 className="lt-spin" /> : listening ? <CircleStop /> : <Mic />}</button><button type="submit" className="lt-cmp-btn lt-cmp-send" disabled={!draft.trim() || busy} aria-label="Ask LAM">{busy ? <Loader2 className="lt-spin" /> : <ArrowUp />}</button></div></div></form><div className="lt-composer-meta"><span>{copy.label}</span><span>·</span><span>{provider === "auto" ? "Auto model" : provider}</span>{resolvedModel ? <><span>·</span><span>{resolvedModel}</span></> : null}</div></div>
+    <div className="lt-composer">
+      {busy ? <button className="lt-stop" onClick={stopEverything}><span className="lt-stop-sq" />Stop</button> : null}
+      {pluginQuery !== null ? (
+        <div className="lt-plugin-menu" role="listbox" aria-label="LAM plugins">
+          <p className="lt-plugin-menu-label">Choose a plugin · ↑ ↓ then Enter</p>
+          {pluginMatches.length ? pluginMatches.map((tool, optionIndex) => (
+            <button key={tool.id} type="button" role="option" aria-selected={optionIndex === pluginIndex} className="lt-plugin-option" onMouseEnter={() => setPluginIndex(optionIndex)} onClick={() => choosePlugin(tool)}>
+              <span className="lt-plugin-option-icon"><tool.icon /></span>
+              <span className="lt-plugin-option-copy"><strong>{tool.name}</strong><small>{tool.description}</small></span>
+              {tool.entitlement ? <span className="lt-plugin-option-plus">Plus</span> : <span className="lt-plugin-option-at">@</span>}
+            </button>
+          )) : <p className="lt-plugin-empty">No plugin matches “{pluginQuery}”. Keep typing or press Escape to dismiss.</p>}
+        </div>
+      ) : null}
+      <form className="lt-composer-card" onSubmit={(event) => { event.preventDefault(); submitDraft(); }}>
+        {pluginChip ? (
+          <div className="lt-plugin-chip-row" aria-label="Selected plugin">
+            <span className="lt-plugin-chip">
+              <pluginChip.icon aria-hidden="true" />
+              <span>{pluginChip.name}</span>
+              <button type="button" onClick={() => setPluginChip(null)} aria-label={`Remove ${pluginChip.name} plugin`}><X /></button>
+            </span>
+            <small>{pluginChip.entitlement ? "Scholar Plus" : "Plugin"} · write a message, then press Send to open</small>
+          </div>
+        ) : null}
+        {(attachments.length || processingNames.length) ? (
+          <div className="lt-attachments" aria-label="Attached study material">
+            {attachments.map((attachment) => (
+              <span className="lt-attach-chip" key={attachment.id}>
+                <FileText aria-hidden="true" />
+                <span className="lt-attach-name" title={attachment.name}>{attachment.name}</span>
+                <small>{attachment.kind.toUpperCase()} · {formatAttachmentSize(attachment.size)} · {attachment.pages ? `${attachment.pages}p · ` : ""}{attachment.chars.toLocaleString()} chars</small>
+                <button type="button" onClick={() => setAttachments((current) => current.filter((item) => item.id !== attachment.id))} aria-label={`Remove ${attachment.name}`}><X /></button>
+              </span>
+            ))}
+            {processingNames.map((name) => (
+              <span className="lt-attach-chip" key={`processing-${name}`} role="status">
+                <Loader2 className="lt-spin" aria-hidden="true" />
+                <span className="lt-attach-name">{name}</span>
+                <small>Reading file…</small>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {attachmentError ? (
+          <p className="lt-attachment-error" role="alert">
+            <span>{attachmentError}</span>
+            <span className="inline-flex items-center gap-1.5">
+              {failedFiles.length ? (
+                <button type="button" onClick={retryAttachments} aria-label="Retry attachment" className="underline font-semibold px-1">Retry</button>
+              ) : null}
+              <button type="button" onClick={() => { setAttachmentError(""); setFailedFiles([]); }} aria-label="Dismiss attachment error"><X /></button>
+            </span>
+          </p>
+        ) : null}
+        <textarea className="lt-composer-input" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`${copy.prompt} Type @ to open a plugin.`} aria-label="Message LAM AI" rows={1} onKeyDown={(event) => {
+            if (pluginQuery !== null && pluginMatches.length && (event.key === "ArrowDown" || event.key === "ArrowUp")) { event.preventDefault(); setPluginIndex((current) => Math.max(0, Math.min(pluginMatches.length - 1, current + (event.key === "ArrowDown" ? 1 : -1)))); return; }
+            if (pluginQuery !== null && pluginMatches.length && (event.key === "Enter" || event.key === "Tab")) { event.preventDefault(); choosePlugin(pluginMatches[Math.min(pluginIndex, pluginMatches.length - 1)]); return; }
+            if (event.key === "Escape" && pluginQuery !== null) { event.preventDefault(); setDraft((current) => current.replace(/@[\w -]*$/, "").trimEnd()); return; }
+            if (event.key === "Backspace" && !draft && pluginChip) { event.preventDefault(); setPluginChip(null); return; }
+            if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submitDraft(); }
+          }} /><div className="lt-composer-bar"><div className="lt-composer-chips">{QUICK[personality].slice(0, 2).map((item) => <button key={item.label} type="button" className="lt-composer-chip" aria-pressed={mode === item.mode} onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-composer-actions"><input ref={attachmentInputRef} type="file" accept={LAM_ATTACHMENT_ACCEPT} multiple className="sr-only" aria-label="Attach text files or PDFs" onChange={(event) => void addAttachments(event.target.files)} /><button type="button" className="lt-cmp-btn" onClick={() => attachmentInputRef.current?.click()} disabled={attachmentBusy || attachments.length >= 4} aria-label="Attach text files or PDFs">{attachmentBusy ? <Loader2 className="lt-spin" /> : <Paperclip />}</button><button type="button" className="lt-cmp-btn" onClick={() => setDraft((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@`)} aria-label="Mention a plugin"><AtSign /></button><select className="lt-cmp-prov" value={provider} onChange={(event) => { const value = event.target.value as LiveTutorProvider; setProvider(value); setModel(""); patchPreferences({ liveTutorProvider: value }); }} aria-label="Model provider">{providers.length ? providers.map((item) => <option key={item.id} value={item.id} disabled={!item.available}>{item.label}{item.available ? "" : " · unavailable"}</option>) : <option value="auto">Auto</option>}</select><button type="button" className="lt-cmp-btn" aria-pressed={listening} onClick={() => void startListening()} aria-label={listening ? "Stop listening" : "Talk to LAM"}>{status === "transcribing" ? <Loader2 className="lt-spin" /> : listening ? <CircleStop /> : <Mic />}</button><button type="submit" className="lt-cmp-btn lt-cmp-send" disabled={(!draft.trim() && !attachments.length && !pluginChip) || busy || attachmentBusy} aria-label="Ask LAM">{busy ? <Loader2 className="lt-spin" /> : <ArrowUp />}</button></div></div></form><div className="lt-composer-meta"><span>{copy.label}</span><span>·</span><span>{provider === "auto" ? "Auto model" : provider}</span>{resolvedModel ? <><span>·</span><span>{resolvedModel}</span></> : null}</div></div>
 
     <div className="lt-dock" role="toolbar" aria-label="LAM AI panels"><button className="lt-dock-btn lt-dock-spark" onClick={() => setPanel(panel === "personality" ? null : "personality")} aria-label="Switch personality"><Sparkles /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "memory" ? null : "memory")} aria-label="Memory"><MemoryStick /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "context" ? null : "context")} aria-label="Learning awareness"><Eye /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "mission" ? null : "mission")} aria-label="Study mission"><BookOpen /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "sessions" ? null : "sessions")} aria-label="Sessions"><History /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-label="LAM AI settings"><Settings2 /></button></div>
 

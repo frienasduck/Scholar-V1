@@ -274,7 +274,13 @@ function saveHistory(scholarClass: 9 | 11, list: HistoryEntry[]) {
 // ============================================================================
 // Component
 // ============================================================================
-export function AnswerLabView() {
+export function AnswerLabView({
+  initialQuestion,
+  onBackToDoubts,
+}: {
+  initialQuestion?: { question: string; subject: string; chapter?: string } | null;
+  onBackToDoubts?: () => void;
+} = {}) {
   const addXP = useStore((s) => s.addXP);
   const jeeMode = useStore((s) => s.user.jeeMode);
   const scholarClass = useStore((s) => s.user.scholarClass);
@@ -283,7 +289,20 @@ export function AnswerLabView() {
   const pushActivity = useStore((s) => s.pushActivity);
 
   const [fSubject, setFSubject] = useState<string>("all");
-  const [activeQ, setActiveQ] = useState<DescriptiveQ | null>(null);
+  const [activeQ, setActiveQ] = useState<DescriptiveQ | null>(() => {
+    if (!initialQuestion?.question?.trim()) return null;
+    return {
+      id: `custom-${crypto.randomUUID()}`,
+      subject: (initialQuestion.subject as DescriptiveQ["subject"]) || "physics",
+      subjectName: initialQuestion.subject || "Doubt Lab",
+      chapter: initialQuestion.chapter || "From My Doubts",
+      question: initialQuestion.question.trim(),
+      marks: 5,
+      keywords: [],
+      modelAnswer: "Evaluate with AI to generate a complete model answer for this doubt.",
+      tips: "Write a structured answer with clear definitions, formulas or key points, and units.",
+    };
+  });
   const [answer, setAnswer] = useState("");
   const [evaluating, setEvaluating] = useState(false);
   const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
@@ -491,7 +510,7 @@ ${entry.result.modelAnswer}
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-x-clip -m-4 lg:-m-6">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .al-font-serif { font-family: 'Instrument Serif', serif; }
@@ -502,29 +521,73 @@ ${entry.result.modelAnswer}
         .al-glass input::placeholder, .al-glass textarea::placeholder { color: rgba(255,255,255,0.4) !important; }
         .al-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .al-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        .al-backdrop {
+          position: sticky;
+          top: 0;
+          height: calc(100dvh - 4rem);
+          width: 100%;
+          margin-bottom: calc(-100dvh + 4rem);
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 0;
+          background: radial-gradient(120% 90% at 52% 40%, #101622 0%, #020306 72%), #000000;
+        }
+        .al-video {
+          position: absolute;
+          top: 0;
+          left: -24%;
+          width: 132%;
+          max-width: none;
+          height: 100%;
+          object-fit: cover;
+          object-position: 76% 48%;
+        }
+        .al-backdrop-scrim {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.52) 55%, rgba(0,0,0,0.72) 100%);
+        }
+        @media (max-aspect-ratio: 1/1) {
+          .al-video {
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: 78% 48%;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) { .al-video { display: none; } }
       `}</style>
 
-      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204103_f607742e-09da-4cf5-bb06-4e67b0a531de.mp4" type="video/mp4" />
-      </video>
-      <div className="absolute inset-0 z-0 bg-black/55" />
+      <div className="al-backdrop" aria-hidden="true">
+        <video autoPlay muted loop playsInline disablePictureInPicture poster="/backgrounds/scholar-poster.svg" preload="metadata" className="al-video" aria-hidden="true" tabIndex={-1}>
+          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4" type="video/mp4" />
+        </video>
+        <div className="al-backdrop-scrim" />
+      </div>
 
       <div className="relative z-10 al-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
         {/* HERO */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-rose-500/30 to-pink-500/30 text-rose-300 border border-white/10">
-              <PenTool className="h-6 w-6" />
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-rose-500/30 to-pink-500/30 text-rose-300 border border-white/10">
+                <PenTool className="h-6 w-6" />
+              </div>
+              <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40">Doubt Lab • Solve a Doubt • Class {scholarClass}</Badge>
             </div>
-            <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40">Descriptive Writing • CBSE Class {scholarClass}</Badge>
+            <h1 className="al-font-serif text-5xl md:text-6xl text-white leading-tight">
+              Doubt <em className="text-rose-300">Lab</em> · Answer Writing
+            </h1>
+            <p className="text-white/70 mt-3 max-w-2xl">
+              Master long-form descriptive answers inside Doubt Lab. Write, attach handwritten sheets, and get rubric-based CBSE evaluation — or save evaluated questions straight to My Doubts.
+            </p>
           </div>
-          <h1 className="al-font-serif text-5xl md:text-6xl text-white leading-tight">
-            Answer Writing <em className="text-rose-300">Lab</em>
-          </h1>
-          <p className="text-white/70 mt-3 max-w-2xl">
-            Master the art of long-form answers. Write, attach handwritten sheets, and let AI evaluate you
-            on content, structure, keyword coverage and language — like a real CBSE examiner.
-          </p>
+          {onBackToDoubts ? (
+            <Button variant="outline" className="al-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={onBackToDoubts}>
+              View My Doubts
+            </Button>
+          ) : null}
         </motion.div>
 
         {/* STAT PILLS */}
@@ -781,16 +844,37 @@ ${entry.result.modelAnswer}
                             <ScholarAIContent content={evalResult.modelAnswer} className="text-sm text-white/80" />
                           </div>
 
-                          <Button variant="outline" className="bg-white/5 border-white/15 text-white hover:bg-white/10"
-                            onClick={() => {
-                              const entry: HistoryEntry = {
-                                id: Math.random().toString(36).slice(2), questionId: activeQ.id, question: activeQ.question,
-                                subjectName: activeQ.subjectName, chapter: activeQ.chapter, userAnswer: answer, result: evalResult, at: Date.now(),
-                              };
-                              exportEval(entry);
-                            }}>
-                            <Download className="h-3.5 w-3.5 mr-1.5" /> Export this evaluation
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" className="bg-white/5 border-white/15 text-white hover:bg-white/10"
+                              onClick={() => {
+                                const entry: HistoryEntry = {
+                                  id: Math.random().toString(36).slice(2), questionId: activeQ.id, question: activeQ.question,
+                                  subjectName: activeQ.subjectName, chapter: activeQ.chapter, userAnswer: answer, result: evalResult, at: Date.now(),
+                                };
+                                exportEval(entry);
+                              }}>
+                              <Download className="h-3.5 w-3.5 mr-1.5" /> Export this evaluation
+                            </Button>
+                            <Button variant="outline" className="bg-violet-500/15 border-violet-400/30 text-violet-100 hover:bg-violet-500/25"
+                              onClick={() => {
+                                const existing = profileGetJSON<Array<Record<string, unknown>>>(scholarClass, "doubt-history", []);
+                                const nextDoubt = {
+                                  id: `al-${Date.now()}`,
+                                  question: activeQ.question,
+                                  answer: evalResult.modelAnswer,
+                                  subject: activeQ.subject,
+                                  source: "manual",
+                                  status: "resolved",
+                                  starred: false,
+                                  createdAt: Date.now(),
+                                  tags: ["answer-lab", activeQ.chapter.toLowerCase().replace(/\s+/g, "-")],
+                                };
+                                profileSetJSON(scholarClass, "doubt-history", [nextDoubt, ...existing]);
+                                toast.success("Saved to My Doubts in Doubt Lab");
+                              }}>
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Save to My Doubts
+                            </Button>
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>

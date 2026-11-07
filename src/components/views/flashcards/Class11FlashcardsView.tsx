@@ -1,4 +1,5 @@
 "use client";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useStore } from "@/lib/store";
@@ -316,7 +317,7 @@ export function Class11FlashcardsView() {
 
   // ===== Browse Mode =====
   return (
-    <div className="scholar-flashcards scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-flashcards scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6" data-scene-connected="true">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
         .cinema-glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 80px -12px rgba(0,0,0,0.3); color: white; }
@@ -326,9 +327,9 @@ export function Class11FlashcardsView() {
         .cinema-glass .text-muted-foreground { color: rgba(255,255,255,0.6) !important; }
         .cinema-glass input, .cinema-glass textarea, .cinema-glass select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.15) !important; color: white !important; }
       `}</style>
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
+      <SceneBackdrop><video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4" type="video/mp4" />
-      </video>
+      </video></SceneBackdrop>
       <div className="absolute inset-0 z-0 bg-black/60" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">

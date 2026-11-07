@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
 import { askAI, askAIJSON } from "@/lib/ai";
 import { useStore } from "@/lib/store";
 import { useCurriculum } from "@/lib/use-curriculum";
@@ -23,7 +24,7 @@ import { toast } from "@/lib/notifications/notification-api";
 import {
   MessageCircleQuestion, Star, CheckCircle2, Search, Sparkles, Plus, Download,
   Brain, MessageSquare, Clock, Filter, Layers, BookOpen, ChevronRight, X,
-  HelpCircle, Flame, TrendingUp, Trash2,
+  HelpCircle, Flame, TrendingUp, Trash2, PenTool,
 } from "lucide-react";
 
 // ============================================================================
@@ -213,7 +214,11 @@ interface DoubtCluster {
 // ============================================================================
 // Component
 // ============================================================================
-export function DoubtHistoryView() {
+export function DoubtHistoryView({
+  onSolveDoubt,
+}: {
+  onSolveDoubt?: (doubt: { question: string; subject: string; chapter?: string }) => void;
+} = {}) {
   const CURRICULUM = useCurriculum();
   const scholarClass = useStore((s) => s.user.scholarClass);
   const chatThreads = useStore((s) => s.chatThreads);
@@ -524,7 +529,7 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
   const hasFilters = search || fSubject !== "all" || fSource !== "all" || fStatus !== "all" || fDate !== "all";
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(100vh-4rem)] bg-transparent overflow-x-clip -m-4 lg:-m-6" data-scene-connected="true">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .dh-font-serif { font-family: 'Instrument Serif', serif; }
@@ -533,12 +538,66 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
         .dh-glass-strong { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.16); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); color: white; }
         .dh-glass input, .dh-glass textarea, .dh-glass select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.15) !important; color: white !important; }
         .dh-glass input::placeholder, .dh-glass textarea::placeholder { color: rgba(255,255,255,0.4) !important; }
+        /* Source video is 1920×1080 where the left 58% is pure black (#000000) and
+           the underwater skylight + fish sit in the right third (centered around x=76%, y=48%).
+           Locking the backdrop to viewport height and shifting the frame horizontally on
+           wide viewports centers the skylight without stretching or distorting aspect ratio. */
+        .dh-backdrop {
+          position: sticky;
+          top: 0;
+          height: calc(100dvh - 4rem);
+          width: 100%;
+          margin-bottom: calc(-100dvh + 4rem);
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 0;
+          background: radial-gradient(120% 90% at 52% 40%, #101622 0%, #020306 72%), #000000;
+        }
+        .sg-environment .dh-backdrop {
+          position: absolute;
+          inset: 0;
+          height: 100%;
+          width: 100%;
+          margin-bottom: 0;
+        }
+        .dh-backdrop-poster { position: absolute; inset: 0; background: url('/backgrounds/scholar-poster.svg') center / cover no-repeat; opacity: .28; }
+        .dh-video {
+          position: absolute;
+          top: 0;
+          left: -24%;
+          width: 132%;
+          max-width: none;
+          height: 100%;
+          object-fit: cover;
+          object-position: 76% 48%;
+        }
+        .dh-backdrop-scrim {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.52) 55%, rgba(0,0,0,0.72) 100%);
+        }
+        @media (max-aspect-ratio: 1/1) {
+          .dh-video {
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: 78% 48%;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) { .dh-video { display: none; } }
+        @media (max-width: 640px) { .dh-backdrop-poster { opacity: .45; } }
       `}</style>
 
-      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4" type="video/mp4" />
-      </video>
-      <div className="absolute inset-0 z-0 bg-black/55" />
+      <SceneBackdrop>
+        <div className="dh-backdrop" aria-hidden="true">
+          <div className="dh-backdrop-poster" />
+          <video autoPlay muted loop playsInline disablePictureInPicture poster="/backgrounds/scholar-poster.svg" preload="metadata" className="dh-video" aria-hidden="true" tabIndex={-1}>
+            <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4" type="video/mp4" />
+          </video>
+          <div className="dh-backdrop-scrim" />
+        </div>
+      </SceneBackdrop>
 
       <div className="relative z-10 dh-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
         {/* HERO */}
@@ -549,17 +608,22 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
               <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500/30 to-purple-500/30 text-violet-300 border border-white/10">
                 <MessageCircleQuestion className="h-6 w-6" />
               </div>
-              <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/40">Doubts • AI Clusters • Spaced</Badge>
+              <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/40">Doubt Lab • My Doubts • AI Clusters</Badge>
             </div>
             <h1 className="dh-font-serif text-5xl md:text-6xl text-white leading-tight">
-              Doubt <em className="text-violet-300">History</em>
+              Doubt <em className="text-violet-300">Lab</em>
             </h1>
             <p className="text-white/70 mt-3 max-w-2xl">
-              Every doubt you've ever asked — from AI tutors, community threads, or manually logged — unified in one searchable index.
-              Star important ones, mark resolved, and let AI cluster related doubts to surface conceptual gaps.
+              Every doubt you've ever asked — from AI tutors, community threads, or manually logged — unified with Answer Writing Lab.
+              Star important ones, mark resolved, cluster conceptual gaps, or practice writing a full CBSE answer.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {onSolveDoubt ? (
+              <Button variant="outline" className="dh-glass bg-rose-500/15 border-rose-400/30 text-rose-100 hover:bg-rose-500/25" onClick={() => onSolveDoubt({ question: "", subject: scholarClass === 11 ? "physics" : "science" })}>
+                <PenTool className="h-3.5 w-3.5 mr-1.5" /> Solve a Doubt
+              </Button>
+            ) : null}
             <Button variant="outline" className="dh-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={exportDoubts}>
               <Download className="h-3.5 w-3.5 mr-1.5" /> Export
             </Button>
@@ -820,6 +884,16 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                       {openDoubt.status === "resolved" ? "Mark Open" : "Mark Resolved"}
                     </Button>
+                    {onSolveDoubt ? (
+                      <Button variant="outline" size="sm" className="bg-rose-500/15 border-rose-400/30 text-rose-100 hover:bg-rose-500/25"
+                        onClick={() => {
+                          const target = { question: openDoubt.question, subject: openDoubt.subject, chapter: openDoubt.chapter };
+                          setOpenDoubt(null);
+                          onSolveDoubt(target);
+                        }}>
+                        <PenTool className="h-3.5 w-3.5 mr-1.5" />Practice in Answer Lab
+                      </Button>
+                    ) : null}
                     <Button variant="ghost" size="sm" className="text-rose-300 hover:bg-rose-500/10 ml-auto"
                       onClick={() => deleteDoubt(openDoubt.id)}>
                       <Trash2 className="h-3.5 w-3.5 mr-1.5" />Delete

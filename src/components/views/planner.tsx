@@ -430,7 +430,7 @@ function MonthView({
                 className={`aspect-square rounded-lg flex flex-col items-center justify-start p-1.5 text-xs transition-all relative
                   ${isSelected(d) ? "bg-indigo-500/20 ring-1 ring-indigo-500/40" : "hover:bg-muted/60"}
                   ${isToday(d) ? "ring-1 ring-teal-500/40" : ""}
-                `}
+                `} data-velocity-control="audited-v31"
               >
                 <span className={`font-medium ${isToday(d) ? "text-teal-500" : ""}`}>{d.getDate()}</span>
                 <div className="flex gap-0.5 mt-auto mb-0.5 flex-wrap justify-center">
@@ -538,7 +538,7 @@ function WeekTaskCard({ task, onToggle, onDelete, curriculum }: { task: Task; on
       <div className="flex items-start gap-1.5">
         <button
           onClick={onToggle}
-          className={`mt-0.5 grid place-items-center h-4 w-4 rounded-full border ${task.done ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/40 hover:border-foreground"}`}
+          className={`mt-0.5 grid place-items-center h-4 w-4 rounded-full border ${task.done ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/40 hover:border-foreground"}`} data-velocity-control="audited-v31"
         >
           {task.done && <Check className="h-2.5 w-2.5 text-white" />}
         </button>

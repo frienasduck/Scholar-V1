@@ -107,7 +107,7 @@ export function Class9FlashcardsView() {
         <div className="absolute inset-0 z-0 bg-black/50" />
         <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
-            <button onClick={() => setStudying(false)} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white">
+            <button onClick={() => setStudying(false)} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white" data-velocity-control="audited-v31">
               <X className="h-4 w-4" /> Exit study
             </button>
             <Badge className="bg-white/10 text-white border-white/20">{studyIdx + 1} / {studyQueue.length}</Badge>
@@ -135,7 +135,7 @@ export function Class9FlashcardsView() {
           {flipped && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-6">
               {RATINGS_C9.map((r) => (
-                <button key={r.key} onClick={() => rateCard(r.key)} className="flex flex-col items-center gap-1 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/15 transition-all" style={{ boxShadow: `inset 0 -3px 0 0 ${r.color}` }}>
+                <button key={r.key} onClick={() => rateCard(r.key)} className="flex flex-col items-center gap-1 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/15 transition-all" style={{ boxShadow: `inset 0 -3px 0 0 ${r.color}` }} data-velocity-control="audited-v31">
                   <span className="text-sm font-semibold" style={{ color: r.color }}>{r.label}</span>
                 </button>
               ))}
@@ -177,7 +177,7 @@ export function Class9FlashcardsView() {
           {decks.map((d) => {
             const s = deckStats(d.id);
             return (
-              <button key={d.id} onClick={() => setSelectedDeckId(d.id)} className={`px-3 py-1.5 rounded-full text-sm transition-all ${activeDeckId === d.id ? "bg-white/15 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`}>
+              <button key={d.id} onClick={() => setSelectedDeckId(d.id)} className={`px-3 py-1.5 rounded-full text-sm transition-all ${activeDeckId === d.id ? "bg-white/15 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}`} data-velocity-control="audited-v31">
                 {d.name} · {s.total} <span className="text-amber-400">({s.due})</span>
               </button>
             );
@@ -227,7 +227,7 @@ function NewDeckDialog({ onAdd }: { onAdd: (d: Partial<Deck>) => string }) {
             <p className="text-xs text-muted-foreground mb-2">Color</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(DECK_COLORS).map(([k, v]) => (
-                <button key={k} onClick={() => setColor(k)} className={`h-7 w-7 rounded-full transition-transform ${color === k ? "ring-2 ring-offset-2 ring-offset-background scale-110" : "hover:scale-105"}`} style={{ background: v }} />
+                <button key={k} onClick={() => setColor(k)} className={`h-7 w-7 rounded-full transition-transform ${color === k ? "ring-2 ring-offset-2 ring-offset-background scale-110" : "hover:scale-105"}`} style={{ background: v }} data-velocity-control="audited-v31" />
               ))}
             </div>
           </div>

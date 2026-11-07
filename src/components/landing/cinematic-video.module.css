@@ -1,0 +1,31 @@
+.film{margin:0;min-width:0;border:1px solid #d5b07a57;border-radius:26px;overflow:hidden;background:#0d0a07;box-shadow:0 25px 90px #0008,0 0 50px #dba95c0a}
+.screen{position:relative;isolation:isolate;aspect-ratio:16/9;overflow:hidden;background:#110e0b}
+.video{display:block;width:100%;height:100%;object-fit:contain}
+.topline{position:absolute;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:21px 26px;background:linear-gradient(#080706d9,transparent);font-size:9px;letter-spacing:.21em;color:#ffe2b4;pointer-events:none}
+.overlay{position:absolute;inset:auto 0 0;padding:36px 27px 19px;background:linear-gradient(transparent,#080706ed);pointer-events:none;color:#fff2dd}
+.overlay>span{font-family:var(--font-instrument-serif),Georgia,serif;font-size:clamp(23px,3.2vw,48px);line-height:1.05}
+.overlay>div{display:flex;flex-wrap:wrap;gap:9px 18px;margin-top:13px;font-size:11px;letter-spacing:.02em;color:#ecdcc4}
+.overlay>div>span+span::before{content:"·";margin-right:18px;color:#efc68d}
+.centerPlay{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;padding:17px 23px;border:1px solid #ffe2b7a0;border-radius:99px;background:#17100acf;backdrop-filter:blur(12px);color:#fff3de;cursor:pointer;font-size:13px;box-shadow:0 3px 30px #0007;white-space:nowrap;transition:background .2s,border-color .2s}
+.centerPlay:hover{background:#35200de6;border-color:#fff3d2}
+.centerPlay:disabled{opacity:.6;cursor:default}
+.loading{position:absolute;top:45%;left:calc(50% - 14px);color:#ffdb9b;filter:drop-shadow(0 2px 10px #000)}
+.loading svg{animation:turn 1s linear infinite}
+.transport{display:flex;align-items:center;gap:18px;padding:15px 23px;border-top:1px solid #e0bd872d;background:#100d0b}
+.buttons{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.buttons button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:75px;min-height:42px;padding:10px 13px;border:1px solid #e9cc9e38;border-radius:99px;color:#f4e5cf;background:#e6ba7c09;cursor:pointer;font-size:11px;transition:background .2s,border-color .2s}
+.buttons button:hover{background:#e6ba7c1c;border-color:#e9cc9e91}
+.buttons button:disabled{opacity:.45;cursor:default}
+.buttons button:focus-visible,.centerPlay:focus-visible{outline:2px solid #ffe4a5;outline-offset:4px}
+.progress{appearance:none;display:block;flex:1;min-width:30px;height:3px;border:0;border-radius:5px;overflow:hidden;color:#f6ce8b;background:#d6b37b22}
+.progress::-webkit-progress-bar{background:#d6b37b22}
+.progress::-webkit-progress-value{background:#f6ce8b}
+.progress::-moz-progress-bar{background:#f6ce8b}
+.state{max-width:260px;color:#c9baa5;font-size:10px;line-height:1.5}
+.caption{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;padding:16px 25px 20px;border-top:1px solid #e0bd871a;color:#b4a899;font-size:11px;line-height:1.6}
+.caption strong{font-size:10px;font-weight:500;letter-spacing:.025em;flex-shrink:0;max-width:44%}
+.caption p{margin:0;max-width:590px}
+@keyframes turn{to{transform:rotate(360deg)}}
+@media(max-width:768px){.film{border-radius:19px}.topline{padding:14px 17px;font-size:7px;letter-spacing:.14em}.overlay{padding:25px 17px 14px}.overlay>span{font-size:29px}.overlay>div{font-size:9px;gap:8px;margin-top:8px}.overlay>div>span+span::before{margin-right:8px}.transport{gap:12px;padding:11px 13px;flex-wrap:wrap}.state{max-width:none;width:100%;font-size:10px}.buttons button{min-height:44px}.caption{display:block;padding:14px 16px;font-size:10px}.caption strong{display:block;max-width:none;margin-bottom:7px}.caption p{font-size:11px}.centerPlay{padding:13px 17px;font-size:11px;gap:8px}.centerPlay svg{width:17px;height:17px}}
+@media(max-width:480px){.overlay>span{font-size:22px}.overlay>div{display:none}.topline{padding:11px 13px}.overlay{padding:18px 13px 11px}.centerPlay{top:46%;padding:10px 13px;min-height:44px}.buttons button{min-width:73px}.film{border-radius:15px}.caption strong{font-size:9px}.screen{min-height:0}}
+@media(prefers-reduced-motion:reduce){.loading svg{animation:none}.buttons button,.centerPlay{transition:none}}

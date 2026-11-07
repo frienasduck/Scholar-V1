@@ -1,8 +1,9 @@
 "use client";
-import { ResourceShelf } from "@/components/resources/resource-library";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { practiceChapterId, takeChapterDestination } from "@/lib/chapter-navigation";
+import { setWorkspaceMode } from "@/lib/shrinking-scholar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/lib/store";
 import { useLearningProfile } from "@/components/personalization/personalization-provider";
@@ -84,29 +85,36 @@ export function PracticeView() {
       <div className="min-h-[60vh] grid place-items-center p-8">
         <div className="text-center space-y-3">
           <ListChecks className="h-12 w-12 mx-auto text-white/20" />
-          <p className="text-white/60 font-medium">Question Practice is available for Class 11 only</p>
-          <p className="text-sm text-white/40">Switch to Class 11 from Settings to access this section.</p>
+          <p className="text-white/60 font-medium">Chapter Practice bank is currently for Class 11</p>
+          <p className="text-sm text-white/40">Use Quizzes for Class 9 interactive chapter quizzes, or switch to Class 11 from Settings.</p>
+          <button
+            type="button"
+            onClick={() => setWorkspaceMode("question-practice", "quiz")}
+            className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/15 px-4 py-2 text-xs font-semibold text-cyan-100 hover:bg-cyan-500/25"
+          >
+            Open Class 9 Quizzes <ArrowRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-[#0c0c0c] overflow-hidden -m-4 lg:-m-6 text-white aura-font">
+    <div className="relative min-h-[calc(100vh-4rem)] bg-[#0c0c0c] overflow-hidden -m-4 lg:-m-6 text-white aura-font" data-scene-connected="true">
       <style>{AURA_STYLE}</style>
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none"
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" />
+        <SceneBackdrop><video autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" /></SceneBackdrop>
       </div>
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <motion.nav initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-4">
+        <motion.nav initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap items-center justify-between gap-2.5 py-4">
           <div className="flex items-center gap-3">
             <div className="grid place-items-center h-9 w-9 rounded-xl bg-white/5 border border-white/10">
               <ListChecks className="h-5 w-5 text-white" />
             </div>
             <span className="text-white font-semibold text-lg">Question Practice</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button data-velocity-control="practice"
               onClick={() => setShowPdfReview(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-200 hover:bg-violet-500/25 transition-colors"
@@ -229,8 +237,8 @@ export function PracticeView() {
           )}
         </AnimatePresence>
         <div className="mt-8 space-y-6">
-          <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="question-bank" aid="practice" title="Official question sources"/>
-          <ResourceShelf grade={scholarClass} subjectId={activeSubject} chapterId={resourceChapter} type="notes" aid="practice" title="Explain, check, then practice with LAM"/>
+          <></>
+          <></>
         </div>
       </div>
 

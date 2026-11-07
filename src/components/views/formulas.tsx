@@ -1,7 +1,6 @@
 "use client";
 
 import { useStore } from "@/lib/store";
-import { ResourceShelf } from "@/components/resources/resource-library";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { CURRICULUM } from "@/lib/curriculum";
 import { exportPDF } from "@/lib/pdf";
@@ -304,7 +303,7 @@ export function FormulaExplorerView() {
           </div>
         )}
         </div>
-      <ResourceShelf grade={scholarClass} subjectId={activeSubject === "all" ? undefined : activeSubject} aid="formula-sheet" title="Formula references with source excerpts"/>
+      <></>
       </div>
     </div>
   </div>

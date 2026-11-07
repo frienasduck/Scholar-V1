@@ -18,7 +18,9 @@ export function dockDragFrame(slots: readonly DockSlot[], x: number, dy: number,
   const min = Math.min(...slots.map(s => s.x)), max = Math.max(...slots.map(s => s.x + s.width)) - slot.width;
   const raw = x - slot.width / 2, bounded = clamp(raw, min, max);
   const stretch = elastic ? Math.min(.085, Math.abs(speed) * .025) : 0;
-  return { slot, x: bounded + (elastic ? clamp((raw - bounded) * .16, -7, 7) : 0),
-    y: slot.y + (elastic ? clamp(dy * .16, -5, 5) : 0), width: slot.width, height: slot.height,
-    scaleX: 1 + stretch, scaleY: 1 - stretch / 2, light: clamp((x - bounded) / slot.width, 0, 1) * 100 };
+  // Direct manipulation is X-only. Vertical finger drift must never lift the
+  // lens, track, labels or icons; deformation is horizontal too.
+  void dy;
+  return { slot, x: bounded, y: slot.y, width: slot.width, height: slot.height,
+    scaleX: 1 + stretch, scaleY: 1, light: clamp((x - bounded) / slot.width, 0, 1) * 100 };
 }

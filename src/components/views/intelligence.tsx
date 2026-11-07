@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/lib/notifications/notification-api";
 import { useStore } from "@/lib/store";
-import { ResourceShelf } from "@/components/resources/resource-library";
 import { useCurriculum } from "@/lib/use-curriculum";
 import { navigateTo } from "@/lib/nav-event";
 import { cn } from "@/lib/utils";
@@ -60,6 +59,11 @@ import {
   weekStartFor,
   type SyncState,
 } from "@/lib/v2/intelligence/profile";
+import {
+  INTELLIGENCE_CONSENT_EVENT,
+  loadIntelligenceConsent,
+  type IntelligenceConsent,
+} from "@/lib/v2/intelligence/consent";
 
 // ============================================================================
 // Scholar Intelligence — the academic brain of Scholar V2.1
@@ -111,6 +115,38 @@ const RATING_STYLES: Record<ReviewRating, { label: string; className: string }> 
 };
 
 export function IntelligenceView() {
+  const scholarClass = useStore((s) => s.user.scholarClass);
+  const [consent, setConsent] = useState<IntelligenceConsent | null>(() =>
+    loadIntelligenceConsent(scholarClass),
+  );
+
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<{ scholarClass?: 9 | 11 }>).detail;
+      if (!detail?.scholarClass || detail.scholarClass === scholarClass) {
+        setConsent(loadIntelligenceConsent(scholarClass));
+      }
+    };
+    window.addEventListener(INTELLIGENCE_CONSENT_EVENT, sync);
+    return () => window.removeEventListener(INTELLIGENCE_CONSENT_EVENT, sync);
+  }, [scholarClass]);
+
+  if (consent !== "granted") {
+    return (
+      <div className="rounded-2xl border border-border/60 bg-card/60 p-6">
+        <p className="font-semibold">Scholar Intelligence is off</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Enable it in Settings → Scholar Intelligence to see mastery, weak topics and revision
+          priorities. Nothing is analysed while it is off.
+        </p>
+      </div>
+    );
+  }
+
+  return <IntelligenceDashboard />;
+}
+
+function IntelligenceDashboard() {
   const scholarClass = useStore((s) => s.user.scholarClass);
   const quizAttempts = useStore((s) => s.quizAttempts);
   const tasks = useStore((s) => s.tasks);
@@ -216,6 +252,7 @@ export function IntelligenceView() {
     : 0;
 
   const syncLabel: Record<SyncState, string> = {
+    off: "Off",
     idle: "Not synced",
     syncing: "Syncing…",
     synced: "Synced",
@@ -284,7 +321,7 @@ export function IntelligenceView() {
           <ExamsPanel exams={snapshot.exams} now={snapshot.now} />
         </TabsContent>
       </Tabs>
-      <ResourceShelf grade={scholarClass} title="Recommended learning sources"/>
+      <></>
     </div>
   );
 }
@@ -297,6 +334,7 @@ export default IntelligenceView;
 
 function SyncChip({ state, onSync }: { state: SyncState; onSync: () => void }) {
   const config: Record<SyncState, { icon: typeof Wifi; label: string; className: string }> = {
+    off: { icon: CloudOff, label: "Off", className: "text-muted-foreground" },
     idle: { icon: CloudOff, label: "Not synced", className: "text-muted-foreground" },
     syncing: { icon: RefreshCw, label: "Syncing…", className: "text-amber-400" },
     synced: { icon: Wifi, label: "Synced", className: "text-emerald-400" },

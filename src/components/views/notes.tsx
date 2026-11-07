@@ -1,5 +1,5 @@
 "use client";
-import { ResourceShelf } from "@/components/resources/resource-library";
+import { SceneBackdrop } from "@/components/liquid-glass/scene-backdrop";
 
 import { useStore, type Note } from "@/lib/store";
 import { askAI } from "@/lib/ai";
@@ -190,11 +190,11 @@ export function NotesView() {
   ];
 
   return (
-    <div className="scholar-notes scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-notes scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6" data-scene-connected="true">
       <style dangerouslySetInnerHTML={{ __html: MINDLOOP_STYLES }} />
 
       {/* Background video */}
-      <video
+      <SceneBackdrop><video
         autoPlay
         muted
         loop
@@ -207,7 +207,7 @@ export function NotesView() {
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_120549_0cd82c36-56b3-4dd9-b190-069cfc3a623f.mp4"
           type="video/mp4"
         />
-      </video>
+      </video></SceneBackdrop>
 
       {/* Dark overlay */}
       <div className="absolute inset-0 z-0 bg-black/60" />
@@ -525,7 +525,7 @@ export function NotesView() {
             />
           </div>
         </section>
-        <div className="px-4 sm:px-6 pb-8"><ResourceShelf type="notes" aid="summary" title="Study notes from real sources"/></div>
+        <></>
       </div>
     </div>
   );
@@ -766,7 +766,7 @@ function Editor({
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="mindloop-glass grid place-items-center h-8 w-8 rounded-lg shrink-0 text-white/70 hover:text-white transition-colors">
+              <button type="button" aria-label="Note actions" data-velocity-control="toolbar" className="mindloop-glass grid place-items-center h-8 w-8 rounded-lg shrink-0 text-white/70 hover:text-white transition-colors">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>

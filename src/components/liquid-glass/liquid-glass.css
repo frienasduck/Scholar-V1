@@ -1099,22 +1099,22 @@ html[data-sg-refraction="off"] .lam-liquid-glass:not(.lam-premium-panel)::before
    excluded and keep their bespoke treatment.
    ========================================================================= */
 
-[class*="-glass"]:not(.sg-glass):not(.sg-nav-pill):not(.lam-liquid-glass):not(.lam-glass-reflection):not(.scholar-notification-glass):not([class*="-glass-reflection"]) {
+[class*="-glass"]:not(.sg-glass):not(.sg-nav-pill):not(.lam-liquid-glass):not(.lam-glass-reflection):not(.scholar-notification-glass):not([class*="-glass-reflection"]):not([data-sg-control-optics="true"]) {
   --sg-radius: inherit;
   background-color: color-mix(in srgb, var(--sg-plate-ink) 7%, transparent) !important;
   border-color: var(--sg-hairline) !important;
-  -webkit-backdrop-filter: blur(min(var(--sg-blur), 20px)) saturate(var(--sg-sat)) !important;
-  backdrop-filter: blur(min(var(--sg-blur), 20px)) saturate(var(--sg-sat)) !important;
+  -webkit-backdrop-filter: blur(min(var(--sg-blur), 14px)) saturate(var(--sg-sat));
+  backdrop-filter: blur(min(var(--sg-blur), 14px)) saturate(var(--sg-sat));
   box-shadow:
     inset 0 1px 0 var(--sg-highlight-soft),
     0 14px 36px -22px var(--sg-shade) !important;
 }
 
-[class*="-glass-strong"]:not(.sg-glass) {
+[class*="-glass-strong"]:not(.sg-glass):not([data-sg-control-optics="true"]) {
   background-color: color-mix(in srgb, var(--sg-plate-ink) 11%, transparent) !important;
   border-color: var(--sg-hairline-strong) !important;
-  -webkit-backdrop-filter: blur(min(var(--sg-blur), 26px)) saturate(150%) !important;
-  backdrop-filter: blur(min(var(--sg-blur), 26px)) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(min(var(--sg-blur), 18px)) saturate(140%);
+  backdrop-filter: blur(min(var(--sg-blur), 18px)) saturate(140%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.16),
     0 22px 56px -26px var(--sg-shade) !important;

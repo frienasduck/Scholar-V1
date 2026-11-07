@@ -1,4 +1,5 @@
 "use client"
+import { useVelocityPanel } from "@/components/liquid-glass/velocity-motion"
 
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
@@ -21,11 +22,14 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  ref: forwardedRef,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  const motionRef=useVelocityPanel(forwardedRef)
+
   return (
     <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
+      <PopoverPrimitive.Content ref={motionRef}
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
