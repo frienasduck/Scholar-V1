@@ -76,22 +76,24 @@ export function WorkspaceTabs({
   return (
     <header
       className={cn(
-        "scholar-workspace-header relative z-20 border-b border-white/[0.08] bg-black/40 px-3 py-2 backdrop-blur-xl sm:px-4 lg:px-6",
+        "scholar-workspace-header relative z-20 border-b border-white/[0.08] bg-black/40 px-3 py-2.5 backdrop-blur-xl sm:px-4 lg:px-6",
         !flush && "-mx-3 -mt-3 sm:-mx-4 sm:-mt-4 lg:-mx-6 lg:-mt-6",
         className,
       )}
       data-workspace={workspaceId}
       data-workspace-mode={active}
     >
-      <div className="mx-auto flex min-h-10 w-full max-w-none items-center gap-3">
-        <span className="hidden text-xs font-semibold tracking-wide text-muted-foreground sm:inline-block shrink-0">
-          {workspace.label}
-        </span>
+      <div className="mx-auto flex min-h-10 w-full items-center justify-between gap-3 sm:gap-6">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 select-none">
+            {workspace.label}
+          </span>
+        </div>
         <div
           ref={tabsRef}
           role="tablist"
           aria-label={`${workspace.label} sections`}
-          className="scholar-workspace-tabs sg-velocity-tabs relative isolate flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-white/[0.1] bg-muted/25 p-1"
+          className="scholar-workspace-tabs sg-velocity-tabs relative isolate flex shrink-0 items-center gap-1 rounded-xl border border-white/[0.1] bg-muted/25 p-1 max-w-full overflow-x-auto"
         >
           <NavigationLens lensRef={lens} axis="x" />
           {workspace.modes.map((mode, idx) => {
@@ -119,9 +121,9 @@ export function WorkspaceTabs({
                 }}
                 title={mode.description}
                 className={cn(
-                  "relative z-10 inline-flex min-h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors duration-200 sm:px-3 sm:text-[13px]",
+                  "relative z-10 inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 sm:px-4 sm:text-[13px]",
                   selected
-                    ? "text-foreground"
+                    ? "text-foreground font-semibold"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >

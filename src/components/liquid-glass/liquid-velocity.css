@@ -46,8 +46,8 @@
   transition: translate 160ms var(--sg-motion-ease);
 }
 .sg-velocity-lens[data-sg-optics="active"] .sg-velocity-lens-optic {
-  backdrop-filter: url("#sg-refraction-subtle") blur(4px) saturate(135%);
-  -webkit-backdrop-filter: blur(4px) saturate(135%);
+  backdrop-filter: blur(14px) saturate(140%) brightness(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(140%) brightness(1.08);
 }
 [data-velocity-nav] .scholar-nav-item { min-height: 38px; transition: color 130ms ease, background-color 130ms ease; }
 [data-velocity-nav] .scholar-nav-item[aria-current="page"] { color: var(--sg-ink-text); }

@@ -282,7 +282,7 @@ export function LamAIView() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-[#07090d] text-white" data-workspace={WORKSPACE}>
-      <WorkspaceTabs workspaceId={WORKSPACE} active={mode} onSelect={select} />
+      <WorkspaceTabs workspaceId={WORKSPACE} active={mode} onSelect={select} flush />
       <WorkspacePanel workspaceId={WORKSPACE} mode={mode} flush className="flex flex-col">
         {mode === "chat" ? (
           guestMode ? (

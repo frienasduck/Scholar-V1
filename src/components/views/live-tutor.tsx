@@ -12,7 +12,22 @@ import { parseLocalCommand, type LamAction } from "@/lib/lam/commands";
 import { microphoneErrorMessage, requestMicrophoneStream, stopMediaStream } from "@/lib/lam/microphone";
 import { loadLamState, updateLamPreferences } from "@/lib/lam/storage";
 import type { LamMessage, LamPreferences } from "@/lib/lam/types";
-import { LIVE_TUTOR_MODES, LIVE_TUTOR_PERSONALITIES, PERSONALITY_COPY, type LiveTutorMemoryRecord, type LiveTutorMission, type LiveTutorMode, type LiveTutorPersonality, type LiveTutorProvider, type LiveTutorProviderStatus, type LiveTutorState } from "@/lib/live-tutor/types";
+import {
+  DEFAULT_LAM_WALLPAPER,
+  LAM_WALLPAPERS,
+  LIVE_TUTOR_MODES,
+  LIVE_TUTOR_PERSONALITIES,
+  PERSONALITY_COPY,
+  UNIFIED_LAM_COPY,
+  type LamWallpaper,
+  type LiveTutorMemoryRecord,
+  type LiveTutorMission,
+  type LiveTutorMode,
+  type LiveTutorPersonality,
+  type LiveTutorProvider,
+  type LiveTutorProviderStatus,
+  type LiveTutorState,
+} from "@/lib/live-tutor/types";
 import { navigateTo } from "@/lib/nav-event";
 import { useStore } from "@/lib/store";
 import { aiErrorMessage } from "@/lib/ai/client";
@@ -123,8 +138,22 @@ export function LiveTutorView({
   const switchTimer = useRef<number | null>(null);
   const interacted = useRef(false);
 
+  const [wallpaperId, setWallpaperId] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_LAM_WALLPAPER.id;
+    return localStorage.getItem("scholar:lam-wallpaper") || DEFAULT_LAM_WALLPAPER.id;
+  });
+  const activeWallpaper = useMemo(() => {
+    return LAM_WALLPAPERS.find((w) => w.id === wallpaperId) || DEFAULT_LAM_WALLPAPER;
+  }, [wallpaperId]);
+  const chooseWallpaper = useCallback((id: string) => {
+    setWallpaperId(id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("scholar:lam-wallpaper", id);
+    }
+  }, []);
+
   const messages = messagesByPersona[personality];
-  const copy = PERSONALITY_COPY[personality];
+  const copy = UNIFIED_LAM_COPY;
   const busy = ["thinking", "transcribing", "speaking", "using-tool"].includes(status);
   const avatarState = useLamActivity(resolveLamState(streaming || status === "speaking" ? "responding" : status === "thinking" || status === "transcribing" ? "thinking" : status === "using-tool" ? "reading" : status === "error" ? "error" : draft.trim() || status === "listening" ? "listening" : status === "complete" ? "happy" : prepared ? "greeting" : "idle"), busy, true, draft.trim() || status === "listening" ? "input" : "content");
   const listening = status === "listening";
@@ -137,7 +166,7 @@ export function LiveTutorView({
   const [pluginIndex, setPluginIndex] = useState(0);
   const pluginMatches = useMemo(() => {
     if (pluginQuery === null) return [];
-    return searchLamPlugins(pluginQuery).slice(0, 6);
+    return searchLamPlugins(pluginQuery);
   }, [pluginQuery]);
   useEffect(() => { setPluginIndex(0); }, [pluginQuery]);
   const choosePlugin = useCallback((plugin: LamPlugin) => {
@@ -399,16 +428,23 @@ export function LiveTutorView({
   const newConversation = () => { if (!window.confirm(`Start a new ${copy.label} conversation? Other personality sessions are kept.`)) return; setMessagesByPersona((current) => ({ ...current, [personality]: [] })); setSessionIds((current) => ({ ...current, [personality]: uid() })); setResolvedModel(""); setError(""); setPanel(null); };
   const quick = (item: { label: string; mode: LiveTutorMode }) => { setMode(item.mode); patchPreferences({ liveTutorMode: item.mode }); void sendMessage(item.label); };
 
-  return <section ref={openingRef} className={`lt-root lt-${personality} ${switching ? "is-switching" : ""} ${embedded ? "lt-embedded" : ""}`} data-personality={personality} aria-label="LAM AI">
-    <PersonalityBackground personality={personality} /><div className="lt-environment-scrim" aria-hidden="true" />
-    <nav className="lt-nav" aria-label="LAM AI navigation"><span className="lt-nav-brand"><span className="lt-scholar-mark"><BrainCircuit /></span>Scholar<span className="lt-nav-beta">LAM AI · BETA</span></span><span className="lt-nav-div" /><div className="lt-nav-tabs" role="group" aria-label="Personality">{LIVE_TUTOR_PERSONALITIES.map((item) => <button key={item} className="lt-nav-tab" aria-pressed={personality === item} onClick={() => switchPersonality(item)}>{PERSONALITY_COPY[item].shortLabel}</button>)}</div><span className="lt-nav-div" /><button className="lt-nav-new" onClick={newConversation} aria-label="New conversation"><Plus /></button></nav>
+  const UNIFIED_QUICK = [
+    { label: "Explain concept", mode: "explain" as LiveTutorMode },
+    { label: "Quiz me", mode: "quiz" as LiveTutorMode },
+    { label: "Step-by-step solve", mode: "solve" as LiveTutorMode },
+    { label: "Deep dive", mode: "deep-dive" as LiveTutorMode },
+  ];
+
+  return <section ref={openingRef} className={`lt-root lt-calm ${switching ? "is-switching" : ""} ${embedded ? "lt-embedded" : ""}`} data-personality="calm" aria-label="LAM AI">
+    <PersonalityBackground personality="calm" src={activeWallpaper.src} /><div className="lt-environment-scrim" aria-hidden="true" />
+    <nav className="lt-nav" aria-label="LAM AI navigation"><span className="lt-nav-brand"><span className="lt-scholar-mark"><BrainCircuit /></span>Scholar<span className="lt-nav-beta">LAM AI</span></span><span className="lt-nav-div" /><button className="lt-nav-new" onClick={newConversation} aria-label="New conversation"><Plus /></button></nav>
     {(listening || status === "transcribing" || status === "speaking") ? <div className="lt-voice-pill" data-state={status} role="status"><span className="lt-voice-dot" />{status === "listening" ? "Listening" : status === "transcribing" ? "Processing…" : "LAM is speaking…"}</div> : null}
 
     <div className="lt-canvas">{messages.length || streaming ? <div className="lt-canvas-scroll" ref={scrollRef} role="log" aria-live="polite" aria-label="LAM AI conversation"><div className="lt-convo-col"><div className="mb-5"><LamScene state={avatarState} placement="tutor" size={100} compact target={draft.trim() ? "input" : "content"}/></div>
       {captions && messages.map((message) => <article className="lt-turn" data-role={message.role} key={message.id}><div className="lt-turn-meta">{message.role === "assistant" ? <><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state="idle" animate={false}/></span>{copy.label}</> : <>You{message.inputMode === "voice" ? " · voice" : ""}</>}</div><div className="lt-bubble">{message.role === "assistant" ? <LamResponse content={message.content} optimized /> : message.content}</div>{message.role === "assistant" ? <div className="lt-msg-actions"><button className="lt-msg-act" onClick={() => void navigator.clipboard.writeText(message.content)}><Copy />Copy</button><button className="lt-msg-act" onClick={() => void remember(message.content)}><MemoryStick />Remember</button><button className="lt-msg-act" onClick={() => { setPendingAction({ type: "create-note", title: `LAM AI — ${context.chapterTitle ?? context.subjectTitle ?? "study note"}`, content: message.content }); setStatus("waiting-confirmation"); }}><FileText />Save to Notes</button></div> : null}</article>)}
       {captions && streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state={avatarState}/></span>{copy.label}</div><div className="lt-bubble"><LamResponse content={streaming} optimized streaming /></div></article> : null}
       {status === "thinking" && !streaming ? <article className="lt-turn" data-role="assistant"><div className="lt-turn-meta"><span className="lt-turn-orb" style={{ background: "none" }}><LamAvatar size={28} placement="tutor" state={avatarState}/></span>{copy.label}</div><div className="lt-bubble"><span className="lt-thinking"><span /><span /><span /></span></div></article> : null}
-    </div></div> : prepared ? <div className="lt-empty-state"><LamScene size={150} placement="tutor" state={avatarState} label="Ready when you are."/><h1 className="lt-empty-title">{copy.idleHeading}</h1><p className="lt-empty-sub">{copy.idleSubcopy}</p><div className="lt-empty-chips">{QUICK[personality].map((item) => <button key={item.label} className="lt-empty-chip" onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-empty-chips mt-1.5" aria-label="Quick LAM plugins">{(["concept-explainer", "pdf-generator", "flashcard-generator", "mistake-analyzer"] as const).map((id) => { const plugin = pluginById(id); return plugin ? <button key={plugin.id} type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => choosePlugin(plugin)}>@{plugin.name}</button> : null; })}<button type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => { setWorkspaceMode("lam-ai", "plugins"); navigateTo("lam-ai"); }}>All 23 plugins →</button></div></div> : null}</div>
+    </div></div> : prepared ? <div className="lt-empty-state"><LamScene size={150} placement="tutor" state={avatarState} label="Ready when you are."/><h1 className="lt-empty-title">{copy.idleHeading}</h1><p className="lt-empty-sub">{copy.idleSubcopy}</p><div className="lt-empty-chips">{UNIFIED_QUICK.map((item) => <button key={item.label} className="lt-empty-chip" onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-empty-chips mt-1.5" aria-label="Quick LAM plugins">{(["concept-explainer", "pdf-generator", "flashcard-generator", "mistake-analyzer"] as const).map((id) => { const plugin = pluginById(id); return plugin ? <button key={plugin.id} type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => choosePlugin(plugin)}>@{plugin.name}</button> : null; })}<button type="button" className="lt-empty-chip opacity-85 hover:opacity-100" onClick={() => { setWorkspaceMode("lam-ai", "plugins"); navigateTo("lam-ai"); }}>All 23 plugins →</button></div></div> : null}</div>
 
     {studyPlan && <div className="lt-confirm max-h-[65dvh] overflow-y-auto"><StudyPlanProposal key={studyPlan.id} plan={studyPlan} onClose={() => setStudyPlan(null)} /></div>}
     {pendingAction ? <div className="lt-confirm"><h4>{actionCopy(pendingAction).title}</h4><p>{actionCopy(pendingAction).detail}</p><div className="lt-confirm-actions"><button className="lt-btn lt-btn-primary" onClick={executeAction}><Check />Approve</button><button className="lt-btn lt-btn-ghost" onClick={() => { setPendingAction(null); setStatus("idle"); }}>Cancel</button></div></div> : null}
@@ -475,17 +511,42 @@ export function LiveTutorView({
             if (event.key === "Escape" && pluginQuery !== null) { event.preventDefault(); setDraft((current) => current.replace(/@[\w -]*$/, "").trimEnd()); return; }
             if (event.key === "Backspace" && !draft && pluginChip) { event.preventDefault(); setPluginChip(null); return; }
             if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submitDraft(); }
-          }} /><div className="lt-composer-bar"><div className="lt-composer-chips">{QUICK[personality].slice(0, 2).map((item) => <button key={item.label} type="button" className="lt-composer-chip" aria-pressed={mode === item.mode} onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-composer-actions"><input ref={attachmentInputRef} type="file" accept={LAM_ATTACHMENT_ACCEPT} multiple className="sr-only" aria-label="Attach text files or PDFs" onChange={(event) => void addAttachments(event.target.files)} /><button type="button" className="lt-cmp-btn" onClick={() => attachmentInputRef.current?.click()} disabled={attachmentBusy || attachments.length >= 4} aria-label="Attach text files or PDFs">{attachmentBusy ? <Loader2 className="lt-spin" /> : <Paperclip />}</button><button type="button" className="lt-cmp-btn" onClick={() => setDraft((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@`)} aria-label="Mention a plugin"><AtSign /></button><select className="lt-cmp-prov" value={provider} onChange={(event) => { const value = event.target.value as LiveTutorProvider; setProvider(value); setModel(""); patchPreferences({ liveTutorProvider: value }); }} aria-label="Model provider">{providers.length ? providers.map((item) => <option key={item.id} value={item.id} disabled={!item.available}>{item.label}{item.available ? "" : " · unavailable"}</option>) : <option value="auto">Auto</option>}</select><button type="button" className="lt-cmp-btn" aria-pressed={listening} onClick={() => void startListening()} aria-label={listening ? "Stop listening" : "Talk to LAM"}>{status === "transcribing" ? <Loader2 className="lt-spin" /> : listening ? <CircleStop /> : <Mic />}</button><button type="submit" className="lt-cmp-btn lt-cmp-send" disabled={(!draft.trim() && !attachments.length && !pluginChip) || busy || attachmentBusy} aria-label="Ask LAM">{busy ? <Loader2 className="lt-spin" /> : <ArrowUp />}</button></div></div></form><div className="lt-composer-meta"><span>{copy.label}</span><span>·</span><span>{provider === "auto" ? "Auto model" : provider}</span>{resolvedModel ? <><span>·</span><span>{resolvedModel}</span></> : null}</div></div>
+          }} /><div className="lt-composer-bar"><div className="lt-composer-chips">{UNIFIED_QUICK.slice(0, 2).map((item) => <button key={item.label} type="button" className="lt-composer-chip" aria-pressed={mode === item.mode} onClick={() => quick(item)}>{item.label}</button>)}</div><div className="lt-composer-actions"><input ref={attachmentInputRef} type="file" accept={LAM_ATTACHMENT_ACCEPT} multiple className="sr-only" aria-label="Attach text files or PDFs" onChange={(event) => void addAttachments(event.target.files)} /><button type="button" className="lt-cmp-btn" onClick={() => attachmentInputRef.current?.click()} disabled={attachmentBusy || attachments.length >= 4} aria-label="Attach text files or PDFs">{attachmentBusy ? <Loader2 className="lt-spin" /> : <Paperclip />}</button><button type="button" className="lt-cmp-btn" onClick={() => setDraft((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@`)} aria-label="Mention a plugin"><AtSign /></button><select className="lt-cmp-prov" value={provider} onChange={(event) => { const value = event.target.value as LiveTutorProvider; setProvider(value); setModel(""); patchPreferences({ liveTutorProvider: value }); }} aria-label="Model provider">{providers.length ? providers.map((item) => <option key={item.id} value={item.id} disabled={!item.available}>{item.label}{item.available ? "" : " · unavailable"}</option>) : <option value="auto">Auto</option>}</select><button type="button" className="lt-cmp-btn" aria-pressed={listening} onClick={() => void startListening()} aria-label={listening ? "Stop listening" : "Talk to LAM"}>{status === "transcribing" ? <Loader2 className="lt-spin" /> : listening ? <CircleStop /> : <Mic />}</button><button type="submit" className="lt-cmp-btn lt-cmp-send" disabled={(!draft.trim() && !attachments.length && !pluginChip) || busy || attachmentBusy} aria-label="Ask LAM">{busy ? <Loader2 className="lt-spin" /> : <ArrowUp />}</button></div></div></form><div className="lt-composer-meta"><span>{copy.label}</span><span>·</span><span>{provider === "auto" ? "Auto model" : provider}</span>{resolvedModel ? <><span>·</span><span>{resolvedModel}</span></> : null}</div></div>
 
-    <div className="lt-dock" role="toolbar" aria-label="LAM AI panels"><button className="lt-dock-btn lt-dock-spark" onClick={() => setPanel(panel === "personality" ? null : "personality")} aria-label="Switch personality"><Sparkles /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "memory" ? null : "memory")} aria-label="Memory"><MemoryStick /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "context" ? null : "context")} aria-label="Learning awareness"><Eye /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "mission" ? null : "mission")} aria-label="Study mission"><BookOpen /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "sessions" ? null : "sessions")} aria-label="Sessions"><History /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-label="LAM AI settings"><Settings2 /></button></div>
+    <div className="lt-dock" role="toolbar" aria-label="LAM AI panels"><button className="lt-dock-btn" onClick={() => setPanel(panel === "memory" ? null : "memory")} aria-label="Memory"><MemoryStick /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "context" ? null : "context")} aria-label="Learning awareness"><Eye /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "mission" ? null : "mission")} aria-label="Study mission"><BookOpen /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "sessions" ? null : "sessions")} aria-label="Sessions"><History /></button><button className="lt-dock-btn" onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-label="LAM AI settings"><Settings2 /></button></div>
 
-    <aside className={`lt-sheet-content ${panel ? "is-open" : ""}`} data-personality={personality} aria-hidden={!panel} aria-label="LAM AI panel"><header className="lt-sheet-header"><h2>{panel === "personality" ? "Teaching personality" : panel === "memory" ? "What LAM remembers" : panel === "context" ? "Learning awareness" : panel === "mission" ? "Study mission" : panel === "sessions" ? "Sessions" : "LAM AI settings"}</h2><button onClick={() => setPanel(null)} aria-label="Close panel"><X /></button></header><div className="lt-sheet-scroll">
-      {panel === "personality" ? <div className="lt-sheet">{LIVE_TUTOR_PERSONALITIES.map((item) => <button key={item} className="lt-personality-card" aria-pressed={personality === item} onClick={() => { switchPersonality(item); setPanel(null); }}><strong>{PERSONALITY_COPY[item].label}</strong><span>{PERSONALITY_COPY[item].description}</span></button>)}</div> : null}
-      {panel === "memory" ? <div className="lt-sheet"><p className="lt-panel-help">Account-bound learning memory is shared by all three personalities.</p>{memories.length ? memories.map((memory) => <div className="lt-mem-item" key={memory.id}><div><span className="lt-mem-cat">{memory.kind.replaceAll("_", " ")}</span><p className="lt-mem-sum">{memory.content}</p></div><button className="lt-mem-del" onClick={async () => { const response = await fetch(`/api/lam/live/memory?id=${encodeURIComponent(memory.id)}`, { method: "DELETE" }); if (response.ok) setMemories((current) => current.filter((item) => item.id !== memory.id)); }} aria-label="Forget this memory"><Trash2 /></button></div>) : <p className="lt-panel-help">No explicit memories yet. Use Remember on a useful answer.</p>}</div> : null}
+    <aside className={`lt-sheet-content ${panel ? "is-open" : ""}`} data-personality="calm" aria-hidden={!panel} aria-label="LAM AI panel"><header className="lt-sheet-header"><h2>{panel === "memory" ? "What LAM remembers" : panel === "context" ? "Learning awareness" : panel === "mission" ? "Study mission" : panel === "sessions" ? "Sessions" : "LAM AI settings"}</h2><button onClick={() => setPanel(null)} aria-label="Close panel"><X /></button></header><div className="lt-sheet-scroll">
+      {panel === "memory" ? <div className="lt-sheet"><p className="lt-panel-help">Account-bound learning memory grounds your answers in your progress.</p>{memories.length ? memories.map((memory) => <div className="lt-mem-item" key={memory.id}><div><span className="lt-mem-cat">{memory.kind.replaceAll("_", " ")}</span><p className="lt-mem-sum">{memory.content}</p></div><button className="lt-mem-del" onClick={async () => { const response = await fetch(`/api/lam/live/memory?id=${encodeURIComponent(memory.id)}`, { method: "DELETE" }); if (response.ok) setMemories((current) => current.filter((item) => item.id !== memory.id)); }} aria-label="Forget this memory"><Trash2 /></button></div>) : <p className="lt-panel-help">No explicit memories yet. Use Remember on a useful answer.</p>}</div> : null}
       {panel === "context" ? <div className="lt-sheet"><div className="lt-aware-row"><span className="lt-aware-k">Subject</span><span className="lt-aware-v">{context.subjectTitle ?? "Not selected"}</span></div><div className="lt-aware-row"><span className="lt-aware-k">Chapter</span><span className="lt-aware-v">{context.chapterTitle ?? "Not selected"}</span></div><div className="lt-aware-row"><span className="lt-aware-k">Active file</span><span className="lt-aware-v">{context.activeFileName ?? "None"}</span></div><div className="lt-aware-row"><span className="lt-aware-k">Weak topics</span><span className="lt-aware-v">{memorySummary?.weakTopics?.length ? memorySummary.weakTopics.map((item) => item.topic ?? item.chapter).join(", ") : "No signal"}</span></div></div> : null}
       {panel === "mission" ? <div className="lt-sheet">{mission ? <div className="lt-mission-card"><p className="lt-mission-title">{mission.title}</p><p className="lt-mission-obj">Grounded in your current Scholar context and learning memory.</p>{mission.steps.map((step) => <div className="lt-mission-step" data-status={step.state === "complete" ? "done" : step.state === "active" ? "active" : "pending"} key={step.id}><span className="lt-step-dot">{step.state === "complete" ? <Check /> : null}</span>{step.label}</div>)}</div> : <><p className="lt-panel-help">Start a guided plan grounded in your real learning signals.</p><button className="lt-btn lt-btn-primary" onClick={() => void sendMessage("Give me a 60 minute study mission and take over")}>Start 60-minute mission</button></>}</div> : null}
-      {panel === "sessions" ? <div className="lt-sheet"><button className="lt-btn lt-btn-primary lt-full-button" onClick={newConversation}><Plus />New {copy.shortLabel} session</button>{history.length ? history.map((session) => <button className="lt-sess-item" key={session.id} onClick={() => { switchPersonality(session.personality); setMessagesByPersona((current) => ({ ...current, [session.personality]: session.messages })); setSessionIds((current) => ({ ...current, [session.personality]: session.id })); setPanel(null); }}><span className="lt-sess-dot" data-p={session.personality} /><span className="lt-sess-meta"><strong className="lt-sess-title">{session.title}</strong><small className="lt-sess-sub">{PERSONALITY_COPY[session.personality].label} · {new Date(session.lastActivityAt).toLocaleDateString()}</small></span></button>) : <p className="lt-panel-help">Your first session appears here after you send a message.</p>}</div> : null}
+      {panel === "sessions" ? <div className="lt-sheet"><button className="lt-btn lt-btn-primary lt-full-button" onClick={newConversation}><Plus />New session</button>{history.length ? history.map((session) => <button className="lt-sess-item" key={session.id} onClick={() => { setMessagesByPersona((current) => ({ ...current, [session.personality]: session.messages })); setSessionIds((current) => ({ ...current, [session.personality]: session.id })); setPanel(null); }}><span className="lt-sess-dot" data-p={session.personality} /><span className="lt-sess-meta"><strong className="lt-sess-title">{session.title}</strong><small className="lt-sess-sub">{new Date(session.lastActivityAt).toLocaleDateString()}</small></span></button>) : <p className="lt-panel-help">Your first session appears here after you send a message.</p>}</div> : null}
       {panel === "settings" ? <div className="lt-sheet">
+        <section className="lt-sheet-section">
+          <h3>Live Wallpaper</h3>
+          <p className="lt-panel-help">Choose a cinematic live background for your LAM AI workspace.</p>
+          <div className="lt-wallpaper-grid">
+            {LAM_WALLPAPERS.map((wp) => {
+              const selected = wp.id === activeWallpaper.id;
+              return (
+                <button
+                  key={wp.id}
+                  type="button"
+                  className={`lt-wallpaper-card ${selected ? "is-active" : ""}`}
+                  onClick={() => chooseWallpaper(wp.id)}
+                >
+                  <div className="lt-wallpaper-preview">
+                    <video src={wp.src} muted loop playsInline autoPlay className="h-full w-full object-cover" />
+                    {selected ? <span className="lt-wallpaper-check"><Check /></span> : null}
+                  </div>
+                  <div className="lt-wallpaper-meta">
+                    <strong>{wp.name}</strong>
+                    <small>{wp.description}</small>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
         <section className="lt-sheet-section"><h3>AI provider</h3><select className="lt-panel-select" value={provider} onChange={(event) => { const value = event.target.value as LiveTutorProvider; setProvider(value); setModel(""); patchPreferences({ liveTutorProvider: value }); }}>{providers.map((item) => <option key={item.id} value={item.id} disabled={!item.available}>{item.label}{item.model ? ` — ${item.model}` : item.available ? "" : " — not configured"}</option>)}</select><p className="lt-panel-help">Scholar Groq is free. Plus includes configured Gemini and NVIDIA Nemotron models. You can also connect your own key in Settings.</p><button className="lt-btn lt-btn-ghost" onClick={() => navigateTo("settings")}>Manage your API key</button></section>
         {provider !== "auto" && providers.find((item) => item.id === provider)?.models?.length ? <section className="lt-sheet-section"><h3>Model</h3><select className="lt-panel-select" aria-label="AI model" value={model} onChange={(event) => setModel(event.target.value)}><option value="">Default — {providers.find((item) => item.id === provider)?.model ?? "server choice"}</option>{providers.find((item) => item.id === provider)?.models?.map((option) => <option key={option} value={option}>{option}</option>)}</select><p className="lt-panel-help">Model availability depends on the connected provider account.</p></section> : null}
         <section className="lt-sheet-section"><h3>Teaching mode</h3><select className="lt-panel-select" value={mode} onChange={(event) => { const value = event.target.value as LiveTutorMode; setMode(value); patchPreferences({ liveTutorMode: value }); }}>{LIVE_TUTOR_MODES.map((item) => <option key={item} value={item}>{item.replaceAll("-", " ")}</option>)}</select></section>
