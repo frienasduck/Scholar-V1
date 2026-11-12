@@ -17,7 +17,6 @@ import {
 
 // ===== Liquid-glass styles (tb- prefix) =====
 const TB_STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
 .tb-font { font-family: 'Inter', system-ui, sans-serif; }
 .tb-serif { font-family: 'Instrument Serif', Georgia, serif; }
 .tb-glass { background:rgba(255,255,255,0.04); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.12); box-shadow:inset 0 1px 1px rgba(255,255,255,0.08); }
@@ -459,7 +458,7 @@ export function ToolboxView() {
   const recentTools = useMemo(() => recent.map((id) => TOOLS.find((t) => t.id === id)).filter(Boolean) as Tool[], [recent]);
 
   return (
-    <div className="-m-4 lg:-m-6 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black min-h-[calc(100vh-4rem)] tb-font">
+    <div className="-m-3 sm:-m-4 lg:-m-6 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] tb-font">
       <style dangerouslySetInnerHTML={{ __html: TB_STYLE }} />
       <div className="max-w-6xl mx-auto px-4 py-6 lg:px-8 lg:py-10">
         {/* Header */}
@@ -619,7 +618,7 @@ export function ToolboxView() {
 
       {/* ===== Tool Dialog ===== */}
       <Dialog open={!!openTool} onOpenChange={(o) => !o && setOpenTool(null)}>
-        <DialogContent className="bg-zinc-950/95 border-white/10 backdrop-blur-xl max-w-4xl tb-font text-white max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent mobileSheet className="bg-zinc-950/95 border-white/10 backdrop-blur-xl max-w-4xl tb-font text-white max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pr-8">
             <DialogTitle className="text-white tb-serif italic text-xl flex items-center gap-2">
               {(() => {

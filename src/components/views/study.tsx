@@ -44,7 +44,6 @@ function chapterName(chapter: Chapter, subject: Subject) {
 }
 
 const AURA_STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 .aura-glass {
   background: rgba(10, 15, 26, 0.84);
   backdrop-filter: blur(24px) saturate(140%);
@@ -113,6 +112,7 @@ export function StudyView() {
   const [subjectId, setSubjectId] = useState<string>(CURRICULUM[0]?.id ?? "physics");
   const [chapterIdx, setChapterIdx] = useState(0);
   const [explainOpen, setExplainOpen] = useState<{ concept: string; loading: boolean; content: string } | null>(null);
+  const [mobileChaptersOpen, setMobileChaptersOpen] = useState(false);
   const [aiQuiz, setAiQuiz] = useState<{ q: string; options: string[]; answer: number; explanation: string }[] | null>(null);
   const [aiQuizLoading, setAiQuizLoading] = useState(false);
   const [aiFlashcards, setAiFlashcards] = useState<{ front: string; back: string }[] | null>(null);
@@ -306,6 +306,10 @@ export function StudyView() {
   const totalStudyChapters = STUDY_SUBJECTS.flatMap((s) => s.chapters).length;
 
   const focusChapterList = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setMobileChaptersOpen(true);
+      return;
+    }
     const el = document.getElementById("aura-chapter-list");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -313,20 +317,20 @@ export function StudyView() {
   const now = new Date();
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-[#0c0c0c] overflow-x-hidden -m-4 lg:-m-6 text-white aura-font">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-[#0c0c0c] overflow-x-hidden -m-3 sm:-m-4 lg:-m-6 text-white aura-font">
       <style>{AURA_STYLE}</style>
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none"
+        <video autoPlay loop muted playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="w-full h-full object-cover pointer-events-none"
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Navbar */}
         <motion.nav
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex items-center justify-between py-4"
+          className="flex items-center justify-between py-2 sm:py-4"
         >
           <div className="flex items-center gap-3">
             <svg viewBox="0 0 256 256" className="w-8 h-8" fill="white">
@@ -350,12 +354,12 @@ export function StudyView() {
         </motion.nav>
 
         {/* Hero */}
-        <div className="mt-12 mb-10">
+        <div className="mt-3 sm:mt-10 mb-5 sm:mb-8">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-xs text-white/50 mb-6"
+            className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-xs text-white/50 mb-3 sm:mb-5"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             AI-NATIVE STUDY PLATFORM
@@ -364,7 +368,7 @@ export function StudyView() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="text-4xl md:text-7xl font-semibold tracking-tight leading-[0.9] text-white"
+            className="text-3xl sm:text-5xl md:text-7xl font-semibold tracking-tight leading-[0.95] sm:leading-[0.9] text-white"
           >
             Your textbook.{" "}
             <span
@@ -385,14 +389,14 @@ export function StudyView() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="mt-8 text-white/60 max-w-md text-base leading-[1.5]"
+            className="hidden sm:block mt-5 text-white/60 max-w-md text-base leading-[1.5]"
           >
             Textbook-style chapter reader for Science &amp; Social Science, enhanced with AI explanations and interactive lessons.
           </motion.p>
         </div>
 
-        {/* macOS menu bar strip */}
-        <div className="h-10 bg-black/40 backdrop-blur-md border-t border-b border-white/10 -mx-6">
+        {/* macOS menu bar strip (desktop only) */}
+        <div className="hidden md:block h-10 bg-black/40 backdrop-blur-md border-t border-b border-white/10 -mx-6">
           <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between text-xs">
             <div className="flex items-center gap-4">
               <svg viewBox="0 0 384 512" className="w-3.5 h-3.5 text-white" fill="currentColor">
@@ -412,21 +416,21 @@ export function StudyView() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-8">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-8">
           {[
             { icon: GraduationCap, label: "Studied", value: `${studiedCount}/${totalStudyChapters}`, sub: "Science + SST", accent: "#6366f1" },
             { icon: BookOpen, label: "Subject", value: subject.icon, sub: subject.name, accent: subject.accent },
             { icon: Sparkles, label: "Chapter", value: chapterIdx + 1, sub: `of ${subject.chapters.length}`, accent: "#14b8a6" },
           ].map((s, i) => (
-            <div key={i} className="aura-glass rounded-2xl p-4">
-              <div className="flex items-start justify-between gap-3">
+            <div key={i} className="aura-glass rounded-2xl p-3 sm:p-4">
+              <div className="flex items-start justify-between gap-2 sm:gap-3">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-white/50">{s.label}</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums leading-tight text-white">{s.value}</p>
-                  {s.sub && <p className="mt-1 text-xs text-white/50">{s.sub}</p>}
+                  <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-white/50 truncate">{s.label}</p>
+                  <p className="mt-1 text-lg sm:text-2xl font-semibold tabular-nums leading-tight text-white">{s.value}</p>
+                  {s.sub && <p className="mt-1 text-[11px] sm:text-xs text-white/50 truncate">{s.sub}</p>}
                 </div>
                 <div
-                  className="grid place-items-center h-9 w-9 rounded-xl shrink-0"
+                  className="hidden sm:grid place-items-center h-9 w-9 rounded-xl shrink-0"
                   style={{ background: `${s.accent}1a`, color: s.accent }}
                 >
                   <s.icon className="h-4 w-4" />
@@ -437,32 +441,32 @@ export function StudyView() {
         </div>
 
         {scholarClass === 11 && (
-          <section className="mt-5 rounded-3xl border border-indigo-300/15 bg-gradient-to-br from-indigo-500/15 via-black/30 to-cyan-500/10 p-4 sm:p-5" aria-labelledby="ebook-study-title">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <section className="mt-4 sm:mt-5 rounded-2xl sm:rounded-3xl border border-indigo-300/15 bg-gradient-to-br from-indigo-500/15 via-black/30 to-cyan-500/10 p-3.5 sm:p-5" aria-labelledby="ebook-study-title">
+            <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-200">E-Book Study</p>
-                <h2 id="ebook-study-title" className="mt-1 text-xl font-semibold">Continue Mathematics Part 1</h2>
-                <p className="mt-1 max-w-2xl text-sm text-white/55">Learn directly from Sets and Relations and Functions with synchronized scan pages, clean selectable text, 140 printed questions, highlights, notes, page quizzes, flashcards, and a Groq-guided reading tutor.</p>
+                <h2 id="ebook-study-title" className="mt-1 text-lg sm:text-xl font-semibold">Continue Mathematics Part 1</h2>
+                <p className="hidden sm:block mt-1 max-w-2xl text-sm text-white/55">Learn directly from Sets and Relations and Functions with synchronized scan pages, clean selectable text, 140 printed questions, highlights, notes, page quizzes, flashcards, and a Groq-guided reading tutor.</p>
               </div>
               <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-                <Button onClick={() => openMathsEbook("Reader")} className="bg-indigo-500 hover:bg-indigo-600"><BookOpen className="mr-1.5 h-4 w-4" /> Continue</Button>
-                <Button onClick={() => openMathsEbook("AI Study")} variant="outline" className="border-white/15 bg-white/5"><Sparkles className="mr-1.5 h-4 w-4" /> Guided session</Button>
-                <Button onClick={() => openMathsEbook("Questions")} variant="outline" className="border-white/15 bg-white/5"><ListTodo className="mr-1.5 h-4 w-4" /> Book questions</Button>
-                <Button onClick={() => openMathsEbook("Reading Progress")} variant="outline" className="border-white/15 bg-white/5"><TrendingUp className="mr-1.5 h-4 w-4" /> Progress</Button>
+                <Button onClick={() => openMathsEbook("Reader")} className="min-h-11 sm:min-h-9 px-2.5 sm:px-3 text-xs sm:text-sm bg-indigo-500 hover:bg-indigo-600"><BookOpen className="mr-1.5 h-4 w-4 shrink-0" /> Continue</Button>
+                <Button onClick={() => openMathsEbook("AI Study")} variant="outline" className="min-h-11 sm:min-h-9 px-2.5 sm:px-3 text-xs sm:text-sm border-white/15 bg-white/5"><Sparkles className="mr-1.5 h-4 w-4 shrink-0" /> Guided session</Button>
+                <Button onClick={() => openMathsEbook("Questions")} variant="outline" className="min-h-11 sm:min-h-9 px-2.5 sm:px-3 text-xs sm:text-sm border-white/15 bg-white/5"><ListTodo className="mr-1.5 h-4 w-4 shrink-0" /> Book questions</Button>
+                <Button onClick={() => openMathsEbook("Reading Progress")} variant="outline" className="min-h-11 sm:min-h-9 px-2.5 sm:px-3 text-xs sm:text-sm border-white/15 bg-white/5"><TrendingUp className="mr-1.5 h-4 w-4 shrink-0" /> Progress</Button>
               </div>
             </div>
           </section>
         )}
 
         {/* Subject selector */}
-        <div className="flex gap-2 mt-8">
+        <div className="flex gap-2 mt-5 sm:mt-8 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap">
           {STUDY_SUBJECTS.map((s) => {
             const active = s.id === subjectId;
             return (
               <button
                 key={s.id}
                 onClick={() => handleSwitchSubject(s.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex min-h-11 shrink-0 whitespace-nowrap items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
                   active ? "aura-tab-active text-white" : "aura-glass text-white/60 hover:text-white"
                 }`}
                 style={active ? { background: s.accent } : undefined}
@@ -474,9 +478,26 @@ export function StudyView() {
           })}
         </div>
 
-        <div className="grid lg:grid-cols-[260px_1fr] gap-4 mt-6">
-          {/* Chapter list */}
-          <div id="aura-chapter-list" className="aura-glass-card p-3 lg:max-h-[70vh] lg:overflow-hidden flex flex-col scroll-mt-8">
+        {/* Mobile chapter picker bar */}
+        <div className="lg:hidden mt-4 flex items-center justify-between gap-3 aura-glass-card rounded-2xl p-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">{subject.name} · Chapter {chapterIdx + 1}/{subject.chapters.length}</p>
+            <p className="text-sm font-medium text-white truncate">{chapter.title}</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setMobileChaptersOpen(true)}
+            className="min-h-11 shrink-0 border-white/15 bg-white/5 text-white hover:bg-white/10"
+          >
+            <ListTodo className="h-4 w-4 mr-1.5" /> Chapters
+          </Button>
+        </div>
+
+        <div className="grid lg:grid-cols-[260px_1fr] gap-4 mt-3 lg:mt-6">
+          {/* Chapter list (desktop sidebar) */}
+          <div id="aura-chapter-list" className="aura-glass-card hidden lg:flex p-3 lg:max-h-[70vh] lg:overflow-hidden flex-col scroll-mt-8">
             <h3 className="text-xs uppercase tracking-wider text-white/50 font-semibold px-2 py-1.5">
               {subject.name} • Chapters
             </h3>
@@ -552,7 +573,7 @@ export function StudyView() {
                               size="sm"
                               variant="ghost"
                               onClick={() => handleExplain(c)}
-                              className="h-7 px-2 text-[11px] opacity-80 group-hover:opacity-100 hover:bg-white/10 hover:text-white"
+                              className="min-h-11 sm:min-h-7 h-auto px-3 sm:px-2 text-xs sm:text-[11px] opacity-100 sm:opacity-80 group-hover:opacity-100 hover:bg-white/10 hover:text-white shrink-0"
                               style={{ color: subject.accent }}
                             >
                               <Sparkles className="h-3 w-3 mr-1" /> Explain
@@ -823,18 +844,18 @@ export function StudyView() {
                     {/* Bottom actions */}
                     <div className="pt-4 border-t border-white/10 flex flex-wrap gap-2 justify-between items-center">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={goPrev} className="bg-white/5 border-white/15 text-white hover:bg-white/10 hover:text-white">
+                        <Button size="sm" variant="outline" onClick={goPrev} className="min-h-11 sm:min-h-9 bg-white/5 border-white/15 text-white hover:bg-white/10 hover:text-white">
                           <ChevronLeft className="h-4 w-4 mr-1" /> Prev
                         </Button>
-                        <Button size="sm" variant="outline" onClick={goNext} className="bg-white/5 border-white/15 text-white hover:bg-white/10 hover:text-white">
+                        <Button size="sm" variant="outline" onClick={goNext} className="min-h-11 sm:min-h-9 bg-white/5 border-white/15 text-white hover:bg-white/10 hover:text-white">
                           Next <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={handleSaveAsNote} className="bg-white/5 border-white/15 text-white hover:bg-white/10 hover:text-white">
+                        <Button size="sm" variant="outline" onClick={handleSaveAsNote} className="min-h-11 sm:min-h-9 bg-white/5 border-white/15 text-white hover:bg-white/10 hover:text-white">
                           <Save className="h-3.5 w-3.5 mr-1.5" /> Save as Note
                         </Button>
-                        <Button size="sm" onClick={handleMarkStudied} style={{ background: subject.accent, color: "white" }} className="hover:opacity-90">
+                        <Button size="sm" onClick={handleMarkStudied} style={{ background: subject.accent, color: "white" }} className="min-h-11 sm:min-h-9 hover:opacity-90">
                           <Check className="h-4 w-4 mr-1.5" /> Mark as studied
                         </Button>
                       </div>
@@ -848,9 +869,40 @@ export function StudyView() {
 
         <></>
 
+        {/* Mobile Chapters Drawer Sheet */}
+        <Dialog open={mobileChaptersOpen} onOpenChange={setMobileChaptersOpen}>
+          <DialogContent mobileSheet className="aura-glass-card !bg-[#0b101d]/95 max-w-lg text-white border-white/15">
+            <DialogTitle className="text-base font-semibold text-white">{subject.name} · Chapters</DialogTitle>
+            <div className="space-y-1.5 max-h-[60dvh] overflow-y-auto pr-1 mt-2">
+              {subject.chapters.map((ch, i) => {
+                const active = i === chapterIdx;
+                const prog = studyProgress[ch.id] ?? 0;
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => { setChapterIdx(i); setMobileChaptersOpen(false); }}
+                    className={`w-full min-h-11 text-left rounded-xl px-3 py-2.5 transition-all flex items-center gap-3 ${active ? "bg-white/12 ring-1 ring-white/25" : "bg-white/5 hover:bg-white/10"}`}
+                  >
+                    <div className="grid place-items-center h-6 w-6 rounded-full text-xs font-semibold shrink-0"
+                      style={{ background: prog >= 100 ? subject.accent : "transparent", color: prog >= 100 ? "white" : "rgba(255,255,255,0.75)", border: `1px solid ${prog >= 100 ? subject.accent : "rgba(255,255,255,0.25)"}` }}>
+                      {prog >= 100 ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-medium leading-snug ${active ? "text-white" : "text-white/80"}`}>{ch.title}</p>
+                      <div className="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${prog}%`, background: subject.accent }} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Explain dialog */}
         <Dialog open={!!explainOpen} onOpenChange={(o) => !o && setExplainOpen(null)}>
-          <DialogContent className="aura-glass-card max-w-lg text-white border-white/10">
+          <DialogContent mobileSheet className="aura-glass-card !bg-[#0b101d]/95 max-w-lg text-white border-white/15">
             <DialogTitle className="sr-only">Concept Explanation</DialogTitle>
             <div className="flex items-center gap-2 mb-4">
               <div className="grid place-items-center h-8 w-8 rounded-lg" style={{ background: `${subject.accent}1a`, color: subject.accent }}>
@@ -870,7 +922,7 @@ export function StudyView() {
             )}
             <div className="flex justify-end mt-4">
               <DialogClose asChild>
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">Close</Button>
+                <Button variant="ghost" size="sm" className="min-h-11 sm:min-h-9 text-white hover:bg-white/10 hover:text-white">Close</Button>
               </DialogClose>
             </div>
           </DialogContent>

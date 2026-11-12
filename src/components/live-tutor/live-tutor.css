@@ -331,7 +331,13 @@
     flex: 1;
   }
   .scholar-shell[data-mobile-nav-open="true"] .lt-root.lt-embedded .lt-canvas {
-    bottom: calc(7.85rem + var(--safe-area-bottom));
+    bottom: calc(4.6rem + var(--safe-area-bottom));
+  }
+  html[data-scholar-keyboard-open="true"] .scholar-shell .lt-root.lt-embedded .lt-canvas {
+    bottom: 0 !important;
+  }
+  html[data-scholar-keyboard-open="true"] .lt-root.lt-embedded .lt-empty-state {
+    display: none;
   }
 }
 @media (max-width: 768px) {
@@ -346,19 +352,19 @@
   }
   .lt-dock {
     top: 8px;
-    right: 10px;
+    right: 8px;
     bottom: auto;
     transform: none;
     flex-direction: row;
-    gap: 3px;
-    padding: 4px 6px;
+    gap: 1px;
+    padding: 2px;
   }
   .lt-dock-btn {
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
   }
   .lt-dock-btn svg {
-    width: 15px;
+    width: 17px;
   }
   .lt-canvas-scroll {
     padding: 8px 12px 14px;
@@ -366,21 +372,92 @@
   .lt-empty-state {
     justify-content: flex-start;
     padding: 10px 14px 14px;
+    gap: 10px;
+  }
+  .lt-empty-chip {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 13px;
+    font-size: 12.5px;
   }
   .lt-empty-orb {
-    width: 52px;
-    height: 52px;
-  }
-  .lt-plugin-menu {
-    z-index: 35;
-    max-height: min(240px, 38vh);
+    width: 44px;
+    height: 44px;
   }
   .lt-composer {
     padding: 4px 10px 8px;
     width: 100%;
   }
+  .lt-composer-card {
+    padding: 10px 10px 8px 12px;
+    gap: 8px;
+    border-radius: 20px;
+  }
+  .lt-composer-input {
+    font-size: 16px;
+    min-height: 28px;
+    line-height: 1.45;
+  }
+  .lt-cmp-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .lt-cmp-send {
+    width: 44px;
+    height: 44px;
+  }
+  .lt-cmp-prov {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 6px 10px;
+  }
+  .lt-msg-act {
+    min-height: 44px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .lt-plugin-menu {
+    z-index: 40;
+    left: 8px;
+    right: 8px;
+    padding: 8px;
+    max-height: min(360px, calc(var(--scholar-vvh, 100dvh) - 200px));
+    overscroll-behavior: contain;
+  }
+  .lt-plugin-tab {
+    min-height: 44px;
+    padding: 6px 12px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .lt-plugin-option {
+    min-height: 52px;
+    padding: 9px 10px;
+  }
+  .lt-sheet-content {
+    top: calc(var(--lam-topbar-h, 52px) + 6px);
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    width: auto;
+    border-radius: 22px;
+  }
+  .lt-sheet-header button {
+    width: 44px;
+    height: 44px;
+  }
   .lt-composer-meta {
     display: none;
+  }
+  .lt-bubble table,
+  .lt-bubble .katex-display,
+  .lt-bubble pre {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 @media (max-width: 400px) {
@@ -393,11 +470,11 @@
     max-width: calc(100% - 168px);
   }
   .lt-dock-btn {
-    width: 26px;
-    height: 26px;
+    width: 44px;
+    height: 44px;
   }
   .lt-dock-btn svg {
-    width: 13.5px;
+    width: 16px;
   }
   .lt-composer-card {
     padding: 8px 10px;
@@ -464,17 +541,20 @@
   top: calc(var(--lam-topbar-h, 64px) + 10px);
 }
 @media (max-width: 768px) {
+  .lt-root.lt-embedded .lt-composer-card {
+    background: rgba(14, 17, 26, 0.9);
+  }
   .lt-root.lt-embedded .lt-dock {
-    top: calc(var(--lam-topbar-h, 58px) + 8px);
+    top: calc(var(--lam-topbar-h, 58px) + 6px);
     right: 10px;
   }
   .lt-root.lt-embedded .lt-canvas-scroll {
     padding-top: calc(var(--lam-topbar-h, 58px) + 50px);
   }
   .lt-root.lt-embedded .lt-empty-state {
-    gap: 11px;
-    padding-top: calc(var(--lam-topbar-h, 58px) + 46px);
-    padding-bottom: 14px;
+    gap: 8px;
+    padding-top: calc(var(--lam-topbar-h, 58px) + 38px);
+    padding-bottom: 10px;
   }
   .lt-root.lt-embedded .lt-empty-orb {
     width: 44px;
@@ -510,8 +590,8 @@
     height: 22px;
   }
   .lt-nav.lt-nav--header .lt-nav-new {
-    width: 26px;
-    height: 26px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 @media (max-width: 380px) {
@@ -523,6 +603,44 @@
 }
 @media (max-height: 640px), (max-width: 400px) {
   .lt-root.lt-embedded .lt-plugin-menu {
-    max-height: min(148px, 27dvh);
+    max-height: min(320px, calc(var(--scholar-vvh, 100dvh) - 185px));
+  }
+}
+
+/* Mobile compact & landscape phone guard for embedded LAM AI */
+@media (max-height: 600px) and (max-width: 1023px) {
+  .lt-root.lt-embedded .lt-dock {
+    top: calc(var(--lam-topbar-h, 58px) + 6px);
+    right: 10px;
+    bottom: auto;
+    transform: none;
+    flex-direction: row;
+    gap: 1px;
+    padding: 2px;
+  }
+  .lt-root.lt-embedded .lt-dock-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .lt-root.lt-embedded .lt-empty-state {
+    justify-content: flex-start;
+    gap: 6px;
+    padding-top: calc(var(--lam-topbar-h, 58px) + 10px);
+    padding-bottom: 8px;
+  }
+  .lt-root.lt-embedded .lt-empty-orb {
+    width: 32px;
+    height: 32px;
+  }
+  .lt-root.lt-embedded .lt-empty-title {
+    font-size: clamp(1.2rem, 4.5vw, 1.55rem);
+  }
+  .lt-root.lt-embedded .lt-empty-sub {
+    display: none;
+  }
+}
+@media (max-height: 480px) and (max-width: 1023px) {
+  .lt-root.lt-embedded .lt-empty-orb {
+    display: none;
   }
 }

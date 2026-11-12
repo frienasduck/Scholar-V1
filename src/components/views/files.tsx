@@ -158,7 +158,7 @@ export function FilesView() {
         className="z-0"
       />
       <div className="absolute inset-0 z-0 bg-black/65" />
-      <div className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-12 sm:p-6">
+      <div className="relative z-10 mx-auto max-w-7xl space-y-6 p-4 pb-24 sm:p-6 lg:pb-12">
       <SectionHeader
         title="Files"
         subtitle="Save and organize study materials on this browser. Keep original copies; files are not backed up to the cloud."
@@ -277,7 +277,7 @@ export function FilesView() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="min-h-9 sm:min-h-7 px-2 text-xs text-primary opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                           onClick={(e) => {
                             e.stopPropagation();
                             setPreview(f);
@@ -315,7 +315,7 @@ export function FilesView() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          className="min-h-9 min-w-9 sm:min-h-7 sm:min-w-7 sm:h-7 sm:w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(f.id, f.name);

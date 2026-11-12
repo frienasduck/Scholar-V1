@@ -74,7 +74,7 @@ export function InviteDialog({
         if (!value) onClose();
       }}
     >
-      <DialogContent className="gs-dialog">
+      <DialogContent mobileSheet className="gs-dialog">
         <DialogTitle>Study is better together.</DialogTitle>
         <DialogDescription>
           Share this code. Your friends can join without an account.

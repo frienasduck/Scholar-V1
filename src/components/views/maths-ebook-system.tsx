@@ -1365,7 +1365,7 @@ function EnhancedEbookSystem({
   return (
     <div
       className={cn(
-        "relative min-h-[calc(100vh-4rem)] overflow-hidden bg-[#080b12] text-white",
+        "relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] overflow-hidden bg-[#080b12] text-white",
         fullscreen && "fixed inset-0 z-50",
       )}
     >
@@ -1476,7 +1476,7 @@ function EnhancedEbookSystem({
       )}
 
       {nav === "Reader" && (
-        <div className="grid min-h-[calc(100vh-8.5rem)] lg:grid-cols-[230px_minmax(0,1fr)_270px]">
+        <div className="grid min-h-[calc(var(--scholar-vvh,100dvh)-8.5rem)] lg:grid-cols-[230px_minmax(0,1fr)_270px]">
           <aside className="hidden border-r border-white/10 bg-black/20 p-3 lg:block">
             <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
               Table of contents
@@ -2230,7 +2230,7 @@ function EnhancedEbookSystem({
       )}
 
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
-        <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
+        <DialogContent mobileSheet className="max-h-[88vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{aiTitle}</DialogTitle>
             <DialogDescription>
@@ -2252,7 +2252,7 @@ function EnhancedEbookSystem({
         open={Boolean(answerQuestion)}
         onOpenChange={(open) => !open && setAnswerQuestion(null)}
       >
-        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
+        <DialogContent mobileSheet className="max-h-[88vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Write answer</DialogTitle>
             <DialogDescription>

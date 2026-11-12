@@ -5,7 +5,7 @@ import { subjectChapter, currentTask, type ExamSession, type Lesson, type Setup 
 import { Materials } from "./tools";
 import { getCurriculum } from "@/lib/curriculum-helper";
 type Props={session:ExamSession;lesson?:Lesson;guest:boolean;busy:boolean;onSetup:(value:Setup)=>void};
-export function MaterialsPanel(p:Props&{onClose:()=>void}){return <Dialog open onOpenChange={open=>{if(!open)p.onClose();}}><DialogContent className="er-root er-v4 er-materials-dialog"><DialogTitle>Study materials</DialogTitle><DialogDescription>Available, selected, retrieved and cited sources — kept distinct.</DialogDescription><MaterialsWorkspace {...p}/></DialogContent></Dialog>;}
+export function MaterialsPanel(p:Props&{onClose:()=>void}){return <Dialog open onOpenChange={open=>{if(!open)p.onClose();}}><DialogContent mobileSheet className="er-root er-v4 er-materials-dialog"><DialogTitle>Study materials</DialogTitle><DialogDescription>Available, selected, retrieved and cited sources — kept distinct.</DialogDescription><MaterialsWorkspace {...p}/></DialogContent></Dialog>;}
 export function MaterialsWorkspace({session,lesson,guest,busy,onSetup}:Props){
   const task = currentTask(session), [chosen, setChosen] = useState(`${task?.subjectId}:${task?.chapterId}`);
   const scope = session.setup.chapters.find(c => `${c.subjectId}:${c.chapterId}` === chosen) ?? session.setup.chapters[0];

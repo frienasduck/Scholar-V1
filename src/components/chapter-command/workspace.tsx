@@ -369,21 +369,13 @@ function Mastery({ ctx }: { ctx: WorkspaceContext }) {
             <button
               type="button"
               onClick={(e) => toggleConcept(concept, e)}
-              style={{
-                width: "22px",
-                height: "22px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: isMastered ? "1.5px solid #10b981" : "1.5px solid rgba(255,255,255,0.25)",
-                background: isMastered ? "rgba(16, 185, 129, 0.2)" : "transparent",
-                color: "#10b981",
-                cursor: "pointer",
-              }}
+              style={{ width: "44px", height: "44px", margin: "-10px 0 -10px -8px", display: "grid", placeItems: "center", flexShrink: 0, background: "transparent", border: 0, cursor: "pointer" }}
               title={isMastered ? "Mark unmastered" : "Mark mastered (+5 XP)"}
+              aria-label={isMastered ? `Mark ${concept} unmastered` : `Mark ${concept} mastered`}
             >
-              {isMastered ? <Check size={13} /> : <span style={{ fontSize: "10px", opacity: 0.6 }}>{index + 1}</span>}
+              <span style={{ width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: isMastered ? "1.5px solid #10b981" : "1.5px solid rgba(255,255,255,0.25)", background: isMastered ? "rgba(16, 185, 129, 0.2)" : "transparent", color: "#10b981" }}>
+                {isMastered ? <Check size={13} /> : <span style={{ fontSize: "10px", opacity: 0.6 }}>{index + 1}</span>}
+              </span>
             </button>
             <strong style={{ textDecoration: isMastered ? "line-through" : "none", opacity: isMastered ? 0.8 : 1 }}>{concept}</strong>
           </div>

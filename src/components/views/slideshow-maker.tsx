@@ -2703,7 +2703,7 @@ function SlideshowEditor(props: EditorProps) {
       <div className="grid grid-cols-12 gap-3">
         {/* Left: thumbnails */}
         <div className="col-span-12 lg:col-span-3 order-2 lg:order-1">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-2 max-h-[calc(100vh-20rem)] overflow-y-auto sticky top-2">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-2 max-h-[calc(var(--scholar-vvh,100dvh)-20rem)] overflow-y-auto sticky top-2">
             <div className="text-[10px] font-medium uppercase tracking-wider text-white/40 px-2 py-1.5 sticky top-0 bg-zinc-950/95 backdrop-blur-sm z-10">
               {slideshow.slides.length} slides
             </div>
@@ -3928,7 +3928,7 @@ function EditPanel({
   currentTemplate: SlideshowTemplate;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 max-h-[calc(100vh-20rem)] overflow-y-auto sticky top-2 space-y-3">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 max-h-[calc(var(--scholar-vvh,100dvh)-20rem)] overflow-y-auto sticky top-2 space-y-3">
       {/* Template switcher */}
       <div>
         <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 mb-1.5">

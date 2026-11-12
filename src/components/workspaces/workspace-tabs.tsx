@@ -103,6 +103,7 @@ export function WorkspaceTabs({
       <div
         className={cn(
           "mx-auto flex w-full items-center justify-between gap-2 sm:gap-5",
+          !leftSlot && "flex-col items-start sm:flex-row sm:items-center sm:justify-between",
           refractiveOverlay ? "lam-topbar-inner min-h-[44px]" : "min-h-10",
         )}
       >
@@ -110,7 +111,7 @@ export function WorkspaceTabs({
           {leftSlot !== undefined ? (
             leftSlot
           ) : (
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 select-none">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 select-none sm:text-xs">
               {workspace.label}
             </span>
           )}
@@ -152,8 +153,8 @@ export function WorkspaceTabs({
                 className={cn(
                   "relative z-10 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors duration-200 sm:px-4 sm:text-[13px]",
                   refractiveOverlay
-                    ? "min-h-8 px-2.5 py-1 text-[11.5px] sm:min-h-9 sm:px-4 sm:py-1.5"
-                    : "min-h-9 rounded-lg px-3.5 py-1.5",
+                    ? "min-h-11 px-2.5 py-1 text-[11.5px] sm:px-3.5 sm:py-1.5 lg:min-h-9"
+                    : "min-h-11 rounded-lg px-3 py-1.5 lg:min-h-9 lg:px-3.5",
                   selected
                     ? "text-foreground font-semibold"
                     : "text-muted-foreground hover:text-foreground",

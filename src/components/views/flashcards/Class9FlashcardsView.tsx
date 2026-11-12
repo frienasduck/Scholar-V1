@@ -100,8 +100,8 @@ export function Class9FlashcardsView() {
     const card = flashcards.find((c) => c.id === studyQueue[studyIdx]);
     if (!card) { setStudying(false); return null; }
     return (
-      <div className="scholar-flashcards scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
-        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
+      <div className="scholar-flashcards scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6 pb-24 lg:pb-10">
+        <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
           <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 z-0 bg-black/50" />
@@ -148,8 +148,8 @@ export function Class9FlashcardsView() {
 
   // ===== Browse Mode =====
   return (
-    <div className="scholar-flashcards scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
+    <div className="scholar-flashcards scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6 pb-24 lg:pb-10">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/50" />
@@ -210,7 +210,7 @@ function NewDeckDialog({ onAdd }: { onAdd: (d: Partial<Deck>) => string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Pill><Plus className="h-3 w-3 mr-1 inline" /> New deck</Pill></DialogTrigger>
-      <DialogContent>
+      <DialogContent mobileSheet>
         <DialogHeader>
           <DialogTitle>New flashcard deck</DialogTitle>
           <DialogDescription>Group related cards together for focused review.</DialogDescription>
@@ -338,7 +338,7 @@ function DeckPanel({ deck, cards, onAddCard, onStudy, pushActivity, curriculum, 
         )}
       </div>
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
-        <DialogContent>
+        <DialogContent mobileSheet>
           <DialogHeader>
             <DialogTitle>AI Generate Flashcards</DialogTitle>
             <DialogDescription>Pick a chapter and AI will craft flashcards into &quot;{deck.name}&quot;.</DialogDescription>

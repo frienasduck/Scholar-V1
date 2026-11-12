@@ -143,25 +143,7 @@ function TypingDots({ accent }: { accent: string }) {
 
 // Inject the Instrument Serif font once for the whole app.
 function useInstrumentSerifFont() {
-  useEffect(() => {
-    const id = "instrument-serif-font";
-    if (typeof document === "undefined") return;
-    if (document.getElementById(id)) return;
-    const preconnect1 = document.createElement("link");
-    preconnect1.rel = "preconnect";
-    preconnect1.href = "https://fonts.googleapis.com";
-    const preconnect2 = document.createElement("link");
-    preconnect2.rel = "preconnect";
-    preconnect2.href = "https://fonts.gstatic.com";
-    preconnect2.crossOrigin = "anonymous";
-    const link = document.createElement("link");
-    link.id = id;
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap";
-    document.head.appendChild(preconnect1);
-    document.head.appendChild(preconnect2);
-    document.head.appendChild(link);
-  }, []);
+  // Instrument Serif is bundled locally via next/font/google in layout.tsx (--font-instrument-serif).
 }
 
 const GLASS_STYLES = `
@@ -194,9 +176,9 @@ const GLASS_STYLES = `
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-rise { animation: fade-rise 0.8s ease-out both; }
-.animate-fade-rise-delay { animation: fade-rise 0.8s ease-out 0.2s both; }
-.animate-fade-rise-delay-2 { animation: fade-rise 0.8s ease-out 0.4s both; }
+.animate-fade-rise { animation: fade-rise 0.35s ease-out both; }
+.animate-fade-rise-delay { animation: fade-rise 0.35s ease-out 0.06s both; }
+.animate-fade-rise-delay-2 { animation: fade-rise 0.4s ease-out 0.1s both; }
 .ai-tutor-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .ai-tutor-scroll::-webkit-scrollbar-track { background: transparent; }
 .ai-tutor-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
@@ -413,8 +395,8 @@ export function AITutorView() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-white/70" />
-              <span className="text-[10px] uppercase tracking-[0.25em] text-white/60 hidden sm:inline">
-                Scholar
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+                Scholar Tutor
               </span>
             </div>
             <Button
@@ -606,7 +588,7 @@ export function AITutorView() {
             /* ============ CHAT MODE ============ */
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 min-h-[600px]">
               {/* LEFT — persona picker + thread list */}
-              <div className="flex flex-col gap-3 lg:max-h-[calc(100vh-12rem)]">
+              <div className="flex flex-col gap-3 lg:max-h-[calc(var(--scholar-vvh,100dvh)-12rem)]">
                 {/* Persona picker */}
                 <div className="liquid-glass rounded-2xl p-2.5">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 px-2 pt-1 pb-2">

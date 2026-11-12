@@ -155,7 +155,6 @@ export function AuthScreen({ accountOnly = false }: { accountOnly?: boolean } = 
     <div className="scholar-auth min-h-dvh bg-black overflow-x-clip relative" style={{ borderRadius: 0 }}>
       {/* Liquid glass CSS */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap');
         .lg-glass {
           background: rgba(255,255,255,0.01);
           background-blend-mode: luminosity;
@@ -199,12 +198,13 @@ export function AuthScreen({ accountOnly = false }: { accountOnly?: boolean } = 
           pointer-events: none;
         }
         .lg-serif { font-family: var(--font-instrument-serif), serif; font-style: italic; }
-        .lg-body { font-family: 'Barlow', sans-serif; }
+        .lg-body { font-family: var(--font-geist-sans), 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif; }
         .lg-input {
           background: transparent !important;
           border: none !important;
           color: white !important;
           box-shadow: none !important;
+          font-size: max(16px, 0.95rem);
         }
         .lg-input::placeholder { color: rgba(255,255,255,0.4) !important; }
         .lg-input:focus { box-shadow: none !important; outline: 2px solid rgba(165,180,252,.8) !important; outline-offset: 3px; }
@@ -221,7 +221,7 @@ export function AuthScreen({ accountOnly = false }: { accountOnly?: boolean } = 
         />
 
         {/* Navbar */}
-        <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-8 lg:px-16 z-50">
+        <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-4 sm:px-8 lg:px-16 z-50">
           <div className="flex items-center justify-between">
             <a href="#" className="scholar-public-wordmark lg-glass h-12 rounded-full" aria-label="Scholar home"><span>s</span>scholar</a>
             <div className="scholar-public-links hidden md:flex lg-glass rounded-full items-center gap-1 px-1.5 py-1.5">
@@ -313,7 +313,7 @@ export function AuthScreen({ accountOnly = false }: { accountOnly?: boolean } = 
       </section>}
 
       {/* ===== Section 2: Capabilities (min-h-screen) ===== */}
-      {accountOnly && <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-8 z-50" aria-label="Account navigation"><div><Link href="/" className="scholar-public-wordmark lg-glass h-12 rounded-full" aria-label="Scholar home"><span>s</span>scholar</Link></div></nav>}
+      {accountOnly && <nav className="scholar-auth-nav fixed top-4 left-0 right-0 px-4 sm:px-8 z-50" aria-label="Account navigation"><div><Link href="/" className="scholar-public-wordmark lg-glass h-12 rounded-full" aria-label="Scholar home"><span>s</span>scholar</Link></div></nav>}
       <section id="account-entry" className={`scholar-account-section ${accountOnly?"scholar-account-only":""}`} aria-label="Your Scholar account">
         <div className="scholar-account-layout">
           {/* Header */}
@@ -326,7 +326,7 @@ export function AuthScreen({ accountOnly = false }: { accountOnly?: boolean } = 
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="scholar-auth-card lg-glass-strong rounded-[1.5rem] p-8 max-w-md w-full mx-auto my-8"
-            style={{ scrollMarginTop: 96 }}
+            style={{ scrollMarginTop: 120 }}
           >
             <div className="text-center mb-6">
               <AccountHeading className="lg-serif text-white text-3xl mb-2">{title}</AccountHeading>

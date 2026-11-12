@@ -517,7 +517,7 @@ export function GalaxyView() {
 
       {/* Chapter detail modal */}
       <Dialog open={!!selectedChapter} onOpenChange={(o) => !o && setSelectedChapter(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent mobileSheet className="max-w-lg">
           {selectedChapter && (() => {
             const { subject, chapter } = selectedChapter;
             const p = studyProgress[chapter.id] ?? 0;

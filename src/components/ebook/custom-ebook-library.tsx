@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, LockKeyhole, Trash2, Upload, Pencil, X, Sparkles, BookOpen } from "lucide-react";
 import { ebookFailure, pdfValidation } from "@/lib/ebooks/contracts";
 import { GuestFeatureGate } from "@/components/guest/guest-feature-gate";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
 import { UploadedBookReader, type UploadedBook } from "./uploaded-book-reader";
 import { toast } from "@/lib/notifications/notification-api";
@@ -124,7 +124,7 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
     return <>
       <section className="eb-glass mb-6 rounded-2xl p-4 sm:p-5"><div className="flex items-start gap-3"><LockKeyhole className="mt-0.5 h-5 w-5 text-cyan-200" /><div><h2 className="font-semibold text-white">Upload your own E-Book</h2><p className="mt-1 text-sm leading-6 text-white/55">Sign in to securely upload private PDFs. Guest files are not sent to the server.</p><button ref={guestTrigger} className="sg-cta-quiet mt-3 min-h-11 rounded-xl px-4 text-sm" onClick={() => setGuestPrompt(true)}>Sign in to upload</button></div></div></section>
       <Dialog open={guestPrompt} onOpenChange={setGuestPrompt}>
-        <DialogContent aria-describedby={undefined} onCloseAutoFocus={event => { event.preventDefault(); guestTrigger.current?.focus(); }} className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-5xl overflow-y-auto border-white/10 bg-black p-0 sm:max-w-5xl">
+        <DialogContent mobileSheet aria-describedby={undefined} onCloseAutoFocus={event => { event.preventDefault(); guestTrigger.current?.focus(); }} className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-5xl overflow-y-auto border-white/10 bg-black p-0 sm:max-w-5xl">
           <DialogTitle className="sr-only">Sign in for private E-Books</DialogTitle>
           <GuestFeatureGate onSignIn={() => useStore.getState().setAuthed(false)} onBack={() => setGuestPrompt(false)} />
         </DialogContent>
@@ -134,14 +134,14 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
 
   return (
     <>
-      <section id="custom-ebooks" className="eb-glass mb-6 overflow-hidden rounded-2xl p-4 sm:p-5" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) void choose(file); }}>
+      <section id="custom-ebooks" className="eb-glass mb-5 sm:mb-6 overflow-hidden rounded-2xl p-3.5 sm:p-5" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) void choose(file); }}>
         {libraryError && <p role="alert" className="mb-3 text-sm text-amber-200">{libraryError} <button className="underline" onClick={() => void refresh()}>Retry</button></p>}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2"><Upload className="h-4 w-4 text-cyan-200" /><h2 className="font-semibold text-white">Upload your own E-Book</h2></div>
             <p className="mt-1 text-xs leading-5 text-white/50">PDF only · private to your account · up to 20 MB and 500 pages</p>
             {busy && uploadProgress > 0 && <p role="status" className="text-xs text-white/60">Uploading {uploadProgress}%{uploadProgress === 100 ? " · saving your PDF…" : ""}</p>}
-            <button className="mt-2 text-xs text-cyan-200 underline underline-offset-4" onClick={async () => { try { const response = await fetch("/api/resources/backfill", { method: "POST" }); const result = await response.json(); if (!response.ok) throw new Error(result.message); if (!mounted.current) return; toast.success(result.indexed ? `${result.indexed} existing PDFs queued for chapter indexing` : "No additional PDFs to index", { description: "Processes up to five at a time; upload and setup allowances are unchanged." }); await refresh(); } catch { if (mounted.current) toast.error("Chapter indexing is unavailable. Check the resource database update."); } }}>Index existing PDFs in my Resource Vault</button>
+            <button className="mt-1 inline-flex min-h-11 items-center text-left text-xs text-cyan-200 underline underline-offset-4" onClick={async () => { try { const response = await fetch("/api/resources/backfill", { method: "POST" }); const result = await response.json(); if (!response.ok) throw new Error(result.message); if (!mounted.current) return; toast.success(result.indexed ? `${result.indexed} existing PDFs queued for chapter indexing` : "No additional PDFs to index", { description: "Processes up to five at a time; upload and setup allowances are unchanged." }); await refresh(); } catch { if (mounted.current) toast.error("Chapter indexing is unavailable. Check the resource database update."); } }}>Index existing PDFs in my Resource Vault</button>
             {usage ? <p className="mt-2 text-xs font-medium text-cyan-100">{usage.used} of {usage.limit} uploads used this month</p> : null}
           </div>
           <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-200/10 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-200/15 focus-within:ring-2 focus-within:ring-cyan-200 ${busy ? "pointer-events-none opacity-50" : ""}`}>
@@ -150,8 +150,8 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
           </label>
         </div>
         {uploadError && <p role="alert" className="mt-3 text-sm text-amber-200">{uploadError}</p>}
-        {staged && <div className="mt-4 space-y-3 rounded-xl border border-cyan-200/20 bg-black/20 p-4"><p className="break-words text-sm text-white">{staged.file.name} · {(staged.file.size / 1048576).toFixed(2)} MB</p><label className="block text-xs text-white/60">Optional book title<input maxLength={120} value={title} disabled={busy} onChange={event => setTitle(event.target.value)} className="mt-1 block w-full rounded-lg border border-white/15 bg-white/5 p-3 text-sm text-white" placeholder="Use the PDF's title" /></label><div className="flex flex-wrap gap-2"><button disabled={busy} className="sg-cta-primary min-h-11 rounded-xl px-4 text-sm" onClick={() => void upload()}>{busy ? "Uploading PDF…" : uploadError ? "Retry upload" : "Upload PDF"}</button><button disabled={busy} className="sg-cta-quiet inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm" onClick={() => { setStaged(null); setUploadError(""); }}><X className="h-4 w-4" />Remove</button></div><p role="status" className="text-xs text-white/50">{busy ? "Keep this tab open until the PDF is saved. Extraction then continues in the background." : "The file has not been uploaded yet. You can also drop a PDF here."}</p></div>}
-        {usage?.remaining === 0 && access.plan === "FREE" ? <button className="mt-3 text-xs font-semibold text-cyan-200 underline decoration-cyan-200/30 underline-offset-4" onClick={() => openScholarPlus({ source: "ebooks", feature: "ebooks" })}>Upgrade for 20 uploads each month</button> : null}
+        {staged && <div className="mt-4 space-y-3 rounded-xl border border-cyan-200/20 bg-black/20 p-4"><p className="break-words text-sm text-white">{staged.file.name} · {(staged.file.size / 1048576).toFixed(2)} MB</p><label className="block text-xs text-white/60">Optional book title<input maxLength={120} value={title} disabled={busy} onChange={event => setTitle(event.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-white/15 bg-white/5 p-3 text-base sm:text-sm text-white" placeholder="Use the PDF's title" /></label><div className="flex flex-wrap gap-2"><button disabled={busy} className="sg-cta-primary min-h-11 rounded-xl px-4 text-sm" onClick={() => void upload()}>{busy ? "Uploading PDF…" : uploadError ? "Retry upload" : "Upload PDF"}</button><button disabled={busy} className="sg-cta-quiet inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm" onClick={() => { setStaged(null); setUploadError(""); }}><X className="h-4 w-4" />Remove</button></div><p role="status" className="text-xs text-white/50">{busy ? "Keep this tab open until the PDF is saved. Extraction then continues in the background." : "The file has not been uploaded yet. You can also drop a PDF here."}</p></div>}
+        {usage?.remaining === 0 && access.plan === "FREE" ? <button className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-cyan-200 underline decoration-cyan-200/30 underline-offset-4" onClick={() => openScholarPlus({ source: "ebooks", feature: "ebooks" })}>Upgrade for 20 uploads each month</button> : null}
         {ebooks.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{ebooks.map(ebook => <EbookCard key={ebook.id} book={ebook} onOpen={() => void open(ebook)} onUpdate={async (method, body) => {
           try {
             const response = await fetch(`/api/ebooks/${encodeURIComponent(ebook.id)}`, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(12_000) });
@@ -174,6 +174,9 @@ function AccountEbookLibrary({ onOpenBook }: { onOpenBook?: (book: UploadedBook)
 
 function EbookCard({ book, onOpen, onUpdate }: { book: EbookSummary; onOpen: () => void; onUpdate: (method: "PATCH" | "DELETE", body?: object) => Promise<void> }) {
   const [busy, setBusy] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameTitle, setRenameTitle] = useState(book.title);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const ready = ["ready", "needs_ocr"].includes(book.processingStatus);
   const stage = book.resource?.job?.stage;
   const status = book.processingStatus === "processing" ? stage === "INDEXING" ? "Indexing for LAM…" : stage === "CLASSIFYING" ? "Preparing study tools…" : `Reading document${book.pageCount ? ` · ${book.resource?.extractedPages ?? 0}/${book.pageCount} pages extracted` : "…"}` : book.processingStatus === "failed" ? "Processing failed" : `${book.pageCount} pages`;
@@ -189,8 +192,33 @@ function EbookCard({ book, onOpen, onUpdate }: { book: EbookSummary; onOpen: () 
     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
       {ready && <button disabled={busy} className="min-h-11 rounded-lg px-3 text-cyan-100 hover:bg-white/5" onClick={onOpen}>{book.lastOpenedAt ? `Resume page ${book.lastPage ?? 1}` : "Open book"}</button>}
       {book.processingStatus === "failed" && book.resource?.state === "FAILED" && <button disabled={busy} className="min-h-11 rounded-lg px-3 text-cyan-100 hover:bg-white/5" onClick={() => void action("PATCH", { retry: true })}>Retry processing</button>}
-      {ready && <button disabled={busy} aria-label={`Rename ${book.title}`} className="grid h-11 w-11 place-items-center rounded-lg text-white/60 hover:bg-white/5" onClick={() => { const title = prompt("Book title", book.title); if (title?.trim()) void action("PATCH", { title: title.trim().slice(0, 120) }); }}><Pencil className="h-4 w-4" /></button>}
-      <button disabled={busy} aria-label={book.processingStatus === "processing" ? `Cancel import of ${book.title}` : `Delete ${book.title}`} className="ml-auto grid h-11 w-11 place-items-center rounded-lg text-white/60 hover:bg-white/5 hover:text-red-200" onClick={() => { if (confirm(`Delete “${book.title}”? This removes the uploaded PDF and its Scholar reading data, including notes and bookmarks. An in-progress import will be cancelled.`)) void action("DELETE"); }}><Trash2 className="h-4 w-4" /></button>
+      {ready && <button disabled={busy} aria-label={`Rename ${book.title}`} className="grid h-11 w-11 place-items-center rounded-lg text-white/60 hover:bg-white/5" onClick={() => { setRenameTitle(book.title); setRenameOpen(true); }}><Pencil className="h-4 w-4" /></button>}
+      <button disabled={busy} aria-label={book.processingStatus === "processing" ? `Cancel import of ${book.title}` : `Delete ${book.title}`} className="ml-auto grid h-11 w-11 place-items-center rounded-lg text-white/60 hover:bg-white/5 hover:text-red-200" onClick={() => setDeleteOpen(true)}><Trash2 className="h-4 w-4" /></button>
     </div>
+    <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+      <DialogContent mobileSheet className="eb-glass-strong max-w-md text-white border-white/10">
+        <DialogHeader>
+          <DialogTitle className="text-white">Rename E-Book</DialogTitle>
+          <DialogDescription className="text-white/55">Update the display title for this uploaded PDF.</DialogDescription>
+        </DialogHeader>
+        <input maxLength={120} value={renameTitle} onChange={(e) => setRenameTitle(e.target.value)} className="mt-2 block min-h-11 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-base sm:text-sm text-white outline-none focus:border-cyan-200/40" aria-label="Book title" />
+        <DialogFooter className="gap-2 sm:gap-2">
+          <button type="button" disabled={busy} onClick={() => setRenameOpen(false)} className="sg-cta-quiet min-h-11 rounded-xl px-4 text-sm">Cancel</button>
+          <button type="button" disabled={busy || !renameTitle.trim()} onClick={async () => { const trimmed = renameTitle.trim().slice(0, 120); if (!trimmed) return; await action("PATCH", { title: trimmed }); setRenameOpen(false); }} className="sg-cta-primary min-h-11 rounded-xl px-4 text-sm">Save title</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <DialogContent mobileSheet className="eb-glass-strong max-w-md text-white border-white/10">
+        <DialogHeader>
+          <DialogTitle className="text-white">{book.processingStatus === "processing" ? "Cancel import?" : "Delete this E-Book?"}</DialogTitle>
+          <DialogDescription className="text-white/60">Delete “{book.title}”? This removes the uploaded PDF and its Scholar reading data, including notes and bookmarks. An in-progress import will be cancelled.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <button type="button" disabled={busy} onClick={() => setDeleteOpen(false)} className="sg-cta-quiet min-h-11 rounded-xl px-4 text-sm">Cancel</button>
+          <button type="button" disabled={busy} onClick={async () => { await action("DELETE"); setDeleteOpen(false); }} className="min-h-11 rounded-xl bg-red-500/85 px-4 text-sm font-semibold text-white hover:bg-red-500">Delete</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </article>;
 }

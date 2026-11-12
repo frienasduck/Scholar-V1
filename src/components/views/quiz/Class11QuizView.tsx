@@ -584,23 +584,22 @@ export function Class11QuizView() {
     : 0;
 
   return (
-    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
         .cinema-glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 80px -12px rgba(0,0,0,0.3); color: white; }
         .cinema-glass:hover { background: rgba(255,255,255,0.05); }
-        .cinema-font-serif { font-family: 'Instrument Serif', serif; }
+        .cinema-font-serif { font-family: 'Instrument Serif', Georgia, serif; }
       `}</style>
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
         <source src={VIDEO_URL} type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/60" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="cinema-font-serif text-3xl sm:text-4xl text-white italic">Quiz</h1>
-          <p className="text-sm text-white/50 mt-1">Class 11 chapter-wise MCQ testing · {stats.total} questions loaded</p>
+        <div className="mb-3 sm:mb-6">
+          <h1 className="cinema-font-serif text-2xl sm:text-4xl text-white italic">Quiz</h1>
+          <p className="hidden sm:block text-sm text-white/50 mt-1">Class 11 chapter-wise MCQ testing · {stats.total} questions loaded</p>
         </div>
 
         {/* Stats */}
@@ -630,7 +629,7 @@ export function Class11QuizView() {
             const count = getQuizCountBySubject(s);
             const isActive = subject === s;
             return (
-              <button key={s} onClick={() => handleSubjectChange(s)} className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all", isActive ? "text-white" : "text-white/50 hover:text-white")} style={isActive ? { background: `${info.color}20`, border: `1px solid ${info.color}40` } : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <button key={s} onClick={() => handleSubjectChange(s)} className={cn("flex items-center gap-2 px-3.5 min-h-11 sm:min-h-0 py-2 rounded-xl text-sm font-medium transition-all", isActive ? "text-white" : "text-white/50 hover:text-white")} style={isActive ? { background: `${info.color}20`, border: `1px solid ${info.color}40` } : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <span>{info.icon}</span> {info.name} <span className="text-[10px] text-white/40">({count})</span>
               </button>
             );
@@ -640,28 +639,28 @@ export function Class11QuizView() {
         {/* Filters */}
         <div className="cinema-glass rounded-xl p-3 mb-4 space-y-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="w-full rounded-lg bg-white/5 border border-white/10 pl-9 pr-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="w-full rounded-lg bg-white/5 border border-white/10 pl-9 pr-3 py-2 min-h-11 sm:min-h-0 text-base sm:text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <select value={chapterId} onChange={(e) => setChapterId(e.target.value)} className="rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-2">
+            <select value={chapterId} onChange={(e) => setChapterId(e.target.value)} className="rounded-lg bg-zinc-900 border border-white/10 px-2.5 py-2 min-h-11 sm:min-h-0 text-base sm:text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40">
               <option value="all">All Chapters</option>
               {availableChapters.map((ch) => (<option key={ch.id} value={ch.id}>{ch.title}</option>))}
             </select>
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40">
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="rounded-lg bg-zinc-900 border border-white/10 px-2.5 py-2 min-h-11 sm:min-h-0 text-base sm:text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40">
               <option value="all">All Difficulty</option>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
               <option value="hard">Hard</option>
             </select>
-            <select value={type} onChange={(e) => setType(e.target.value)} className="rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40">
+            <select value={type} onChange={(e) => setType(e.target.value)} className="rounded-lg bg-zinc-900 border border-white/10 px-2.5 py-2 min-h-11 sm:min-h-0 text-base sm:text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40">
               <option value="all">All Types</option>
               {Object.entries(TYPE_INFO).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
             </select>
           </div>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
-              <input type="checkbox" checked={negative} onChange={(e) => setNegative(e.target.checked)} className="h-3.5 w-3.5 accent-indigo-500" />
+          <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+            <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer min-h-9">
+              <input type="checkbox" checked={negative} onChange={(e) => setNegative(e.target.checked)} className="h-4 w-4 accent-indigo-500" />
               Negative marking (−0.25 per wrong)
             </label>
             <span className="text-xs text-white/40">
@@ -672,10 +671,10 @@ export function Class11QuizView() {
 
         {/* Action buttons */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <button onClick={startQuiz} disabled={loadingData || stats.filtered === 0} className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-teal-500 text-white font-semibold hover:from-indigo-600 hover:to-teal-600 shadow-lg shadow-indigo-500/25 disabled:opacity-40 transition-all">
+          <button onClick={startQuiz} disabled={loadingData || stats.filtered === 0} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 text-sm px-4 min-h-11 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-teal-500 text-white font-semibold hover:from-indigo-600 hover:to-teal-600 shadow-lg shadow-indigo-500/25 disabled:opacity-40 transition-all">
             <Brain className="h-4 w-4" /> Start Quiz
           </button>
-          <button onClick={() => setAiOpen(true)} className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-200 hover:bg-fuchsia-500/25 transition-colors">
+          <button onClick={() => setAiOpen(true)} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 text-sm px-4 min-h-11 py-2 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-200 hover:bg-fuchsia-500/25 transition-colors">
             <Sparkles className="h-4 w-4" /> AI Generate Quiz
           </button>
           <div className="flex items-center self-center"><GenerationQuotaIndicator kind="quiz" /></div>
@@ -688,13 +687,13 @@ export function Class11QuizView() {
             <div><h3 className="text-sm font-semibold text-white">E-Book Question Quiz</h3><p className="text-xs leading-5 text-white/45">Uses the exact printed MCQs and answer keys from the bundled e-books—never generated placeholders.</p></div>
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
-            <select aria-label="E-book quiz mode" value={ebookMode} onChange={(e) => setEbookMode(e.target.value as "chapter" | "mixed")} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">
+            <select aria-label="E-book quiz mode" value={ebookMode} onChange={(e) => setEbookMode(e.target.value as "chapter" | "mixed")} className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 min-h-11 sm:min-h-0 text-base sm:text-xs text-white">
               <option value="chapter">Chapter-wise</option><option value="mixed">Mixed E-Books</option>
             </select>
-            {ebookMode === "chapter" && <select aria-label="E-book" value={ebookBookId} onChange={(e) => { const id = e.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((b) => b.id === id)?.chapters[0]?.id ?? ""); }} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>}
-            {ebookMode === "chapter" && <select aria-label="E-book chapter" value={ebookChapterId} onChange={(e) => setEbookChapterId(e.target.value)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>}
+            {ebookMode === "chapter" && <select aria-label="E-book" value={ebookBookId} onChange={(e) => { const id = e.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((b) => b.id === id)?.chapters[0]?.id ?? ""); }} className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 min-h-11 sm:min-h-0 text-base sm:text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>}
+            {ebookMode === "chapter" && <select aria-label="E-book chapter" value={ebookChapterId} onChange={(e) => setEbookChapterId(e.target.value)} className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 min-h-11 sm:min-h-0 text-base sm:text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>}
           </div>
-          <button onClick={() => void startEbookQuiz()} disabled={ebookLoading} className="mt-3 flex items-center gap-2 rounded-xl border border-violet-300/25 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 transition-colors hover:bg-violet-500/25 disabled:opacity-50">{ebookLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Start E-Book Quiz</button>
+          <button onClick={() => void startEbookQuiz()} disabled={ebookLoading} className="mt-3 w-full sm:w-auto justify-center flex items-center gap-2 rounded-xl border border-violet-300/25 bg-violet-500/15 px-4 min-h-11 py-2 text-sm font-semibold text-violet-100 transition-colors hover:bg-violet-500/25 disabled:opacity-50">{ebookLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Start E-Book Quiz</button>
         </div>
 
         {/* Pre-made Quiz Decks */}
@@ -810,24 +809,24 @@ function QuizTakingMode({
   const progress = (current / questions.length) * 100;
 
   return (
-    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       {videoOn && (
-        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
+        <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" className="absolute inset-0 w-full h-full object-cover z-0 opacity-30">
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
       )}
       <div className="absolute inset-0 z-0 bg-black/60" />
 
-      <div className="relative z-10 max-w-2xl mx-auto px-4 py-6">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 py-4 sm:py-6">
         {/* Top bar */}
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <button onClick={onExit} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 mb-4">
+          <button onClick={onExit} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white min-h-11 px-1">
             <ChevronLeft className="h-4 w-4" /> Exit
           </button>
           <div className="flex items-center gap-2">
             <Badge className="bg-white/10 text-white border-white/20 font-mono">Q {current + 1}/{questions.length}</Badge>
             <Badge className="bg-white/10 text-white border-white/20 font-mono"><Clock className="h-3 w-3 mr-1" /> {fmtTime(timeSpent)}</Badge>
-            <button onClick={() => setVideoOn(!videoOn)} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors" title="Toggle video">
+            <button onClick={() => setVideoOn(!videoOn)} className="p-2.5 sm:p-1.5 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors" title="Toggle video">
               {videoOn ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
             </button>
           </div>
@@ -852,7 +851,7 @@ function QuizTakingMode({
                   key={i}
                   onClick={() => setResponses({ ...responses, [q.id]: opt })}
                   className={cn(
-                    "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all text-left",
+                    "flex items-center gap-3 p-3.5 min-h-12 rounded-xl border cursor-pointer transition-all text-left",
                     checked ? "border-indigo-500 bg-indigo-500/10 shadow-sm" : "border-white/10 hover:bg-white/5 hover:border-white/20"
                   )}
                 >
@@ -868,22 +867,22 @@ function QuizTakingMode({
 
         {/* Navigation */}
         <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
-          <button onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0} className="flex items-center gap-1 text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white disabled:opacity-30">
+          <button onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0} className="flex items-center gap-1 text-xs px-3.5 min-h-11 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white disabled:opacity-30">
             <ChevronLeft className="h-4 w-4" /> Prev
           </button>
-          <div className="flex items-center gap-1 flex-wrap justify-center">
+          <div className="flex items-center gap-1.5 flex-wrap justify-center">
             {questions.map((qq: any, i: number) => (
-              <button key={qq.id} onClick={() => setCurrent(i)} className={cn("h-7 w-7 rounded-md text-xs font-medium transition-colors", i === current ? "bg-indigo-500 text-white" : responses[qq.id] ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50 hover:bg-white/10")}>
+              <button key={qq.id} onClick={() => setCurrent(i)} className={cn("h-9 w-9 sm:h-7 sm:w-7 rounded-md text-xs font-medium transition-colors", i === current ? "bg-indigo-500 text-white" : responses[qq.id] ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-white/50 hover:bg-white/10")}>
                 {i + 1}
               </button>
             ))}
           </div>
           {current < questions.length - 1 ? (
-            <button onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))} className="flex items-center gap-1 text-xs px-3 py-2 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30">
+            <button onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))} className="flex items-center gap-1 text-xs px-4 min-h-11 py-2 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30">
               Next <ChevronRight className="h-4 w-4" />
             </button>
           ) : (
-            <button onClick={onSubmit} className="flex items-center gap-1 text-xs px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-teal-500 text-white font-medium">
+            <button onClick={onSubmit} className="flex items-center gap-1 text-xs px-4 min-h-11 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-teal-500 text-white font-medium">
               <Send className="h-4 w-4" /> Submit
             </button>
           )}
@@ -891,7 +890,7 @@ function QuizTakingMode({
 
         {/* Submit confirm */}
         <Dialog open={submitConfirm} onOpenChange={setSubmitConfirm}>
-          <DialogContent>
+          <DialogContent mobileSheet>
             <DialogHeader>
               <DialogTitle>Submit quiz?</DialogTitle>
               <DialogDescription>
@@ -934,10 +933,10 @@ function ResultsScreen({
   const skipped = attempt.total - correctCount - wrongCount;
 
   return (
-    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-950 via-black to-zinc-900" />
-      <div className="relative z-10 max-w-3xl mx-auto px-4 py-6">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4">
+      <div className="relative z-10 max-w-3xl mx-auto px-4 py-5">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4 min-h-11">
           <ChevronLeft className="h-4 w-4" /> Back to quizzes
         </button>
 
@@ -1066,10 +1065,10 @@ function AIReviewScreen({
   const validCount = drafts.filter((d) => d.valid).length;
 
   return (
-    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-950 via-black to-zinc-900" />
-      <div className="relative z-10 max-w-3xl mx-auto px-4 py-6">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4">
+      <div className="relative z-10 max-w-3xl mx-auto px-4 py-5">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-4 min-h-11">
           <ChevronLeft className="h-4 w-4" /> Cancel
         </button>
 
@@ -1120,12 +1119,12 @@ function AIReviewScreen({
               />
 
               {/* Options */}
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                 {d.options.map((opt: string, oi: number) => (
-                  <div key={oi} className="flex items-center gap-1.5">
+                  <div key={oi} className="flex items-center gap-2">
                     <button
                       onClick={() => updateDraft(d.id, { answer: opt })}
-                      className={cn("h-5 w-5 rounded-full border shrink-0 text-[9px] font-bold grid place-items-center",
+                      className={cn("h-9 w-9 sm:h-6 sm:w-6 rounded-full border shrink-0 text-xs sm:text-[9px] font-bold grid place-items-center",
                         d.answer === opt ? "border-emerald-500 bg-emerald-500 text-white" : "border-white/20 text-white/40")}
                       title="Mark as correct answer"
                     >
@@ -1139,7 +1138,7 @@ function AIReviewScreen({
                         const newAnswer = d.answer === opt ? e.target.value : d.answer;
                         updateDraft(d.id, { options: newOpts, answer: newAnswer });
                       }}
-                      className="flex-1 rounded-md bg-white/5 border border-white/10 px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                      className="flex-1 rounded-md bg-white/5 border border-white/10 px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
                     />
                   </div>
                 ))}
@@ -1149,7 +1148,7 @@ function AIReviewScreen({
               <input
                 value={d.explanation}
                 onChange={(e) => updateDraft(d.id, { explanation: e.target.value })}
-                className="w-full rounded-md bg-white/5 border border-white/10 px-2 py-1 text-xs text-white/70 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 mb-2"
+                className="w-full rounded-md bg-white/5 border border-white/10 px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white/70 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 mb-2"
                 placeholder="Explanation"
               />
 
@@ -1157,7 +1156,7 @@ function AIReviewScreen({
               <input
                 value={d.topic}
                 onChange={(e) => updateDraft(d.id, { topic: e.target.value })}
-                className="w-full rounded-md bg-white/5 border border-white/10 px-2 py-1 text-[11px] text-white/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                className="w-full rounded-md bg-white/5 border border-white/10 px-2.5 py-2 sm:py-1 text-base sm:text-[11px] text-white/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
                 placeholder="Topic"
               />
             </div>
@@ -1204,7 +1203,7 @@ function AIQuizGeneratorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent mobileSheet>
         <DialogHeader>
           <DialogTitle>AI Generate Quiz</DialogTitle>
           <DialogDescription>Let the AI craft fresh CBSE Class 11 MCQs. You'll review before starting.</DialogDescription>

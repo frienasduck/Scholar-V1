@@ -196,18 +196,27 @@ function buildPathD(coords: { x: number; y: number }[], fromIdx?: number, toIdx?
 function AuroraBackground() {
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-      <div className="absolute -top-32 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/15 blur-[140px] animate-pulse" style={{ animationDuration: "8s" }} />
-      <div className="absolute top-1/3 -right-32 w-[35rem] h-[35rem] rounded-full bg-indigo-600/15 blur-[140px] animate-pulse" style={{ animationDuration: "10s", animationDelay: "1s" }} />
-      <div className="absolute bottom-0 left-1/3 w-[30rem] h-[30rem] rounded-full bg-teal-500/10 blur-[140px] animate-pulse" style={{ animationDuration: "12s", animationDelay: "2s" }} />
-      <div className="absolute top-2/3 left-0 w-[25rem] h-[25rem] rounded-full bg-fuchsia-600/10 blur-[120px] animate-pulse" style={{ animationDuration: "9s", animationDelay: "3s" }} />
-      {/* Subtle grain */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="md:hidden absolute inset-0"
         style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='1'/></svg>\")",
+          background:
+            "radial-gradient(circle at 20% 10%, rgba(147,51,234,0.18), transparent 45%), radial-gradient(circle at 80% 45%, rgba(79,70,229,0.16), transparent 45%), radial-gradient(circle at 40% 85%, rgba(20,184,166,0.14), transparent 50%)",
         }}
       />
+      <div className="hidden md:block motion-reduce:hidden">
+        <div className="absolute -top-32 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/15 blur-[140px] animate-pulse" style={{ animationDuration: "8s" }} />
+        <div className="absolute top-1/3 -right-32 w-[35rem] h-[35rem] rounded-full bg-indigo-600/15 blur-[140px] animate-pulse" style={{ animationDuration: "10s", animationDelay: "1s" }} />
+        <div className="absolute bottom-0 left-1/3 w-[30rem] h-[30rem] rounded-full bg-teal-500/10 blur-[140px] animate-pulse" style={{ animationDuration: "12s", animationDelay: "2s" }} />
+        <div className="absolute top-2/3 left-0 w-[25rem] h-[25rem] rounded-full bg-fuchsia-600/10 blur-[120px] animate-pulse" style={{ animationDuration: "9s", animationDelay: "3s" }} />
+        {/* Subtle grain */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='1'/></svg>\")",
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -756,11 +765,11 @@ Practice 5-10 problems from your NCERT textbook to reinforce the concepts covere
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="lv-glass-strong lv-font text-white border-white/10 max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+      <DialogContent mobileSheet className="lv-glass-strong lv-font text-white border-white/10 max-w-2xl p-0 overflow-hidden max-h-[90dvh] flex flex-col">
         <div className="relative p-5 pb-4 shrink-0 border-b border-white/10"
           style={{ background: `linear-gradient(135deg, rgba(${meta.glow},0.22), rgba(${meta.glow},0.04))` }}>
           <button onClick={onClose} aria-label="Close"
-            className="absolute top-4 right-4 grid place-items-center h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 grid place-items-center h-11 w-11 sm:h-8 sm:w-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
             <X className="h-4 w-4 text-white" />
           </button>
           <div className="flex items-center gap-2 mb-2">
@@ -803,13 +812,13 @@ Practice 5-10 problems from your NCERT textbook to reinforce the concepts covere
               <p className="text-xs text-white/60 mb-4 max-w-sm mx-auto">{error || "The AI service could not be reached."}</p>
               <p className="text-sm text-white/80 mb-5">Continue with Scholar's local lesson?</p>
               <div className="flex gap-2 justify-center">
-                <button onClick={loadLocalFallback} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600">
+                <button onClick={loadLocalFallback} className="min-h-11 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600">
                   Use Local Lesson
                 </button>
-                <button onClick={() => { setUseFallback(false); setLessonContent(""); setCheckpointQ(null); setError(null); setStage("loading"); setGenerationAttempt((attempt) => attempt + 1); }} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white/70 border border-white/20 hover:bg-white/5">
+                <button onClick={() => { setUseFallback(false); setLessonContent(""); setCheckpointQ(null); setError(null); setStage("loading"); setGenerationAttempt((attempt) => attempt + 1); }} className="min-h-11 px-4 py-2.5 rounded-xl text-sm font-semibold text-white/70 border border-white/20 hover:bg-white/5">
                   Retry AI
                 </button>
-                <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white/50 hover:text-white/80">
+                <button onClick={onClose} className="min-h-11 px-4 py-2.5 rounded-xl text-sm font-semibold text-white/50 hover:text-white/80">
                   Exit
                 </button>
               </div>
@@ -999,7 +1008,7 @@ function NodeDialog({
 
   return (
     <Dialog open={!!node} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="lv-glass-strong lv-font text-white border-white/10 max-w-lg p-0 overflow-hidden max-h-[90vh] flex flex-col">
+      <DialogContent mobileSheet className="lv-glass-strong lv-font text-white border-white/10 max-w-lg p-0 overflow-hidden max-h-[90dvh] flex flex-col">
         {/* Header */}
         <div
           className="relative p-6 pb-5 shrink-0"
@@ -1010,7 +1019,7 @@ function NodeDialog({
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 grid place-items-center h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 grid place-items-center h-11 w-11 sm:h-8 sm:w-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             aria-label="Close"
           >
             <X className="h-4 w-4 text-white" />
@@ -1318,9 +1327,8 @@ export function LevelsView() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-x-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .lv-glass {
           background: rgba(255,255,255,0.01);
           background-blend-mode: luminosity;
@@ -1348,8 +1356,8 @@ export function LevelsView() {
           -webkit-backdrop-filter: blur(20px);
           border: 1px solid rgba(255,255,255,0.1);
         }
-        .lv-font { font-family: 'Inter', sans-serif; }
-        .lv-serif { font-family: 'Instrument Serif', serif; }
+        .lv-font { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
+        .lv-serif { font-family: var(--font-serif, 'Instrument Serif', Georgia, serif); }
         .lv-scroll::-webkit-scrollbar { width: 6px; }
         .lv-scroll::-webkit-scrollbar-track { background: transparent; }
         .lv-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
@@ -1358,22 +1366,22 @@ export function LevelsView() {
 
       <AuroraBackground />
 
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)] lv-font">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] lv-font">
         {/* Hero */}
-        <header className="px-4 sm:px-6 lg:px-10 pt-10 pb-6 max-w-6xl mx-auto w-full">
+        <header className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-10 pb-4 sm:pb-6 max-w-6xl mx-auto w-full">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <Sparkles className="h-4 w-4 text-amber-300" />
               <span className="text-[11px] uppercase tracking-widest text-white/50 font-semibold">Learning Path</span>
             </div>
-            <h1 className="lv-serif text-5xl sm:text-6xl lg:text-7xl text-white leading-[1.05] tracking-tight">
+            <h1 className="lv-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.05] tracking-tight">
               Your Learning <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-fuchsia-400 to-teal-300">Journey</span>
             </h1>
-            <p className="text-white/60 mt-3 text-sm sm:text-base max-w-xl">
+            <p className="hidden sm:block text-white/60 mt-3 text-sm sm:text-base max-w-xl">
               Progress through an endless adventure of knowledge — 30 levels across 3 worlds, each more challenging than the last.
             </p>
           </motion.div>
@@ -1383,7 +1391,7 @@ export function LevelsView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+            className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1"
           >
             <StatPill icon={Crown} label="Level" value={`${levelInfo.level}`} accent="#f59e0b" />
             <StatPill icon={Zap} label="XP" value={xp.toLocaleString()} accent="#6366f1" />
@@ -1443,7 +1451,7 @@ export function LevelsView() {
         </header>
 
         {/* World sections */}
-        <main className="px-4 sm:px-6 lg:px-10 pb-32 max-w-6xl mx-auto w-full">
+        <main className="px-4 sm:px-6 lg:px-10 pb-24 sm:pb-32 max-w-6xl mx-auto w-full">
           {WORLDS.map((world) => {
             const worldNodes = allNodes.filter((n) => n.worldId === world.id);
             return (

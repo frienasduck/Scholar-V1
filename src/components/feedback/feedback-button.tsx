@@ -36,7 +36,7 @@ export function FeedbackButton() {
   return <>
     <button type="button" className="scholar-feedback-trigger" onClick={() => setOpen(true)} aria-label="Send feedback" title="Feedback"><MessageSquarePlus className="size-4" /><span className="hidden xl:inline">Feedback</span></button>
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="scholar-feedback-dialog">
+      <DialogContent mobileSheet className="scholar-feedback-dialog">
         <DialogHeader><DialogTitle className="text-2xl font-semibold text-white">Help shape Scholar</DialogTitle><DialogDescription className="text-white/65">Report a bug, suggest a feature, or share what could be better. Your message goes to the Scholar developer.</DialogDescription></DialogHeader>
         {access.authenticated ? <form onSubmit={(event) => void submit(event)} className="mt-4 grid gap-4">
           <label className="grid gap-1.5 text-sm text-white/75">Type<select className="scholar-feedback-field" value={category} onChange={(event) => setCategory(event.target.value)}><option value="feedback">General feedback</option><option value="bug">Bug or error</option><option value="feature">Feature idea</option><option value="request">Other request</option></select></label>

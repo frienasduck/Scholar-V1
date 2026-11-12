@@ -54,7 +54,7 @@ function QueuePanel() {
 }
 export function MusicDrawers() {
   const drawer = useMusicStore(s => s.drawer), track = useMusicStore(s => s.currentTrack);
-  return <Dialog open={!!drawer} onOpenChange={open => { if (!open) useMusicStore.getState().setDrawer(null); }}><DialogContent className="sm-dialog sm-ui"><DialogTitle>{drawer === "queue" ? "Your music queue" : drawer === "mixer" ? "Ambient mixer" : "Study Music · quick space"}</DialogTitle><DialogDescription>Keep your rhythm without leaving your study workspace.</DialogDescription>
+  return <Dialog open={!!drawer} onOpenChange={open => { if (!open) useMusicStore.getState().setDrawer(null); }}><DialogContent mobileSheet className="sm-dialog sm-ui"><DialogTitle>{drawer === "queue" ? "Your music queue" : drawer === "mixer" ? "Ambient mixer" : "Study Music · quick space"}</DialogTitle><DialogDescription>Keep your rhythm without leaving your study workspace.</DialogDescription>
     {drawer === "queue" ? <QueuePanel/> : drawer === "mixer" ? <MixerPanel/> : <><div className="sm-actions"><button className="sm-btn" onClick={() => { useMusicStore.getState().setDrawer(null); window.dispatchEvent(new CustomEvent("neha-scholar:navigate", { detail: { viewId: "music" } })); }}><Headphones size={17}/> Open Study Music <ExternalLink size={14}/></button>{track && <button className="sm-btn" onClick={useMusicStore.getState().togglePlay}><Music2 size={17}/> Play / pause</button>}<button className="sm-btn" onClick={() => useMusicStore.getState().setDrawer("queue")}>Queue</button></div><FocusPanel compact/><MixerPanel/></>}
   </DialogContent></Dialog>;
 }

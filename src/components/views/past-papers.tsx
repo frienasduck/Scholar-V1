@@ -290,11 +290,10 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
-        .pp-font-serif { font-family: 'Instrument Serif', serif; }
-        .pp-font-body { font-family: 'Inter', sans-serif; }
+        .pp-font-serif { font-family: 'Instrument Serif', Georgia, serif; }
+        .pp-font-body { font-family: var(--font-sans, 'Inter', sans-serif); }
         .pp-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
         .pp-glass-strong { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.16); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); color: white; }
         .pp-glass input, .pp-glass textarea, .pp-glass select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.15) !important; color: white !important; }
@@ -309,22 +308,22 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
       </video>
       <div className="absolute inset-0 z-0 bg-black/55" />
 
-      <div className="relative z-10 pp-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+      <div className="relative z-10 pp-font-body px-4 py-3 md:p-8 lg:p-12 max-w-7xl mx-auto">
         {/* HERO */}
         <motion.div
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="mb-4 sm:mb-8"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-500/30 to-rose-500/30 text-amber-300 border border-white/10">
-              <FileStack className="h-6 w-6" />
+          <div className="flex items-center gap-3 mb-2 sm:mb-3">
+            <div className="grid place-items-center h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-amber-500/30 to-rose-500/30 text-amber-300 border border-white/10">
+              <FileStack className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40">CBSE • Class 9</Badge>
           </div>
-          <h1 className="pp-font-serif text-5xl md:text-6xl text-white leading-tight">
+          <h1 className="pp-font-serif text-3xl sm:text-5xl md:text-6xl text-white leading-tight">
             Past Papers <em className="text-amber-300">& Question Bank</em>
           </h1>
-          <p className="text-white/70 mt-3 max-w-2xl">
+          <p className="hidden sm:block text-white/70 mt-3 max-w-2xl">
             24 hand-curated CBSE questions across Maths, Science, SST & English — with instant marking,
             timed practice, AI-generated similar questions, and a smart mistake tracker.
           </p>
@@ -336,7 +335,7 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
           initial="hidden" animate="show" variants={{
             hidden: {}, show: { transition: { staggerChildren: 0.07 } },
           }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
+          className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mb-4 sm:mb-8"
         >
           {[
             { icon: FileStack, label: "Total Questions", value: QUESTIONS.length, accent: "#f59e0b" },
@@ -353,12 +352,12 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
         {/* TABS */}
         <Tabs defaultValue="bank" className="space-y-6">
           <TabsList className="pp-glass bg-transparent h-auto p-1 flex flex-wrap gap-1">
-            <TabsTrigger value="bank" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Question Bank</TabsTrigger>
-            <TabsTrigger value="timed" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Timed Practice</TabsTrigger>
-            <TabsTrigger value="mistakes" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+            <TabsTrigger value="bank" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Question Bank</TabsTrigger>
+            <TabsTrigger value="timed" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Timed Practice</TabsTrigger>
+            <TabsTrigger value="mistakes" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
               Mistake Tracker {mistakes.length > 0 && <span className="ml-1.5 text-xs bg-rose-500/30 text-rose-200 rounded-full px-1.5">{mistakes.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="ai" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">AI Similar</TabsTrigger>
+            <TabsTrigger value="ai" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">AI Similar</TabsTrigger>
           </TabsList>
 
           {/* ===== QUESTION BANK ===== */}
@@ -476,7 +475,7 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
                                 onClick={() => !isRevealed && setUserAnswer((a) => ({ ...a, [q.id]: o }))}
                                 disabled={isRevealed}
                                 className={cn(
-                                  "text-left p-3 rounded-xl border text-sm transition-all flex items-center gap-2",
+                                  "text-left p-3.5 min-h-12 rounded-xl border text-sm transition-all flex items-center gap-2",
                                   showCorrect ? "bg-emerald-500/20 border-emerald-500/50 text-white" :
                                   showWrong ? "bg-rose-500/20 border-rose-500/50 text-white" :
                                   selected ? "bg-white/10 border-white/40 text-white" :
@@ -709,7 +708,7 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
             }
           } else { setTimedOpen(o); }
         }}>
-          <DialogContent className="pp-glass-strong !bg-black/60 !border-white/20 max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent mobileSheet className="pp-glass-strong !bg-black/60 !border-white/20 max-w-3xl max-h-[90dvh] overflow-y-auto">
             {!timedResult ? (
               <>
                 <DialogHeader>
@@ -743,7 +742,7 @@ ${QUESTIONS.map((q, i) => `### Q${i + 1}. ${q.question}\n- **Subject:** ${q.subj
                         return (
                           <button key={o}
                             onClick={() => setTimedResponses((r) => ({ ...r, [timedQs[timedIdx].id]: o }))}
-                            className={cn("text-left p-3 rounded-xl border text-sm transition-all",
+                            className={cn("text-left p-3.5 min-h-12 rounded-xl border text-sm transition-all",
                               selected ? "bg-amber-500/20 border-amber-500/50 text-white" : "bg-white/[0.03] border-white/10 text-white/80 hover:bg-white/[0.07]")}>
                             {o}
                           </button>

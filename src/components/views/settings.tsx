@@ -888,10 +888,9 @@ export function SettingsView() {
   }
 
   return (
-    <div className="scholar-settings scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6" data-scene-connected="true" data-settings-page="true">
+    <div className="scholar-settings scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6 pb-20 sm:pb-8" data-scene-connected="true" data-settings-page="true">
       {/* Liquid glass + cinematic CSS */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
         .asme-glass {
           background: rgba(255,255,255,0.01);
           background-blend-mode: luminosity;
@@ -943,7 +942,7 @@ export function SettingsView() {
       <div className="absolute inset-0 z-0 bg-black/50" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {/* Navigation bar */}
         <nav className="sg-settings-brand-nav relative z-20 pl-6 pr-6 py-6">
           <div className="asme-glass rounded-full px-6 py-3 flex items-center justify-between max-w-5xl mx-auto">
@@ -1751,7 +1750,7 @@ export function SettingsView() {
 
       {/* Dev Mode Password Dialog */}
       <Dialog open={showDevPassword} onOpenChange={setShowDevPassword}>
-        <DialogContent className="asme-glass rounded-3xl">
+        <DialogContent mobileSheet className="asme-glass rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Lock className="h-4 w-4 text-amber-400" /> Unlock Developer Mode
@@ -1800,7 +1799,7 @@ function GlassField({ label, children }: { label: string; children: React.ReactN
 
 function GlassSettingRow({ icon, title, desc, children }: { icon: React.ReactNode; title: string; desc: string; children: React.ReactNode }) {
   return (
-    <div className="sg-setting-row flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+    <div className="sg-setting-row flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 py-4 first:pt-0 last:pb-0">
       <div className="grid place-items-center h-9 w-9 rounded-lg bg-white/5 text-white/70 shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white">{title}</p>

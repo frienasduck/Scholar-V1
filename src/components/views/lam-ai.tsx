@@ -103,12 +103,12 @@ function LamPluginsPanel({ target, onTargetHandled }: { target: PluginTarget; on
   if (activePlugin?.toolId) {
     const content = <ToolContent id={activePlugin.toolId} initialPrompt={prompt || undefined} />;
     return (
-      <div className="min-h-[calc(100vh-10rem)] bg-background pt-[var(--lam-topbar-h,64px)]" data-lam-plugin={activePlugin.id}>
-        <div className="sticky top-[var(--lam-topbar-h,64px)] z-20 flex flex-wrap items-center gap-3 border-b border-border/60 bg-background/85 px-3 py-2.5 backdrop-blur-xl sm:px-5">
+      <div className="min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-background pt-[var(--lam-topbar-h,52px)]" data-lam-plugin={activePlugin.id}>
+        <div className="sticky top-[var(--lam-topbar-h,52px)] z-20 flex flex-wrap items-center gap-3 border-b border-border/60 bg-background/85 px-3 py-2 backdrop-blur-xl sm:px-5">
           <button
             type="button"
             onClick={() => { setOpenId(null); setPrompt(""); }}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted lg:min-h-9"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All plugins
           </button>
@@ -148,7 +148,7 @@ function LamPluginsPanel({ target, onTargetHandled }: { target: PluginTarget; on
   }
 
   return (
-    <div className="min-h-[calc(100vh-10rem)] px-3 pb-6 pt-[calc(var(--lam-topbar-h,64px)+16px)] sm:px-5">
+    <div className="min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] px-3 pb-8 pt-[calc(var(--lam-topbar-h,52px)+14px)] sm:px-5">
       <div className="mx-auto max-w-6xl space-y-5">
         <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-card/50 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
           <div>
@@ -159,14 +159,14 @@ function LamPluginsPanel({ target, onTargetHandled }: { target: PluginTarget; on
               available card opens the real tool with your actual Scholar data and permissions.
             </p>
           </div>
-          <label className="flex min-h-10 w-full items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 sm:w-72">
+          <label className="flex min-h-11 w-full items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3.5 sm:w-72">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Find a plugin…"
               aria-label="Search LAM AI plugins"
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
+              className="min-w-0 flex-1 bg-transparent text-base sm:text-sm outline-none placeholder:text-muted-foreground/70"
             />
           </label>
         </div>

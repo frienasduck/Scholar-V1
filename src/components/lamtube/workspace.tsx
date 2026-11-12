@@ -869,7 +869,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
         }}
       />
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="lt-confirm">
+        <DialogContent mobileSheet className="lt-confirm">
           <DialogTitle>Create “{settings.title}”?</DialogTitle>
           <DialogDescription>
             {settings.chapters.length} chapter

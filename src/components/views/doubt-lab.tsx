@@ -28,7 +28,7 @@ export function DoubtLabView() {
   }, [select]);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col" data-workspace="doubt-lab">
+    <div className="flex min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] flex-col" data-workspace="doubt-lab">
       <WorkspaceTabs workspaceId="doubt-lab" active={mode} onSelect={select} />
       <WorkspacePanel workspaceId="doubt-lab" mode={mode} className="flex flex-col">
         {mode === "history" ? <DoubtHistoryView onSolveDoubt={handleSolveDoubt} /> : null}

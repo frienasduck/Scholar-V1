@@ -266,8 +266,8 @@ export function PythonView() {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap'); .py-glass { background:rgba(255,255,255,0.04); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.12); border-radius:1rem; } .py-glass-strong { background:rgba(255,255,255,0.07); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.16); border-radius:1rem; } .py-serif { font-family:'Instrument Serif',serif; font-style:italic; } .py-mono { font-family:'Courier New',monospace; }`}</style>
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
+      <style>{` .py-glass { background:rgba(255,255,255,0.04); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.12); border-radius:1rem; } .py-glass-strong { background:rgba(255,255,255,0.07); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.16); border-radius:1rem; } .py-serif { font-family:'Instrument Serif',serif; font-style:italic; } .py-mono { font-family:'Courier New',monospace; }`}</style>
       <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" preload="metadata" className="absolute inset-0 w-full h-full object-cover z-0">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204103_f607742e-09da-4cf5-bb06-4e67b0a531de.mp4" type="video/mp4" />
       </video>

@@ -19,11 +19,10 @@ import {
 } from "lucide-react";
 
 const AURA_STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 .aura-glass { background: rgba(255,255,255,0.01); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: none; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); position: relative; overflow: hidden; }
 .aura-glass::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.4px; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
 .aura-glass-card { background: rgba(14,16,20,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
-.aura-font { font-family: 'Inter', system-ui, sans-serif; }
+.aura-font { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
 .aura-chapter-hover { transition: transform .2s ease, background .2s ease; }
 .aura-chapter-hover:hover { transform: translateY(-2px); background: rgba(255,255,255,0.04) !important; }
 @keyframes shiny { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
@@ -100,24 +99,24 @@ export function PracticeView() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-[#0c0c0c] overflow-hidden -m-4 lg:-m-6 text-white aura-font" data-scene-connected="true">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-[#0c0c0c] overflow-hidden -m-3 sm:-m-4 lg:-m-6 text-white aura-font" data-scene-connected="true">
       <style>{AURA_STYLE}</style>
       <div className="fixed inset-0 z-0 pointer-events-none">
         <SceneBackdrop><video autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none"
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" /></SceneBackdrop>
       </div>
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <motion.nav initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap items-center justify-between gap-2.5 py-4">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-8">
+        <motion.nav initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap items-center justify-between gap-2.5 py-2 sm:py-4">
           <div className="flex items-center gap-3">
             <div className="grid place-items-center h-9 w-9 rounded-xl bg-white/5 border border-white/10">
               <ListChecks className="h-5 w-5 text-white" />
             </div>
-            <span className="text-white font-semibold text-lg">Question Practice</span>
+            <span className="text-white font-semibold text-base sm:text-lg">Question Practice</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button data-velocity-control="practice"
               onClick={() => setShowPdfReview(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-200 hover:bg-violet-500/25 transition-colors"
+              className="flex items-center gap-1.5 text-xs px-3.5 min-h-11 sm:min-h-0 py-2 sm:py-1.5 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-200 hover:bg-violet-500/25 transition-colors"
               title="Review and edit PDF-imported Physics questions"
             >
               <Scan className="h-3.5 w-3.5" /> PDF Import Review
@@ -131,31 +130,31 @@ export function PracticeView() {
 
         <DevelopmentNotice>Practice Questions is still being expanded. More focused question sets are being added as soon as possible.</DevelopmentNotice>
 
-        <div className="mt-8 mb-8">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-xs text-white/50 mb-5">
+        <div className="mt-3 mb-4 sm:mt-8 sm:mb-8">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 aura-glass rounded-full px-3 py-1 text-[11px] sm:text-xs text-white/50 mb-2.5 sm:mb-5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            CHAPTER-WISE PROBLEM PRACTICE · CBSE CLASS 11 PHYSICS
+            CHAPTER-WISE PRACTICE · CBSE CLASS 11
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.05] text-white">
+          <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight leading-[1.05] text-white">
             Practice{" "}
             <span className="animate-shiny" style={{ backgroundImage: "linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>
               Questions
             </span>
           </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-4 text-white/60 max-w-md text-sm leading-relaxed">
+          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="hidden sm:block mt-4 text-white/60 max-w-md text-sm leading-relaxed">
             Chapter-wise MCQs, numericals, and subjective questions with answers, explanations, and AI-powered help.
           </motion.p>
         </div>
 
         {/* Subject Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto no-scrollbar sm:flex-wrap pb-1">
           {(Object.keys(SUBJECT_META) as SubjectTab[]).map((s) => {
             const meta = SUBJECT_META[s];
             const Icon = meta.icon;
             const isActive = activeSubject === s;
             return (
               <button data-velocity-control="practice" key={s} onClick={() => { setActiveSubject(s); setActiveChapter(null); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? "text-white" : "text-white/50 hover:text-white"}`}
+                className={`flex items-center gap-2 px-4 min-h-11 sm:min-h-0 py-2 rounded-xl text-sm font-medium transition-all shrink-0 whitespace-nowrap ${isActive ? "text-white" : "text-white/50 hover:text-white"}`}
                 style={isActive ? { background: `${meta.accent}20`, border: `1px solid ${meta.accent}40` } : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <Icon className="h-4 w-4" style={{ color: meta.accent }} />
                 {meta.name}
@@ -285,14 +284,14 @@ function QuestionList({ subject, chapterId, onBack, filter, setFilter, addXP, pu
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4">
-      <div className="aura-glass rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
-        <button data-velocity-control="practice" onClick={onBack} className="flex items-center gap-2 text-sm text-white/60 hover:text-white">
+      <div className="aura-glass rounded-xl p-3 sm:p-4 flex items-center justify-between flex-wrap gap-3">
+        <button data-velocity-control="practice" onClick={onBack} className="flex items-center gap-2 text-sm text-white/60 hover:text-white min-h-11 sm:min-h-0 px-1">
           <ArrowLeft className="h-4 w-4" /> Back to Chapters
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="flex gap-1.5">
             {(["all", "mcq", "subjective"] as const).map(f => (
-              <button data-velocity-control="practice" key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full transition-colors ${filter === f ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "text-white/50 border border-white/10 hover:text-white"}`}>
+              <button data-velocity-control="practice" key={f} onClick={() => setFilter(f)} className={`text-xs px-3.5 min-h-11 sm:min-h-0 py-2 sm:py-1 rounded-full transition-colors ${filter === f ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "text-white/50 border border-white/10 hover:text-white"}`}>
                 {f === "all" ? "All" : f === "mcq" ? "MCQ" : "Subjective"}
               </button>
             ))}
@@ -343,8 +342,8 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
   const isMCQ = question.type === "mcq";
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index * 0.02, 0.5) }} className="aura-glass rounded-xl p-5">
-      <div className="flex items-start gap-3 mb-3">
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index * 0.02, 0.5) }} className="aura-glass rounded-xl p-3.5 sm:p-5">
+      <div className="flex items-start gap-2.5 sm:gap-3 mb-3">
         <span className="grid place-items-center h-7 w-7 rounded-lg text-xs font-bold shrink-0 mt-0.5" style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}>{index}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -356,7 +355,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
         </div>
       </div>
       {isMCQ && question.options && (
-        <div className="grid sm:grid-cols-2 gap-2 ml-10">
+        <div className="grid sm:grid-cols-2 gap-2.5 sm:gap-2 ml-0 sm:ml-10">
           {question.options.map((opt, i) => {
             const isSelected = selectedOption === i;
             const isCorrect = i === question.answerIndex;
@@ -367,7 +366,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
               else cls = "border-white/5 bg-white/[0.02] text-white/40";
             }
             return (
-              <button key={i} onClick={() => handleMCQSelect(i)} disabled={selectedOption !== null} className={`text-left text-xs px-3 py-2 rounded-lg border transition-all ${cls}`}>
+              <button key={i} onClick={() => handleMCQSelect(i)} disabled={selectedOption !== null} className={`text-left text-sm sm:text-xs px-3.5 sm:px-3 py-3 sm:py-2 min-h-12 sm:min-h-0 rounded-xl sm:rounded-lg border transition-all ${cls}`}>
                 <span className="font-mono mr-2 font-bold">{String.fromCharCode(65 + i)}.</span><ScholarAIContent content={opt} mode="compact" className="inline" />
                 {selectedOption !== null && isCorrect && <Check className="inline-block h-3.5 w-3.5 ml-1.5" />}
                 {selectedOption !== null && isSelected && !isCorrect && <X className="inline-block h-3.5 w-3.5 ml-1.5" />}
@@ -377,14 +376,14 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
         </div>
       )}
       {!isMCQ && (
-        <div className="ml-10 mt-3">
-          <button data-velocity-control="practice" onClick={() => setShowAnswer(!showAnswer)} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+        <div className="ml-0 sm:ml-10 mt-3">
+          <button data-velocity-control="practice" onClick={() => setShowAnswer(!showAnswer)} className="flex items-center gap-2 text-xs px-3.5 min-h-11 sm:min-h-0 py-2 sm:py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors">
             {showAnswer ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{showAnswer ? "Hide Answer" : "Show Answer"}
           </button>
         </div>
       )}
       {showAnswer && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="ml-10 mt-3 space-y-3">
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="ml-0 sm:ml-10 mt-3 space-y-3">
           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
             <p className="text-[10px] uppercase tracking-wide text-emerald-400 font-semibold mb-1">{isMCQ ? `Answer: ${question.answer}` : "Answer"}</p>
             <ScholarAIContent content={isMCQ ? question.options?.[question.answerIndex ?? 0] || "" : question.answer} mode="compact" className="text-sm text-white/80" />
@@ -396,7 +395,7 @@ function QuestionCard({ question, index, isAnswered, onAnswer }: { question: Pra
             </div>
           )}
           <div>
-            <button data-velocity-control="practice" onClick={handleGetAIExplanation} disabled={aiLoading} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors">
+            <button data-velocity-control="practice" onClick={handleGetAIExplanation} disabled={aiLoading} className="flex items-center gap-2 text-xs px-3.5 min-h-11 sm:min-h-0 py-2 sm:py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors">
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}{aiLoading ? "AI explaining…" : "Get AI Explanation"}
             </button>
             {aiExplanation && (

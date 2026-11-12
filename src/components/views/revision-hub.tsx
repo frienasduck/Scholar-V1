@@ -415,9 +415,8 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .rh-font-serif { font-family: 'Instrument Serif', serif; }
         .rh-font-body { font-family: 'Inter', sans-serif; }
         .rh-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
@@ -760,7 +759,7 @@ ${history.slice(0, 10).map((h, i) => `${i + 1}. ${h.subjectName} — ${h.chapter
 
         {/* SESSION DIALOG */}
         <Dialog open={!!activeTopic} onOpenChange={(o) => { if (!o) setActiveTopic(null); }}>
-          <DialogContent className="rh-glass-strong !bg-black/60 !border-white/20 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent mobileSheet className="rh-glass-strong !bg-black/60 !border-white/20 max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="rh-font-serif text-2xl text-white flex items-center gap-2">
                 <RefreshCw className="h-5 w-5 text-teal-300" /> Revision Session

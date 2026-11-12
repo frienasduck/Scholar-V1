@@ -59,7 +59,7 @@ html[data-appearance-sidebar="icons"] :where(.scholar-nav-label,.scholar-sidebar
 html[data-appearance-show-nav-icons="false"] .scholar-nav-icon { display:none !important; }
 html[data-appearance-show-section-labels="false"] .scholar-nav-section { display:none !important; }
 html[data-appearance-show-progress="false"] .scholar-sidebar-progress { display:none !important; }
-html[data-appearance-sidebar="floating"] .scholar-desktop-sidebar { margin:10px; height:calc(100vh - 20px) !important; border:1px solid var(--border); border-radius:var(--scholar-radius); box-shadow:var(--scholar-card-shadow); }
+html[data-appearance-sidebar="floating"] .scholar-desktop-sidebar { margin:10px; height:calc(var(--scholar-vvh, 100dvh) - 20px) !important; border:1px solid var(--border); border-radius:var(--scholar-radius); box-shadow:var(--scholar-card-shadow); }
 html[data-appearance-sidebar="autohide"] .scholar-desktop-sidebar:not(:hover):not(:focus-within) { width:76px !important; }
 html[data-appearance-sidebar="autohide"] .scholar-desktop-sidebar:not(:hover):not(:focus-within) :where(.scholar-nav-label,.scholar-sidebar-title,.scholar-nav-section,.scholar-nav-badge,.scholar-sidebar-progress) { display:none !important; }
 .scholar-desktop-sidebar { background:color-mix(in srgb,var(--sidebar) calc(var(--scholar-sidebar-opacity,1) * 100%),transparent) !important; }

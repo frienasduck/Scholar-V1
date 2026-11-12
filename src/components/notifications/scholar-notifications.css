@@ -290,7 +290,7 @@ html[data-appearance-motion="off"] [data-sonner-toast][data-removed="true"] .sch
    notification can never drift away from the rest of the product.
    ========================================================================== */
 :root {
-  --notification-glass-bg: color-mix(in srgb, var(--sg-plate-ink) 74%, transparent);
+  --notification-glass-bg: color-mix(in srgb, var(--sg-plate-ink) 90%, transparent);
   --notification-glass-solid: color-mix(in srgb, var(--sg-plate-ink) 97%, transparent);
   --notification-glass-border: var(--sg-hairline-strong);
   --notification-glass-blur: min(var(--sg-blur), 30px);

@@ -43,7 +43,7 @@ interface Experiment {
 }
 
 // ===== Interactive experiment registry =====
-// Only these 3 experiments are genuinely interactive. All others show a
+// These 10 experiments are genuinely interactive simulations. All others show a
 // "Coming Soon" panel honestly instead of a fake passive animation.
 const INTERACTIVE_IDS = new Set([
   "vernier-calipers",
@@ -91,12 +91,11 @@ function ComingSoonPanel({ experiment }: { experiment: Experiment }) {
       </div>
       <h2 className="text-xl font-semibold text-white lab-font mb-2">Coming Soon</h2>
       <p className="text-sm text-white/60 lab-font max-w-md mb-5">
-        This experiment is not yet interactive. The full Scholar Experiment Lab
-        vision includes hands-on versions of every simulation, but right now
-        only <span className="text-emerald-300 font-medium">Vernier Calipers</span>,{" "}
-        <span className="text-emerald-300 font-medium">Screw Gauge</span>, and{" "}
-        <span className="text-emerald-300 font-medium">Pendulum Motion</span> are
-        genuinely interactive.
+        This experiment is not yet interactive. Right now{" "}
+        <span className="text-emerald-300 font-medium">10 hands-on simulations</span>{" "}
+        are live (Vernier Calipers, Screw Gauge, Pendulum Motion, Acid-Base Titration,
+        pH Scale, Projectile Motion, Gravity Simulator, Electric Circuits, Wave
+        Simulator, and Electrolysis).
       </p>
       <p className="text-xs text-white/40 lab-font">{experiment.title} — preview only.</p>
     </div>
@@ -2056,14 +2055,13 @@ export function LabView() {
   // ===== Landing Screen =====
   if (showLanding && !selectedExp) {
     return (
-      <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
+      <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-x-hidden -m-3 sm:-m-4 lg:-m-6">
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
           .lab-glass { background: rgba(255,255,255,0.01); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: none; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); position: relative; overflow: hidden; }
           .lab-glass::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.4px; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
           .lab-glass-strong { background: rgba(20,20,20,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-          .lab-font { font-family: 'Inter', sans-serif; }
-          .lab-serif { font-family: 'Instrument Serif', serif; }
+          .lab-font { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
+          .lab-serif { font-family: var(--font-serif, 'Instrument Serif', Georgia, serif); }
         `}</style>
 
         {/* Ambient background */}
@@ -2076,7 +2074,7 @@ export function LabView() {
         {Array.from({ length: 20 }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute rounded-full pointer-events-none z-0"
+            className="hidden sm:block absolute rounded-full pointer-events-none z-0"
             style={{
               left: `${(i * 37) % 100}%`,
               top: `${(i * 53) % 100}%`,
@@ -2089,7 +2087,7 @@ export function LabView() {
           />
         ))}
 
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] px-4 py-6">
           {/* Logo + Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -2101,11 +2099,11 @@ export function LabView() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="mx-auto grid place-items-center h-20 w-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-2xl mb-6"
+              className="mx-auto grid place-items-center h-14 w-14 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-2xl mb-4 sm:mb-6"
             >
-              <FlaskConical className="h-10 w-10 text-white" />
+              <FlaskConical className="h-7 w-7 sm:h-10 sm:w-10 text-white" />
             </motion.div>
-            <h1 className="lab-serif italic text-5xl md:text-7xl text-white leading-tight mb-3">
+            <h1 className="lab-serif italic text-3xl sm:text-5xl md:text-7xl text-white leading-tight mb-2 sm:mb-3">
               Scholar <span className="text-emerald-400">Experiment Lab</span>
             </h1>
             <p className="lab-font text-sm md:text-base text-white/50 max-w-md mx-auto">
@@ -2172,34 +2170,34 @@ export function LabView() {
   if (selectedExp) {
     // Experiments are free and accessible to all students
     return (
-      <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
+      <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-x-hidden -m-3 sm:-m-4 lg:-m-6">
         <style>{`
           .lab-glass { background: rgba(255,255,255,0.01); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: none; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); position: relative; overflow: hidden; }
           .lab-glass::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.4px; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
           .lab-glass-strong { background: rgba(20,20,20,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-          .lab-font { font-family: 'Inter', sans-serif; }
+          .lab-font { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
         `}</style>
 
         <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-[#000a06] to-black" />
         <div className="fixed top-0 left-1/4 w-96 h-96 blur-[120px] pointer-events-none z-0" style={{ background: `${selectedExp.color}15` }} />
 
-        <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+        <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
           {/* Top bar */}
-          <div className="flex items-center justify-between px-4 md:px-8 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 md:px-8 py-3 sm:py-4">
             <button
               onClick={() => { setSelectedExp(null); setShowLanding(false); }}
-              className="lab-glass rounded-full px-4 py-2 flex items-center gap-2 text-sm text-white/70 hover:text-white"
+              className="lab-glass min-h-11 rounded-full px-4 py-2 flex items-center gap-2 text-sm text-white/70 hover:text-white"
             >
               <ChevronRight className="h-4 w-4 rotate-180" /> Back to Lab
             </button>
-            <div className="flex items-center gap-2">
-              <span className="lab-glass rounded-full px-3 py-1.5 text-xs text-white/60 lab-font">{selectedExp.difficulty}</span>
-              <span className="lab-glass rounded-full px-3 py-1.5 text-xs text-white/60 lab-font">{selectedExp.duration}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="hidden sm:inline-block lab-glass rounded-full px-3 py-1.5 text-xs text-white/60 lab-font">{selectedExp.difficulty}</span>
+              <span className="hidden sm:inline-block lab-glass rounded-full px-3 py-1.5 text-xs text-white/60 lab-font">{selectedExp.duration}</span>
               {isInteractive(selectedExp) && (
                 <button
                   onClick={() => completeExperiment(selectedExp)}
                   disabled={completedExps.includes(selectedExp.id)}
-                  className="px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium lab-font disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="min-h-11 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium lab-font disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="h-4 w-4 inline mr-1" /> {completedExps.includes(selectedExp.id) ? "Completed" : "Complete"}
                 </button>
@@ -2217,7 +2215,7 @@ export function LabView() {
 
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 px-4 md:px-8 pb-4">
             {/* Left: Simulation + Info Panel */}
-            <div className="flex flex-col gap-4 min-h-0">
+            <div className="flex flex-col gap-4 min-h-0 min-w-0">
               <div className="lab-glass-strong rounded-2xl p-4 sm:p-6 flex flex-col items-stretch justify-start min-h-[400px] relative overflow-hidden">
                 {/* Big emoji visual (decorative, only for non-interactive) */}
                 {!isInteractive(selectedExp) && (
@@ -2254,7 +2252,7 @@ export function LabView() {
                 {!aiExplanation && !expLoading && (
                   <button
                     onClick={() => getAIExplanation(selectedExp)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium lab-font"
+                    className="w-full min-h-11 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium lab-font"
                   >
                     Explain This Experiment
                   </button>
@@ -2309,12 +2307,13 @@ export function LabView() {
                     onChange={(e) => setAiInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") askAIAssistant(aiInput); }}
                     placeholder="Ask the lab assistant..."
-                    className="flex-1 bg-white/5 rounded-full px-4 py-2 text-sm text-white placeholder-white/40 outline-none lab-font"
+                    className="flex-1 min-h-11 bg-white/5 rounded-full px-4 py-2 text-base sm:text-sm text-white placeholder-white/40 outline-none lab-font"
                   />
                   <button
                     onClick={() => askAIAssistant(aiInput)}
                     disabled={aiLoading || !aiInput.trim()}
-                    className="grid place-items-center h-9 w-9 rounded-full bg-white/10 text-white disabled:opacity-50"
+                    aria-label="Send question"
+                    className="grid place-items-center h-11 w-11 sm:h-9 sm:w-9 shrink-0 rounded-full bg-white/10 text-white disabled:opacity-50"
                   >
                     <Send className="h-4 w-4" />
                   </button>
@@ -2329,19 +2328,19 @@ export function LabView() {
 
   // ===== Browse Labs View =====
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-x-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
         .lab-glass { background: rgba(255,255,255,0.01); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: none; box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); position: relative; overflow: hidden; }
         .lab-glass::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.4px; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
         .lab-glass-strong { background: rgba(20,20,20,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-        .lab-font { font-family: 'Inter', sans-serif; }
-        .lab-serif { font-family: 'Instrument Serif', serif; }
+        .lab-font { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
+        .lab-serif { font-family: var(--font-serif, 'Instrument Serif', Georgia, serif); }
       `}</style>
 
       <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-[#000a06] to-black" />
       <div className="fixed top-0 left-1/4 w-96 h-96 bg-emerald-500/10 blur-[120px] pointer-events-none z-0" />
 
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {/* Navbar */}
         <nav className="flex items-center justify-between px-4 md:px-8 py-4 lab-font">
           <div className="flex items-center gap-3">
@@ -2355,7 +2354,7 @@ export function LabView() {
           </div>
           <button
             onClick={() => setShowLanding(true)}
-            className="lab-glass rounded-full px-4 py-2 text-sm text-white/70 hover:text-white"
+            className="lab-glass min-h-11 rounded-full px-4 py-2 text-sm text-white/70 hover:text-white"
           >
             <Home className="h-4 w-4 inline mr-1" /> Home
           </button>
@@ -2369,7 +2368,7 @@ export function LabView() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search experiments... (e.g., 'gravity', 'acids', 'DNA')"
-              className="flex-1 bg-transparent text-white text-sm outline-none placeholder-white/40 lab-font"
+              className="flex-1 min-h-11 sm:min-h-0 bg-transparent text-white text-base sm:text-sm outline-none placeholder-white/40 lab-font"
             />
           </div>
         </div>
@@ -2378,7 +2377,7 @@ export function LabView() {
         <div className="scholar-filter-rail px-4 md:px-8 pb-4 flex gap-2 overflow-x-auto" aria-label="Experiment categories">
           <button
             onClick={() => setActiveCategory("all")}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeCategory === "all" ? "bg-white text-black" : "lab-glass text-white/70"}`}
+            className={`min-h-11 sm:min-h-0 inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all shrink-0 ${activeCategory === "all" ? "bg-white text-black" : "lab-glass text-white/70"}`}
           >
             All
           </button>
@@ -2386,7 +2385,7 @@ export function LabView() {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeCategory === cat.id ? "text-white" : "lab-glass text-white/70"}`}
+              className={`min-h-11 sm:min-h-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all shrink-0 ${activeCategory === cat.id ? "text-white" : "lab-glass text-white/70"}`}
               style={activeCategory === cat.id ? { background: cat.color } : undefined}
             >
               <span>{cat.emoji}</span> {cat.name}

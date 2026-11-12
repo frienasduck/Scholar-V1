@@ -61,9 +61,8 @@ type Selection = { kind: "virtual"; id: VirtualFolder } | { kind: "folder"; id: 
 
 // ===== Mindloop global styles (injected once) =====
 const MINDLOOP_STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
-.mindloop-font-sans { font-family: 'Inter', sans-serif; }
-.mindloop-font-serif { font-family: 'Instrument Serif', serif; }
+.mindloop-font-sans { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
+.mindloop-font-serif { font-family: var(--font-serif, 'Instrument Serif', Georgia, serif); }
 .mindloop-glass {
   background: rgba(255,255,255,0.01);
   background-blend-mode: luminosity;
@@ -190,7 +189,7 @@ export function NotesView() {
   ];
 
   return (
-    <div className="scholar-notes scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6" data-scene-connected="true">
+    <div className="scholar-notes scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6" data-scene-connected="true">
       <style dangerouslySetInnerHTML={{ __html: MINDLOOP_STYLES }} />
 
       {/* Background video */}
@@ -213,10 +212,10 @@ export function NotesView() {
       <div className="absolute inset-0 z-0 bg-black/60" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {guestMode && <p role="note" className="mx-4 mt-4 rounded-xl border border-amber-200/20 bg-amber-200/5 px-4 py-3 text-sm leading-6 text-amber-100/80">Guest notes last only for this open session. Use the note’s Actions → Export PDF before refreshing, leaving, or signing in. Guest preferences and tasks have separate device storage; these notes are not saved to an account.</p>}
         {/* ===== Navbar ===== */}
-        <nav className="flex items-center justify-between py-4 px-6">
+        <nav className="flex items-center justify-between py-3 sm:py-4 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             {/* Concentric circles logo */}
             <div className="relative grid place-items-center w-7 h-7">
@@ -253,7 +252,7 @@ export function NotesView() {
             type="button"
             data-velocity-control="primary"
             onClick={handleNewNote}
-            className="mindloop-glass rounded-full px-5 py-2 text-sm text-white mindloop-font-sans font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5"
+            className="mindloop-glass rounded-full min-h-11 px-4 sm:px-5 py-2 text-sm text-white mindloop-font-sans font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5"
           >
             <Plus className="h-4 w-4" />
             New Note
@@ -261,32 +260,32 @@ export function NotesView() {
         </nav>
 
         {/* ===== Hero section ===== */}
-        <section className="px-6 pt-4 pb-8 flex flex-col items-center text-center gap-4">
-          <div className="mindloop-glass rounded-full px-4 py-1.5 text-sm text-white/65">
+        <section className="px-4 sm:px-6 pt-1 sm:pt-4 pb-3 sm:pb-8 flex flex-col items-center text-center gap-2 sm:gap-4">
+          <div className="hidden sm:block mindloop-glass rounded-full px-4 py-1.5 text-sm text-white/65">
             Your study notes, reimagined
           </div>
-          <h2 className="mindloop-font-sans text-4xl md:text-5xl text-white font-medium tracking-tight max-w-3xl">
+          <h2 className="mindloop-font-sans text-2xl sm:text-4xl md:text-5xl text-white font-medium tracking-tight max-w-3xl">
             Get <span className="mindloop-font-serif italic font-normal">Inspired</span> with Your Notes
           </h2>
-          <p className="text-white/65 text-sm max-w-xl leading-relaxed">
+          <p className="hidden sm:block text-white/65 text-sm max-w-xl leading-relaxed">
             Join your knowledge base for meaningful study updates, notes around every subject, and a shared journey toward depth and understanding.
           </p>
         </section>
 
         {/* ===== Mobile tab switcher ===== */}
-        <div className="scholar-notes-tabs lg:hidden px-6 mb-3">
+        <div className="scholar-notes-tabs lg:hidden px-4 sm:px-6 mb-3">
           <Tabs value={mobileTab} onValueChange={(v) => setMobileTab(v as typeof mobileTab)}>
-            <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10">
-              <TabsTrigger value="folders" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Folders</TabsTrigger>
-              <TabsTrigger value="list" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Notes</TabsTrigger>
-              <TabsTrigger value="editor" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Editor</TabsTrigger>
+            <TabsList className="grid h-auto w-full grid-cols-3 bg-white/5 border border-white/10 p-1">
+              <TabsTrigger value="folders" className="min-h-11 text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Folders</TabsTrigger>
+              <TabsTrigger value="list" className="min-h-11 text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Notes</TabsTrigger>
+              <TabsTrigger value="editor" className="min-h-11 text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">Editor</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
         {/* ===== 3-Pane layout ===== */}
-        <div className="flex-1 px-6 pb-6 min-h-0">
-          <div className="grid grid-cols-1 lg:grid-cols-[220px_300px_1fr] gap-4 lg:h-[calc(100vh-26rem)] min-h-[480px]">
+        <div className="flex-1 px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[220px_300px_1fr] gap-4 lg:h-[calc(var(--scholar-vvh,100dvh)-26rem)] min-h-[220px] sm:min-h-[300px] lg:min-h-[480px]">
             {/* ===== Left: Folders ===== */}
             <div
               className={`mindloop-glass rounded-2xl p-3 flex flex-col gap-1 overflow-hidden ${
@@ -299,11 +298,11 @@ export function NotesView() {
                 </span>
                 <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
                   <DialogTrigger asChild>
-                    <button className="grid place-items-center h-7 w-7 rounded-md text-white/65 hover:text-white hover:bg-white/5 transition-colors">
+                    <button aria-label="Create folder" className="grid place-items-center h-11 w-11 sm:h-7 sm:w-7 rounded-lg text-white/65 hover:text-white hover:bg-white/5 transition-colors">
                       <Plus className="h-4 w-4" />
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="bg-black border-white/20 text-white">
+                  <DialogContent mobileSheet className="bg-black border-white/20 text-white">
                     <DialogHeader>
                       <DialogTitle className="text-white">New folder</DialogTitle>
                       <DialogDescription className="text-white/65">
@@ -316,7 +315,7 @@ export function NotesView() {
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         autoFocus
-                        className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:border-white/40"
+                        className="min-h-11 text-base sm:text-sm bg-white/5 border-white/20 text-white placeholder:text-white/40 focus-visible:border-white/40"
                       />
                       <div>
                         <p className="text-xs text-white/65 mb-2">Color</p>
@@ -325,7 +324,7 @@ export function NotesView() {
                             <button
                               key={c}
                               onClick={() => setNewFolderColor(c)}
-                              className={`h-7 w-7 rounded-full transition-transform ${
+                              className={`h-10 w-10 sm:h-7 sm:w-7 rounded-full transition-transform ${
                                 newFolderColor === c
                                   ? "ring-2 ring-white ring-offset-2 ring-offset-black scale-110"
                                   : "hover:scale-105"
@@ -341,13 +340,13 @@ export function NotesView() {
                       <Button
                         variant="outline"
                         onClick={() => setNewFolderOpen(false)}
-                        className="border-white/20 text-white hover:bg-white/10 hover:text-white"
+                        className="min-h-11 sm:min-h-9 border-white/20 text-white hover:bg-white/10 hover:text-white"
                       >
                         Cancel
                       </Button>
                       <Button
                         onClick={handleNewFolder}
-                        className="bg-white text-black hover:bg-white/90"
+                        className="min-h-11 sm:min-h-9 bg-white text-black hover:bg-white/90"
                       >
                         Create folder
                       </Button>
@@ -423,7 +422,7 @@ export function NotesView() {
                   placeholder="Search notes…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="mindloop-glass mindloop-input w-full rounded-full pl-10 pr-4 py-2 text-sm text-white bg-transparent outline-none"
+                  className="mindloop-glass mindloop-input min-h-11 w-full rounded-full pl-10 pr-4 py-2 text-base sm:text-sm text-white bg-transparent outline-none"
                 />
               </div>
               <ScrollArea className="flex-1 -mx-1 px-1 mindloop-scroll">
@@ -485,7 +484,7 @@ export function NotesView() {
                       type="button"
                       data-velocity-control="primary"
                       onClick={handleNewNote}
-                      className="mindloop-glass rounded-full px-5 py-2 text-sm text-white inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                      className="mindloop-glass rounded-full min-h-11 px-5 py-2 text-sm text-white inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
                     >
                       <Plus className="h-4 w-4" />
                       New note
@@ -541,7 +540,7 @@ function FolderRow({
   return (
     <button
       onClick={onClick}
-      className={`group w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-all ${
+      className={`group w-full min-h-11 sm:min-h-9 flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-all ${
         active
           ? "bg-white/10 text-white"
           : "text-white/65 hover:bg-white/5 hover:text-white"
@@ -756,7 +755,7 @@ function Editor({
             className="mindloop-input flex-1 text-lg font-semibold bg-transparent border-0 outline-none text-white mindloop-font-sans"
           />
           <button
-            className={`mindloop-glass grid place-items-center h-8 w-8 rounded-lg shrink-0 transition-colors ${
+            className={`mindloop-glass grid place-items-center h-11 w-11 sm:h-8 sm:w-8 rounded-lg shrink-0 transition-colors ${
               pinned ? "text-white" : "text-white/70 hover:text-white"
             }`}
             onClick={() => setPinned(!pinned)}
@@ -766,7 +765,7 @@ function Editor({
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Note actions" data-velocity-control="toolbar" className="mindloop-glass grid place-items-center h-8 w-8 rounded-lg shrink-0 text-white/70 hover:text-white transition-colors">
+              <button type="button" aria-label="Note actions" data-velocity-control="toolbar" className="mindloop-glass grid place-items-center h-11 w-11 sm:h-8 sm:w-8 rounded-lg shrink-0 text-white/70 hover:text-white transition-colors">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
@@ -805,7 +804,7 @@ function Editor({
                 key={c}
                 onClick={() => setColor(c)}
                 title={c}
-                className={`h-5 w-5 rounded-full transition-transform ${
+                className={`h-8 w-8 sm:h-5 sm:w-5 rounded-full transition-transform ${
                   color === c
                     ? "ring-2 ring-white ring-offset-1 ring-offset-black scale-110"
                     : "hover:scale-110"
@@ -817,7 +816,7 @@ function Editor({
           <div className="h-5 w-px bg-white/15 mx-1" />
           {/* Folder selector */}
           <Select value={folder} onValueChange={setFolder}>
-            <SelectTrigger className="h-8 w-[140px] text-xs bg-white/5 border-white/15 text-white hover:bg-white/10">
+            <SelectTrigger className="h-11 sm:h-8 w-full sm:w-[140px] text-sm sm:text-xs bg-white/5 border-white/15 text-white hover:bg-white/10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-black border-white/20 text-white">
@@ -829,7 +828,7 @@ function Editor({
           </Select>
           <div className="h-5 w-px bg-white/15 mx-1" />
           {/* Tag input */}
-          <div className="flex items-center gap-1 min-w-0">
+          <div className="flex flex-1 sm:flex-initial items-center gap-1 min-w-0">
             <Tag className="h-3.5 w-3.5 text-white/65 shrink-0" />
             <input
               value={tags}
@@ -841,14 +840,14 @@ function Editor({
                 }
               }}
               placeholder="comma, separated, tags"
-              className="mindloop-input h-8 w-[160px] text-xs bg-white/5 border border-white/15 rounded-md px-2 text-white outline-none focus:border-white/30"
+              className="mindloop-input h-11 sm:h-8 w-full sm:w-[160px] text-base sm:text-xs bg-white/5 border border-white/15 rounded-md px-2.5 sm:px-2 text-white outline-none focus:border-white/30"
             />
           </div>
           <div className="ml-auto flex items-center gap-1">
             {/* Version history */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="mindloop-glass rounded-lg h-8 px-2.5 text-xs text-white/70 hover:text-white transition-colors inline-flex items-center">
+                <button className="mindloop-glass rounded-lg h-11 sm:h-8 px-3 sm:px-2.5 text-xs text-white/70 hover:text-white transition-colors inline-flex items-center">
                   <History className="h-3.5 w-3.5 mr-1" />
                   <span className="hidden sm:inline">History</span>
                 </button>
@@ -874,7 +873,7 @@ function Editor({
               </DropdownMenuContent>
             </DropdownMenu>
             <button
-              className={`mindloop-glass rounded-lg h-8 px-3 text-xs transition-colors ${
+              className={`mindloop-glass rounded-lg h-11 sm:h-8 px-3.5 sm:px-3 text-xs transition-colors ${
                 showPreview ? "text-white ring-1 ring-white/30" : "text-white/70 hover:text-white"
               }`}
               onClick={() => setShowPreview(!showPreview)}
@@ -887,8 +886,7 @@ function Editor({
 
       {/* Body */}
       <div
-        className="flex-1 min-h-0 grid grid-cols-1 gap-0 overflow-hidden"
-        style={{ gridTemplateColumns: showPreview ? "1fr 1fr" : "1fr" }}
+        className={`flex-1 min-h-0 grid grid-cols-1 ${showPreview ? "md:grid-cols-2" : ""} gap-0 overflow-y-auto md:overflow-hidden`}
       >
         <div className="flex flex-col min-h-0 border-r border-white/15 last:border-r-0">
           <textarea
@@ -896,7 +894,7 @@ function Editor({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Start writing in Markdown…  # Heading, **bold**, *italic*, `code`, - list items"
-            className="mindloop-input mindloop-scroll flex-1 min-h-0 resize-none border-0 rounded-none bg-transparent font-mono text-sm leading-relaxed outline-none px-4 py-3 text-white"
+            className="mindloop-input mindloop-scroll flex-1 min-h-[240px] sm:min-h-0 resize-none border-0 rounded-none bg-transparent font-mono text-base sm:text-sm leading-relaxed outline-none px-4 py-3 text-white"
           />
         </div>
         {showPreview && (
@@ -925,7 +923,7 @@ function Editor({
 
       {/* Delete confirm */}
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <DialogContent className="bg-black border-white/20 text-white">
+        <DialogContent mobileSheet className="bg-black border-white/20 text-white">
           <DialogHeader>
             <DialogTitle className="text-white">Delete this note?</DialogTitle>
             <DialogDescription className="text-white/65">
@@ -936,7 +934,7 @@ function Editor({
             <Button
               variant="outline"
               onClick={() => setConfirmDelete(false)}
-              className="border-white/20 text-white hover:bg-white/10 hover:text-white"
+              className="min-h-11 sm:min-h-9 border-white/20 text-white hover:bg-white/10 hover:text-white"
             >
               Cancel
             </Button>
@@ -946,7 +944,7 @@ function Editor({
                 onDelete(note.id);
                 setConfirmDelete(false);
               }}
-              className="bg-white text-black hover:bg-white/90"
+              className="min-h-11 sm:min-h-9 bg-white text-black hover:bg-white/90"
             >
               <Trash2 className="h-4 w-4 mr-1.5" /> Delete
             </Button>
@@ -965,7 +963,7 @@ function ToolbarBtn({ children, onClick, title }: { children: React.ReactNode; o
       aria-label={title}
       onClick={onClick}
       title={title}
-      className="mindloop-glass grid place-items-center h-8 w-8 rounded-lg text-white/70 hover:text-white transition-colors"
+      className="mindloop-glass grid place-items-center h-11 w-11 sm:h-8 sm:w-8 rounded-lg text-white/70 hover:text-white transition-colors"
     >
       {children}
     </button>

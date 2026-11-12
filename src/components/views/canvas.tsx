@@ -1748,7 +1748,7 @@ export function CanvasView() {
   };
 
   return (
-    <div className="-m-4 lg:-m-6 cv-root">
+    <div className="-m-3 sm:-m-4 lg:-m-6 cv-root">
       <style>{CV_STYLE}</style>
       <div className="cv-shell">
         <header className="cv-header" aria-label="Canvas project controls">

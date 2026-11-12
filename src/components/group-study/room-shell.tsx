@@ -607,7 +607,7 @@ function GroupSessionView({
         </button>
       </div>
       <Dialog open={drawer} onOpenChange={setDrawer}>
-        <DialogContent className="gs-dialog gs-v2-drawer">
+        <DialogContent mobileSheet className="gs-dialog gs-v2-drawer">
           <DialogTitle>Your study workspace</DialogTitle>
           <DialogDescription>
             Choose where to take your next step.
@@ -616,7 +616,7 @@ function GroupSessionView({
         </DialogContent>
       </Dialog>
       <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
-        <DialogContent className="gs-dialog">
+        <DialogContent mobileSheet className="gs-dialog">
           <DialogTitle>Leave Group Study?</DialogTitle>
           <DialogDescription>
             You will exit the shared Scholar workspace. Your microphone and

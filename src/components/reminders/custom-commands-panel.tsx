@@ -197,7 +197,7 @@ function CommandEditorDialog({ scholarClass, command, onClose }: { scholarClass:
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="border-white/15 bg-slate-950/95 backdrop-blur-xl text-white max-w-md">
+      <DialogContent mobileSheet className="border-white/15 bg-slate-950/95 backdrop-blur-xl text-white max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white">{command ? "Edit custom command" : "New custom command"}</DialogTitle>
           <DialogDescription className="text-white/60">Trigger phrases run approved Scholar actions only.</DialogDescription>

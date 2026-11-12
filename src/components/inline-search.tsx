@@ -140,7 +140,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (id: string) => void 
           <button
             type="button"
             aria-label="Open Scholar search"
-            className="grid size-7 shrink-0 place-items-center"
+            className="grid size-11 shrink-0 place-items-center lg:size-7"
             onClick={() => {
               setOpen(true);
               inputRef.current?.focus();
@@ -176,7 +176,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (id: string) => void 
             }}
           />
           {open ? (
-            <button type="button" aria-label="Close search suggestions" onClick={() => setOpen(false)}><X className="size-4" /></button>
+            <button type="button" aria-label="Close search suggestions" className="grid size-11 shrink-0 place-items-center lg:size-7" onClick={() => setOpen(false)}><X className="size-4" /></button>
           ) : <kbd aria-hidden="true">⌘ K</kbd>}
         </div>
       </PopoverAnchor>

@@ -823,9 +823,8 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .as-font-serif { font-family: 'Instrument Serif', serif; }
         .as-font-body { font-family: 'Inter', sans-serif; }
         .as-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
@@ -1070,7 +1069,7 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
 
         {/* ===== WORKSPACE DIALOG ===== */}
         <Dialog open={!!activeAssignment} onOpenChange={(o) => { if (!o) setActiveAssignment(null); }}>
-          <DialogContent className="as-glass-strong !bg-black/60 !border-white/20 max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent mobileSheet className="as-glass-strong !bg-black/60 !border-white/20 max-w-3xl max-h-[90vh] overflow-y-auto">
             {activeAssignment && (() => {
               const a = activeAssignment;
               const accent = subjectAccent(a.subject, CURRICULUM);
@@ -1233,7 +1232,7 @@ ${a.aiFeedback ? `\n**AI Feedback:**\n- Overall: ${a.aiFeedback.overallFeedback}
 
         {/* ===== CREATE DIALOG ===== */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="as-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent mobileSheet className="as-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="as-font-serif text-2xl text-white flex items-center gap-2">
                 <Plus className="h-5 w-5 text-teal-300" /> Add Assignment

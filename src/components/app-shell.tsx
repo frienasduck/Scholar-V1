@@ -210,14 +210,83 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
   const lens = useNavigationLens(navRoot, active, "y", lensControl);
   useSidebarTouch(navRoot, lensControl, active, selectionId === "mobile");
   const finishedViews = useMemo(() => new Set(backgroundTasks.filter(task => task.status === "complete" && !task.read).map(task => task.viewId)), [backgroundTasks]);
+  const [drawerQuery, setDrawerQuery] = useState("");
+  const [drawerGroup, setDrawerGroup] = useState<string>("all");
+  const isMobileDrawer = selectionId === "mobile";
+  const normalizedQuery = isMobileDrawer ? drawerQuery.trim().toLowerCase() : "";
+  const visibleGroups = isMobileDrawer && drawerGroup !== "all"
+    ? NAV_GROUPS.filter((g) => g === drawerGroup)
+    : NAV_GROUPS;
   return (
-    <nav ref={navRoot} data-velocity-nav={selectionId} className="relative isolate flex flex-col gap-6 px-3 py-2">
+    <nav ref={navRoot} data-velocity-nav={selectionId} className="relative isolate flex flex-col gap-5 px-3 py-2">
       <NavigationLens lensRef={lens} axis="y" />
-      {NAV_GROUPS.map((group) => (
+      {isMobileDrawer && (
+        <div className="sticky top-0 z-10 -mx-1 space-y-2 bg-[#0b101b]/95 px-1 pb-2.5 pt-1 backdrop-blur-md">
+          <div className="relative flex items-center">
+            <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              inputMode="search"
+              value={drawerQuery}
+              onChange={(e) => setDrawerQuery(e.target.value)}
+              placeholder="Jump to any section…"
+              aria-label="Filter navigation sections"
+              className="h-11 w-full rounded-xl border border-white/15 bg-white/[0.06] pl-9 pr-10 text-base text-foreground placeholder:text-muted-foreground/70 focus:border-cyan-300/50 focus:outline-none"
+            />
+            {drawerQuery ? (
+              <button
+                type="button"
+                aria-label="Clear section filter"
+                onClick={() => setDrawerQuery("")}
+                className="absolute right-0 grid size-11 place-items-center text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" role="group" aria-label="Filter sections by group">
+            <button
+              type="button"
+              onClick={() => setDrawerGroup("all")}
+              className={cn(
+                "min-h-11 shrink-0 rounded-xl border px-3 text-xs font-semibold transition-colors",
+                drawerGroup === "all"
+                  ? "border-cyan-300/40 bg-cyan-300/15 text-foreground"
+                  : "border-white/10 bg-white/[0.04] text-muted-foreground",
+              )}
+            >
+              All
+            </button>
+            {NAV_GROUPS.map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setDrawerGroup(g)}
+                className={cn(
+                  "min-h-11 shrink-0 rounded-xl border px-3 text-xs font-semibold capitalize transition-colors",
+                  drawerGroup === g
+                    ? "border-cyan-300/40 bg-cyan-300/15 text-foreground"
+                    : "border-white/10 bg-white/[0.04] text-muted-foreground",
+                )}
+              >
+                {g.toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {visibleGroups.map((group) => {
+        const items = NAV_ITEMS.filter((n) => {
+          if (n.group !== group || (n.preview && !access.developerMode)) return false;
+          if (!normalizedQuery) return true;
+          return n.label.toLowerCase().includes(normalizedQuery) || n.id.toLowerCase().includes(normalizedQuery) || group.toLowerCase().includes(normalizedQuery);
+        });
+        if (items.length === 0) return null;
+        return (
         <div key={group}>
           <p className="scholar-nav-section px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p>
-          <div className="flex flex-col gap-0.5">
-            {NAV_ITEMS.filter((n) => n.group === group && (!n.preview || access.developerMode)).map((item) => {
+          <div className={cn("flex flex-col", isMobileDrawer ? "gap-1" : "gap-0.5")}>
+            {items.map((item) => {
               const isActive = active === item.id;
               const shutdown = getSectionShutdown(item.id);
               const plusLocked = Boolean(!shutdown && access.authenticated && VIEW_ENTITLEMENTS[item.id] && !access.has(VIEW_ENTITLEMENTS[item.id].entitlement));
@@ -239,7 +308,10 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                         feature: item.id,
                       })
                     }
-                    className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 relative text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    className={cn(
+                      "group flex items-center gap-3 px-3 rounded-xl text-sm font-medium transition-colors duration-200 relative text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                      isMobileDrawer ? "min-h-11 py-2.5" : "py-2",
+                    )}
                   >
                     <item.icon className="scholar-nav-icon h-4.5 w-4.5 shrink-0 text-amber-200/80" />
                     <span className="scholar-nav-label truncate flex-1 text-left">{item.label}</span>
@@ -262,7 +334,8 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                     onNavigate(item.id);
                   }}
                   className={cn(
-                    "scholar-nav-item group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-200 relative",
+                    "scholar-nav-item group flex items-center gap-3 px-3 rounded-xl text-sm font-medium transition-colors duration-200 relative",
+                    isMobileDrawer ? "min-h-11 py-2.5" : "py-2",
                     isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                     item.highlight && !isActive && "bg-gradient-to-r from-red-500/10 to-fuchsia-500/10 text-white border border-red-500/20",
                     hasFinishedTask &&
@@ -295,7 +368,8 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
             })}
           </div>
         </div>
-      ))}
+      );
+      })}
     </nav>
   );
 }
@@ -356,7 +430,7 @@ function TopBar({ onNavigate, onOpenMobile, onToggleSidebar, sidebarOpen }: { on
             <span className="text-sm font-semibold tabular-nums">Lv {li.level}</span>
           </div>
           </div>
-          <button type="button" onClick={()=>onNavigate("settings")} aria-label="Account and session settings" title={guestMode?"Guest: some work lasts only for this session. Account & session information":"Account settings"} className="scholar-top-profile shrink-0 grid place-items-center h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
+          <button type="button" onClick={()=>onNavigate("settings")} aria-label="Account and session settings" title={guestMode?"Guest: some work lasts only for this session. Account & session information":"Account settings"} className="scholar-top-profile shrink-0 grid place-items-center h-11 w-11 lg:h-9 lg:w-9 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 text-white text-sm font-semibold overflow-hidden ring-2 ring-background">
             {user.avatar.startsWith("data:") ? (
               <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
             ) : (
@@ -898,7 +972,7 @@ export function AppShell() {
             aria-label={mobileNavOpen ? "Collapse bottom menu" : "Open bottom menu"}
           >
             {mobileNavOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            <span>{mobileNavOpen ? "Hide" : "Menu"}</span>
+            <span className="sr-only">{mobileNavOpen ? "Hide" : "Menu"}</span>
           </button>
         </div>
       )}

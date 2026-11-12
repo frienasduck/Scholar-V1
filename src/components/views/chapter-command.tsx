@@ -131,7 +131,7 @@ export function ChapterCommandCenter() {
   const checklistProgress = getChecklistProgress(checklist);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-[#0a0a0f] overflow-hidden -m-4 lg:-m-6 text-white">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-[#0a0a0f] overflow-hidden -m-3 sm:-m-4 lg:-m-6 text-white">
       {/* Background gradient */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-[120px] opacity-20" style={{ background: data.subjectAccent }} />

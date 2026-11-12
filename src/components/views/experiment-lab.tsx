@@ -14,7 +14,7 @@ const PracticalsView = dynamic(() => import("@/components/views/practicals").the
 export function ExperimentLabView() {
   const { mode, select } = useWorkspaceMode("experiment-lab", "experiments");
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col" data-workspace="experiment-lab">
+    <div className="flex min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] flex-col" data-workspace="experiment-lab">
       <WorkspaceTabs workspaceId="experiment-lab" active={mode} onSelect={select} flush />
       <WorkspacePanel workspaceId="experiment-lab" mode={mode} flush className="flex flex-col">
         {mode === "experiments" ? <LabView /> : null}

@@ -289,7 +289,7 @@ export function Class9QuizView() {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setPhase("home")}><ChevronLeft className="h-4 w-4 mr-1" /> Exit</Button>
+          <Button variant="ghost" size="sm" className="min-h-11 sm:min-h-8" onClick={() => setPhase("home")}><ChevronLeft className="h-4 w-4 mr-1" /> Exit</Button>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="font-mono">Q {current + 1}/{questions.length}</Badge>
             <Badge variant="outline" className="font-mono"><Clock className="h-3 w-3 mr-1" /> {fmtTime(timeSpent)}</Badge>
@@ -328,7 +328,7 @@ export function Class9QuizView() {
           )}
         </div>
         <Dialog open={submitConfirm} onOpenChange={setSubmitConfirm}>
-          <DialogContent>
+          <DialogContent mobileSheet>
             <DialogHeader><DialogTitle>Submit quiz?</DialogTitle><DialogDescription>{answered === questions.length ? `All ${questions.length} answered. Submit now?` : `${answered}/${questions.length} answered. Submit anyway?`}</DialogDescription></DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSubmitConfirm(false)}>Keep going</Button>
@@ -345,13 +345,13 @@ export function Class9QuizView() {
   const avgScore = quizAttempts.length ? Math.round((quizAttempts.reduce((a, b) => a + b.score / b.total, 0) / quizAttempts.length) * 100) : 0;
 
   return (
-    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
+    <div className="scholar-quiz scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
+      <video autoPlay muted loop playsInline poster="/backgrounds/scholar-poster.svg" className="absolute inset-0 w-full h-full object-cover z-0 opacity-40">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260319_015952_e1deeb12-8fb7-4071-a42a-60779fc64ab6.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 z-0 bg-black/50" />
-      <div className="relative z-10 p-4 md:p-8 lg:p-12">
-        <h1 className="text-4xl font-serif text-white mb-6">Test Your <em>Knowledge</em></h1>
+      <div className="relative z-10 px-4 py-3 md:p-8 lg:p-12">
+        <h1 className="text-2xl sm:text-4xl font-serif text-white mb-3 sm:mb-6">Test Your <em>Knowledge</em></h1>
         <div className="flex flex-col gap-5">
           <SectionHeader title="Quiz" subtitle="Pick a subject, race the clock, and master every chapter." action={
             <Dialog open={aiOpen} onOpenChange={setAiOpen}>
@@ -423,7 +423,7 @@ function AIGenerateDialog({ loading, onGenerate, curriculum, scholarClass }: {
   const [count, setCount] = useState(5);
   const [difficulty, setDifficulty] = useState("medium");
   return (
-    <DialogContent>
+    <DialogContent mobileSheet>
       <DialogHeader>
         <DialogTitle>AI Generate Quiz</DialogTitle>
         <DialogDescription>Let the AI craft fresh CBSE Class {scholarClass} MCQs.</DialogDescription>

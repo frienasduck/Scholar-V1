@@ -577,12 +577,11 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
-      {examReady&&<div className="relative z-20 p-4 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border-b border-white/15"><span>Scholar Exam Ready · Your saved chapters, materials and format determine this paper.</span><Button onClick={()=>returnFromExamReadyMock(examReady.id)}>Return to Exam Ready</Button></div>}
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
+      {examReady&&<div className="relative z-20 p-4 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border-b border-white/15"><span>Scholar Exam Ready · Your saved chapters, materials and format determine this paper.</span><Button className="min-h-11 sm:min-h-9" onClick={()=>returnFromExamReadyMock(examReady.id)}>Return to Exam Ready</Button></div>}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
-        .me-font-serif { font-family: 'Instrument Serif', serif; }
-        .me-font-body { font-family: 'Inter', sans-serif; }
+        .me-font-serif { font-family: 'Instrument Serif', Georgia, serif; }
+        .me-font-body { font-family: var(--font-sans, 'Inter', sans-serif); }
         .me-glass { background: rgba(11, 16, 26, 0.82); backdrop-filter: blur(24px) saturate(140%); -webkit-backdrop-filter: blur(24px) saturate(140%); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 16px 40px -12px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.22); color: white; }
         .me-glass-strong { background: rgba(8, 12, 22, 0.90); backdrop-filter: blur(28px) saturate(145%); -webkit-backdrop-filter: blur(28px) saturate(145%); border: 1px solid rgba(255,255,255,0.18); box-shadow: 0 24px 50px -14px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.28); color: white; }
         .me-glass input, .me-glass textarea, .me-glass select { background: rgba(15, 22, 36, 0.75) !important; border-color: rgba(255,255,255,0.18) !important; color: white !important; }
@@ -596,26 +595,26 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
       </video>
       <div className="absolute inset-0 z-0 bg-black/55" />
 
-      <div className="relative z-10 me-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+      <div className="relative z-10 me-font-body px-4 py-3 md:p-8 lg:p-12 max-w-7xl mx-auto">
         {/* HERO */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 text-indigo-300 border border-white/10">
-              <ClipboardCheck className="h-6 w-6" />
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-4 sm:mb-8">
+          <div className="flex items-center gap-3 mb-2 sm:mb-3">
+            <div className="grid place-items-center h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-violet-500/30 text-indigo-300 border border-white/10">
+              <ClipboardCheck className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/40">AI Paper Generation • CBSE Class {scholarClass}</Badge>
           </div>
-          <h1 className="me-font-serif text-5xl md:text-6xl text-white leading-tight">
+          <h1 className="me-font-serif text-3xl sm:text-5xl md:text-6xl text-white leading-tight">
             Mock Exam <em className="text-indigo-300">Center</em>
           </h1>
-          <p className="text-white/70 mt-3 max-w-2xl">
+          <p className={examReady ? "text-xs sm:text-base text-white/70 mt-2 sm:mt-3 max-w-2xl" : "hidden sm:block text-white/70 mt-3 max-w-2xl"}>
             {examReady ? "Check your preparation under timed conditions. Your saved chapters, format and source restrictions determine the paper. Return to Exam Ready to review real answer evidence, not predicted ranks." : "Generate full CBSE-style mock papers, take them under timed conditions, get AI auto-evaluation of descriptive answers, view rank prediction, and compete on the leaderboard."}
           </p>
         </motion.div>
 
         {/* STAT PILLS */}
         <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mb-4 sm:mb-8">
           {[
             { icon: Trophy, label: "Average Score", value: `${avgScore}%`, accent: "#6366f1" },
             { icon: Award, label: "Best Score", value: `${bestScore}%`, accent: "#f59e0b" },
@@ -649,7 +648,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                     {SUBJECT_OPTS.map((s) => (
                       <button key={s.id}
                         onClick={() => setConfig((c) => ({ ...c, subjectId: s.id, subject: s.name }))}
-                        className={cn("px-3 py-2 rounded-lg text-xs font-medium border transition-all text-left",
+                        className={cn("px-3 min-h-11 sm:min-h-0 py-2 rounded-lg text-xs font-medium border transition-all text-left",
                           config.subjectId === s.id ? "border-white/40 bg-white/10 text-white" : "border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.07]")}>
                         {s.name}
                       </button>
@@ -660,11 +659,11 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                 {/* Difficulty */}
                 <div>
                   <label className="text-xs uppercase tracking-wider text-white/50 mb-2 block">Difficulty</label>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-1.5">
                     {(["easy", "medium", "hard"] as const).map((d) => (
                       <button key={d}
                         onClick={() => setConfig((c) => ({ ...c, difficulty: d }))}
-                        className={cn("px-3 py-2 rounded-lg text-xs font-medium border transition-all capitalize",
+                        className={cn("px-3 min-h-11 sm:min-h-0 py-2 rounded-lg text-xs font-medium border transition-all capitalize",
                           config.difficulty === d ? "border-white/40 bg-white/10 text-white" : "border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.07]")}>
                         {d}
                       </button>
@@ -677,7 +676,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   <label className="text-xs uppercase tracking-wider text-white/50 mb-2 block">Duration: {config.duration} min</label>
                   <input type="range" min={10} max={90} step={5} value={config.duration}
                     onChange={(e) => setConfig((c) => ({ ...c, duration: Number(e.target.value) }))}
-                    className="w-full accent-indigo-400" />
+                    className="w-full h-8 accent-indigo-400 cursor-pointer" />
                   <div className="flex justify-between text-[10px] text-white/40 mt-1">
                     <span>10 min</span><span>45 min</span><span>90 min</span>
                   </div>
@@ -688,7 +687,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   <label className="text-xs uppercase tracking-wider text-white/50 mb-2 block">Questions: {config.numQuestions}</label>
                   <input type="range" min={5} max={30} step={1} value={config.numQuestions}
                     onChange={(e) => setConfig((c) => ({ ...c, numQuestions: Number(e.target.value) }))}
-                    className="w-full accent-indigo-400" />
+                    className="w-full h-8 accent-indigo-400 cursor-pointer" />
                   <div className="flex justify-between text-[10px] text-white/40 mt-1">
                     <span>5</span><span>15</span><span>30</span>
                   </div>
@@ -761,14 +760,14 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                 )}
               </div> : <p className="text-sm leading-6 text-white/70">This paper uses your saved preparation settings. Change chapters, available time or materials in Exam Ready before generating. Your {examReady.chapterIds.length} selected chapters define the scope; very short tests may sample only part of it.</p>}
 
-              <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-5 pt-4 border-t border-white/10">
                 <div className="min-w-0 text-xs text-white/50">
                   {config.numQuestions} questions • {config.duration} min • {config.difficulty} • {config.pattern}
                   {config.examType === "chapter" && config.chapterIds.length > 0 && <span className="text-indigo-300"> • {config.chapterIds.length} chapter{config.chapterIds.length === 1 ? "" : "s"}</span>}
                   {config.examType === "jee" && <span className="text-fuchsia-300"> • JEE mode</span>}
                   {!examReady && access.monthlyUsage ? <span className="mt-1 block text-cyan-200/80">{access.monthlyUsage.mockExams.remaining} of {access.monthlyUsage.mockExams.limit} AI generations remaining this month</span> : null}
                 </div>
-                <Button className="ml-3 bg-indigo-500 hover:bg-indigo-600 text-white" disabled={generating || (!examReady && access.monthlyUsage?.mockExams.remaining === 0) || (config.examType === "chapter" && config.chapterIds.length === 0)} onClick={generatePaper}>
+                <Button className="w-full sm:w-auto min-h-12 sm:min-h-10 sm:ml-3 bg-indigo-500 hover:bg-indigo-600 text-white" disabled={generating || (!examReady && access.monthlyUsage?.mockExams.remaining === 0) || (config.examType === "chapter" && config.chapterIds.length === 0)} onClick={generatePaper}>
                   {generating ? (
                     <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><Sparkles className="h-4 w-4 mr-2" /></motion.span> Generating…</>
                   ) : (
@@ -789,8 +788,8 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                   <button onClick={() => void generateEbookPaper()} disabled={ebookGenerating} className="flex items-center justify-center gap-2 rounded-xl border border-violet-300/25 bg-violet-500/20 px-4 py-3 text-sm font-semibold text-violet-100 hover:bg-violet-500/30 disabled:opacity-50">{ebookGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Create E-Book Paper</button>
                 </div>
                 {ebookMode === "chapter" && <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  <select aria-label="E-book mock exam book" value={ebookBookId} onChange={(event) => { const id = event.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((book) => book.id === id)?.chapters[0]?.id ?? ""); }} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>
-                  <select aria-label="E-book mock exam chapter" value={ebookChapterId} onChange={(event) => setEbookChapterId(event.target.value)} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>
+                  <select aria-label="E-book mock exam book" value={ebookBookId} onChange={(event) => { const id = event.target.value; setEbookBookId(id); setEbookChapterId(EBOOK_QUESTION_BOOKS.find((book) => book.id === id)?.chapters[0]?.id ?? ""); }} className="min-h-11 sm:min-h-0 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-base sm:text-xs text-white">{EBOOK_QUESTION_BOOKS.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select>
+                  <select aria-label="E-book mock exam chapter" value={ebookChapterId} onChange={(event) => setEbookChapterId(event.target.value)} className="min-h-11 sm:min-h-0 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-base sm:text-xs text-white">{EBOOK_QUESTION_BOOKS.find((book) => book.id === ebookBookId)?.chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.title}</option>)}</select>
                 </div>}
               </div>}
 
@@ -935,7 +934,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
             if (confirm("Submit your mock exam now? You cannot resume it later.")) endExam(false);
           }
         }}>
-          <DialogContent className="me-glass-strong !bg-black/70 !border-white/20 max-w-3xl max-h-[92vh] overflow-y-auto">
+          <DialogContent mobileSheet className="me-glass-strong !bg-black/70 !border-white/20 max-w-3xl max-h-[92dvh] overflow-y-auto">
             {/* Exam in progress */}
             {examActive && examQs && !result && (
               <>
@@ -972,7 +971,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                           return (
                             <button key={o}
                               onClick={() => setResponses((r) => ({ ...r, [examQs[examIdx].id]: o }))}
-                              className={cn("text-left p-3 rounded-xl border text-sm transition-all",
+                              className={cn("text-left p-3.5 min-h-12 rounded-xl border text-sm transition-all",
                                 selected ? "bg-indigo-500/25 border-indigo-500/50 text-white" : "bg-white/[0.03] border-white/10 text-white/80 hover:bg-white/[0.07]")}>
                               <ScholarAIContent content={o} mode="compact" />
                             </button>
@@ -984,7 +983,7 @@ ${q.type === "mcq" ? `**Correct answer:** ${q.answer}` : `**Model answer:** ${q.
                         placeholder={`Write your ${examQs[examIdx].type} answer…`}
                         value={responses[examQs[examIdx].id] ?? ""}
                         onChange={(e) => setResponses((r) => ({ ...r, [examQs[examIdx].id]: e.target.value }))}
-                        className="bg-white/5 border-white/15 text-white resize-y" />
+                        className="bg-white/5 border-white/15 text-white resize-y text-base sm:text-sm" />
                     )}
                   </div>
                 )}

@@ -1591,7 +1591,7 @@ export function LiveTutorView({
           </div>
         ) : prepared ? (
           <div className="lt-empty-state">
-            <LamScene size={150} placement="tutor" state={avatarState} label="Ready when you are." />
+            <LamScene size={136} placement="tutor" state={avatarState} label="" />
             <h1 className="lt-empty-title">{copy.idleHeading}</h1>
             <p className="lt-empty-sub">{copy.idleSubcopy}</p>
             <div className="lt-empty-chips">
@@ -1601,15 +1601,15 @@ export function LiveTutorView({
                 </button>
               ))}
             </div>
-            <div className="lt-empty-chips mt-1.5" aria-label="Quick LAM plugins">
+            <div className="lt-empty-chips mt-1" aria-label="Quick LAM plugins">
               {(["concept-explainer", "ai-pdf-studio", "flashcard-maker", "mistake-analyzer"] as const).map(
-                (id) => {
+                (id, idx) => {
                   const plugin = pluginById(id);
                   return plugin ? (
                     <button
                       key={plugin.id}
                       type="button"
-                      className="lt-empty-chip opacity-85 hover:opacity-100"
+                      className={`lt-empty-chip opacity-90 hover:opacity-100 ${idx >= 2 ? "hidden sm:inline-flex" : ""}`}
                       onClick={() => choosePlugin(plugin)}
                     >
                       @{plugin.name}
@@ -1619,13 +1619,13 @@ export function LiveTutorView({
               )}
               <button
                 type="button"
-                className="lt-empty-chip opacity-85 hover:opacity-100"
+                className="lt-empty-chip opacity-90 hover:opacity-100"
                 onClick={() => {
                   setDraft("@");
                   window.setTimeout(() => composerInputRef.current?.focus(), 0);
                 }}
               >
-                Browse all {availablePluginCount} plugins (@) →
+                All {availablePluginCount} plugins (@) →
               </button>
             </div>
           </div>
@@ -1679,7 +1679,7 @@ export function LiveTutorView({
           {pluginQuery !== null ? (
             <div className="lt-plugin-menu ws-liquid-scroll" role="listbox" aria-label="LAM plugins">
               <div className="lt-plugin-menu-header">
-                <p className="lt-plugin-menu-label">Choose a plugin · ↑ ↓ then Enter</p>
+                <p className="lt-plugin-menu-label">Choose a plugin <span className="hidden sm:inline">· ↑ ↓ then Enter</span><span className="sm:hidden">· Tap to insert</span></p>
                 <span className="font-mono text-[10px] text-muted-foreground/75">
                   {pluginMatches.filter((p) => p.availability === "available").length} live
                   {pluginMatches.some((p) => p.availability === "planned")
@@ -1886,8 +1886,8 @@ export function LiveTutorView({
             onChange={(event) => setDraft(event.target.value)}
             placeholder={
               pluginChip
-                ? `Ask @${pluginChip.name} (runs right here in chat)…`
-                : `${copy.prompt} Type @ to run any plugin in chat.`
+                ? `Ask @${pluginChip.name}…`
+                : copy.prompt
             }
             aria-label="Message LAM AI"
             rows={1}

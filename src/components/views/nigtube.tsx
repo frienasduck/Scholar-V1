@@ -473,7 +473,6 @@ export function NigtubeView() {
   return (
     <div className="scholar-nigtube scholar-responsive-page relative -m-3 overflow-hidden bg-black sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .nt-glass {
           background: rgba(255,255,255,0.01);
           background-blend-mode: luminosity;
@@ -512,7 +511,7 @@ export function NigtubeView() {
       <div className="fixed top-0 left-1/4 w-96 h-96 bg-red-500/10 blur-[120px] pointer-events-none z-0" />
       <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-fuchsia-500/10 blur-[120px] pointer-events-none z-0" />
 
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {/* Navbar */}
         <nav aria-label="LAMTube" className="scholar-nigtube-nav flex flex-wrap items-center justify-between gap-y-3 px-4 md:px-8 py-4 nt-font">
           <div className="flex items-center gap-3">

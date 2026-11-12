@@ -16,7 +16,7 @@ const PastPapersView = dynamic(() => import("@/components/views/past-papers").th
 export function QuestionPracticeView() {
   const { mode, select } = useWorkspaceMode("question-practice", "practice");
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col" data-workspace="question-practice">
+    <div className="flex min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] flex-col" data-workspace="question-practice">
       <WorkspaceTabs workspaceId="question-practice" active={mode} onSelect={select} />
       <WorkspacePanel workspaceId="question-practice" mode={mode} className="flex flex-col">
         {mode === "practice" ? <PracticeView /> : null}

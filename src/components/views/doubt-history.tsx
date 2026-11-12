@@ -529,11 +529,10 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
   const hasFilters = search || fSubject !== "all" || fSource !== "all" || fStatus !== "all" || fDate !== "all";
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-transparent overflow-x-clip -m-4 lg:-m-6" data-scene-connected="true">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-transparent overflow-x-clip -m-3 sm:-m-4 lg:-m-6" data-scene-connected="true">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
-        .dh-font-serif { font-family: 'Instrument Serif', serif; }
-        .dh-font-body { font-family: 'Inter', sans-serif; }
+        .dh-font-serif { font-family: var(--font-serif, 'Instrument Serif', Georgia, serif); }
+        .dh-font-body { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
         .dh-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
         .dh-glass-strong { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.16); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); color: white; }
         .dh-glass input, .dh-glass textarea, .dh-glass select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.15) !important; color: white !important; }
@@ -599,35 +598,35 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
         </div>
       </SceneBackdrop>
 
-      <div className="relative z-10 dh-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+      <div className="relative z-10 dh-font-body p-3.5 sm:p-6 md:p-8 lg:p-12 max-w-7xl mx-auto">
         {/* HERO */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          className="mb-4 sm:mb-8 flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500/30 to-purple-500/30 text-violet-300 border border-white/10">
-                <MessageCircleQuestion className="h-6 w-6" />
+            <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-3">
+              <div className="grid place-items-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/30 to-purple-500/30 text-violet-300 border border-white/10 shrink-0">
+                <MessageCircleQuestion className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/40">Doubt Lab • My Doubts • AI Clusters</Badge>
+              <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/40 text-[11px] sm:text-xs">Doubt Lab • My Doubts • AI Clusters</Badge>
             </div>
-            <h1 className="dh-font-serif text-5xl md:text-6xl text-white leading-tight">
+            <h1 className="dh-font-serif text-3xl sm:text-5xl md:text-6xl text-white leading-tight">
               Doubt <em className="text-violet-300">Lab</em>
             </h1>
-            <p className="text-white/70 mt-3 max-w-2xl">
+            <p className="hidden sm:block text-white/70 mt-3 max-w-2xl">
               Every doubt you've ever asked — from AI tutors, community threads, or manually logged — unified with Answer Writing Lab.
               Star important ones, mark resolved, cluster conceptual gaps, or practice writing a full CBSE answer.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {onSolveDoubt ? (
-              <Button variant="outline" className="dh-glass bg-rose-500/15 border-rose-400/30 text-rose-100 hover:bg-rose-500/25" onClick={() => onSolveDoubt({ question: "", subject: scholarClass === 11 ? "physics" : "science" })}>
+              <Button variant="outline" className="min-h-11 sm:min-h-9 dh-glass bg-rose-500/15 border-rose-400/30 text-rose-100 hover:bg-rose-500/25" onClick={() => onSolveDoubt({ question: "", subject: scholarClass === 11 ? "physics" : "science" })}>
                 <PenTool className="h-3.5 w-3.5 mr-1.5" /> Solve a Doubt
               </Button>
             ) : null}
-            <Button variant="outline" className="dh-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={exportDoubts}>
+            <Button variant="outline" className="min-h-11 sm:min-h-9 dh-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={exportDoubts}>
               <Download className="h-3.5 w-3.5 mr-1.5" /> Export
             </Button>
-            <Button className="bg-violet-500 hover:bg-violet-600 text-white" onClick={() => setCreateOpen(true)}>
+            <Button className="min-h-11 sm:min-h-9 bg-violet-500 hover:bg-violet-600 text-white" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-1.5" /> Quick Add
             </Button>
           </div>
@@ -635,7 +634,7 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
 
         {/* STAT PILLS */}
         <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-8">
           {[
             { icon: MessageCircleQuestion, label: "Total Doubts", value: totalDoubts, accent: "#8b5cf6" },
             { icon: CheckCircle2, label: "Resolved", value: resolvedCount, accent: "#10b981" },
@@ -650,40 +649,40 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
 
         {/* SEARCH + FILTERS */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="dh-glass rounded-2xl p-4 mb-6 space-y-3">
+          className="dh-glass rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search doubts, answers, tags…"
-                className="bg-white/5 border-white/15 text-white pl-9" />
+                className="min-h-11 text-base sm:text-sm bg-white/5 border-white/15 text-white pl-9" />
             </div>
             {hasFilters && (
-              <Button variant="ghost" className="text-white/60 hover:text-white" onClick={resetFilters}>
+              <Button variant="ghost" className="min-h-11 sm:min-h-9 text-white/60 hover:text-white" onClick={resetFilters}>
                 <X className="h-3.5 w-3.5 mr-1" />Reset
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-3.5 w-3.5 text-white/40" />
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:flex-wrap">
+            <Filter className="hidden sm:block h-3.5 w-3.5 text-white/40" />
             <select value={fSubject} onChange={(e) => setFSubject(e.target.value)}
-              className="text-xs p-1.5 rounded-md bg-white/5 border border-white/15 text-white">
+              className="min-h-11 sm:min-h-0 text-base sm:text-xs px-2.5 py-2 sm:p-1.5 rounded-lg sm:rounded-md bg-white/5 border border-white/15 text-white">
               <option value="all">All subjects</option>
               {CURRICULUM.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <select value={fSource} onChange={(e) => setFSource(e.target.value)}
-              className="text-xs p-1.5 rounded-md bg-white/5 border border-white/15 text-white">
+              className="min-h-11 sm:min-h-0 text-base sm:text-xs px-2.5 py-2 sm:p-1.5 rounded-lg sm:rounded-md bg-white/5 border border-white/15 text-white">
               <option value="all">All sources</option>
               {(Object.keys(SOURCE_META) as DoubtSource[]).map((s) => <option key={s} value={s}>{SOURCE_META[s].label}</option>)}
             </select>
             <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}
-              className="text-xs p-1.5 rounded-md bg-white/5 border border-white/15 text-white">
+              className="min-h-11 sm:min-h-0 text-base sm:text-xs px-2.5 py-2 sm:p-1.5 rounded-lg sm:rounded-md bg-white/5 border border-white/15 text-white">
               <option value="all">All status</option>
               <option value="open">Open</option>
               <option value="resolved">Resolved</option>
             </select>
             <select value={fDate} onChange={(e) => setFDate(e.target.value)}
-              className="text-xs p-1.5 rounded-md bg-white/5 border border-white/15 text-white">
+              className="min-h-11 sm:min-h-0 text-base sm:text-xs px-2.5 py-2 sm:p-1.5 rounded-lg sm:rounded-md bg-white/5 border border-white/15 text-white">
               <option value="all">Any time</option>
               <option value="today">Today</option>
               <option value="week">This week</option>
@@ -695,14 +694,14 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
         {/* TABS */}
         <Tabs value={tab} onValueChange={setTab} className="space-y-6">
           <TabsList className="dh-glass bg-transparent h-auto p-1 flex flex-wrap gap-1">
-            <TabsTrigger value="all" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+            <TabsTrigger value="all" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
               All {filtered.length > 0 && <span className="ml-1.5 text-xs bg-violet-500/30 text-violet-200 rounded-full px-1.5">{filtered.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="starred" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+            <TabsTrigger value="starred" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
               Starred {starredDoubts.length > 0 && <span className="ml-1.5 text-xs bg-amber-500/30 text-amber-200 rounded-full px-1.5">{starredDoubts.length}</span>}
             </TabsTrigger>
-            <TabsTrigger value="clusters" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Clusters</TabsTrigger>
-            <TabsTrigger value="subject" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">By Subject</TabsTrigger>
+            <TabsTrigger value="clusters" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Clusters</TabsTrigger>
+            <TabsTrigger value="subject" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">By Subject</TabsTrigger>
           </TabsList>
 
           {/* ===== ALL ===== */}
@@ -805,7 +804,7 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
 
         {/* ===== DOUBT DETAIL DIALOG ===== */}
         <Dialog open={!!openDoubt} onOpenChange={(o) => !o && setOpenDoubt(null)}>
-          <DialogContent className="dh-glass-strong !bg-black/60 !border-white/20 max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent mobileSheet className="dh-glass-strong !bg-black/60 !border-white/20 max-w-2xl max-h-[90dvh] overflow-y-auto">
             {openDoubt && (() => {
               const meta = SOURCE_META[openDoubt.source];
               const accent = subjectAccent(CURRICULUM, openDoubt.subject);
@@ -907,7 +906,7 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
 
         {/* ===== CREATE DIALOG ===== */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="dh-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent mobileSheet className="dh-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90dvh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="dh-font-serif text-2xl text-white flex items-center gap-2">
                 <HelpCircle className="h-5 w-5 text-violet-300" /> Quick Add Doubt
@@ -919,26 +918,26 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
                 <Label className="text-white/70 text-xs uppercase tracking-wider mb-1.5 block">Question *</Label>
                 <Textarea value={fQ} onChange={(e) => setFQ(e.target.value)}
                   placeholder="What was the doubt?" rows={2}
-                  className="bg-white/5 border-white/15 text-white" />
+                  className="text-base sm:text-sm bg-white/5 border-white/15 text-white" />
               </div>
               <div>
                 <Label className="text-white/70 text-xs uppercase tracking-wider mb-1.5 block">Answer (optional)</Label>
                 <Textarea value={fA} onChange={(e) => setFA(e.target.value)}
                   placeholder="The explanation or solution you found…" rows={3}
-                  className="bg-white/5 border-white/15 text-white" />
+                  className="text-base sm:text-sm bg-white/5 border-white/15 text-white" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-white/70 text-xs uppercase tracking-wider mb-1.5 block">Subject</Label>
                   <select value={fSubj} onChange={(e) => { setFSubj(e.target.value); setFChap(""); }}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm">
+                    className="w-full min-h-11 p-2.5 sm:p-2 rounded-lg bg-white/5 border border-white/15 text-white text-base sm:text-sm">
                     {CURRICULUM.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <Label className="text-white/70 text-xs uppercase tracking-wider mb-1.5 block">Chapter (optional)</Label>
                   <select value={fChap} onChange={(e) => setFChap(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm">
+                    className="w-full min-h-11 p-2.5 sm:p-2 rounded-lg bg-white/5 border border-white/15 text-white text-base sm:text-sm">
                     <option value="">— None —</option>
                     {CURRICULUM.find((s) => s.id === fSubj)?.chapters.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
                   </select>
@@ -946,8 +945,8 @@ ${clusters.map((c, i) => `${i + 1}. **${c.title}** (${subjectName(CURRICULUM, c.
               </div>
             </div>
             <DialogFooter className="mt-4">
-              <Button variant="ghost" className="text-white/70" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button className="bg-violet-500 hover:bg-violet-600 text-white" onClick={createDoubt}>
+              <Button variant="ghost" className="min-h-11 sm:min-h-9 text-white/70" onClick={() => setCreateOpen(false)}>Cancel</Button>
+              <Button className="min-h-11 sm:min-h-9 bg-violet-500 hover:bg-violet-600 text-white" onClick={createDoubt}>
                 <Plus className="h-3.5 w-3.5 mr-1.5" /> Log doubt (+5 XP)
               </Button>
             </DialogFooter>

@@ -135,10 +135,9 @@ export function PlannerView() {
   }, [aiGoal, today, addTask, pushActivity]);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6 pb-24 lg:pb-10">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
-        .cinema-glass {
+                .cinema-glass {
           background: rgba(255,255,255,0.03);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
@@ -180,7 +179,7 @@ export function PlannerView() {
                 <Sparkles className="h-4 w-4 mr-2 text-indigo-400" /> AI Schedule
               </Button>
             </DialogTrigger>
-            <DialogContent className="premium-card">
+            <DialogContent mobileSheet className="premium-card">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-indigo-400" /> AI Study Schedule
@@ -308,7 +307,7 @@ function NewTaskDialog({
           <Plus className="h-4 w-4 mr-2" /> New task
         </Button>
       </DialogTrigger>
-      <DialogContent className="premium-card">
+      <DialogContent mobileSheet className="premium-card">
         <DialogHeader>
           <DialogTitle>Add a new task</DialogTitle>
         </DialogHeader>
@@ -398,8 +397,8 @@ function MonthView({
   const isSelected = (d: Date) => ymd(d) === selectedDate;
 
   return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-      <div className="cinema-glass rounded-2xl p-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+      <div className="cinema-glass rounded-2xl p-3 sm:p-4 min-w-0">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">{MONTHS[month]} {year}</h3>
           <div className="flex items-center gap-1">
@@ -427,7 +426,7 @@ function MonthView({
               <button
                 key={i}
                 onClick={() => setSelectedDate(ds)}
-                className={`aspect-square rounded-lg flex flex-col items-center justify-start p-1.5 text-xs transition-all relative
+                className={`aspect-square min-w-0 rounded-lg flex flex-col items-center justify-start p-1 sm:p-1.5 text-xs transition-all relative
                   ${isSelected(d) ? "bg-indigo-500/20 ring-1 ring-indigo-500/40" : "hover:bg-muted/60"}
                   ${isToday(d) ? "ring-1 ring-teal-500/40" : ""}
                 `} data-velocity-control="audited-v31"

@@ -108,7 +108,7 @@ function ObservationTable({
                 {onDelete && (
                   <td className="px-2 py-1.5 text-right">
                     <button onClick={() => onDelete(r.id)} aria-label="Delete observation"
-                      className="p-1 rounded hover:bg-rose-500/15 text-rose-400">
+                      className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 grid place-items-center p-2 sm:p-1 rounded hover:bg-rose-500/15 text-rose-400">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </td>
@@ -257,9 +257,9 @@ export function VernierCalipersSim({ onComplete, scholarClass }: LabSimProps) {
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
           <label className="text-xs text-white/60 mb-2 block">Zero error</label>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => { setZeroError("none"); setChecked(false); }} className={`px-2.5 py-1.5 rounded-lg text-xs ${zeroError === "none" ? "bg-sky-500 text-white" : "bg-white/5 text-white/60"}`}>None</button>
-            <button onClick={() => { setZeroError("positive"); setChecked(false); }} className={`px-2.5 py-1.5 rounded-lg text-xs ${zeroError === "positive" ? "bg-emerald-500 text-white" : "bg-white/5 text-white/60"}`}>+ Positive</button>
-            <button onClick={() => { setZeroError("negative"); setChecked(false); }} className={`px-2.5 py-1.5 rounded-lg text-xs ${zeroError === "negative" ? "bg-rose-500 text-white" : "bg-white/5 text-white/60"}`}>− Negative</button>
+            <button onClick={() => { setZeroError("none"); setChecked(false); }} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg text-xs ${zeroError === "none" ? "bg-sky-500 text-white" : "bg-white/5 text-white/60"}`}>None</button>
+            <button onClick={() => { setZeroError("positive"); setChecked(false); }} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg text-xs ${zeroError === "positive" ? "bg-emerald-500 text-white" : "bg-white/5 text-white/60"}`}>+ Positive</button>
+            <button onClick={() => { setZeroError("negative"); setChecked(false); }} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg text-xs ${zeroError === "negative" ? "bg-rose-500 text-white" : "bg-white/5 text-white/60"}`}>− Negative</button>
           </div>
           {zeroError !== "none" && (
             <div className="mt-2">
@@ -287,15 +287,15 @@ export function VernierCalipersSim({ onComplete, scholarClass }: LabSimProps) {
 
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
         <label className="text-xs text-white/60 mb-2 block">Enter your observed reading (mm)</label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2">
           <input type="number" step="0.01" value={userReading}
             onChange={(e) => { setUserReading(e.target.value); setChecked(false); }}
             placeholder="e.g. 12.30"
-            className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white h-10" />
-          <button onClick={handleCheck} className="px-3 py-2 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-600 h-10 flex items-center gap-1.5">
+            className="w-full sm:w-auto flex-1 min-h-11 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-base sm:text-sm text-white" />
+          <button onClick={handleCheck} className="flex-1 sm:flex-initial justify-center px-3 py-2 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-600 min-h-11 flex items-center gap-1.5">
             <Check className="h-3.5 w-3.5" /> Check
           </button>
-          <button onClick={handleAddObservation} className="px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/25 h-10 flex items-center gap-1.5">
+          <button onClick={handleAddObservation} className="flex-1 sm:flex-initial justify-center px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/25 min-h-11 flex items-center gap-1.5">
             <Plus className="h-3.5 w-3.5" /> Add to Table
           </button>
         </div>
@@ -312,7 +312,7 @@ export function VernierCalipersSim({ onComplete, scholarClass }: LabSimProps) {
         onDelete={(id) => setObservations((prev) => prev.filter((r) => r.id !== id))} />
 
       <div className="flex justify-end">
-        <button onClick={reset} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-xs hover:bg-white/10 h-10 flex items-center gap-1.5">
+        <button onClick={reset} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-xs hover:bg-white/10 min-h-11 sm:min-h-10 flex items-center gap-1.5">
           <RotateCcw className="h-3.5 w-3.5" /> Reset
         </button>
       </div>
@@ -454,7 +454,7 @@ export function ScrewGaugeSim({ onComplete, scholarClass }: LabSimProps) {
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
           <label className="text-xs text-white/60 mb-2 block">Object</label>
           <select value={objectThickness} onChange={(e) => setObjectThickness(e.target.value as any)}
-            className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white h-10">
+            className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-base sm:text-sm text-white min-h-11">
             <option value="wire-thin">Thin wire (~2.5 mm)</option>
             <option value="wire-thick">Thick wire (~4.0 mm)</option>
             <option value="glass-slide">Glass slide (~1.15 mm)</option>
@@ -470,9 +470,9 @@ export function ScrewGaugeSim({ onComplete, scholarClass }: LabSimProps) {
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
           <label className="text-xs text-white/60 mb-2 block">Zero error</label>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => { setZeroError("none"); setChecked(false); }} className={`px-2.5 py-1.5 rounded-lg text-xs ${zeroError === "none" ? "bg-sky-500 text-white" : "bg-white/5 text-white/60"}`}>None</button>
-            <button onClick={() => { setZeroError("positive"); setChecked(false); }} className={`px-2.5 py-1.5 rounded-lg text-xs ${zeroError === "positive" ? "bg-emerald-500 text-white" : "bg-white/5 text-white/60"}`}>+ Pos</button>
-            <button onClick={() => { setZeroError("negative"); setChecked(false); }} className={`px-2.5 py-1.5 rounded-lg text-xs ${zeroError === "negative" ? "bg-rose-500 text-white" : "bg-white/5 text-white/60"}`}>− Neg</button>
+            <button onClick={() => { setZeroError("none"); setChecked(false); }} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg text-xs ${zeroError === "none" ? "bg-sky-500 text-white" : "bg-white/5 text-white/60"}`}>None</button>
+            <button onClick={() => { setZeroError("positive"); setChecked(false); }} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg text-xs ${zeroError === "positive" ? "bg-emerald-500 text-white" : "bg-white/5 text-white/60"}`}>+ Pos</button>
+            <button onClick={() => { setZeroError("negative"); setChecked(false); }} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg text-xs ${zeroError === "negative" ? "bg-rose-500 text-white" : "bg-white/5 text-white/60"}`}>− Neg</button>
           </div>
           {zeroError !== "none" && (
             <div className="mt-2">
@@ -500,12 +500,12 @@ export function ScrewGaugeSim({ onComplete, scholarClass }: LabSimProps) {
 
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
         <label className="text-xs text-white/60 mb-2 block">Enter your observed reading (mm)</label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2">
           <input type="number" step="0.001" value={userReading}
             onChange={(e) => { setUserReading(e.target.value); setChecked(false); }}
-            placeholder="e.g. 3.240" className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white h-10" />
-          <button onClick={handleCheck} className="px-3 py-2 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-600 h-10 flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Check</button>
-          <button onClick={handleAddObservation} className="px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/25 h-10 flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Add to Table</button>
+            placeholder="e.g. 3.240" className="w-full sm:w-auto flex-1 min-h-11 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-base sm:text-sm text-white" />
+          <button onClick={handleCheck} className="flex-1 sm:flex-initial justify-center px-3 py-2 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-600 min-h-11 flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Check</button>
+          <button onClick={handleAddObservation} className="flex-1 sm:flex-initial justify-center px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-semibold hover:bg-emerald-500/25 min-h-11 flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Add to Table</button>
         </div>
       </div>
 
@@ -515,7 +515,7 @@ export function ScrewGaugeSim({ onComplete, scholarClass }: LabSimProps) {
         onDelete={(id) => setObservations((prev) => prev.filter((r) => r.id !== id))} />
 
       <div className="flex justify-end">
-        <button onClick={reset} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-xs hover:bg-white/10 h-10 flex items-center gap-1.5"><RotateCcw className="h-3.5 w-3.5" /> Reset</button>
+        <button onClick={reset} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-xs hover:bg-white/10 min-h-11 sm:min-h-10 flex items-center gap-1.5"><RotateCcw className="h-3.5 w-3.5" /> Reset</button>
       </div>
     </div>
   );
@@ -652,7 +652,7 @@ export function SimplePendulumSim({ onComplete, scholarClass }: LabSimProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-white/10 bg-black/40 p-4 flex justify-center">
-        <svg width={300} height={260} className="max-w-full">
+        <svg viewBox="0 0 300 260" className="w-full max-w-[300px] h-auto">
           <line x1={pivotX - 25} y1={pivotY} x2={pivotX + 25} y2={pivotY} stroke="#94a3b8" strokeWidth={3} />
           <line x1={pivotX} y1={pivotY} x2={bobX} y2={bobY} stroke="rgba(255,255,255,0.5)" strokeWidth={1.5} />
           <circle cx={bobX} cy={bobY} r={10 + bobMass * 8} fill="url(#bobGrad)" stroke="#fbbf24" strokeWidth={1.5} />
@@ -694,7 +694,7 @@ export function SimplePendulumSim({ onComplete, scholarClass }: LabSimProps) {
           <label className="text-xs text-white/60 mb-2 block">Oscillations to count</label>
           <div className="flex gap-2">
             {[5, 10, 20].map((n) => (
-              <button key={n} onClick={() => setOscillations(n)} className={`px-3 py-1.5 rounded-lg text-xs ${oscillations === n ? "bg-sky-500 text-white" : "bg-white/5 text-white/60"}`}>{n} osc</button>
+              <button key={n} onClick={() => setOscillations(n)} className={`min-h-11 sm:min-h-0 px-3 py-2 sm:py-1.5 rounded-lg text-xs ${oscillations === n ? "bg-sky-500 text-white" : "bg-white/5 text-white/60"}`}>{n} osc</button>
             ))}
           </div>
         </div>
@@ -1252,7 +1252,7 @@ export function GravitySim({ onComplete, alreadyCompleted, scholarClass }: LabSi
         </div>
 
         {/* Planet Selection */}
-        <div className="grid grid-cols-4 gap-2 my-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 my-4">
           {(Object.keys(PLANETS) as Array<keyof typeof PLANETS>).map((key) => {
             const p = PLANETS[key];
             return (
@@ -1260,7 +1260,7 @@ export function GravitySim({ onComplete, alreadyCompleted, scholarClass }: LabSi
                 key={key}
                 type="button"
                 onClick={() => setPlanet(key)}
-                className={`p-3 rounded-xl border text-center transition ${
+                className={`min-h-11 p-3 rounded-xl border text-center transition ${
                   planet === key
                     ? "border-sky-400 bg-sky-500/20 text-white font-bold"
                     : "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.07]"

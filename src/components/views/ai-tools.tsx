@@ -1580,7 +1580,7 @@ export function AIToolsView() {
       return <PlusGate entitlement={activeEntitlement} title={activeTool.name} description={activeTool.id === "aisig" ? "Generate educational study images from carefully enhanced prompts." : "Scan homework, extract its text, and receive guided hints and solutions."}><span /></PlusGate>;
     }
     return (
-      <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
+      <div className="relative -m-3 min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] overflow-hidden bg-black sm:-m-4 lg:-m-6">
         <style>{BLOOM_CSS}</style>
 
         {/* Video background — optimized: preload metadata only, lazy load */}
@@ -1588,7 +1588,7 @@ export function AIToolsView() {
         <div className="absolute inset-0 z-0 bg-black/60" />
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+        <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
           {/* Navbar */}
           <nav className="flex items-center justify-between px-4 md:px-8 py-4">
             <button
@@ -1642,7 +1642,7 @@ export function AIToolsView() {
 
   // ===== Tools Grid (landing page) =====
   return (
-    <div className="relative -m-3 min-h-[calc(100vh-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
+    <div className="relative -m-3 min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] overflow-hidden sm:-m-4 lg:-m-6">
       {/* Video background — optimized: preload metadata only */}
       <ReadyVideoBackground src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" />
       <div className="absolute inset-0 z-0 bg-black/50" />
@@ -1650,11 +1650,11 @@ export function AIToolsView() {
       <style>{BLOOM_CSS}</style>
 
       {/* Content layer */}
-      <div className="relative z-10 flex min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {/* Left panel — 52% */}
         <div className="w-full lg:w-[52%] relative p-4 lg:p-6">
           <div className="bloom-glass-strong absolute inset-4 lg:inset-6 rounded-3xl" />
-          <div className="relative z-10 flex flex-col h-full min-h-[calc(100vh-8rem)] p-6 lg:p-10">
+          <div className="relative z-10 flex flex-col h-full min-h-[calc(var(--scholar-vvh,100dvh)-8rem)] p-6 lg:p-10">
             {/* Nav */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

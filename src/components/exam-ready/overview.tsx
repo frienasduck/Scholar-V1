@@ -210,46 +210,46 @@ export function PreparationHome({
 
   return (
     <>
-      {/* Progressive Step Tabs: One after the other */}
-      <nav className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-xl" aria-label="Exam Ready Stages">
+      {/* Progressive Step Tabs: 2x2 grid on phones, inline strip on sm+ */}
+      <nav className="mb-4 sm:mb-6 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 rounded-2xl border border-white/10 bg-black/40 p-1.5 backdrop-blur-xl" aria-label="Exam Ready Stages">
         <button
           type="button"
           onClick={() => setActiveTab("paths")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "paths" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+          className={`flex items-center justify-start gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 min-h-11 py-2 sm:py-2.5 text-[11px] sm:text-xs font-semibold transition-all ${activeTab === "paths" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
         >
-          <Target size={14} className={activeTab === "paths" ? "text-indigo-300" : ""} />
-          <span>1. Active Paths & Plans</span>
-          {sessions.length > 0 && <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[10px]">{sessions.length}</span>}
+          <Target size={14} className={`shrink-0 ${activeTab === "paths" ? "text-indigo-300" : ""}`} />
+          <span className="truncate">1. Active Paths</span>
+          {sessions.length > 0 && <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px]">{sessions.length}</span>}
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("syllabus")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "syllabus" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+          className={`flex items-center justify-start gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 min-h-11 py-2 sm:py-2.5 text-[11px] sm:text-xs font-semibold transition-all ${activeTab === "syllabus" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
         >
-          <Layers size={14} className={activeTab === "syllabus" ? "text-indigo-300" : ""} />
-          <span>2. Syllabus & Mastery</span>
-          <span className="text-[10px] text-white/50">{analytics.completedChapters}/{analytics.totalChapters}</span>
+          <Layers size={14} className={`shrink-0 ${activeTab === "syllabus" ? "text-indigo-300" : ""}`} />
+          <span className="truncate">2. Syllabus</span>
+          <span className="shrink-0 text-[10px] text-white/50">{analytics.completedChapters}/{analytics.totalChapters}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("radar")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "radar" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+          className={`flex items-center justify-start gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 min-h-11 py-2 sm:py-2.5 text-[11px] sm:text-xs font-semibold transition-all ${activeTab === "radar" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
         >
-          <Flame size={14} className={activeTab === "radar" ? "text-indigo-300" : ""} />
-          <span>3. High-Yield Radar</span>
-          {analytics.priorityChapters.length > 0 && <span className="rounded-full bg-amber-500/20 text-amber-300 px-1.5 py-0.2 text-[10px]">{analytics.priorityChapters.length}</span>}
+          <Flame size={14} className={`shrink-0 ${activeTab === "radar" ? "text-indigo-300" : ""}`} />
+          <span className="truncate">3. High-Yield</span>
+          {analytics.priorityChapters.length > 0 && <span className="shrink-0 rounded-full bg-amber-500/20 text-amber-300 px-1.5 py-0.5 text-[10px]">{analytics.priorityChapters.length}</span>}
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("mistakes")}
-          className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${activeTab === "mistakes" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+          className={`flex items-center justify-start gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 min-h-11 py-2 sm:py-2.5 text-[11px] sm:text-xs font-semibold transition-all ${activeTab === "mistakes" ? "bg-gradient-to-r from-indigo-500/30 to-violet-500/30 text-white border border-white/20 shadow-md" : "text-white/60 hover:text-white hover:bg-white/5"}`}
         >
-          <AlertTriangle size={14} className={activeTab === "mistakes" ? "text-indigo-300" : ""} />
-          <span>4. Mistake Notebook</span>
-          {mistakes.length > 0 && <span className="rounded-full bg-rose-500/20 text-rose-300 px-1.5 py-0.2 text-[10px]">{mistakes.length}</span>}
+          <AlertTriangle size={14} className={`shrink-0 ${activeTab === "mistakes" ? "text-indigo-300" : ""}`} />
+          <span className="truncate">4. Mistakes</span>
+          {mistakes.length > 0 && <span className="shrink-0 rounded-full bg-rose-500/20 text-rose-300 px-1.5 py-0.5 text-[10px]">{mistakes.length}</span>}
         </button>
       </nav>
       {activeTab === "paths" && (

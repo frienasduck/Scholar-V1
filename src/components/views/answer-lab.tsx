@@ -510,11 +510,10 @@ ${entry.result.modelAnswer}
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-x-clip -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-x-clip -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
-        .al-font-serif { font-family: 'Instrument Serif', serif; }
-        .al-font-body { font-family: 'Inter', sans-serif; }
+        .al-font-serif { font-family: var(--font-serif, 'Instrument Serif', Georgia, serif); }
+        .al-font-body { font-family: var(--font-sans, 'Inter', system-ui, sans-serif); }
         .al-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
         .al-glass-strong { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.16); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1); color: white; }
         .al-glass input, .al-glass textarea, .al-glass select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.15) !important; color: white !important; }
@@ -566,25 +565,25 @@ ${entry.result.modelAnswer}
         <div className="al-backdrop-scrim" />
       </div>
 
-      <div className="relative z-10 al-font-body p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+      <div className="relative z-10 al-font-body p-3.5 sm:p-6 md:p-8 lg:p-12 max-w-7xl mx-auto">
         {/* HERO */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-4 sm:mb-8 flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br from-rose-500/30 to-pink-500/30 text-rose-300 border border-white/10">
-                <PenTool className="h-6 w-6" />
+            <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-3">
+              <div className="grid place-items-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-rose-500/30 to-pink-500/30 text-rose-300 border border-white/10 shrink-0">
+                <PenTool className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40">Doubt Lab • Solve a Doubt • Class {scholarClass}</Badge>
+              <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40 text-[11px] sm:text-xs">Doubt Lab • Solve a Doubt • Class {scholarClass}</Badge>
             </div>
-            <h1 className="al-font-serif text-5xl md:text-6xl text-white leading-tight">
+            <h1 className="al-font-serif text-3xl sm:text-5xl md:text-6xl text-white leading-tight">
               Doubt <em className="text-rose-300">Lab</em> · Answer Writing
             </h1>
-            <p className="text-white/70 mt-3 max-w-2xl">
+            <p className="hidden sm:block text-white/70 mt-3 max-w-2xl">
               Master long-form descriptive answers inside Doubt Lab. Write, attach handwritten sheets, and get rubric-based CBSE evaluation — or save evaluated questions straight to My Doubts.
             </p>
           </div>
           {onBackToDoubts ? (
-            <Button variant="outline" className="al-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={onBackToDoubts}>
+            <Button variant="outline" className="min-h-11 sm:min-h-9 al-glass bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={onBackToDoubts}>
               View My Doubts
             </Button>
           ) : null}
@@ -592,7 +591,7 @@ ${entry.result.modelAnswer}
 
         {/* STAT PILLS */}
         <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+          className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-8">
           {[
             { icon: Trophy, label: "Answers Evaluated", value: totalEvaluated, accent: "#f43f5e" },
             { icon: Target, label: "Average Marks", value: avgMarks, accent: "#6366f1" },
@@ -606,9 +605,9 @@ ${entry.result.modelAnswer}
 
         <Tabs defaultValue="practice" className="space-y-6">
           <TabsList className="al-glass bg-transparent h-auto p-1 flex flex-wrap gap-1">
-            <TabsTrigger value="practice" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Practice</TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">History</TabsTrigger>
-            <TabsTrigger value="tips" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Tips</TabsTrigger>
+            <TabsTrigger value="practice" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Practice</TabsTrigger>
+            <TabsTrigger value="history" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">History</TabsTrigger>
+            <TabsTrigger value="tips" className="min-h-11 sm:min-h-9 data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">Tips</TabsTrigger>
           </TabsList>
 
           {/* ===== PRACTICE ===== */}
@@ -708,12 +707,12 @@ ${entry.result.modelAnswer}
                         placeholder="Write your full answer here. Aim for clear paragraphs, key terms from the question, and a concluding sentence…"
                         value={answer}
                         onChange={(e) => setAnswer(e.target.value)}
-                        className="bg-white/5 border-white/15 text-white resize-y"
+                        className="text-base sm:text-sm bg-white/5 border-white/15 text-white resize-y"
                       />
 
                       <div className="flex items-center gap-2 flex-wrap mt-3">
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onUpload} />
-                        <Button variant="outline" size="sm" className="bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={() => fileInputRef.current?.click()}>
+                        <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9 bg-white/5 border-white/15 text-white hover:bg-white/10" onClick={() => fileInputRef.current?.click()}>
                           <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload handwritten
                         </Button>
                         {uploadedName && (
@@ -722,10 +721,10 @@ ${entry.result.modelAnswer}
                           </span>
                         )}
                         <div className="ml-auto flex gap-2">
-                          <Button variant="ghost" size="sm" className="text-white/70" disabled={!answer || evaluating} onClick={() => { setAnswer(""); setEvalResult(null); }}>
+                          <Button variant="ghost" size="sm" className="min-h-11 sm:min-h-9 text-white/70" disabled={!answer || evaluating} onClick={() => { setAnswer(""); setEvalResult(null); }}>
                             <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Clear
                           </Button>
-                          <Button size="sm" className="bg-rose-500 hover:bg-rose-600 text-white" disabled={!answer || evaluating} onClick={evaluate}>
+                          <Button size="sm" className="min-h-11 sm:min-h-9 bg-rose-500 hover:bg-rose-600 text-white" disabled={!answer || evaluating} onClick={evaluate}>
                             {evaluating ? (
                               <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block"><Brain className="h-3.5 w-3.5 mr-1.5" /></motion.span> Evaluating…</>
                             ) : (
@@ -980,14 +979,14 @@ ${entry.result.modelAnswer}
         </Tabs>
       </div>
       <Dialog open={customOpen} onOpenChange={setCustomOpen}>
-        <DialogContent className="al-glass-strong max-w-xl rounded-3xl border-white/15 bg-[#080b12]/95 text-white">
+        <DialogContent mobileSheet className="al-glass-strong max-w-xl rounded-3xl border-white/15 bg-[#080b12]/95 text-white">
           <DialogHeader><DialogTitle>Create Custom Question</DialogTitle><DialogDescription>Paste a question, then answer it with the same Answer Lab evaluation flow. Any score is AI-generated guidance unless you provide a real rubric.</DialogDescription></DialogHeader>
           <div className="space-y-4">
-            <label className="block text-xs font-medium text-white/65">Question<Textarea value={customQuestion} onChange={(event) => setCustomQuestion(event.target.value)} rows={5} placeholder="Paste the complete question…" className="mt-2 border-white/10 bg-white/[.05] text-white" /></label>
-            <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-white/65">Subject or context<input value={customSubject} onChange={(event) => setCustomSubject(event.target.value)} placeholder="e.g. Physics" className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-white/[.05] px-3 text-sm text-white outline-none focus:border-cyan-200/35" /></label><label className="text-xs font-medium text-white/65">Marks<input type="number" min={1} max={20} value={customMarks} onChange={(event) => setCustomMarks(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-white/[.05] px-3 text-sm text-white outline-none focus:border-cyan-200/35" /></label></div>
-            <label className="block text-xs font-medium text-white/65">Expected concepts (optional, comma-separated)<Textarea value={customContext} onChange={(event) => setCustomContext(event.target.value)} rows={2} placeholder="Only add concepts from a real marking scheme or teacher guidance" className="mt-2 border-white/10 bg-white/[.05] text-white" /></label>
+            <label className="block text-xs font-medium text-white/65">Question<Textarea value={customQuestion} onChange={(event) => setCustomQuestion(event.target.value)} rows={5} placeholder="Paste the complete question…" className="mt-2 border-white/10 bg-white/[.05] text-base sm:text-sm text-white" /></label>
+            <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-medium text-white/65">Subject or context<input value={customSubject} onChange={(event) => setCustomSubject(event.target.value)} placeholder="e.g. Physics" className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-white/[.05] px-3 text-base sm:text-sm text-white outline-none focus:border-cyan-200/35" /></label><label className="text-xs font-medium text-white/65">Marks<input type="number" min={1} max={20} value={customMarks} onChange={(event) => setCustomMarks(Number(event.target.value))} className="mt-2 min-h-11 w-full rounded-xl border border-white/10 bg-white/[.05] px-3 text-base sm:text-sm text-white outline-none focus:border-cyan-200/35" /></label></div>
+            <label className="block text-xs font-medium text-white/65">Expected concepts (optional, comma-separated)<Textarea value={customContext} onChange={(event) => setCustomContext(event.target.value)} rows={2} placeholder="Only add concepts from a real marking scheme or teacher guidance" className="mt-2 border-white/10 bg-white/[.05] text-base sm:text-sm text-white" /></label>
           </div>
-          <DialogFooter><Button variant="ghost" onClick={() => setCustomOpen(false)}>Cancel</Button><Button onClick={createCustomQuestion} disabled={customQuestion.trim().length < 8}><PenTool className="mr-2 h-4 w-4" />Start attempt</Button></DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" className="min-h-11 sm:min-h-9" onClick={() => setCustomOpen(false)}>Cancel</Button><Button className="min-h-11 sm:min-h-9" onClick={createCustomQuestion} disabled={customQuestion.trim().length < 8}><PenTool className="mr-2 h-4 w-4" />Start attempt</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

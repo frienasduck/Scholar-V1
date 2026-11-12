@@ -73,7 +73,6 @@ import {
 
 const TOTAL_PAGES = 96; // Default for physics
 const EB_STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 .eb-glass { background: rgba(255,255,255,0.02); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
 .eb-glass-strong { background: rgba(14,16,20,0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
 .eb-font { font-family: 'Inter', system-ui, sans-serif; }
@@ -86,7 +85,7 @@ const EB_STYLE = `
   .scholar-ebook { min-height: calc(var(--scholar-vvh, 100dvh) - var(--scholar-topbar-height)); }
   .eb-library-nav { align-items: flex-start; gap: .75rem; }
   .eb-library-nav > button { min-height: 2.75rem; padding-inline: .75rem; }
-  .eb-library-hero { margin-block: 1.25rem 1.5rem; }
+  .eb-library-hero { margin-block: .65rem 1rem; }
   .eb-stat-card { min-width: 0; padding: .7rem; gap: .6rem; }
   .eb-stat-card:last-child { grid-column: 1 / -1; }
   .eb-continue-card { align-items: flex-start; }
@@ -100,7 +99,7 @@ const EB_STYLE = `
   .eb-reader-meta > [data-chapter-badge] { min-width: 0; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .eb-reader-tools { width: 100%; margin-top: .45rem; padding-bottom: .15rem; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
   .eb-reader-tools::-webkit-scrollbar { display: none; }
-  .eb-reader-tools button { display: grid; min-width: 2.6rem; min-height: 2.6rem; place-items: center; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.035); }
+  .eb-reader-tools button { display: grid; min-width: 2.75rem; min-height: 2.75rem; place-items: center; flex: 0 0 auto; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.035); }
   .eb-reader-tools .eb-tool-divider { display: none; }
   .eb-page-stage { padding: .65rem .5rem 1rem; overflow-x: hidden; }
   .eb-page-motion { width: 100%; min-width: 0; }
@@ -575,12 +574,12 @@ export function EBookView() {
           readinessId="ebook-library"
         /></SceneBackdrop>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
           {/* Nav */}
           <motion.nav
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="eb-library-nav flex items-center justify-between py-3 sm:py-4"
+            className="eb-library-nav flex items-center justify-between py-2 sm:py-4"
           >
             <div className="flex items-center gap-3">
               <div className="grid place-items-center h-9 w-9 rounded-xl bg-white/5 border border-white/10">
@@ -603,7 +602,7 @@ export function EBookView() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-1.5 eb-glass rounded-full px-3 py-1 text-xs text-white/50 mb-5"
+              className="inline-flex items-center gap-1.5 eb-glass rounded-full px-3 py-1 text-[11px] sm:text-xs text-white/50 mb-3 sm:mb-5"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               SCANNED TEXTBOOK READER · CBSE CLASS 11 · {totalPages} PAGES
@@ -611,7 +610,7 @@ export function EBookView() {
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-5xl font-semibold tracking-tight leading-[1.05] text-white"
+              className="text-2xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-[1.05] text-white"
             >
               {activeBook.subject}{" "}
               <span
@@ -633,7 +632,7 @@ export function EBookView() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="mt-4 text-white/60 max-w-md text-sm leading-relaxed"
+              className="hidden sm:block mt-4 text-white/60 max-w-md text-sm leading-relaxed"
             >
               Select a chapter from {activeBook.title}, continue from your saved
               page, or open its complete reader. Bookmarks, notes, and progress
@@ -680,7 +679,7 @@ export function EBookView() {
             ].map((s, i) => (
               <div
                 key={i}
-                className="eb-stat-card eb-glass rounded-xl p-3 flex items-center gap-3"
+                className={`eb-stat-card eb-glass rounded-xl p-3 flex items-center gap-3 ${i === 4 ? "col-span-2 sm:col-span-1" : ""}`}
               >
                 <div
                   className="grid place-items-center h-9 w-9 rounded-lg"
@@ -733,7 +732,7 @@ export function EBookView() {
                 placeholder="Search bookmarks, notes, and reviewed OCR text..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                className="pl-10 min-h-11 text-base sm:text-sm bg-white/5 border-white/10 text-white placeholder:text-white/40"
               />
             </div>
             <p className="text-[10px] text-white/30 mb-2">
@@ -1010,7 +1009,7 @@ export function EBookView() {
         {/* Top bar */}
         <div className="eb-reader-topbar sticky top-0 z-20 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="eb-reader-meta flex items-center gap-3 min-w-0">
-            <button data-velocity-control="reader" onClick={() => setView("home")} className="lg:hidden inline-flex min-h-10 items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 text-xs text-white/75" aria-label="Return to e-book library">
+            <button data-velocity-control="reader" onClick={() => setView("home")} className="lg:hidden inline-flex min-h-11 items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-3 text-xs text-white/75" aria-label="Return to e-book library">
               <ChevronLeft className="h-4 w-4" /> Library
             </button>
             {!showSidebar && !fullscreen && (
@@ -1295,7 +1294,7 @@ export function EBookView() {
               value={activePage}
               aria-label="Page number"
               onChange={(e) => jumpTo(parseInt(e.target.value) || 1)}
-              className="w-14 text-center text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white"
+              className="w-14 min-h-11 sm:min-h-8 text-center text-base sm:text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white"
             />
             <span className="text-xs text-white/40">/ {totalPages}</span>
             <div className="eb-page-progress w-24 h-1 rounded-full bg-white/10 overflow-hidden ml-2">
@@ -1360,7 +1359,7 @@ export function EBookView() {
         open={noteModal !== null}
         onOpenChange={(o) => !o && setPageNoteModal(null)}
       >
-        <DialogContent className="eb-glass-strong max-w-lg text-white border-white/10">
+        <DialogContent mobileSheet className="eb-glass-strong max-w-lg text-white border-white/10">
           <DialogHeader>
             <DialogTitle className="text-white">
               Note for Pg {noteModal}
@@ -1375,7 +1374,7 @@ export function EBookView() {
             onChange={(e) => setNoteText(e.target.value)}
             rows={5}
             placeholder="Write your note..."
-            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 resize-none"
+            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white text-base sm:text-sm placeholder:text-white/30 resize-none"
           />
           <div>
             <p className="text-xs text-white/40 mb-2">Tags:</p>
@@ -1390,7 +1389,7 @@ export function EBookView() {
                         : [...prev, tag],
                     )
                   }
-                  className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${noteTags.includes(tag) ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "bg-white/5 text-white/40 border-white/10 hover:text-white/60"}`}
+                  className={`min-h-9 sm:min-h-0 text-xs sm:text-[10px] px-3 sm:px-2 py-1.5 sm:py-1 rounded-full border transition-colors ${noteTags.includes(tag) ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "bg-white/5 text-white/40 border-white/10 hover:text-white/60"}`}
                 >
                   {tag}
                 </button>
@@ -1402,7 +1401,7 @@ export function EBookView() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/10"
+                className="min-h-11 sm:min-h-9 text-white hover:bg-white/10"
               >
                 Cancel
               </Button>
@@ -1410,7 +1409,7 @@ export function EBookView() {
             <Button
               size="sm"
               onClick={saveNote}
-              className="bg-indigo-500 text-white hover:bg-indigo-600"
+              className="min-h-11 sm:min-h-9 bg-indigo-500 text-white hover:bg-indigo-600"
             >
               Save Note
             </Button>
@@ -1423,7 +1422,7 @@ export function EBookView() {
         open={ocrModal !== null}
         onOpenChange={(o) => !o && setOcrModal(null)}
       >
-        <DialogContent className="eb-glass-strong max-w-4xl text-white border-white/10 max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent mobileSheet className="eb-glass-strong max-w-4xl text-white border-white/10 max-h-[85dvh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-white">
               OCR Text Extraction — Pg {ocrModal}
@@ -1450,7 +1449,7 @@ export function EBookView() {
                 size="sm"
                 onClick={() => ocrModal && runOCR(ocrModal)}
                 disabled={ocrLoading}
-                className="bg-purple-500 text-white hover:bg-purple-600"
+                className="min-h-11 sm:min-h-9 bg-purple-500 text-white hover:bg-purple-600"
               >
                 {ocrLoading ? (
                   <>
@@ -1470,7 +1469,7 @@ export function EBookView() {
                 onChange={(e) => setOcrText(e.target.value)}
                 rows={15}
                 placeholder="Click 'Run OCR' to extract text, then edit as needed..."
-                className="w-full flex-1 p-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 resize-none eb-scroll"
+                className="w-full flex-1 p-3 rounded-lg bg-white/5 border border-white/10 text-white text-base sm:text-sm placeholder:text-white/30 resize-none eb-scroll"
               />
               {ocrError && <p role="alert" className="text-sm text-amber-200">{ocrError}</p>}
             </div>
@@ -1480,7 +1479,7 @@ export function EBookView() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/10"
+                className="min-h-11 sm:min-h-9 text-white hover:bg-white/10"
               >
                 Close
               </Button>
@@ -1489,7 +1488,7 @@ export function EBookView() {
               size="sm"
               onClick={saveOCR}
               disabled={ocrLoading || ocrText.trim().length < 10}
-              className="bg-emerald-500 text-white hover:bg-emerald-600"
+              className="min-h-11 sm:min-h-9 bg-emerald-500 text-white hover:bg-emerald-600"
             >
               Save Reviewed Text
             </Button>
@@ -1525,7 +1524,7 @@ function ChapterMapper({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="eb-glass-strong max-w-lg text-white border-white/10">
+      <DialogContent mobileSheet className="eb-glass-strong max-w-lg text-white border-white/10">
         <DialogHeader>
           <DialogTitle className="text-white">Chapter Page Mapper</DialogTitle>
           <DialogDescription className="text-white/50">
@@ -1549,7 +1548,7 @@ function ChapterMapper({
                       ),
                     )
                   }
-                  className="bg-white/5 border-white/10 text-white text-sm flex-1"
+                  className="min-h-11 sm:min-h-9 bg-white/5 border-white/10 text-white text-base sm:text-sm flex-1"
                 />
               </div>
               <div className="flex items-center gap-2 text-xs text-white/60">
@@ -1568,7 +1567,7 @@ function ChapterMapper({
                       ),
                     )
                   }
-                  className="w-16 bg-white/5 border-white/10 text-white text-center"
+                  className="w-16 min-h-11 sm:min-h-9 bg-white/5 border-white/10 text-white text-base sm:text-sm text-center"
                 />
                 <span>End:</span>
                 <Input
@@ -1585,7 +1584,7 @@ function ChapterMapper({
                       ),
                     )
                   }
-                  className="w-16 bg-white/5 border-white/10 text-white text-center"
+                  className="w-16 min-h-11 sm:min-h-9 bg-white/5 border-white/10 text-white text-base sm:text-sm text-center"
                 />
                 <span className="text-white/40">
                   ({ch.endPage - ch.startPage + 1} pages)
@@ -1608,7 +1607,7 @@ function ChapterMapper({
                 },
               ])
             }
-            className="bg-white/5 border-white/15 text-white hover:bg-white/10 w-full"
+            className="min-h-11 sm:min-h-9 bg-white/5 border-white/15 text-white hover:bg-white/10 w-full"
           >
             + Add Chapter
           </Button>
@@ -1618,7 +1617,7 @@ function ChapterMapper({
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-white/10"
+              className="min-h-11 sm:min-h-9 text-white hover:bg-white/10"
             >
               Cancel
             </Button>
@@ -1626,7 +1625,7 @@ function ChapterMapper({
           <Button
             size="sm"
             onClick={() => onSave(local)}
-            className="bg-indigo-500 text-white hover:bg-indigo-600"
+            className="min-h-11 sm:min-h-9 bg-indigo-500 text-white hover:bg-indigo-600"
           >
             Save Mapping
           </Button>

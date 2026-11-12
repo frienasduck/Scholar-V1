@@ -236,10 +236,9 @@ export function AnalyticsView({ onNavigate }: { onNavigate?: (view: string) => v
   ];
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       {/* Liquid glass + font CSS */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
         .asme-glass {
           background: rgba(255,255,255,0.01);
           background-blend-mode: luminosity;
@@ -292,7 +291,7 @@ export function AnalyticsView({ onNavigate }: { onNavigate?: (view: string) => v
       <div className="absolute inset-0 z-0 bg-black/50" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {/* Navigation bar */}
         <nav className="relative z-20 pl-6 pr-6 py-6">
           <div className="asme-glass rounded-full px-6 py-3 flex items-center justify-between max-w-5xl mx-auto">

@@ -384,9 +384,8 @@ Return strict JSON:
   const detailReminder = detailId ? reminders.find((r) => r.id === detailId) ?? null : null;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .sr-font-serif { font-family: 'Instrument Serif', serif; }
         .sr-font-body { font-family: 'Inter', sans-serif; }
         .sr-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
@@ -649,7 +648,7 @@ Return strict JSON:
       {/* ===== Delete confirm ===== */}
       {confirmDelete && (
         <Dialog open onOpenChange={() => setConfirmDelete(null)}>
-          <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
+          <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2"><Trash2 className="h-5 w-5 text-rose-300" /> Delete reminder?</DialogTitle>
               <DialogDescription className="text-white/70">“{confirmDelete.title}” will be permanently removed. This can be undone immediately after.</DialogDescription>
@@ -1099,7 +1098,7 @@ function TemplatesPanel({ scholarClass }: { scholarClass: 9 | 11 }) {
       </div>
 
       <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
+        <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white">Create a template</DialogTitle>
             <DialogDescription className="text-white/70">Give your routine a name — you can apply it anytime.</DialogDescription>
@@ -1210,7 +1209,7 @@ function QuickPreviewDialog({ parsed, onCancel, onEdit, onConfirm }: {
 }) {
   return (
     <Dialog open={!!parsed} onOpenChange={(open) => { if (!open) onCancel(); }}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><Sparkles className="h-5 w-5 text-fuchsia-300" /> Create this reminder?</DialogTitle>
           <DialogDescription className="text-white/70">Scholar's interpretation of your command. Confirm or edit before saving.</DialogDescription>
@@ -1440,7 +1439,7 @@ function ReminderEditorDialog({ scholarClass, open, onOpenChange, editing, curri
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-2xl max-h-[90vh] overflow-y-auto sr-scroll">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-2xl max-h-[90vh] overflow-y-auto sr-scroll">
         <DialogHeader>
           <DialogTitle className="sr-font-serif text-2xl text-white">{editing ? "Edit reminder" : "New reminder"}</DialogTitle>
           <DialogDescription className="text-white/70">Set the basics, scheduling, alerts and options. Conflicts are checked automatically.</DialogDescription>
@@ -1733,7 +1732,7 @@ function TalkEditorDialog({ reminder, scholarClass, onClose, onPreview }: {
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><Volume2 className="h-5 w-5 text-cyan-300" /> Talk Reminder</DialogTitle>
           <DialogDescription className="text-white/70">Scholar speaks “{reminder.title}” aloud when it becomes due.</DialogDescription>
@@ -1850,7 +1849,7 @@ function SnoozeDialog({ reminder, scholarClass, onClose, onReschedule }: {
   };
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-sm">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-white">Snooze “{reminder.title}”</DialogTitle>
         </DialogHeader>
@@ -1898,7 +1897,7 @@ function RescheduleDialog({ reminder, scholarClass, onClose }: { reminder: Smart
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><Calendar className="h-5 w-5 text-cyan-300" /> Smart reschedule</DialogTitle>
           <DialogDescription className="text-white/70">You missed “{reminder.title}”. Scholar suggests:</DialogDescription>
@@ -1953,7 +1952,7 @@ function SeriesPreviewDialog({ draft, scholarClass, onClose, onConfirm }: {
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><Sparkles className="h-5 w-5 text-fuchsia-300" /> Revision series preview</DialogTitle>
           <DialogDescription className="text-white/70">For {draft.examTitle} · {draft.examDate ? new Date(draft.examDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : ""}. Edit any session before creating.</DialogDescription>
@@ -2026,7 +2025,7 @@ function ReminderDetailDialog({ reminder, open, onOpenChange, onEdit, onComplete
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="grid place-items-center h-11 w-11 rounded-xl" style={{ background: `${meta.color}22`, color: meta.color }}>
@@ -2161,7 +2160,7 @@ function ReminderSettingsDialog({ scholarClass, open, onOpenChange, notifState, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
+      <DialogContent mobileSheet className="sr-glass-strong !bg-black/60 !border-white/20 max-w-lg max-h-[90vh] overflow-y-auto sr-scroll">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><Settings2 className="h-5 w-5 text-fuchsia-300" /> Reminder settings</DialogTitle>
         </DialogHeader>

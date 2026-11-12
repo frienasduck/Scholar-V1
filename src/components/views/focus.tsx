@@ -246,10 +246,9 @@ export function FocusView() {
 
   // ===== Render =====
   return (
-    <div className="scholar-focus scholar-responsive-page relative bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="scholar-focus scholar-responsive-page relative bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6 pb-24 lg:pb-10">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
-        .cinema-glass {
+                .cinema-glass {
           background: rgba(255,255,255,0.03);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
@@ -286,7 +285,7 @@ export function FocusView() {
         </>
       )}
 
-      <div className={focusMode ? "h-full grid place-items-center px-6" : "space-y-6 pb-10"}>
+      <div className={focusMode ? "h-full grid place-items-center px-4 sm:px-6" : "space-y-6 pb-20 sm:pb-10"}>
         {/* Header (hidden in focus mode) */}
         {!focusMode && (
           <>
@@ -311,7 +310,7 @@ export function FocusView() {
               <button
                 key={m}
                 onClick={() => switchMode(m)}
-                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`min-h-11 sm:min-h-0 px-3.5 sm:px-4 py-2 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   mode === m ? "text-white shadow-sm" : "bg-muted/60 text-muted-foreground hover:bg-muted"
                 }`}
                 style={mode === m ? { background: MODE_CONFIG[m].accent } : undefined}
@@ -324,7 +323,7 @@ export function FocusView() {
           {/* Ring */}
           <div className="grid place-items-center mb-8">
             <div className="relative">
-              <svg width={focusMode ? 340 : 280} height={focusMode ? 340 : 280} viewBox="0 0 280 280" className="scholar-focus-ring -rotate-90">
+              <svg width={focusMode ? 340 : 280} height={focusMode ? 340 : 280} viewBox="0 0 280 280" className="scholar-focus-ring -rotate-90 max-w-full h-auto w-[min(100%,280px)]">
                 <defs>
                   <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#6366f1" />
@@ -387,7 +386,7 @@ export function FocusView() {
             <div className="mt-6 flex items-center justify-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground">Tagging session:</span>
               <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger className="h-8 w-[180px] text-xs">
+                <SelectTrigger className="min-h-11 sm:min-h-8 h-auto sm:h-8 w-[180px] text-base sm:text-xs">
                   <SelectValue placeholder="No subject" />
                 </SelectTrigger>
                 <SelectContent>

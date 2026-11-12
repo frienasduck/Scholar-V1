@@ -138,9 +138,8 @@ export function FriendsView() {
   }, [tab, friends, realFriends]);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
         .cinema-glass {
           background: rgba(255,255,255,0.03);
           backdrop-filter: blur(12px);
@@ -318,7 +317,7 @@ export function FriendsView() {
 
       {/* Chat modal */}
       <Dialog open={!!activeFriend} onOpenChange={(o) => !o && setActiveFriendId(null)}>
-        <DialogContent className="max-w-2xl w-[95vw] p-0 overflow-hidden h-[85vh] max-h-[700px] flex flex-col">
+        <DialogContent mobileSheet className="max-w-2xl w-[95vw] p-0 overflow-hidden h-[85vh] max-h-[700px] flex flex-col">
           {activeFriend && (
             <>
               <DialogHeader className="px-4 py-3 border-b border-border/60 flex-row items-center gap-3 space-y-0">

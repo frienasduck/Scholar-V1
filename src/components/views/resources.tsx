@@ -80,7 +80,7 @@ export function ResourcesView() {
   }, [mode]);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-background" data-workspace={WORKSPACE}>
+    <div className="flex min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] flex-col bg-background" data-workspace={WORKSPACE}>
       <header className="scholar-workspace-header relative z-20 -mx-3 -mt-3 border-b border-border/50 bg-background/80 px-3 py-2.5 backdrop-blur-xl sm:-mx-4 sm:-mt-4 sm:px-4 lg:-mx-6 lg:-mt-6 lg:px-6">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <p className="hidden text-xs font-semibold tracking-tight text-muted-foreground sm:block">
@@ -103,7 +103,7 @@ export function ResourcesView() {
               aria-controls="resources-library-panel"
               onClick={() => selectMode("library")}
               className={cn(
-                "relative z-10 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors sm:text-[13px]",
+                "relative z-10 inline-flex min-h-11 sm:min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors sm:text-[13px]",
                 mode === "library" ? "text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -116,7 +116,7 @@ export function ResourcesView() {
               aria-controls="resources-downloads-panel"
               onClick={() => selectMode("downloads")}
               className={cn(
-                "relative z-10 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors sm:text-[13px]",
+                "relative z-10 inline-flex min-h-11 sm:min-h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors sm:text-[13px]",
                 mode === "downloads" ? "text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >

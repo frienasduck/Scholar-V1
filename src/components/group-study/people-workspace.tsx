@@ -137,7 +137,7 @@ export function PeopleWorkspace({
           if (!value) setRemoveId(null);
         }}
       >
-        <DialogContent className="gs-dialog">
+        <DialogContent mobileSheet className="gs-dialog">
           <DialogTitle>Remove this participant?</DialogTitle>
           <DialogDescription>
             They will lose access to this room immediately.
@@ -614,7 +614,7 @@ export function HostWorkspace({
           if (!value) setConfirm(null);
         }}
       >
-        <DialogContent className="gs-dialog">
+        <DialogContent mobileSheet className="gs-dialog">
           <DialogTitle>
             {confirm === "end"
               ? "End this room for everyone?"

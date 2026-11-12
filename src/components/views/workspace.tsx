@@ -117,9 +117,8 @@ export function WorkspaceView() {
   const colsClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-black overflow-hidden -m-4 lg:-m-6">
+    <div className="relative min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] bg-black overflow-hidden -m-3 sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
         .ws-font-serif { font-family: 'Instrument Serif', serif; }
         .ws-font-body { font-family: 'Inter', sans-serif; }
         .ws-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); color: white; }
@@ -228,7 +227,7 @@ export function WorkspaceView() {
 
         {/* ADD WIDGET DIALOG */}
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogContent className="ws-glass-strong !bg-black/75 !border-white/20 w-[calc(100vw-2rem)] max-w-6xl overflow-hidden">
+          <DialogContent mobileSheet className="ws-glass-strong !bg-black/75 !border-white/20 w-[calc(100vw-2rem)] max-w-6xl overflow-hidden">
             <DialogHeader>
               <DialogTitle className="ws-font-serif text-2xl text-white flex items-center gap-2">
                 <Plus className="h-5 w-5 text-indigo-300" /> Add Widget

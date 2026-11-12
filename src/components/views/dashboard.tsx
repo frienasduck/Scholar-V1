@@ -27,6 +27,7 @@ import {
   Layers,
   ListChecks,
   FileQuestion,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
@@ -329,9 +330,8 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
 
   const revealRoot = useVelocityReveal();
   return (
-    <div ref={revealRoot} className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-4 lg:-m-6" data-scene-connected="true">
+    <div ref={revealRoot} className="scholar-dashboard scholar-responsive-page relative bg-transparent overflow-hidden -m-3 sm:-m-4 lg:-m-6" data-scene-connected="true">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap');
         /* Dashboard surfaces use the shared Scholar Liquid Glass material.
            The dashboard's cinematic video gives the glass real depth to
            refract, so these two surfaces opt into the same token values as
@@ -382,7 +382,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
           opacity: 0.72;
         }
         .font-garamond { font-family: 'Garamond', 'Times New Roman', serif; }
-        .font-geist { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .font-geist { font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif); }
         .dash-glass:hover { background-color: color-mix(in srgb, var(--sg-plate-ink) 11%, transparent); }
         /* Tier 3: identical identity when blur or transparency is unavailable. */
         html[data-sg-material="fallback"] .dash-glass,
@@ -410,10 +410,10 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
       <div className="absolute inset-0 z-0 bg-black/40" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         <ScholarToday />
         {/* Navbar */}
-        <nav className="relative z-20 px-5 sm:px-8 py-6 flex items-center justify-between">
+        <nav className="relative z-20 px-4 sm:px-8 py-3 sm:py-6 flex items-center justify-between">
           <span className="font-geist text-white font-light uppercase tracking-[0.25em] sm:tracking-[0.3em] text-sm">
             {user.name && user.name !== "Guest" ? `${user.name.split(" ")[0]}'s Scholar` : "Scholar"}
           </span>
@@ -437,51 +437,71 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
         </nav>
 
         {/* Hero content */}
-        <div className="scholar-dashboard-hero relative z-10 flex flex-col items-center text-center px-5 sm:px-8 pt-4 sm:pt-8 pb-6">
+        <div className="scholar-dashboard-hero relative z-10 flex flex-col items-center text-center px-4 sm:px-8 pt-1 sm:pt-8 pb-3 sm:pb-6">
           {/* Greeting + date */}
           <div data-velocity-reveal
-            className="flex items-center gap-3 mb-4"
+            className="flex items-center gap-3 mb-2 sm:mb-4"
           >
-            <span className="dash-glass rounded-full px-4 py-1.5 text-xs text-white/80 font-geist uppercase tracking-widest">
+            <span className="dash-glass rounded-full px-3 sm:px-4 py-1 sm:py-1.5 text-[11px] sm:text-xs text-white/80 font-geist uppercase tracking-widest">
               {greeting()}, {user.name.split(" ")[0]} · Class {user.scholarClass} CBSE{user.jeeMode ? " · JEE" : ""}
             </span>
             <span className="text-xs text-white/50 font-geist hidden sm:inline">{fmtDate()}</span>
           </div>
 
           {/* Heading */}
-          <h1 className="font-garamond font-normal text-white text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.08] tracking-tight mb-4 sm:mb-6">
+          <h1 className="font-garamond font-normal text-white text-3xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.06] sm:leading-[1.08] tracking-tight mb-2 sm:mb-6">
             <span className="block">WITNESS YOUR</span>
             <span className="block">GROWTH UNFOLD</span>
           </h1>
 
           {/* Subtitle */}
           <p data-velocity-reveal
-            className="font-geist font-light text-white/70 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xs sm:max-w-md mb-6 sm:mb-8"
+            className="hidden sm:block font-geist font-light text-white/70 text-sm sm:text-base lg:text-lg leading-relaxed max-w-xs sm:max-w-md mb-6 sm:mb-8"
           >
             An odyssey through your study journey, revealed by data and curiosity.
           </p>
 
           {/* Level ring + badges */}
           <div data-velocity-reveal
-            className="scholar-dashboard-metrics flex items-center gap-4 mb-6"
+            className="scholar-dashboard-metrics flex items-center justify-start sm:justify-center gap-2 sm:gap-4 mb-2 sm:mb-6 max-w-full overflow-x-auto no-scrollbar px-1"
           >
-            <div className="dash-glass rounded-full px-4 py-2 flex items-center gap-2">
+            <div className="dash-glass rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 shrink-0">
               <Trophy className="h-3.5 w-3.5 text-white/70" />
-              <span className="text-sm text-white font-geist">Level {level.level}</span>
+              <span className="text-xs sm:text-sm text-white font-geist whitespace-nowrap">Level {level.level}</span>
             </div>
-            <div className="dash-glass rounded-full px-4 py-2 flex items-center gap-2">
+            <div className="dash-glass rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 shrink-0">
               <Flame className="h-3.5 w-3.5 text-white/70" />
-              <span className="text-sm text-white font-geist">{streak}-day streak</span>
+              <span className="text-xs sm:text-sm text-white font-geist whitespace-nowrap">{streak}-day streak</span>
             </div>
-            <div className="dash-glass rounded-full px-4 py-2 flex items-center gap-2">
+            <div className="dash-glass rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 shrink-0">
               <Target className="h-3.5 w-3.5 text-white/70" />
-              <span className="text-sm text-white font-geist">{overallMastery}% mastery</span>
+              <span className="text-xs sm:text-sm text-white font-geist whitespace-nowrap">{overallMastery}% mastery</span>
             </div>
           </div>
         </div>
 
+        {/* Mobile Quick-Launch Strip */}
+        <div className="order-1 md:hidden relative z-10 px-4 mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-5xl mx-auto w-full">
+          {[
+            { label: "Study", view: "study", icon: BookOpen },
+            { label: "Ask LAM", view: "lam-ai", icon: Sparkles },
+            { label: "Practice", view: "question-practice", icon: FileQuestion },
+            { label: "Exam Ready", view: "exam-prep", icon: Layers },
+          ].map((item) => (
+            <button
+              key={item.view}
+              type="button"
+              onClick={() => navigateTo(item.view)}
+              className="dash-glass rounded-2xl px-3 min-h-11 py-2 flex items-center justify-center gap-2 text-xs font-geist font-medium text-white active:scale-[0.98] transition-transform"
+            >
+              <item.icon className="h-3.5 w-3.5 text-white/80 shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </button>
+          ))}
+        </div>
+
         {/* Stats row */}
-        <div className="relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="order-3 md:order-none relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 sm:mb-6">
           {[
             { icon: Flame, label: "Streak", value: `${streak} days`, sub: "Keep it alive!" },
             { icon: Zap, label: "XP", value: xp.toLocaleString(), sub: `${level.intoLevel}/${level.needed} to Lv ${level.level + 1}` },
@@ -504,7 +524,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
         </div>
 
         {/* Daily challenge */}
-        <div className="relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full mb-6">
+        <div className="order-2 md:order-none relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full mb-4 sm:mb-6">
           {!dailyChallenge.completed ? (
             <div data-velocity-reveal>
               <div className="dash-glass-strong rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -522,7 +542,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
                     )}
                   </div>
                 </div>
-                <button onClick={handleDailyChallenge} className="dash-glass rounded-full px-6 py-2.5 text-sm text-white font-geist uppercase tracking-[0.18em] hover:bg-white/5 transition-colors shrink-0">
+                <button onClick={handleDailyChallenge} className="dash-glass rounded-full px-6 py-2.5 min-h-12 w-full sm:w-auto text-sm text-white font-geist uppercase tracking-[0.18em] hover:bg-white/5 transition-colors shrink-0">
                   {pendingDaily && !pendingDaily.completed ? "Continue Challenge" : "Start Challenge"}
                 </button>
               </div>
@@ -543,7 +563,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
         </div>
 
         {/* Main grid */}
-        <div className="relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
+        <div className="order-4 md:order-none relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
           {/* Left column */}
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Today's goals */}
@@ -565,7 +585,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
                   {todayTasks.map((task) => {
                     const subj = CURRICULUM.find((s) => s.id === task.subject);
                     return (
-                      <div key={task.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                      <div key={task.id} className="flex items-center gap-3 p-2.5 min-h-11 rounded-xl hover:bg-white/5 transition-colors">
                         <Checkbox checked={task.done} onCheckedChange={() => handleToggleTask(task.id, task.done)} />
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-geist truncate ${task.done ? "line-through text-white/40" : "text-white"}`}>{task.title}</p>
@@ -707,13 +727,13 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
 
           {/* Right column — Weekly report */}
           <div>
-            <div className="dash-glass-strong rounded-3xl p-5 sticky top-20">
+            <div className="dash-glass-strong rounded-3xl p-5 lg:sticky lg:top-20">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="font-garamond text-xl text-white">Weekly Report</h3>
                   <p className="text-xs text-white/50 font-geist">Last 7 days</p>
                 </div>
-                <button onClick={handleExportReport} className="dash-glass rounded-full px-3 py-1.5 text-xs text-white font-geist flex items-center gap-1 hover:bg-white/5 transition-colors">
+                <button onClick={handleExportReport} className="dash-glass rounded-full min-h-11 px-4 sm:min-h-0 sm:px-3 sm:py-1.5 text-xs text-white font-geist flex items-center gap-1 hover:bg-white/5 transition-colors">
                   <Download className="h-3 w-3" /> Export
                 </button>
               </div>
@@ -759,7 +779,7 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             </div>
           </div>
         </div>
-        <div className="mt-8"><ScholarTodaySources /></div>
+        <div className="order-5 md:order-none mt-8"><ScholarTodaySources /></div>
       </div>
     </div>
   );

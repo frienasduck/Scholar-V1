@@ -48,7 +48,6 @@ function MusicWorkspace() {
   return (
     <div className="scholar-music scholar-responsive-page relative -m-3 overflow-hidden sm:-m-4 lg:-m-6">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
         .mu-glass {
           background: rgba(255,255,255,0.02);
           backdrop-filter: blur(10px);
@@ -84,7 +83,7 @@ function MusicWorkspace() {
       {/* YouTube playback is handled by the global FloatingMusicWidget — no local iframe */}
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative z-10 flex flex-col min-h-[calc(var(--scholar-vvh,100dvh)-4rem)]">
         {/* Navbar */}
         <nav className="scholar-music-nav flex items-center justify-between px-4 md:px-8 py-4 mu-font">
           <div className="flex items-center gap-3">
@@ -227,7 +226,7 @@ function MusicWorkspace() {
       </div>
 
       <MusicImportDialog open={showImport} onClose={()=>setShowImport(false)}/>
-      <Dialog open={showCreatePL} onOpenChange={setShowCreatePL}><DialogContent className="sm-dialog sm-ui mu-font"><DialogTitle>{editPL?"Edit Playlist":"New Playlist"}</DialogTitle><DialogDescription>Pick tracks for your next study session.</DialogDescription><input aria-label="Playlist name" maxLength={80} value={newPLName} onChange={e=>setNewPLName(e.target.value)} placeholder="Late Night Study"/><div className="max-h-72 overflow-y-auto mu-scroll space-y-2">{TRACKS.map(t=><button key={t.id} onClick={()=>toggleTrackInPL(t.id)} aria-pressed={newPLTrackIds.includes(t.id)} className={cn("w-full flex items-center gap-3 p-3 rounded-xl text-left",newPLTrackIds.includes(t.id)?"bg-fuchsia-500/20 ring-1 ring-fuchsia-500/40":"bg-white/5 hover:bg-white/10")}><span>{t.emoji}</span><span className="flex-1 text-sm">{t.title}<small className="block text-white/40">{t.desc}</small></span>{newPLTrackIds.includes(t.id)&&<Heart size={16}/>}</button>)}</div><button className="sm-btn sm-primary" disabled={!newPLName.trim()||!newPLTrackIds.length} onClick={createPlaylist}>{editPL?"Save Playlist":"Create Playlist"}</button></DialogContent></Dialog>
+      <Dialog open={showCreatePL} onOpenChange={setShowCreatePL}><DialogContent mobileSheet className="sm-dialog sm-ui mu-font"><DialogTitle>{editPL?"Edit Playlist":"New Playlist"}</DialogTitle><DialogDescription>Pick tracks for your next study session.</DialogDescription><input aria-label="Playlist name" maxLength={80} value={newPLName} onChange={e=>setNewPLName(e.target.value)} placeholder="Late Night Study"/><div className="max-h-72 overflow-y-auto mu-scroll space-y-2">{TRACKS.map(t=><button key={t.id} onClick={()=>toggleTrackInPL(t.id)} aria-pressed={newPLTrackIds.includes(t.id)} className={cn("w-full flex items-center gap-3 p-3 rounded-xl text-left",newPLTrackIds.includes(t.id)?"bg-fuchsia-500/20 ring-1 ring-fuchsia-500/40":"bg-white/5 hover:bg-white/10")}><span>{t.emoji}</span><span className="flex-1 text-sm">{t.title}<small className="block text-white/40">{t.desc}</small></span>{newPLTrackIds.includes(t.id)&&<Heart size={16}/>}</button>)}</div><button className="sm-btn sm-primary" disabled={!newPLName.trim()||!newPLTrackIds.length} onClick={createPlaylist}>{editPL?"Save Playlist":"Create Playlist"}</button></DialogContent></Dialog>
     </div>
   );
 }

@@ -224,7 +224,7 @@ export function AIGeneratorDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setTimeout(reset, 200); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent mobileSheet className="max-w-3xl max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-fuchsia-500" />
@@ -283,7 +283,7 @@ export function AIGeneratorDialog({
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Deck name</label>
-              <Input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder={defaultDeckName()} className="text-sm" />
+              <Input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder={defaultDeckName()} className="min-h-11 sm:min-h-9 text-base sm:text-sm" />
               <p className="text-[10px] text-muted-foreground mt-1">Cards will be saved as a named deck you can play later.</p>
             </div>
             {generationError && (
@@ -301,7 +301,7 @@ export function AIGeneratorDialog({
           <div className="space-y-3 overflow-y-auto max-h-[55vh] pr-1">
             <div className="rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/5 p-2.5">
               <label className="text-[10px] uppercase text-muted-foreground">Deck name</label>
-              <Input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name" className="text-sm h-8 mt-0.5" />
+              <Input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name" className="text-base sm:text-sm min-h-11 sm:min-h-8 sm:h-8 mt-0.5" />
             </div>
             {(drafts ?? []).map((d, i) => {
               const info = SUBJECT_INFO[d.subject] ?? SUBJECT_INFO.physics;
@@ -326,7 +326,7 @@ export function AIGeneratorDialog({
                   </div>
                   <div className="mt-2">
                     <label className="text-[10px] uppercase text-muted-foreground">Explanation (optional)</label>
-                    <Input value={d.explanation ?? ""} onChange={(e) => updateDraft(d.id, { explanation: e.target.value || undefined })} className="text-sm h-8" />
+                    <Input value={d.explanation ?? ""} onChange={(e) => updateDraft(d.id, { explanation: e.target.value || undefined })} className="text-base sm:text-sm min-h-11 sm:min-h-8 sm:h-8" />
                   </div>
                 </div>
               );

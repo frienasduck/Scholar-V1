@@ -17,9 +17,14 @@ function VideoLayer({ src, className = "absolute inset-0 h-full w-full object-co
     const video = videoRef.current;
     if (!video) return;
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => { if (document.hidden || motion.matches) video.pause(); else void video.play().catch(() => undefined); };
-    document.addEventListener("visibilitychange", sync); motion.addEventListener("change", sync); sync();
-    return () => { document.removeEventListener("visibilitychange", sync); motion.removeEventListener("change", sync); if (timer.current) clearTimeout(timer.current); if (frame.current !== null) video.cancelVideoFrameCallback?.(frame.current); video.pause(); };
+    const dataSaver = matchMedia("(prefers-reduced-data: reduce)");
+    const connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection;
+    const sync = () => {
+      if (document.hidden || motion.matches || dataSaver.matches || connection?.saveData) video.pause();
+      else void video.play().catch(() => undefined);
+    };
+    document.addEventListener("visibilitychange", sync); motion.addEventListener("change", sync); dataSaver.addEventListener("change", sync); connection?.addEventListener?.("change", sync); sync();
+    return () => { document.removeEventListener("visibilitychange", sync); motion.removeEventListener("change", sync); dataSaver.removeEventListener("change", sync); connection?.removeEventListener?.("change", sync); if (timer.current) clearTimeout(timer.current); if (frame.current !== null) video.cancelVideoFrameCallback?.(frame.current); video.pause(); };
   }, [src]);
   const reveal = () => {
     const video = videoRef.current;

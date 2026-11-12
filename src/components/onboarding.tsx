@@ -88,7 +88,7 @@ export function Onboarding() {
             animate={{ opacity: 1, x: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, x: -30 }}
             transition={{ duration: reduceMotion ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="premium-card premium-shadow-lg p-8 text-center"
+            className="premium-card premium-shadow-lg p-5 sm:p-8 text-center"
           >
             <div data-intro-mark className={`mx-auto grid place-items-center h-16 w-16 rounded-2xl bg-gradient-to-br ${cur.color} text-white shadow-lg mb-5`}>
               <cur.icon className="h-8 w-8" />
@@ -97,7 +97,7 @@ export function Onboarding() {
             <p data-intro-message className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-sm mx-auto">{cur.desc}</p>
 
             <div className="flex items-center justify-between mt-7">
-              <Button variant="ghost" size="sm" onClick={skipIntro} className="text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={skipIntro} className="min-h-11 sm:min-h-8 text-muted-foreground">
                 Skip intro
               </Button>
               <div className="flex gap-2">

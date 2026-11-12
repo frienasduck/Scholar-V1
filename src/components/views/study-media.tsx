@@ -11,7 +11,7 @@ import { WorkspacePanel, WorkspaceTabs, useWorkspaceMode } from "@/components/wo
 export function StudyMediaView() {
   const { mode, select } = useWorkspaceMode("study-media", "lamtube");
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col" data-workspace="study-media">
+    <div className="flex min-h-[calc(var(--scholar-vvh,100dvh)-4rem)] flex-col" data-workspace="study-media">
       <WorkspaceTabs
         workspaceId="study-media"
         active={mode}
