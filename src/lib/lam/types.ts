@@ -34,17 +34,45 @@ export interface LamPluginQuizQuestion {
   explanation: string;
 }
 
+export interface LamPluginNcertQuestion {
+  type: string;
+  marks: number;
+  question: string;
+  options?: string[];
+  answer?: string;
+  solution: string;
+}
+
+export interface LamPluginNcertSetData {
+  title: string;
+  subject?: string;
+  chapter?: string;
+  items: LamPluginNcertQuestion[];
+}
+
 export interface LamPluginFlashcard {
   front: string;
   back: string;
   tip?: string;
+  topic?: string;
 }
 
 export interface LamPluginSlide {
   title: string;
+  type?: string;
+  content?: string;
   bullets: string[];
+  formula?: string;
   takeaway: string;
   note?: string;
+}
+
+export interface LamPluginSlideshowData {
+  title: string;
+  subtitle?: string;
+  subject?: string;
+  chapter?: string;
+  slides: LamPluginSlide[];
 }
 
 export interface LamPluginFormula {
@@ -54,19 +82,207 @@ export interface LamPluginFormula {
   condition?: string;
 }
 
+export interface LamPluginImageData {
+  url: string;
+  artifactId?: string;
+  prompt: string;
+  enhancedPrompt?: string;
+  aspectRatio?: string;
+  style?: string;
+}
+
+export interface LamPluginHomeworkData {
+  fileName?: string;
+  imageArtifactId?: string;
+  ocrText: string;
+  confidence?: number | null;
+  hint: string;
+  solution: string;
+}
+
+export interface LamPluginEvaluatorData {
+  score: number;
+  maxScore: number;
+  correctConcepts?: string[];
+  missingConcepts?: string[];
+  formulaFeedback?: string;
+  unitsFeedback?: string;
+  stepFeedback?: string;
+  markingBreakdown?: Array<{
+    criterion: string;
+    marksAwarded: number;
+    maxMarks: number;
+    feedback: string;
+  }>;
+  strengths: string[];
+  gaps: string[];
+  modelAnswer: string;
+}
+
+export interface LamPluginPlannerData {
+  planTitle: string;
+  subtitle?: string;
+  summaryMarkdown?: string;
+  tasks: Array<{
+    title: string;
+    subject: string;
+    date: string;
+    time?: string;
+    durationMinutes?: number;
+    priority: "low" | "medium" | "high";
+  }>;
+}
+
+export interface LamPluginFlowchartData {
+  title: string;
+  steps: Array<{
+    stepNumber: number;
+    title: string;
+    description: string;
+    keyRule?: string;
+  }>;
+}
+
+export interface LamPluginAnalyticsData {
+  title: string;
+  metricLabel: string;
+  metricValue: string;
+  honestyNote?: string;
+  summaryMetrics?: Array<{ label: string; value: string }>;
+  items: Array<{
+    label: string;
+    value: string | number;
+    detail?: string;
+    level?: "good" | "warning" | "danger";
+  }>;
+  diagnosisMarkdown?: string;
+  recommendation: string;
+}
+
+export interface LamPluginPyqData {
+  question: string;
+  yearExam: string;
+  totalMarks: number;
+  markingSteps: Array<{
+    stepNumber: number;
+    title: string;
+    content: string;
+    marks: string;
+  }>;
+  finalAnswer?: string;
+  examinerTip: string;
+  commonPitfall: string;
+}
+
+export interface LamPluginPdfData {
+  title: string;
+  subtitle: string;
+  scholarClass?: 9 | 11;
+  fullMarkdown: string;
+  sections: Array<{ heading: string; body: string }>;
+}
+
+export interface LamPluginExplainerData {
+  concept: string;
+  intuition: string;
+  definition: string;
+  derivation?: string;
+  workedExample?: string;
+  mistakes: string[];
+}
+
+export interface LamPluginCompanionData {
+  title: string;
+  metrics?: Array<{ label: string; value: string }>;
+  markdown: string;
+  suggestedFocusMinutes?: number;
+  canReadAloud?: boolean;
+}
+
+export interface LamPluginUserInteraction {
+  quizPicks?: Record<number, string>;
+  quizSaved?: boolean;
+  savedCardIndices?: number[];
+  knownCardIndices?: number[];
+  addedTaskIndices?: number[];
+  allTasksAdded?: boolean;
+  revealedSolutions?: Record<number, boolean>;
+  homeworkSolutionRevealed?: boolean;
+  savedToResources?: boolean;
+  savedToFiles?: boolean;
+  savedToNotes?: boolean;
+  slideshowSavedId?: string;
+}
+
+export type LamPluginExecutionStatus =
+  | "idle"
+  | "queued"
+  | "preparing"
+  | "running"
+  | "generating"
+  | "waiting_input"
+  | "ready"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "locked";
+
+export type LamPluginOutputType =
+  | "quiz"
+  | "ncert-set"
+  | "flashcards"
+  | "slideshow"
+  | "formula-sheet"
+  | "pdf"
+  | "explainer"
+  | "image"
+  | "homework"
+  | "evaluator"
+  | "planner"
+  | "flowchart"
+  | "analytics"
+  | "pyq"
+  | "companion"
+  | "generic";
+
 export interface LamPluginExecution {
+  executionId?: string;
   pluginId: string;
   pluginName: string;
   category?: string;
+  rawPrompt?: string;
+  scholarClass?: 9 | 11;
   isPlus?: boolean;
-  status: "idle" | "running" | "ready" | "locked";
-  outputType: "quiz" | "flashcards" | "slideshow" | "formula-sheet" | "pdf" | "explainer" | "generic";
+  status: LamPluginExecutionStatus;
+  progressStage?: string;
+  currentStep?: number;
+  totalSteps?: number;
+  error?: string;
+  errorCode?: string;
+  startedAt?: string;
+  completedAt?: string;
+  waitingInputPrompt?: string;
+  waitingInputSuggestions?: string[];
+  requiresImage?: boolean;
+  attachmentNames?: string[];
+  outputType: LamPluginOutputType;
   quiz?: LamPluginQuizQuestion[];
+  ncertData?: LamPluginNcertSetData;
   flashcards?: LamPluginFlashcard[];
   slides?: LamPluginSlide[];
+  slideshowData?: LamPluginSlideshowData;
   formulas?: LamPluginFormula[];
-  pdfData?: { title: string; subtitle: string; sections: Array<{ heading: string; body: string }> };
-  explainerData?: { concept: string; intuition: string; definition: string; derivation?: string; mistakes: string[] };
+  pdfData?: LamPluginPdfData;
+  explainerData?: LamPluginExplainerData;
+  imageData?: LamPluginImageData;
+  homeworkData?: LamPluginHomeworkData;
+  evaluatorData?: LamPluginEvaluatorData;
+  plannerData?: LamPluginPlannerData;
+  flowchartData?: LamPluginFlowchartData;
+  analyticsData?: LamPluginAnalyticsData;
+  pyqData?: LamPluginPyqData;
+  companionData?: LamPluginCompanionData;
+  userInteraction?: LamPluginUserInteraction;
 }
 
 export interface LamMessage {

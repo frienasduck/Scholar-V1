@@ -828,12 +828,12 @@ export function AppShell() {
         <GuestSessionNotice guest={guestMode} ready={startupReady} reduced={Boolean(settings.reduceMotion)} onSignIn={()=>setAuthed(false)}/>
         <ScholarIntelligenceConsentPrompt />
         <BackgroundTaskNotifications onNavigate={navigate} />
-        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip transition-colors duration-500 ${immersiveView ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
-          <div className="flex-1" style={{ position: "relative", width: "100%" }}>
+        <main id="main-scroll" tabIndex={-1} data-active-view={active} className={`scholar-main-scroll flex min-h-0 flex-1 flex-col ${active === "lam-ai" ? "overflow-hidden" : "overflow-y-auto"} overflow-x-clip transition-colors duration-500 ${immersiveView ? "p-0" : "p-3 sm:p-4 lg:p-6"} ${viewBg[active] ?? ""}`} style={{ position: "relative", zIndex: 10, width: "100%" }}>
+          <div className={cn("flex-1", active === "lam-ai" && "flex min-h-0 flex-col overflow-hidden")} style={{ position: "relative", width: "100%" }}>
           <VelocityPage
             key={active}
             enabled={settings.pageTransitions !== false && !settings.reduceMotion}
-            className={cn("flex w-full flex-1 flex-col [&>*]:flex-1", !immersiveView && "scholar-footer-view")}
+            className={cn("flex w-full flex-1 flex-col [&>*]:flex-1", active === "lam-ai" && "min-h-0 overflow-hidden", !immersiveView && "scholar-footer-view")}
           >
             <ViewErrorBoundary viewName={active}>
               {shutdown ? <SectionShutdown viewId={active} /> : guestMode && GUEST_RESTRICTED_VIEWS.has(active) ? (

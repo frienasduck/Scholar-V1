@@ -15,9 +15,41 @@ function restoreCode(content: string, blocks: string[]) {
 }
 
 function normalizeLatexDelimiters(content: string) {
-  return content
+  const withDelims = content
+    // Restore control-escaped TeX commands caused by single-backslash JSON emission (\f->\x0c, \t->\x09, \b->\x08).
+    .replace(/\u000c(?=(?:rac|orall)\b)/g, "\\f")
+    .replace(/\u0009(?=(?:heta|imes|ext|o\b|au|an)\b)/g, "\\t")
+    .replace(/\u0008(?=(?:eta|inom|ar)\b)/g, "\\b")
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, expression: string) => `\n$$\n${expression.trim()}\n$$\n`)
-    .replace(/\\\(([^\n]*?)\\\)/g, (_, expression: string) => `$${expression.trim()}$`);
+    .replace(/\\\(([^\n]*?)\\\)/g, (_, expression: string) => `$${expression.trim()}$`)
+    .replace(/(^|[^\\])\b(vec|mathrm|mathbf|mathcal|frac|dfrac|sqrt|text)\{/g, "$1\\$2{")
+    .replace(/\^\s*circ\b/g, "^\\circ")
+    .replace(/(\d)\s*,mathrm([A-Za-z]+)/g, "$1\\,\\mathrm{$2}");
+
+  // Fix dropped backslashes inside delimited math & convert parenthesized/bracketed TeX macros outside math blocks.
+  return withDelims
+    .split(/(\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\.|[^$\n])*?(?<!\\)\$)/g)
+    .map((part, index) =>
+      index % 2 === 1
+        ? part.replace(/(^|[^\\])\b(cdot|vec|cos|sin|tan)\b/g, "$1\\$2")
+        : part
+            .replace(
+              /\(([^()\n]*(?:\\(?:vec|frac|dfrac|mathrm|mathbf|mathcal|sin|cos|tan|theta|alpha|beta|gamma|omega|Delta|cdot|times|sqrt))[^()\n]*)\)/g,
+              (_, inner: string) => `$${inner.trim().replace(/\\+$/, "")}$`,
+            )
+            .replace(
+              /\[\s*([^[\]\n]*(?:\\(?:vec|frac|dfrac|mathrm|mathbf|mathcal|text))[^[\]\n]*)\s*\](?!\()/g,
+              (_, inner: string) => `\n$$\n${inner.trim()}\n$$\n`,
+            ),
+    )
+    .join("");
+}
+
+function normalizeCollapsedTables(content: string): string {
+  return content
+    .split("\n")
+    .map((line) => (/\|[\s:-]{2,}\|/.test(line) && /\|\s*\|/.test(line) ? line.replace(/\|\s*\|/g, "|\n|") : line))
+    .join("\n");
 }
 
 function normalizeLegacyAcademicMath(content: string) {
@@ -27,6 +59,10 @@ function normalizeLegacyAcademicMath(content: string) {
     if (/https?:\/\/|\[[^\]]+\]\([^)]+\)|\b(?:const|let|var|function|class|import|export)\b/.test(line)) return line;
     const trimmed = line.trim();
     if (!/=/.test(trimmed)) return line;
+    const plainWords = trimmed
+      .replace(/\b(?:sin|cos|tan|cot|sec|csc|log|ln|lim|sqrt|exp|mod|max|min)\b/gi, "")
+      .match(/\b[A-Za-z]{3,}\b/g) ?? [];
+    if (plainWords.length >= 4) return line;
     const signals = trimmed.match(/10\^|[_^]|[×·]|\/(?!\/)|\b(?:sin|cos|tan|lim|sqrt|log)\b/gi) ?? [];
     if (signals.length < 2 || trimmed.length > 500 || /[$<>`]/.test(trimmed)) return line;
     const latex = trimmed
@@ -41,9 +77,11 @@ function normalizeLegacyAcademicMath(content: string) {
 
 /** Prepares trusted text syntax only. It never creates or accepts executable HTML. */
 export function prepareAIContentForRendering(content: string, legacy = true): string {
-  const normalizedNewlines = String(content ?? "").replace(/\r\n?/g, "\n");
+  const normalizedNewlines = String(content ?? "")
+    .replace(/\\n(?![a-zA-Z])/g, "\n")
+    .replace(/\r\n?/g, "\n");
   const protectedContent = protectCode(normalizedNewlines);
-  let prepared = normalizeLatexDelimiters(protectedContent.text);
+  let prepared = normalizeCollapsedTables(normalizeLatexDelimiters(protectedContent.text));
   // Explicit math is already delimited. Running the legacy line heuristic
   // inside it adds nested $$ fences and exposes otherwise valid LaTeX as text.
   if (legacy) prepared = prepared.split(/(\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\.|[^$\n])*?(?<!\\)\$)/g)

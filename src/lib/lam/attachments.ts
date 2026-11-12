@@ -9,15 +9,21 @@
 export interface LamAttachment {
   id: string;
   name: string;
-  kind: "text" | "pdf";
+  kind: "text" | "pdf" | "image";
   size: number;
   chars: number;
   pages?: number;
   excerpt: string;
+  mimeType?: string;
+  dataUrl?: string;
+  file?: File;
 }
 
 export const LAM_ATTACHMENT_ACCEPT = ".txt,.md,.markdown,.csv,.json,.pdf,text/plain,text/markdown,application/pdf";
+export const LAM_IMAGE_ACCEPT = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
+export const LAM_PLUGIN_ATTACHMENT_ACCEPT = `${LAM_ATTACHMENT_ACCEPT},${LAM_IMAGE_ACCEPT}`;
 export const LAM_ATTACHMENT_MAX_BYTES = 15 * 1024 * 1024;
+export const LAM_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const LAM_ATTACHMENT_EXCERPT_CHARS = 6_000;
 const MAX_PDF_PAGES = 30;
 
@@ -69,18 +75,59 @@ async function readPdf(file: File): Promise<{ text: string; pages: number }> {
   }
 }
 
-export async function readLamAttachment(file: File): Promise<LamAttachment> {
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error(`${file.name} could not be read.`));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function readLamAttachment(
+  file: File,
+  options: { allowImages?: boolean } = {},
+): Promise<LamAttachment> {
+  const ext = extension(file.name);
+  const isImage =
+    ["png", "jpg", "jpeg", "webp"].includes(ext) ||
+    ["image/png", "image/jpeg", "image/webp"].includes(file.type.toLowerCase());
+
+  if (isImage) {
+    if (!options.allowImages) {
+      throw new Error(
+        `${file.name}: select @Image Analysis to inspect question photos, or attach a text file/PDF instead.`,
+      );
+    }
+    if (file.size === 0) throw new Error(`${file.name} is empty.`);
+    if (file.size > LAM_IMAGE_MAX_BYTES) {
+      throw new Error(`${file.name} exceeds the 10 MB Homework Scanner image limit.`);
+    }
+    const mimeType = file.type && file.type.startsWith("image/") ? file.type : `image/${ext === "jpg" ? "jpeg" : ext}`;
+    const dataUrl = await readFileAsDataUrl(file);
+    return {
+      id: crypto.randomUUID(),
+      name: file.name.slice(0, 120),
+      kind: "image",
+      size: file.size,
+      chars: 0,
+      excerpt: "",
+      mimeType,
+      dataUrl,
+      file,
+    };
+  }
+
   if (file.size > LAM_ATTACHMENT_MAX_BYTES) {
     throw new Error(`${file.name} is larger than 15 MB. Please attach a smaller file.`);
   }
-  const ext = extension(file.name);
   const isPdf = ext === "pdf" || file.type === "application/pdf";
   const isText = ["txt", "md", "markdown", "csv", "json"].includes(ext) || file.type.startsWith("text/");
   if (!isPdf && !isText) {
     throw new Error(
       /^image\//.test(file.type)
-        ? `${file.name}: images aren't inspected by LAM chat yet. Attach a text file or PDF instead.`
-        : `${file.name}: only text files and PDFs can be attached to LAM chat.`,
+        ? `${file.name}: use a PNG, JPEG, or WebP image with @Image Analysis, or attach a text file or PDF.`
+        : `${file.name}: only text files and PDFs (or PNG/JPEG/WebP for @Image Analysis) can be attached.`,
     );
   }
 
@@ -108,10 +155,11 @@ export async function readLamAttachment(file: File): Promise<LamAttachment> {
  */
 export function composeLamMessage(message: string, attachments: LamAttachment[], limit = 4_000): string {
   const question = message.trim();
-  if (!attachments.length) return question.slice(0, limit);
+  const readableAttachments = attachments.filter((item) => item.kind !== "image" && item.excerpt.trim().length > 0);
+  if (!readableAttachments.length) return question.slice(0, limit);
   const header = "\n\nAttached study material:";
   let body = question;
-  for (const attachment of attachments) {
+  for (const attachment of readableAttachments) {
     const label = `\n\n--- ${attachment.name}${attachment.pages ? ` (${attachment.pages} pages)` : ""} ---\n`;
     const remaining = limit - body.length - header.length - label.length;
     if (remaining <= 200) break;

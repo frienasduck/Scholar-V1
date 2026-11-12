@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BrainCircuit, Search, Sparkles } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Plus, Search, Sparkles } from "lucide-react";
 import { ToolContent } from "@/components/views/ai-tools";
 import { PlusGate } from "@/components/subscriptions/plus-gate";
 import { useScholarAccess } from "@/components/subscriptions/subscription-provider";
@@ -26,6 +26,7 @@ import {
   type ScholarWorkspaceId,
 } from "@/lib/shrinking-scholar";
 import { WorkspacePanel, WorkspaceTabs, useWorkspaceMode } from "@/components/workspaces/workspace-tabs";
+import "@/components/live-tutor/live-tutor.css";
 import { cn } from "@/lib/utils";
 
 const LiveTutorView = dynamic(
@@ -73,13 +74,18 @@ function LamPluginsPanel({ target, onTargetHandled }: { target: PluginTarget; on
   });
   const [prompt, setPrompt] = useState(target?.prompt ?? "");
 
-  useEffect(() => {
-    if (!target) return;
-    const plugin = pluginById(target.pluginId);
+  const [prevTarget, setPrevTarget] = useState(target);
+  if (target !== prevTarget) {
+    setPrevTarget(target);
+    const plugin = pluginById(target?.pluginId);
     if (plugin?.availability === "available") {
       setOpenId(plugin.id);
-      setPrompt(target.prompt ?? "");
+      setPrompt(target?.prompt ?? "");
     }
+  }
+
+  useEffect(() => {
+    if (!target) return;
     onTargetHandled();
   }, [onTargetHandled, target]);
 
@@ -97,8 +103,8 @@ function LamPluginsPanel({ target, onTargetHandled }: { target: PluginTarget; on
   if (activePlugin?.toolId) {
     const content = <ToolContent id={activePlugin.toolId} initialPrompt={prompt || undefined} />;
     return (
-      <div className="min-h-[calc(100vh-10rem)] bg-background" data-lam-plugin={activePlugin.id}>
-        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border/60 bg-background/85 px-3 py-2.5 backdrop-blur-xl sm:px-5">
+      <div className="min-h-[calc(100vh-10rem)] bg-background pt-[var(--lam-topbar-h,64px)]" data-lam-plugin={activePlugin.id}>
+        <div className="sticky top-[var(--lam-topbar-h,64px)] z-20 flex flex-wrap items-center gap-3 border-b border-border/60 bg-background/85 px-3 py-2.5 backdrop-blur-xl sm:px-5">
           <button
             type="button"
             onClick={() => { setOpenId(null); setPrompt(""); }}
@@ -142,7 +148,7 @@ function LamPluginsPanel({ target, onTargetHandled }: { target: PluginTarget; on
   }
 
   return (
-    <div className="min-h-[calc(100vh-10rem)] px-3 py-4 sm:px-5">
+    <div className="min-h-[calc(100vh-10rem)] px-3 pb-6 pt-[calc(var(--lam-topbar-h,64px)+16px)] sm:px-5">
       <div className="mx-auto max-w-6xl space-y-5">
         <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-card/50 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
           <div>
@@ -252,9 +258,19 @@ export function LamAIView() {
   const setAuthed = useStore((s) => s.setAuthed);
   const reduceMotion = useStore((s) => s.settings.reduceMotion);
   const [pluginTarget, setPluginTarget] = useState<PluginTarget>(() => peekLamPluginTarget());
+  const [pendingNewChat, setPendingNewChat] = useState(false);
   const clearPluginTarget = useCallback(() => {
     consumeLamPluginTarget();
     setPluginTarget(null);
+  }, []);
+
+  const startNewChat = useCallback(() => {
+    setPendingNewChat(true);
+    if (mode !== "chat") select("chat");
+  }, [mode, select]);
+
+  const handleNewChatHandled = useCallback(() => {
+    setPendingNewChat(false);
   }, []);
 
   useEffect(() => {
@@ -280,12 +296,54 @@ export function LamAIView() {
     select("plugins");
   }, [select]);
 
+  const headerPill = (
+    <nav className="lt-nav lt-nav--header" aria-label="LAM AI navigation">
+      <span className="lt-nav-brand">
+        <span className="lt-scholar-mark">
+          <BrainCircuit />
+        </span>
+        <span className="lt-nav-title">Scholar</span>
+        <span className="lt-nav-beta">LAM AI</span>
+      </span>
+      <span className="lt-nav-div" />
+      <button
+        type="button"
+        className="lt-nav-new"
+        onClick={startNewChat}
+        aria-label="New conversation"
+        title="New conversation"
+      >
+        <Plus />
+      </button>
+    </nav>
+  );
+
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-[#07090d] text-white" data-workspace={WORKSPACE}>
-      <WorkspaceTabs workspaceId={WORKSPACE} active={mode} onSelect={select} flush />
-      <WorkspacePanel workspaceId={WORKSPACE} mode={mode} flush className="flex flex-col">
+    <div
+      className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#07090d] text-white [--lam-topbar-h:58px] sm:[--lam-topbar-h:64px]"
+      data-workspace={WORKSPACE}
+    >
+      <WorkspaceTabs
+        workspaceId={WORKSPACE}
+        active={mode}
+        onSelect={select}
+        leftSlot={headerPill}
+        refractiveOverlay
+        flush
+      />
+      <WorkspacePanel
+        workspaceId={WORKSPACE}
+        mode={mode}
+        flush
+        className={cn("min-h-0 flex flex-col", mode === "chat" ? "overflow-hidden" : "overflow-y-auto")}
+      >
         {mode === "chat" ? (
-          <LiveTutorView embedded onOpenPlugin={openPlugin} />
+          <LiveTutorView
+            embedded
+            onOpenPlugin={openPlugin}
+            pendingNewChat={pendingNewChat}
+            onNewChatHandled={handleNewChatHandled}
+          />
         ) : null}
         {mode === "tutor" ? (
           <AITutorView />

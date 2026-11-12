@@ -12,6 +12,14 @@ import {
   searchLamPlugins,
 } from "../src/lib/lam/plugin-registry";
 import { composeLamMessage, formatAttachmentSize } from "../src/lib/lam/attachments";
+import {
+  checkPluginMissingInput,
+  detectPluginFollowUp,
+  extractConversationalPluginContext,
+  parseMarkdownSections,
+  resolvePluginOutputType,
+} from "../src/lib/lam/plugin-prompts";
+import type { LamMessage } from "../src/lib/lam/types";
 import { isScholarRoute } from "../src/lib/routes";
 import { NAV_ITEMS } from "../src/lib/nav";
 
@@ -213,5 +221,161 @@ describe("navigation", () => {
     expect(SCHOLAR_WORKSPACES["study-media"].modes.map((mode) => mode.id)).toEqual(["lamtube", "music"]);
     expect(SCHOLAR_WORKSPACES["lam-ai"].modes.map((mode) => mode.id)).toEqual(["chat", "tutor", "plugins"]);
     expect(SCHOLAR_WORKSPACES["resources"].modes.map((mode) => mode.id)).toEqual(["library", "downloads"]);
+  });
+});
+
+describe("In-Chat LAM Plugin Unified Execution", () => {
+  test("every available plugin has a verified outputType and valid execution mapping", () => {
+    const plugins = availablePlugins();
+    expect(plugins.length).toBeGreaterThanOrEqual(23);
+
+    const validOutputTypes = new Set([
+      "quiz",
+      "ncert-set",
+      "flashcards",
+      "slideshow",
+      "formula-sheet",
+      "pdf",
+      "explainer",
+      "image",
+      "homework",
+      "evaluator",
+      "planner",
+      "flowchart",
+      "analytics",
+      "pyq",
+      "companion",
+      "generic",
+    ]);
+
+    for (const plugin of plugins) {
+      const outputType = resolvePluginOutputType(plugin.id);
+      expect(validOutputTypes.has(outputType)).toBe(true);
+      expect(typeof plugin.name).toBe("string");
+      expect(plugin.name.length).toBeGreaterThan(0);
+      expect(typeof plugin.description).toBe("string");
+      expect(plugin.availability).toBe("available");
+    }
+  });
+
+  test("specific specialized plugins resolve to their dedicated chat widget types", () => {
+    expect(resolvePluginOutputType("notes-to-quiz")).toBe("quiz");
+    expect(resolvePluginOutputType("ncert-question-generator")).toBe("ncert-set");
+    expect(resolvePluginOutputType("flashcard-maker")).toBe("flashcards");
+    expect(resolvePluginOutputType("slideshow-maker")).toBe("slideshow");
+    expect(resolvePluginOutputType("formula-sheet-generator")).toBe("formula-sheet");
+    expect(resolvePluginOutputType("ai-pdf-studio")).toBe("pdf");
+    expect(resolvePluginOutputType("chapter-summarizer")).toBe("pdf");
+    expect(resolvePluginOutputType("chapter-builder")).toBe("pdf");
+    expect(resolvePluginOutputType("concept-explainer")).toBe("explainer");
+    expect(resolvePluginOutputType("aisig")).toBe("image");
+    expect(resolvePluginOutputType("homework-scanner")).toBe("homework");
+    expect(resolvePluginOutputType("answer-evaluator")).toBe("evaluator");
+    expect(resolvePluginOutputType("revision-planner")).toBe("planner");
+    expect(resolvePluginOutputType("one-night-exam")).toBe("planner");
+    expect(resolvePluginOutputType("diagram-flowchart-builder")).toBe("flowchart");
+    expect(resolvePluginOutputType("mistake-pattern-tracker")).toBe("analytics");
+    expect(resolvePluginOutputType("memory-predictor")).toBe("analytics");
+    expect(resolvePluginOutputType("pyq-solver")).toBe("pyq");
+    expect(resolvePluginOutputType("daily-briefing")).toBe("companion");
+    expect(resolvePluginOutputType("life-saver")).toBe("companion");
+    expect(resolvePluginOutputType("study-companion")).toBe("companion");
+  });
+
+  test("conversational context memory extracts previous plugin data for refinement turns", () => {
+    const mockHistory: LamMessage[] = [
+      {
+        id: "turn-1",
+        role: "user",
+        content: "[@Notes-to-Quiz] Generate 3 questions on Optics",
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: "turn-1-assist",
+        role: "assistant",
+        content: "Here is your Optics quiz.",
+        createdAt: new Date().toISOString(),
+        pluginExecution: {
+          pluginId: "notes-to-quiz",
+          pluginName: "Notes-to-Quiz",
+          status: "completed",
+          outputType: "quiz",
+          quiz: [
+            {
+              question: "What is Snell's Law?",
+              options: ["n1 sin θ1 = n2 sin θ2", "E = mc^2", "F = ma", "V = IR"],
+              answer: "n1 sin θ1 = n2 sin θ2",
+              explanation: "Refraction formula",
+            },
+          ],
+        },
+      },
+    ];
+
+    const { isFollowUp, contextSummary } = extractConversationalPluginContext("notes-to-quiz", mockHistory);
+    expect(isFollowUp).toBe(true);
+    expect(contextSummary).toContain("Snell's Law");
+    expect(contextSummary).toContain("Refraction formula");
+  });
+
+  test("conversational follow-up detector refines active plugin without hijacking normal chat questions", () => {
+    const quizTurn: LamMessage[] = [
+      {
+        id: "q-1",
+        role: "assistant",
+        content: "Quiz ready",
+        createdAt: new Date().toISOString(),
+        pluginExecution: {
+          pluginId: "notes-to-quiz",
+          pluginName: "Notes-to-Quiz",
+          status: "completed",
+          outputType: "quiz",
+        },
+      },
+    ];
+
+    expect(detectPluginFollowUp("Make it harder", quizTurn)).toEqual({
+      shouldContinue: true,
+      pluginId: "notes-to-quiz",
+      reason: "refinement_phrase",
+    });
+    expect(detectPluginFollowUp("Add 3 more numericals", quizTurn).shouldContinue).toBe(true);
+    // Normal short questions must NOT be hijacked into the last plugin
+    expect(detectPluginFollowUp("What is photosynthesis?", quizTurn).shouldContinue).toBe(false);
+    expect(detectPluginFollowUp("Who discovered electrons?", quizTurn).shouldContinue).toBe(false);
+  });
+
+  test("checkPluginMissingInput validates required photo or student answer cleanly", () => {
+    const hw = pluginById("homework-scanner")!;
+    const evalPlugin = pluginById("answer-evaluator")!;
+    expect(checkPluginMissingInput(hw, "", false, false, false, {}).missing).toBe(true);
+    expect(checkPluginMissingInput(hw, "", false, true, false, {}).missing).toBe(false);
+    expect(checkPluginMissingInput(evalPlugin, "grade this", false, false, false, {}).missing).toBe(true);
+    expect(
+      checkPluginMissingInput(
+        evalPlugin,
+        "Question: State Newton's 2nd law (3 marks). My answer: Rate of change of momentum equals applied force F=dp/dt.",
+        false,
+        false,
+        false,
+        {},
+      ).missing,
+    ).toBe(false);
+  });
+
+  test("parseMarkdownSections splits cleanly along headings without truncating prose", () => {
+    const md = `# Motion\nIntro line\n## First Law\nInertia law body.\n## Second Law\nF = ma formula explanation.`;
+    const sections = parseMarkdownSections(md);
+    expect(sections).toHaveLength(3);
+    expect(sections[0]).toEqual({ heading: "Motion", body: "Intro line" });
+    expect(sections[1]).toEqual({ heading: "First Law", body: "Inertia law body." });
+    expect(sections[2]).toEqual({ heading: "Second Law", body: "F = ma formula explanation." });
+  });
+
+  test("conversational context returns empty string when no previous execution exists", () => {
+    const emptyHistory: LamMessage[] = [];
+    const { isFollowUp, contextSummary } = extractConversationalPluginContext("notes-to-quiz", emptyHistory);
+    expect(isFollowUp).toBe(false);
+    expect(contextSummary).toBe("");
   });
 });

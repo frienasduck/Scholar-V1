@@ -24,6 +24,25 @@ const MAP_X = axisMap(false), MAP_Y = axisMap(true);
 // The original 3.5% rim is barely a pixel on a phone-sized lens. This static
 // compact field widens its bend while leaving every existing preset intact.
 const DOCK_MAP_X = axisMap(false, .18), DOCK_MAP_Y = axisMap(true, .18);
+const TOPBAR_MAP_Y = (() => {
+  const g = '<linearGradient id="ty" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0" stop-color="#000014"/>'
+    + '<stop offset=".24" stop-color="#000080"/>'
+    + '<stop offset=".68" stop-color="#000080"/>'
+    + '<stop offset=".9" stop-color="#0000d4"/>'
+    + '<stop offset="1" stop-color="#0000ff"/>'
+    + '</linearGradient>';
+  return "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="64"><defs>' + g + '</defs><rect width="256" height="64" fill="url(#ty)"/></svg>');
+})();
+const TOPBAR_MAP_X = (() => {
+  const g = '<linearGradient id="tx" x1="0" y1="0" x2="1" y2="0">'
+    + '<stop offset="0" stop-color="#780000"/>'
+    + '<stop offset=".035" stop-color="#800000"/>'
+    + '<stop offset=".965" stop-color="#800000"/>'
+    + '<stop offset="1" stop-color="#880000"/>'
+    + '</linearGradient>';
+  return "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="64"><defs>' + g + '</defs><rect width="256" height="64" fill="url(#tx)"/></svg>');
+})();
 export function displacementMapX() { return MAP_X; }
 export function displacementMapY() { return MAP_Y; }
 
@@ -42,6 +61,27 @@ function RefractionFilter({ preset, compact = false }: { preset: { id: string; d
       <feFuncB type="linear" slope="0.96" intercept="0.018" />
     </feComponentTransfer>
   </filter>;
+}
+
+function TopbarRefractionFilter() {
+  return <filter id="sg-refraction-topbar" x="0" y="0" width="100%" height="100%" primitiveUnits="objectBoundingBox" colorInterpolationFilters="sRGB">
+    <feImage x="0" y="0" width="1" height="1" href={TOPBAR_MAP_X} preserveAspectRatio="none" result="TX" />
+    <feImage x="0" y="0" width="1" height="1" href={TOPBAR_MAP_Y} preserveAspectRatio="none" result="TY" />
+    <feComposite in="TX" in2="TY" operator="arithmetic" k2="1" k3="1" result="T_FIELD" />
+    <feGaussianBlur in="T_FIELD" stdDeviation="0.008" result="T_SMOOTH" />
+    <feDisplacementMap in="SourceGraphic" in2="T_SMOOTH" scale="0.14" xChannelSelector="R" yChannelSelector="B" result="T_BENT" />
+    <feComponentTransfer in="T_BENT">
+      <feFuncR type="linear" slope="0.98" intercept="0.015" />
+      <feFuncG type="linear" slope="0.98" intercept="0.015" />
+      <feFuncB type="linear" slope="0.98" intercept="0.015" />
+    </feComponentTransfer>
+  </filter>;
+}
+
+export function TopbarRefractionDefs() {
+  return <svg className="sg-filter-defs" aria-hidden="true" focusable="false"><defs>
+    <TopbarRefractionFilter />
+  </defs></svg>;
 }
 
 /** Shared compact definition, also available to an active button/menu. It does

@@ -1,19 +1,9 @@
 {
-  "files": 119,
-  "passed": 1276,
-  "failed": 1,
-  "skipped": 16,
-  "unsuccessful": [
-    {
-      "file": "liquid-velocity-3-1.test.tsx",
-      "passed": 8,
-      "failed": 1,
-      "skipped": 0,
-      "exit": 1,
-      "timedOut": false,
-      "failures": "bun test v1.3.14 (0d9b296a)\n\ntests\\liquid-velocity-3-1.test.tsx:\n(pass) dock direct manipulation is horizontal only, including deformation [1.14ms]\n 6 | import {GUEST_NOTICE_MS} from \"../src/components/guest/guest-session-notice\";\n 7 | import {SETTINGS_CATEGORIES,settingsCategoryFromUrl} from \"../src/components/settings/settings-navigation\";\n 8 | const read=(p:string)=>readFileSync(`src/${p}`,\"utf8\");\n 9 | \n10 | test(\"dock direct manipulation is horizontal only, including deformation\",()=>{const slots=[{id:\"a\",x:8,y:6,width:70,height:52},{id:\"b\",x:84,y:6,width:70,height:52}];for(const dy of [-900,-20,0,20,900]){const f=dockDragFrame(slots,100,dy,2,true)!;expect(f.y).toBe(6);expect(f.height).toBe(52);expect(f.scaleY).toBe(1);expect(f.x).toBeGreaterThanOrEqual(8);expect(f.x).toBeLessThanOrEqual(84);}});\n11 | test(\"all twelve Settings categories and legacy deep links stay reachable\",()=>{expect(SETTINGS_CATEGORIES).toHaveLength(12);for(const [id]of SETTINGS_CATEGORIES)expect(settingsCategoryFromUrl(new URL(`http://localhost/settings#${id}`))).toBe(id);expect(settingsCategoryFromUrl(new URL(\"http://localhost/settings#plugins-connections\"))).toBe(\"connections\");expect(settingsCategoryFromUrl(new URL(\"http://localhost/settings?drive=connected\"))).toBe(\"connections\");expect(settingsCategoryFromUrl(new URL(\"http://localhost/settings#%ZZ\"))).toBe(\"account\");});\n\nerror: expect(received).toHaveLength(expected)\n\nExpected length: 12\nReceived length: 14\n\n      at <anonymous> (C:\\Users\\Lenovo\\Desktop\\SCHOLAR\\Scholar-V1\\tests\\liquid-velocity-3-1.test.tsx:11:109)\n(fail) all twelve Settings categories and legacy deep links stay reachable [4.44ms]\n(pass) user's original Settings tab design is retained, not replaced by a category picker [1.99ms]\n(pass) search is one accessible original input, not a second command-dialog field [56.28ms]\n(pass) resource lookup keeps identity/query fencing, debounce and abort [0.50ms]\n(pass) Guest countdown is five foreground seconds and route-independent [0.40ms]\n(pass) real popup presence and native Select retention have exit cleanup [29.81ms]\n(pass) shared scene moves backgrounds, never clones page DOM or changes renderer budget [29.47ms]\n(pass) dedicated library, owned e-book uploads and contextual lesson sources survive [7.39ms]\n\n 8 pass\n 1 fail\n 66 expect() calls\nRan 9 tests across 1 file. [1.51s]\n"
-    }
-  ],
+  "files": 121,
+  "passed": 1292,
+  "failed": 0,
+  "skipped": 40,
+  "unsuccessful": [],
   "results": [
     {
       "file": "account-workspace.test.ts",
@@ -97,8 +87,8 @@
       "failures": ""
     },
     {
-      "file": "connector-crypto.test.ts",
-      "passed": 2,
+      "file": "cinematic-homepage.test.tsx",
+      "passed": 10,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -106,8 +96,8 @@
       "failures": ""
     },
     {
-      "file": "cinematic-homepage.test.tsx",
-      "passed": 10,
+      "file": "connector-crypto.test.ts",
+      "passed": 2,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -259,8 +249,8 @@
       "failures": ""
     },
     {
-      "file": "exam-ready-3.3-teach-flow.test.ts",
-      "passed": 2,
+      "file": "exam-ready-4-classroom.test.ts",
+      "passed": 12,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -268,8 +258,8 @@
       "failures": ""
     },
     {
-      "file": "exam-ready-4-classroom.test.ts",
-      "passed": 12,
+      "file": "exam-ready-3.3-teach-flow.test.ts",
+      "passed": 2,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -403,19 +393,19 @@
       "failures": ""
     },
     {
-      "file": "exam-ready-private-materials.test.ts",
-      "passed": 8,
+      "file": "exam-ready-provider-live.test.ts",
+      "passed": 0,
       "failed": 0,
-      "skipped": 0,
+      "skipped": 2,
       "exit": 0,
       "timedOut": false,
       "failures": ""
     },
     {
-      "file": "exam-ready-provider-live.test.ts",
-      "passed": 0,
+      "file": "exam-ready-private-materials.test.ts",
+      "passed": 8,
       "failed": 0,
-      "skipped": 2,
+      "skipped": 0,
       "exit": 0,
       "timedOut": false,
       "failures": ""
@@ -439,8 +429,8 @@
       "failures": ""
     },
     {
-      "file": "google-auth.test.ts",
-      "passed": 16,
+      "file": "exam-ready-teacher.test.ts",
+      "passed": 13,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -448,8 +438,8 @@
       "failures": ""
     },
     {
-      "file": "exam-ready-teacher.test.ts",
-      "passed": 13,
+      "file": "google-auth.test.ts",
+      "passed": 16,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -475,8 +465,8 @@
       "failures": ""
     },
     {
-      "file": "group-study-policy.test.ts",
-      "passed": 9,
+      "file": "group-study-host-repair.test.ts",
+      "passed": 20,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -484,8 +474,8 @@
       "failures": ""
     },
     {
-      "file": "group-study-host-repair.test.ts",
-      "passed": 20,
+      "file": "group-study-policy.test.ts",
+      "passed": 9,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -547,8 +537,8 @@
       "failures": ""
     },
     {
-      "file": "lam-study-plan.test.ts",
-      "passed": 17,
+      "file": "lam-plugin-security.test.ts",
+      "passed": 8,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -565,6 +555,15 @@
       "failures": ""
     },
     {
+      "file": "lam-study-plan.test.ts",
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
       "file": "lamtube-background-route.test.ts",
       "passed": 4,
       "failed": 0,
@@ -574,17 +573,17 @@
       "failures": ""
     },
     {
-      "file": "lamtube-edit-lease.test.ts",
-      "passed": 2,
+      "file": "lam-plugins-live.test.ts",
+      "passed": 0,
       "failed": 0,
-      "skipped": 0,
+      "skipped": 24,
       "exit": 0,
       "timedOut": false,
       "failures": ""
     },
     {
-      "file": "lamtube-output-recovery.test.ts",
-      "passed": 5,
+      "file": "lamtube-edit-lease.test.ts",
+      "passed": 2,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -601,8 +600,8 @@
       "failures": ""
     },
     {
-      "file": "lamtube-quota.test.ts",
-      "passed": 10,
+      "file": "lamtube-output-recovery.test.ts",
+      "passed": 5,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -612,6 +611,15 @@
     {
       "file": "lamtube-pipeline.test.ts",
       "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "lamtube-quota.test.ts",
+      "passed": 10,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -674,12 +682,12 @@
     },
     {
       "file": "liquid-velocity-3-1.test.tsx",
-      "passed": 8,
-      "failed": 1,
+      "passed": 9,
+      "failed": 0,
       "skipped": 0,
-      "exit": 1,
+      "exit": 0,
       "timedOut": false,
-      "failures": "bun test v1.3.14 (0d9b296a)\n\ntests\\liquid-velocity-3-1.test.tsx:\n(pass) dock direct manipulation is horizontal only, including deformation [1.14ms]\n 6 | import {GUEST_NOTICE_MS} from \"../src/components/guest/guest-session-notice\";\n 7 | import {SETTINGS_CATEGORIES,settingsCategoryFromUrl} from \"../src/components/settings/settings-navigation\";\n 8 | const read=(p:string)=>readFileSync(`src/${p}`,\"utf8\");\n 9 | \n10 | test(\"dock direct manipulation is horizontal only, including deformation\",()=>{const slots=[{id:\"a\",x:8,y:6,width:70,height:52},{id:\"b\",x:84,y:6,width:70,height:52}];for(const dy of [-900,-20,0,20,900]){const f=dockDragFrame(slots,100,dy,2,true)!;expect(f.y).toBe(6);expect(f.height).toBe(52);expect(f.scaleY).toBe(1);expect(f.x).toBeGreaterThanOrEqual(8);expect(f.x).toBeLessThanOrEqual(84);}});\n11 | test(\"all twelve Settings categories and legacy deep links stay reachable\",()=>{expect(SETTINGS_CATEGORIES).toHaveLength(12);for(const [id]of SETTINGS_CATEGORIES)expect(settingsCategoryFromUrl(new URL(`http://localhost/settings#${id}`))).toBe(id);expect(settingsCategoryFromUrl(new URL(\"http://localhost/settings#plugins-connections\"))).toBe(\"connections\");expect(settingsCategoryFromUrl(new URL(\"http://localhost/settings?drive=connected\"))).toBe(\"connections\");expect(settingsCategoryFromUrl(new URL(\"http://localhost/settings#%ZZ\"))).toBe(\"account\");});\n\nerror: expect(received).toHaveLength(expected)\n\nExpected length: 12\nReceived length: 14\n\n      at <anonymous> (C:\\Users\\Lenovo\\Desktop\\SCHOLAR\\Scholar-V1\\tests\\liquid-velocity-3-1.test.tsx:11:109)\n(fail) all twelve Settings categories and legacy deep links stay reachable [4.44ms]\n(pass) user's original Settings tab design is retained, not replaced by a category picker [1.99ms]\n(pass) search is one accessible original input, not a second command-dialog field [56.28ms]\n(pass) resource lookup keeps identity/query fencing, debounce and abort [0.50ms]\n(pass) Guest countdown is five foreground seconds and route-independent [0.40ms]\n(pass) real popup presence and native Select retention have exit cleanup [29.81ms]\n(pass) shared scene moves backgrounds, never clones page DOM or changes renderer budget [29.47ms]\n(pass) dedicated library, owned e-book uploads and contextual lesson sources survive [7.39ms]\n\n 8 pass\n 1 fail\n 66 expect() calls\nRan 9 tests across 1 file. [1.51s]\n"
+      "failures": ""
     },
     {
       "file": "liquid-velocity.test.ts",
@@ -691,19 +699,19 @@
       "failures": ""
     },
     {
-      "file": "live-tutor-provider-reliability.test.ts",
-      "passed": 8,
+      "file": "live-tutor-providers-live.test.ts",
+      "passed": 0,
       "failed": 0,
-      "skipped": 0,
+      "skipped": 4,
       "exit": 0,
       "timedOut": false,
       "failures": ""
     },
     {
-      "file": "live-tutor-providers-live.test.ts",
-      "passed": 0,
+      "file": "live-tutor-provider-reliability.test.ts",
+      "passed": 8,
       "failed": 0,
-      "skipped": 4,
+      "skipped": 0,
       "exit": 0,
       "timedOut": false,
       "failures": ""
@@ -763,15 +771,6 @@
       "failures": ""
     },
     {
-      "file": "personalization-presentation.test.ts",
-      "passed": 3,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "performance-engine.test.ts",
       "passed": 23,
       "failed": 0,
@@ -781,7 +780,7 @@
       "failures": ""
     },
     {
-      "file": "plus-feature-preview.test.tsx",
+      "file": "personalization-presentation.test.ts",
       "passed": 3,
       "failed": 0,
       "skipped": 0,
@@ -792,6 +791,15 @@
     {
       "file": "personalization-security.test.ts",
       "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "plus-feature-preview.test.tsx",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -844,6 +852,15 @@
       "failures": ""
     },
     {
+      "file": "public-repository-privacy.test.ts",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
       "file": "quiz-generation-contract.test.ts",
       "passed": 3,
       "failed": 0,
@@ -880,8 +897,8 @@
       "failures": ""
     },
     {
-      "file": "resource-api.test.ts",
-      "passed": 18,
+      "file": "resource-engine.test.ts",
+      "passed": 20,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -889,8 +906,8 @@
       "failures": ""
     },
     {
-      "file": "resource-engine.test.ts",
-      "passed": 20,
+      "file": "resource-api.test.ts",
+      "passed": 18,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -961,15 +978,6 @@
       "failures": ""
     },
     {
-      "file": "public-repository-privacy.test.ts",
-      "passed": 2,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "session-storage.test.ts",
       "passed": 3,
       "failed": 0,
@@ -989,7 +997,7 @@
     },
     {
       "file": "shrinking-scholar.test.ts",
-      "passed": 14,
+      "passed": 21,
       "failed": 0,
       "skipped": 0,
       "exit": 0,

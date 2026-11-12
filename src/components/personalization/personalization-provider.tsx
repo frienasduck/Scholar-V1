@@ -56,11 +56,11 @@ export function PersonalizationProvider({children}:{children:ReactNode}) {
   const show=manual || (!entered && (arrival || mode === "setup"));
   return <Context.Provider value={{profile,loading,error,open:()=>{setStartAt(profile?.result ? 1 : undefined);setManual(true);},rebuild:()=>{setStartAt(11);setManual(true);},refresh:()=>load()}}>
     {show && profile ? <PersonalizationFlow startAt={startAt} profile={profile} onProfile={setProfile} onEnter={()=>{setEntered(true);setManual(false);setStartAt(undefined);useStore.getState().setOnboarded(true);void access.refresh();}} /> : <>
-      {loading ? <div role="status" className="grid min-h-dvh place-items-center">Opening your Scholar…</div> : <>
-        {mode === "invite" && !entered ? <GlassSurface className="your-scholar-invite" material="elevated"><div><strong>Make Scholar yours.</strong><p>A learning profile shapes your next steps, study priorities, and LAM.</p></div><GlassButton variant="primary" onClick={()=>setManual(true)}>Personalize Scholar</GlassButton><GlassButton onClick={async()=>{try{const response=await fetch("/api/personalization",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"skip",revision:profile?.revision ?? 0})});if(!response.ok)throw new Error();setProfile(await response.json());}catch{setError("The invitation could not be dismissed. Retry when connected.");}}}>Not now</GlassButton></GlassSurface> : null}
-        {error ? <div role="status" className="your-scholar-invite"><span>{error}</span><GlassButton onClick={()=>void load()}>Retry profile</GlassButton></div> : null}
-        {children}
-      </>}
+      {loading ? <div role="status" className="grid min-h-dvh place-items-center">Opening your Scholar…</div> : <div className="flex h-dvh w-full flex-col overflow-hidden">
+        {mode === "invite" && !entered ? <GlassSurface className="your-scholar-invite shrink-0" material="elevated"><div><strong>Make Scholar yours.</strong><p>A learning profile shapes your next steps, study priorities, and LAM.</p></div><GlassButton variant="primary" onClick={()=>setManual(true)}>Personalize Scholar</GlassButton><GlassButton onClick={async()=>{try{const response=await fetch("/api/personalization",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"skip",revision:profile?.revision ?? 0})});if(!response.ok)throw new Error();setProfile(await response.json());}catch{setError("The invitation could not be dismissed. Retry when connected.");}}}>Not now</GlassButton></GlassSurface> : null}
+        {error ? <div role="status" className="your-scholar-invite shrink-0"><span>{error}</span><GlassButton onClick={()=>void load()}>Retry profile</GlassButton></div> : null}
+        <div className="flex min-h-0 flex-1 flex-col [&>.scholar-shell]:h-full [&>.scholar-shell]:min-h-0 [&>.scholar-shell]:flex-1">{children}</div>
+      </div>}
     </>}
   </Context.Provider>;
 }

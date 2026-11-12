@@ -254,9 +254,90 @@ html[data-appearance-theme="light"] .sg-action--default { background-color: #315
 @media (forced-colors: active) { .sg-action, [data-velocity-control], .scholar-bottom-nav.sg-velocity-dock { color: ButtonText !important; background: ButtonFace !important; border: 1px solid ButtonText; box-shadow: none !important; } }
 /* Explicit Anime press ownership replaces legacy CSS squash on these audited
    Exam controls only; Framer choices and assessment options are not opted in. */
+@media (prefers-reduced-motion: reduce) { .sg-navigation-shell .scholar-sidebar-title { transition: none; } }
+@media (forced-colors: active) { .sg-action, [data-velocity-control], .scholar-bottom-nav.sg-velocity-dock { color: ButtonText !important; background: ButtonFace !important; border: 1px solid ButtonText; box-shadow: none !important; } }
+/* Explicit Anime press ownership replaces legacy CSS squash on these audited
+   Exam controls only; Framer choices and assessment options are not opted in. */
 .er-root button[data-velocity-control]:active { transform: none; }
 html[data-sg-motion="reduced"] .sg-navigation-shell .scholar-sidebar-title { transition: none; }
 html[data-sg-material="fallback"] :is(.sg-action--outline,.sg-action--secondary,.sg-workspace-panel,[data-slot="dialog-content"],[data-slot="dropdown-menu-content"]) { background-color: var(--sg-plate-ink) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* ── LAM AI Fixed Top Bar — Tier 1 Refractive Liquid Glass Overlay ───────── */
+.lam-workspace-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  min-height: var(--lam-topbar-h, 62px);
+  overflow: hidden;
+  isolation: isolate;
+  border-bottom: 0;
+  background: transparent;
+}
+.lam-topbar-optic {
+  position: absolute;
+  inset: -4px -10px;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(22px) saturate(172%) brightness(1.05);
+  backdrop-filter: blur(22px) saturate(172%) brightness(1.05);
+}
+html[data-sg-refraction="on"] .lam-topbar-optic {
+  -webkit-backdrop-filter: url("#sg-refraction-topbar") blur(17px) saturate(185%) brightness(1.07);
+  backdrop-filter: url("#sg-refraction-topbar") blur(17px) saturate(185%) brightness(1.07);
+}
+.lam-topbar-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-color: rgb(9 13 22 / 22%);
+  background-image:
+    radial-gradient(46% 145% at 14% 108%, rgb(244 157 112 / 14%), transparent 68%),
+    radial-gradient(48% 145% at 86% 108%, rgb(125 211 252 / 15%), transparent 68%),
+    linear-gradient(180deg, rgb(255 255 255 / 19%) 0%, rgb(255 255 255 / 5%) 38%, rgb(255 255 255 / 1%) 74%, rgb(255 255 255 / 11%) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 30%),
+    inset 0 -1px 0 rgb(255 255 255 / 22%),
+    0 12px 32px -18px rgb(0 0 0 / 68%);
+}
+.lam-workspace-topbar > .lam-topbar-inner {
+  position: relative;
+  z-index: 2;
+}
+.lam-workspace-topbar .scholar-workspace-tabs {
+  border-color: rgb(255 255 255 / 16%);
+  background-color: rgb(14 18 28 / 38%);
+  background-image: linear-gradient(155deg, rgb(255 255 255 / 11%), rgb(255 255 255 / 2%) 56%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%), 0 8px 24px -14px rgb(0 0 0 / 55%);
+}
+html[data-sg-refraction="off"] .lam-topbar-optic {
+  -webkit-backdrop-filter: blur(20px) saturate(155%) brightness(1.02);
+  backdrop-filter: blur(20px) saturate(155%) brightness(1.02);
+}
+html[data-sg-quality="lightweight"] .lam-topbar-optic,
+html[data-sg-material="fallback"] .lam-topbar-optic,
+html[data-sg-hidden="true"] .lam-topbar-optic {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-sg-quality="lightweight"] .lam-topbar-sheen,
+html[data-sg-material="fallback"] .lam-topbar-sheen {
+  background-color: color-mix(in srgb, var(--sg-plate-ink) 92%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .lam-topbar-optic {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .lam-topbar-sheen {
+    background-color: rgb(8 11 18 / 94%);
+  }
+}
+[data-workspace="lam-ai"] .scholar-ai-tutor > .relative.z-10 {
+  padding-top: calc(var(--lam-topbar-h, 62px) + 16px);
+}
 
 /* 3.1 scene continuity: genuine route media now lives ONCE beneath both columns.
    Remove the unrelated blue plate; content stays above an independent optic.
