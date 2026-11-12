@@ -8,7 +8,7 @@ export function velocityMotionAllowed(kind: "page" | "interaction" | "panel" = "
   return true;
 }
 
-export const VELOCITY_TIMING = Object.freeze({ press: 85, release: 200, page: 170, panel: 180, navigation: 310 });
+export const VELOCITY_TIMING = Object.freeze({ press: 85, release: 200, page: 170, panel: 180, navigation: 480 });
 
 /** Audited families only. Never a blanket `main button` rule: answer text,
  * calendar grids, flip cards and Framer-owned choices retain their ownership. */

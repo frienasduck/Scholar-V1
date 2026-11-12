@@ -51,8 +51,8 @@
       "failures": ""
     },
     {
-      "file": "auth-rate-limit-void.test.ts",
-      "passed": 3,
+      "file": "auth-api.test.ts",
+      "passed": 10,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -60,8 +60,8 @@
       "failures": ""
     },
     {
-      "file": "auth-api.test.ts",
-      "passed": 10,
+      "file": "auth-rate-limit-void.test.ts",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -89,6 +89,15 @@
     {
       "file": "connector-crypto.test.ts",
       "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "cinematic-homepage.test.tsx",
+      "passed": 10,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -125,15 +134,6 @@
     {
       "file": "drive-files.test.ts",
       "passed": 9,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
-      "file": "cinematic-homepage.test.tsx",
-      "passed": 10,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -330,8 +330,8 @@
       "failures": ""
     },
     {
-      "file": "exam-ready-gemini-contract.test.ts",
-      "passed": 2,
+      "file": "exam-ready-golden-problems.test.ts",
+      "passed": 8,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -339,8 +339,8 @@
       "failures": ""
     },
     {
-      "file": "exam-ready-golden-problems.test.ts",
-      "passed": 8,
+      "file": "exam-ready-gemini-contract.test.ts",
+      "passed": 2,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -717,8 +717,8 @@
       "failures": ""
     },
     {
-      "file": "ocr-packaging.test.ts",
-      "passed": 1,
+      "file": "monetization.test.ts",
+      "passed": 27,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -726,8 +726,8 @@
       "failures": ""
     },
     {
-      "file": "monetization.test.ts",
-      "passed": 27,
+      "file": "ocr-packaging.test.ts",
+      "passed": 1,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -771,15 +771,6 @@
       "failures": ""
     },
     {
-      "file": "personalization-presentation.test.ts",
-      "passed": 3,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "performance-engine.test.ts",
       "passed": 23,
       "failed": 0,
@@ -789,7 +780,7 @@
       "failures": ""
     },
     {
-      "file": "plus-feature-preview.test.tsx",
+      "file": "personalization-presentation.test.ts",
       "passed": 3,
       "failed": 0,
       "skipped": 0,
@@ -807,8 +798,8 @@
       "failures": ""
     },
     {
-      "file": "postgres-migration-coverage.test.ts",
-      "passed": 5,
+      "file": "plus-feature-preview.test.tsx",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -818,6 +809,15 @@
     {
       "file": "postgres-auth-security.test.ts",
       "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "postgres-migration-coverage.test.ts",
+      "passed": 5,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -852,8 +852,8 @@
       "failures": ""
     },
     {
-      "file": "quiz-generation-contract.test.ts",
-      "passed": 3,
+      "file": "public-repository-privacy.test.ts",
+      "passed": 2,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -861,8 +861,8 @@
       "failures": ""
     },
     {
-      "file": "public-repository-privacy.test.ts",
-      "passed": 2,
+      "file": "quiz-generation-contract.test.ts",
+      "passed": 3,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -915,15 +915,6 @@
       "failures": ""
     },
     {
-      "file": "resource-library-presentation.test.ts",
-      "passed": 7,
-      "failed": 0,
-      "skipped": 0,
-      "exit": 0,
-      "timedOut": false,
-      "failures": ""
-    },
-    {
       "file": "resource-jobs.test.ts",
       "passed": 18,
       "failed": 0,
@@ -933,8 +924,8 @@
       "failures": ""
     },
     {
-      "file": "resource-ssrf.test.ts",
-      "passed": 6,
+      "file": "resource-library-presentation.test.ts",
+      "passed": 7,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -944,6 +935,15 @@
     {
       "file": "resource-pdf.test.ts",
       "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "exit": 0,
+      "timedOut": false,
+      "failures": ""
+    },
+    {
+      "file": "resource-ssrf.test.ts",
+      "passed": 6,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -996,8 +996,8 @@
       "failures": ""
     },
     {
-      "file": "shrinking-scholar.test.ts",
-      "passed": 21,
+      "file": "site-origin.test.ts",
+      "passed": 4,
       "failed": 0,
       "skipped": 0,
       "exit": 0,
@@ -1005,8 +1005,8 @@
       "failures": ""
     },
     {
-      "file": "site-origin.test.ts",
-      "passed": 4,
+      "file": "shrinking-scholar.test.ts",
+      "passed": 21,
       "failed": 0,
       "skipped": 0,
       "exit": 0,

@@ -51,28 +51,82 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
     const host = root.current, node = lens.current;
     if (!host || !node) return;
     let pending = 0, initialized = false, tracking = false;
-    let animation: ReturnType<typeof animate> | undefined;
+    let animation: ReturnType<typeof createTimeline> | undefined;
+    let previousBox: NavigationLensBox | undefined;
     const scope = createScope({ root: host });
+    const resetLensSurface = () => {
+      delete node.dataset.sgMoving;
+      node.style.willChange = "";
+    };
     const place = (smooth: boolean, override?: HTMLElement) => {
       if (tracking) return;
       const target = override ?? host.querySelector<HTMLElement>('[aria-current="page"], [data-state="active"]');
-      if (!target) { node.style.opacity = "0"; return; }
+      if (!target) { node.style.opacity = "0"; resetLensSurface(); return; }
       // Complete all geometry reads before writes. Resize/scroll is one RAF.
       const a = host.getBoundingClientRect(), b = target.getBoundingClientRect();
       const x = b.left - a.left + host.scrollLeft, y = b.top - a.top + host.scrollTop;
+      const liveRect = initialized && parseFloat(node.style.opacity || "0") > 0 ? node.getBoundingClientRect() : null;
+      const fromX = liveRect && liveRect.width > 0 ? liveRect.left - a.left + host.scrollLeft : previousBox?.x ?? x;
+      const fromY = liveRect && liveRect.height > 0 ? liveRect.top - a.top + host.scrollTop : previousBox?.y ?? y;
+      const fromW = liveRect && liveRect.width > 0 ? liveRect.width : previousBox?.width ?? b.width;
+      const fromH = liveRect && liveRect.height > 0 ? liveRect.height : previousBox?.height ?? b.height;
       animation?.cancel();
       node.style.opacity = "1";
-      if (!smooth || !initialized || !velocityMotionAllowed()) {
-        node.style.willChange = "";
-        Object.assign(node.style, { transform: `translate(${x}px, ${y}px)`, width: `${b.width}px`, height: `${b.height}px` });
+      const dx = x - fromX, dy = y - fromY, dist = Math.hypot(dx, dy);
+      if (!smooth || !initialized || !velocityMotionAllowed() || dist < 1) {
+        resetLensSurface();
+        Object.assign(node.style, {
+          transform: `translate(${x}px, ${y}px) scaleX(1) scaleY(1)`,
+          width: `${b.width}px`,
+          height: `${b.height}px`,
+        });
       } else {
+        const horizontal = Math.abs(dx) >= Math.abs(dy);
+        const elongation = Math.min(0.14, dist / 900);
+        const stretchX = horizontal ? 1 + elongation : 1 / Math.sqrt(1 + elongation * 0.6);
+        const stretchY = horizontal ? 1 / Math.sqrt(1 + elongation * 0.6) : 1 + elongation * 0.7;
+        const duration = VELOCITY_TIMING.navigation;
+        const expandDuration = Math.round(duration * 0.36);
+        const settleDuration = duration - expandDuration;
+        node.dataset.sgMoving = "true";
         node.style.willChange = "transform";
-        animation = scope.execute(() => animate(node, {
-          x, y, width: b.width, height: b.height,
-          duration: VELOCITY_TIMING.navigation, ease: "out(4)",
-          onComplete: () => { node.style.willChange = ""; },
-        }));
+        animation = scope.execute(() => {
+          const tl = createTimeline({
+            onComplete: () => {
+              resetLensSurface();
+            },
+          });
+          tl.add(
+            node,
+            {
+              x: [fromX, x],
+              y: [fromY, y],
+              width: [fromW, b.width],
+              height: [fromH, b.height],
+              ease: spring({ bounce: 0.16, duration }),
+            },
+            0,
+          );
+          if (dist > 8) {
+            tl.add(
+              node,
+              {
+                scaleX: [
+                  { to: stretchX, duration: expandDuration, ease: "out(2)" },
+                  { to: 1, duration: settleDuration, ease: spring({ bounce: 0.24, duration: settleDuration }) },
+                ],
+                scaleY: [
+                  { to: stretchY, duration: expandDuration, ease: "out(2)" },
+                  { to: 1, duration: settleDuration, ease: spring({ bounce: 0.24, duration: settleDuration }) },
+                ],
+              },
+              0,
+            );
+          }
+          return tl;
+        });
       }
+      previousBox = { x, y, width: b.width, height: b.height };
       initialized = true;
     };
     // The same geometry owner handles direct manipulation and release. A drag
@@ -81,8 +135,10 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
       track: ({ x, y, width, height }) => {
         if (!tracking) setGlassSurfacePriority(node,125);
         tracking = true; animation?.cancel();
+        delete node.dataset.sgMoving;
         node.style.willChange = "transform";
-        Object.assign(node.style, { opacity: "1", transform: `translate(${x}px, ${y}px)`, width: `${width}px`, height: `${height}px` });
+        previousBox = { x, y, width, height };
+        Object.assign(node.style, { opacity: "1", transform: `translate(${x}px, ${y}px) scaleX(1) scaleY(1)`, width: `${width}px`, height: `${height}px` });
       },
       settle: (target) => { tracking = false; setGlassSurfacePriority(node,axis === "x" ? 100 : 80); place(true, target); },
     };
@@ -95,13 +151,13 @@ export function useNavigationLens(root: RefObject<HTMLElement | null>, selected:
     mutations.observe(host, { subtree: true, attributes: true, attributeFilter: ["aria-current", "data-state"] });
     const preferences = new MutationObserver(schedule);
     preferences.observe(document.documentElement, { attributes: true, attributeFilter: ["data-sg-motion", "data-reduce-motion", "data-font-scale"] });
-    const stop = () => { if (document.hidden) { animation?.cancel(); node.style.willChange = ""; } else schedule(); };
+    const stop = () => { if (document.hidden) { animation?.cancel(); resetLensSurface(); } else schedule(); };
     host.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule, { passive: true });
     document.addEventListener("visibilitychange", stop);
     const off = registerGlassSurface(node, { elasticity: 0, pointer: false, priority: axis === "x" ? 100 : 80 });
     place(false);
-    return () => { if (interactionRef?.current === interaction) interactionRef.current = null; cancelAnimationFrame(pending); animation?.cancel(); scope.revert(); observer?.disconnect(); mutations.disconnect(); preferences.disconnect(); off(); host.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); document.removeEventListener("visibilitychange", stop); node.style.willChange = ""; };
+    return () => { if (interactionRef?.current === interaction) interactionRef.current = null; cancelAnimationFrame(pending); animation?.cancel(); scope.revert(); observer?.disconnect(); mutations.disconnect(); preferences.disconnect(); off(); host.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); document.removeEventListener("visibilitychange", stop); resetLensSurface(); };
     // Selection is observed on the stable DOM; this effect must not rebuild the lens on each selection.
   }, [root, axis, interactionRef]);
   // selected intentionally stays a render-level dependency of the parent only.

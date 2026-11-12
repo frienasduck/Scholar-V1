@@ -121,8 +121,7 @@ export function WorkspaceTabs({
           role="tablist"
           aria-label={`${workspace.label} sections`}
           className={cn(
-            "scholar-workspace-tabs sg-velocity-tabs relative isolate flex shrink-0 items-center gap-0.5 border border-white/[0.1] bg-muted/25 p-1 max-w-full overflow-x-auto sm:gap-1",
-            refractiveOverlay ? "rounded-full" : "rounded-xl",
+            "scholar-workspace-tabs sg-velocity-tabs relative isolate flex shrink-0 items-center gap-0.5 rounded-full border border-white/[0.1] bg-muted/25 p-1 max-w-full overflow-x-auto sm:gap-1",
           )}
         >
           <NavigationLens lensRef={lens} axis="x" />
@@ -154,7 +153,7 @@ export function WorkspaceTabs({
                   "relative z-10 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors duration-200 sm:px-4 sm:text-[13px]",
                   refractiveOverlay
                     ? "min-h-11 px-2.5 py-1 text-[11.5px] sm:px-3.5 sm:py-1.5 lg:min-h-9"
-                    : "min-h-11 rounded-lg px-3 py-1.5 lg:min-h-9 lg:px-3.5",
+                    : "min-h-11 px-3 py-1.5 lg:min-h-9 lg:px-3.5",
                   selected
                     ? "text-foreground font-semibold"
                     : "text-muted-foreground hover:text-foreground",
