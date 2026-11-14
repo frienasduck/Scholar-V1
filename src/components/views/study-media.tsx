@@ -1,12 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { SectionShutdown } from "@/components/section-shutdown";
 import { WorkspacePanel, WorkspaceTabs, useWorkspaceMode } from "@/components/workspaces/workspace-tabs";
+import { navigateTo } from "@/lib/nav-event";
+
+const LamTubeWorkspace = dynamic(() => import("@/components/lamtube/workspace"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-1 items-center justify-center py-20 text-sm text-muted-foreground">
+      Loading AI Video Maker…
+    </div>
+  ),
+});
 
 /**
- * LAMTube and Study Music are merged for navigation, but both services stay
- * paused. This intentionally renders the existing shutdown notices rather than
- * the old players, so merging cannot bypass the licensing pause.
+ * Partial unpause of Study Media:
+ * - LAMTube → AI Video Maker is live and functional. Third-party YouTube feeds stay paused inside the workspace banner.
+ * - Study Music remains completely paused for licensing.
  */
 export function StudyMediaView() {
   const { mode, select } = useWorkspaceMode("study-media", "lamtube");
@@ -16,10 +27,14 @@ export function StudyMediaView() {
         workspaceId="study-media"
         active={mode}
         onSelect={select}
-        badges={{ lamtube: "Paused", music: "Paused" }}
+        badges={{ lamtube: "AI Video Maker", music: "Paused" }}
       />
       <WorkspacePanel workspaceId="study-media" mode={mode} className="flex flex-1 flex-col">
-        <SectionShutdown viewId={mode === "music" ? "music" : "nigtube"} />
+        {mode === "music" ? (
+          <SectionShutdown viewId="music" />
+        ) : (
+          <LamTubeWorkspace onBack={() => navigateTo("dashboard")} />
+        )}
       </WorkspacePanel>
     </div>
   );

@@ -2,13 +2,16 @@ import "server-only";
 import { getCurriculum } from "@/lib/curriculum-helper";
 import { checkGrade, ProfileError } from "@/lib/personalization/server";
 import type { VideoSettings } from "./model";
+import { isLocalLamtubeDevMode } from "./local-dev-store";
 
 /** Apply the same curriculum and access policy to creation and draft edits. */
 export async function validateSettings(
   userId: string,
   settings: VideoSettings
 ) {
-  await checkGrade(userId, settings.grade);
+  if (!isLocalLamtubeDevMode()) {
+    await checkGrade(userId, settings.grade);
+  }
   const subject = getCurriculum(settings.grade).find(
     (s) => s.id === settings.subjectId
   );

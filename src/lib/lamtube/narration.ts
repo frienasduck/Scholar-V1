@@ -6,7 +6,13 @@ import { resolveUserEntitlements } from "@/lib/subscriptions/entitlements";
 import { wavInfo } from "./wav";
 import type { NarrationClip, VideoSettings } from "./model";
 import { generateSpeech, speechConfiguration } from "./speech";
+import {
+  devFindCachedAudio,
+  devSaveAudioClip,
+  isLocalLamtubeDevMode,
+} from "./local-dev-store";
 export { TTS_MODEL } from "./speech";
+
 export async function narration(
   userId: string,
   videoId: string,
@@ -16,8 +22,29 @@ export async function narration(
   signal: AbortSignal
 ): Promise<NarrationClip> {
   const digest = createHash("sha256")
-    .update(JSON.stringify([speechConfiguration().model, settings.voice, settings.pace, text]))
+    .update(
+      JSON.stringify([
+        speechConfiguration().model,
+        settings.voice,
+        settings.pace,
+        settings.language ?? "en",
+        text,
+      ])
+    )
     .digest("hex");
+
+  if (isLocalLamtubeDevMode()) {
+    const cachedDev = await devFindCachedAudio(userId, videoId, digest);
+    if (cachedDev) return { id: cachedDev.id, duration: cachedDev.duration, text };
+    if (text.length > 200) {
+      throw new ProfileError("Narration phrase exceeds the speech provider limit.", 422);
+    }
+    const bytes = await generateSpeech(text, settings, signal);
+    const info = wavInfo(bytes);
+    const id = await devSaveAudioClip(userId, videoId, token, digest, bytes, info.duration);
+    return { id, duration: info.duration, text };
+  }
+
   const cached = await db.$queryRaw<
     { id: string; duration: number }[]
   >`SELECT a."id",a."duration" FROM "AIVideoAudio" a JOIN "AIVideo" v ON v."id"=a."videoId" WHERE v."userId"=${userId} AND v."id"=${videoId} AND v."deletedAt" IS NULL AND a."digest"=${digest}`;

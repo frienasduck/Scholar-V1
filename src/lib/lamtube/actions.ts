@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { completeJSON } from "@/lib/ai/structured";
+import { generateScholarGroqJSON } from "@/lib/ai/scholar-groq";
 import { checkGrade, ProfileError } from "@/lib/personalization/server";
 import { settingsSchema, VOICES } from "./model";
 import type { VideoState } from "./model";
@@ -153,7 +154,9 @@ export async function act(userId: string, id: string, action: VideoAction) {
         v.stage = "scenes";
       }
     } else if (action.action === "ask") {
-      await checkGrade(userId, v.settings.grade);
+      const { isLocalLamtubeDevMode } = await import("./local-dev-store");
+      const localDev = isLocalLamtubeDevMode();
+      if (!localDev) await checkGrade(userId, v.settings.grade);
       if (!v.timeline || v.status !== "ready")
         throw new ProfileError(
           "Wait for the playable lesson before asking about a moment.",
@@ -178,18 +181,24 @@ export async function act(userId: string, id: string, action: VideoAction) {
           citationIds: z.array(z.string().regex(/^S\d+$/)).max(12),
         })
         .strict();
-      const answer = schema.parse(
-        await completeJSON(
-          userId,
-          `${teachingPolicy(v)}
+      const askPrompt = `${teachingPolicy(v)}
 Explain the CURRENT VIDEO MOMENT, not a generic chapter answer. Use plain Markdown with dollar-delimited equations only, not entire paragraphs. Mode: ${
-            action.mode
-          }; notes: produce revision notes; quiz: ask one attempt-first question; simpler: different simple analogy; example: a different verified worked example. Do not claim official questions. If source-only, stay within source passages; do not invent examples. Answer JSON {text,citationIds}.
+        action.mode
+      }; notes: produce revision notes; quiz: ask one attempt-first question; simpler: different simple analogy; example: a different verified worked example. Do not claim official questions. If source-only, stay within source passages; do not invent examples. Answer JSON {text,citationIds}.
 CURRENT_MOMENT_DATA ${JSON.stringify(context)}
-STUDENT_QUESTION_DATA ${JSON.stringify(action.question)}`,
-          AbortSignal.timeout(48000)
-        )
-      );
+STUDENT_QUESTION_DATA ${JSON.stringify(action.question)}`;
+      const rawAnswer = localDev
+        ? await generateScholarGroqJSON({
+            messages: [
+              { role: "system", content: askPrompt },
+              { role: "user", content: "Return valid JSON matching {text, citationIds}." },
+            ],
+            temperature: 0.35,
+            maxTokens: 3000,
+            signal: AbortSignal.timeout(48000),
+          })
+        : await completeJSON(userId, askPrompt, AbortSignal.timeout(48000));
+      const answer = schema.parse(rawAnswer);
       if (
         answer.citationIds.some(
           (s) => !v.sources.some((c) => c.citation.id === s)

@@ -1,6 +1,5 @@
-import { db } from "@/lib/db";
 import { authorize, fail } from "@/lib/lamtube/http";
-import { ProfileError } from "@/lib/personalization/server";
+import { readAudioClipBytes } from "@/lib/lamtube/store";
 export const runtime = "nodejs";
 export async function GET(
   request: Request,
@@ -9,12 +8,7 @@ export async function GET(
   try {
     const user = await authorize(request);
     const { id, clip } = await context.params;
-    const rows = await db.$queryRaw<
-      { bytes: Uint8Array }[]
-    >`SELECT a."bytes" FROM "AIVideoAudio" a JOIN "AIVideo" v ON v."id"=a."videoId" WHERE a."id"=${clip} AND v."id"=${id} AND v."userId"=${user.id} AND v."deletedAt" IS NULL AND (v."state"->>'status'='ready' OR v."state"->>'charged'='true')`;
-    if (!rows[0])
-      throw new ProfileError("Private narration was not found.", 404);
-    const bytes = rows[0].bytes;
+    const bytes = await readAudioClipBytes(user.id, id, clip, true);
     const length = bytes.byteLength;
     const range = request.headers.get("range");
     const headers = {

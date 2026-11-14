@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { InlineSearch } from "@/components/inline-search";
-import { LamTubeBackgroundJobs } from "@/components/lamtube/background-jobs";
+import { AiVideoBackgroundJobs, LamTubeBackgroundJobs } from "@/components/lamtube/background-jobs";
 import { ScholarFooter } from "@/components/scholar-footer";
 import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -851,6 +851,7 @@ export function AppShell() {
     <SceneBackdropContext.Provider value={sceneHost}>
     <div className="scholar-shell flex h-dvh w-full overflow-hidden" data-mobile-nav-open={mobileNavOpen ? "true" : "false"} data-mobile-drawer-open={mobileOpen ? "true" : "false"}>
       {!getSectionShutdown("nigtube") && <LamTubeBackgroundJobs />}
+      <AiVideoBackgroundJobs />
       {/* Ambient glass environment. Glass needs something coherent to refract:
           deep graphite with a few very soft fields instead of neon gradients. */}
       <div ref={setSceneHost} className={`sg-environment transition-colors duration-500 ${viewBg[active] ?? ""}`} data-scholar-scene={active} aria-hidden="true" />

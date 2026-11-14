@@ -9,7 +9,10 @@ export async function queueVideo(userId: string, id: string, retry = false) {
   const current = await readVideo(userId, id);
   if (current.status === "ready" || current.status === "generating") return current;
   if (["failed", "cancelled"].includes(current.status) && !retry) return current;
-  await checkGrade(userId, current.settings.grade);
+  const { isLocalLamtubeDevMode } = await import("./local-dev-store");
+  if (!isLocalLamtubeDevMode()) {
+    await checkGrade(userId, current.settings.grade);
+  }
   const token = await claimVideo(userId, id);
   let saved = false;
   try {
@@ -35,9 +38,9 @@ export async function runVideoBatch(userId: string, id: string, budgetMs = 45000
     try {
       const video = await readVideo(userId, id);
       if (video.status !== "generating" || (video.retryAt && video.retryAt > Date.now())) return;
-      // Do not start an AI/TTS call with only a few seconds left in this batch.
-      if (["outline", "scenes", "narration"].includes(video.stage) && deadline - Date.now() < 28000) return;
-      await processVideo(userId, id, Math.min(48000, deadline - Date.now()));
+      // Do not start an AI/TTS/render call with only a few seconds left in this batch.
+      if (["outline", "scenes", "illustrations", "narration", "render"].includes(video.stage) && deadline - Date.now() < 28000) return;
+      await processVideo(userId, id, Math.min(video.stage === "render" ? 150000 : 48000, deadline - Date.now()));
     } catch (error) {
       // A competing tab/worker owns the lease, or a stage already persisted its failure.
       if (!(error instanceof ProfileError && error.status === 409) && !(error instanceof RateLimitError))

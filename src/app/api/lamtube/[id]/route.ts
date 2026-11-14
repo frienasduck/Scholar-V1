@@ -5,7 +5,7 @@ import { authorize, fail, reply } from "@/lib/lamtube/http";
 import { readVideo, publicVideo, deleteVideo } from "@/lib/lamtube/store";
 import { act, actionSchema, isInsightResult } from "@/lib/lamtube/actions";
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 180;
 type Context = { params: Promise<{ id: string }> };
 export async function GET(request: Request, context: Context) {
   try {
@@ -29,7 +29,7 @@ export async function POST(request: Request, context: Context) {
     const id = (await context.params).id;
     if (action.action === "start" || action.action === "retry") {
       const video = await queueVideo(user.id, id, action.action === "retry");
-      if (video.status === "generating") after(() => runVideoBatch(user.id, id));
+      if (video.status === "generating") after(() => runVideoBatch(user.id, id, 160000));
       return reply({ video: publicVideo(video) }, 202);
     }
     const result = await act(user.id, id, action);

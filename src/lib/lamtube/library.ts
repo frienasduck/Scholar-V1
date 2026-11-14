@@ -3,8 +3,8 @@ import { useSyncExternalStore } from "react";
 import { videoRequest } from "./client";
 import type { VideoState } from "./model";
 export type VideoUsage = { used: number; limit: number | null; remaining: number | null; period: string; timezone: string };
-type Library = { scope: string; videos: VideoState[]; usage: VideoUsage | null; error: string };
-const empty: Library = { scope: "", videos: [], usage: null, error: "" };
+type Library = { scope: string; videos: VideoState[]; usage: VideoUsage | null; error: string; localDev?: boolean };
+const empty: Library = { scope: "", videos: [], usage: null, error: "", localDev: false };
 let library = empty;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
@@ -36,10 +36,10 @@ export function retainLibraryVideo(scope: string, video: VideoState) {
 export async function refreshVideoLibrary(scope: string, signal?: AbortSignal) {
   const data = await videoRequest("/api/lamtube", undefined, signal);
   if (library.scope === scope && !signal?.aborted) {
-    library = { scope, videos: reconcileVideos(data.videos, library.videos), usage: data.usage, error: "" };
+    library = { scope, videos: reconcileVideos(data.videos, library.videos), usage: data.usage, error: "", localDev: Boolean(data.localDev) };
     emit();
   }
-  return data as { videos: VideoState[]; usage: VideoUsage };
+  return data as { videos: VideoState[]; usage: VideoUsage; localDev?: boolean };
 }
 export function libraryError(scope: string, error: string) {
   if (library.scope !== scope) return;

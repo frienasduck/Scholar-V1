@@ -6,6 +6,7 @@ import { retrievalPrompt } from "@/lib/resources/engine";
 import { checkGrade, ProfileError } from "@/lib/personalization/server";
 import { AIProviderError } from "@/lib/ai/errors";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
+import * as storeAll from "./store";
 import {
   claimVideo,
   readVideo,
@@ -18,6 +19,24 @@ import { outlineSchema, scenePlanSchema, assembleTimeline } from "./model";
 import type { VideoState } from "./model";
 import { narration } from "./narration";
 import { validatedGeneration } from "./structured-output";
+import {
+  buildOutlinePrompt,
+  buildScenePrompt,
+  generateStructuredPlan,
+} from "./planner";
+import { stabilizeScenePlan } from "./validator";
+import {
+  collectRequestedIllustrations,
+  generateEducationalPlate,
+} from "./illustrations";
+import { renderVideoToMp4 } from "./video-renderer";
+import { isLocalLamtubeDevMode } from "./local-dev-store";
+
+function hasMediaPipeline(): boolean {
+  const s = storeAll as Record<string, unknown>;
+  return typeof s.saveRender === "function" && typeof s.readAudioClipBytes === "function";
+}
+
 export function teachingPolicy(v: VideoState) {
   return `You are LAMTube, Scholar's educational motion-graphics director. Teach accurate Class ${
     v.settings.grade
@@ -30,6 +49,7 @@ ${
 SETTINGS DATA ${JSON.stringify(v.settings)}
 ${retrievalPrompt(v.sources)}`;
 }
+
 async function gather(userId: string, v: VideoState) {
   for (const id of v.settings.resourceIds) {
     const source = await findResource(id, userId);
@@ -83,50 +103,74 @@ async function gather(userId: string, v: VideoState) {
       422
     );
 }
+
 export async function processVideo(userId: string, id: string, timeoutMs = 48000) {
   const token = await claimVideo(userId, id);
   let v: VideoState | null = null;
   let saved = false;
+  const realPipeline = hasMediaPipeline();
+  const localDev = isLocalLamtubeDevMode();
   try {
     v = await readVideo(userId, id);
     if (["ready", "cancelled"].includes(v.status)) return v;
     if (v.retryAt && v.retryAt > Date.now()) return v;
-    await checkGrade(userId, v.settings.grade);
+    if (!localDev) await checkGrade(userId, v.settings.grade);
     await ensureReservation(userId, v);
     v.status = "generating";
     v.error = null;
     v.retryAt = null;
-    const signal = AbortSignal.timeout(Math.max(1, timeoutMs));
-    if (["outline", "scenes"].includes(v.stage)) {
+    const effectiveTimeout =
+      v.stage === "render"
+        ? Math.max(timeoutMs, 420000)
+        : ["outline", "scenes"].includes(v.stage)
+          ? Math.max(timeoutMs, 95000)
+          : timeoutMs;
+    const signal = AbortSignal.timeout(Math.max(1, effectiveTimeout));
+    if (!localDev && ["outline", "scenes"].includes(v.stage)) {
       await enforceRateLimit(userId, "ai-generation-burst", 20, 60000);
       await enforceRateLimit(userId, "ai-generation", 90, 60 * 60000);
     }
-    if (v.stage === "narration")
+    if (!localDev && v.stage === "narration") {
       await enforceRateLimit(userId, "lamtube-narration", 400, 60 * 60000);
+    }
+
     if (v.stage === "sources") {
       v.sources = [];
       await gather(userId, v);
       v.stage = "outline";
     } else if (v.stage === "outline") {
+      const targetScenes = Math.min(
+        24,
+        Math.max(v.settings.chapters.length, Math.round(v.settings.minutes * 1.5))
+      );
       v.outline = await validatedGeneration(
-          outlineSchema,
-          `${teachingPolicy(v)}
-Build a coherent ordered lesson covering ALL selected chapters, prerequisites first, intuitive explanation, formal concept, worked application and recap. Avoid repeating previously covered concepts. Target ${Math.min(
-            24,
-            Math.max(
-              v.settings.chapters.length,
-              Math.round(v.settings.minutes * 1.5)
+        outlineSchema,
+        realPipeline
+          ? buildOutlinePrompt(
+              teachingPolicy(v),
+              v,
+              targetScenes,
+              z.toJSONSchema(outlineSchema) as Record<string, unknown>
             )
-          )} scenes, each ~30–45 seconds. Return only JSON matching ${JSON.stringify(
-            z.toJSONSchema(outlineSchema)
-          )}`,
-          prompt => completeJSON(userId, prompt, signal, z.toJSONSchema(outlineSchema))
+          : `${teachingPolicy(v)}
+Build a coherent ordered lesson covering ALL selected chapters, prerequisites first, intuitive explanation, formal concept, worked application and recap. Target ${targetScenes} scenes. Return only JSON matching ${JSON.stringify(
+              z.toJSONSchema(outlineSchema)
+            )}`,
+        (prompt) =>
+          generateStructuredPlan({
+            userId,
+            prompt,
+            schema: outlineSchema,
+            signal,
+            allowDirectGemini: realPipeline,
+            completeJsonFn: completeJSON,
+          })
       );
       const allowed = new Set(v.settings.chapters.map((c) => c.id));
       if (
         v.outline.scenes.some((s) => !allowed.has(s.chapterId)) ||
         [...allowed].some(
-          (id) => !v!.outline!.scenes.some((s) => s.chapterId === id)
+          (cid) => !v!.outline!.scenes.some((s) => s.chapterId === cid)
         )
       )
         throw new ProfileError(
@@ -138,20 +182,33 @@ Build a coherent ordered lesson covering ALL selected chapters, prerequisites fi
       const index =
         v.repair?.kind === "scene" ? v.repair.scene! : v.plans.length;
       const target = v.outline!.scenes[index];
-      const plan = await validatedGeneration(
-          scenePlanSchema,
-          `${teachingPolicy(v)}
+      const rawPlan = await validatedGeneration(
+        scenePlanSchema,
+        realPipeline
+          ? buildScenePrompt(
+              teachingPolicy(v),
+              v,
+              target,
+              index,
+              v.outline!.scenes.length,
+              z.toJSONSchema(scenePlanSchema) as Record<string, unknown>
+            )
+          : `${teachingPolicy(v)}
 OUTLINE DATA ${JSON.stringify(v.outline)}
-CURRENT SCENE ${JSON.stringify(target)}; scene ${
-            index + 1
-          }. Previously taught: ${JSON.stringify(
-            v.plans.slice(0, index).map((p) => p.goal)
-          )}.
-Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas: keep main content in x=80..920,y=140..800. Labels <=65 characters; equations short plain Unicode, no LaTeX. Use 5–12 narration phrases, each <=200 characters (speech limit), ~60–120 words TOTAL. Cues must reveal/draw/move multiple distinct elements at the phrase where the narration explains them, not show everything at time zero. Use pedagogically relevant arrows, changing objects, diagram, drawn graph/sketch or worked equation stages; do NOT merely display bullet points. Graph/sketch points are normalized coordinates within w/h, arrows point from x/y to x+w/y+h. Rectangles/circles support motion cues for physical demonstrations. Plain labels, never full paragraphs on canvas. camera is a subtle pan/zoom, not a planet travel. Tables rows should be brief. Give optional 4-choice question only when interactive enabled; do not reveal its answer in narration. sourceIds must be supplied actual IDs supporting this scene, or [] for general teaching. Return JSON matching ${JSON.stringify(
-            z.toJSONSchema(scenePlanSchema)
-          )}`,
-          prompt => completeJSON(userId, prompt, signal, z.toJSONSchema(scenePlanSchema))
+CURRENT SCENE ${JSON.stringify(target)}; scene ${index + 1}. Return JSON matching ${JSON.stringify(
+              z.toJSONSchema(scenePlanSchema)
+            )}`,
+        (prompt) =>
+          generateStructuredPlan({
+            userId,
+            prompt,
+            schema: scenePlanSchema,
+            signal,
+            allowDirectGemini: realPipeline,
+            completeJsonFn: completeJSON,
+          })
       );
+      const plan = realPipeline ? stabilizeScenePlan(rawPlan) : rawPlan;
       if (
         plan.chapterId !== target.chapterId ||
         plan.sourceIds.some(
@@ -167,10 +224,55 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
       if (v.repair?.kind === "scene") {
         v.plans[index] = plan;
         v.clips[index] = [];
-        v.stage = "narration";
+        v.stage = realPipeline && collectRequestedIllustrations(v).length ? "illustrations" : "narration";
       } else {
         v.plans.push(plan);
-        if (v.plans.length === v.outline!.scenes.length) v.stage = "narration";
+        if (v.plans.length === v.outline!.scenes.length) {
+          v.stage = realPipeline && collectRequestedIllustrations(v).length ? "illustrations" : "narration";
+        }
+      }
+    } else if (v.stage === "illustrations" && realPipeline) {
+      const requested = collectRequestedIllustrations(v);
+      const existingKeys = new Set((v.assets ?? []).map((a) => a.key));
+      const nextItem = requested.find((item) => !existingKeys.has(item.key));
+      if (!nextItem) {
+        v.stage = "narration";
+      } else {
+        const asset = await generateEducationalPlate(nextItem.prompt, v.settings.aspect, signal);
+        v.assets = [...(v.assets ?? [])];
+        if (asset) {
+          await storeAll.saveAsset(
+            userId,
+            id,
+            token,
+            {
+              key: nextItem.key,
+              digest: asset.digest,
+              mimeType: asset.mimeType,
+              width: asset.width,
+              height: asset.height,
+              prompt: nextItem.prompt,
+            },
+            asset.bytes
+          );
+          v.assets.push({
+            key: nextItem.key,
+            prompt: nextItem.prompt,
+            mimeType: asset.mimeType,
+            width: asset.width,
+            height: asset.height,
+          });
+        } else {
+          // Record sentinel metadata so skipped plates do not stall the pipeline endlessly.
+          v.assets.push({
+            key: nextItem.key,
+            prompt: nextItem.prompt,
+            mimeType: "none",
+            width: 0,
+            height: 0,
+          });
+        }
+        if (v.assets.length >= requested.length) v.stage = "narration";
       }
     } else if (v.stage === "narration") {
       let index = v.plans.findIndex(
@@ -190,25 +292,80 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
       }
     } else if (v.stage === "assemble") {
       v.timeline = assembleTimeline(v.plans, v.clips);
+      v.repair = null;
+      v.watch.position = Math.min(v.watch.position, v.timeline.duration);
+      if (realPipeline) {
+        v.stage = "render";
+        v.renderProgress = 5;
+      } else {
+        v.stage = "complete";
+        v.status = "ready";
+      }
+    } else if (v.stage === "render" && realPipeline) {
+      if (!v.timeline) {
+        v.timeline = assembleTimeline(v.plans, v.clips);
+      }
+      const clipInputs: { sceneIndex: number; phraseIndex: number; text: string; bytes: Buffer }[] = [];
+      for (let sIdx = 0; sIdx < v.timeline.scenes.length; sIdx++) {
+        const scene = v.timeline.scenes[sIdx];
+        for (let pIdx = 0; pIdx < scene.clips.length; pIdx++) {
+          const clip = scene.clips[pIdx];
+          const bytes = await storeAll.readAudioClipBytes(userId, id, clip.id, false);
+          clipInputs.push({ sceneIndex: sIdx, phraseIndex: pIdx, text: clip.text, bytes });
+        }
+      }
+      const assetInputs: { key: string; mimeType: string; bytes: Buffer }[] = [];
+      for (const a of v.assets ?? []) {
+        if (a.mimeType === "none") continue;
+        const loaded = await storeAll.readAsset(userId, id, a.key);
+        if (loaded) assetInputs.push({ key: loaded.key, mimeType: loaded.mimeType, bytes: loaded.bytes });
+      }
+      const rendered = await renderVideoToMp4({
+        timeline: v.timeline,
+        settings: v.settings,
+        clips: clipInputs,
+        assets: assetInputs,
+        signal,
+      });
+      const renderMeta = {
+        ready: true,
+        width: rendered.width,
+        height: rendered.height,
+        fps: rendered.fps,
+        duration: rendered.duration,
+        sizeBytes: rendered.sizeBytes,
+        codec: rendered.codec,
+        mimeType: rendered.mimeType,
+        digest: rendered.digest,
+        renderedAt: Date.now(),
+      };
+      await storeAll.saveRender(userId, id, token, renderMeta, rendered.mp4Bytes, rendered.captionsVtt);
+      v.render = renderMeta;
+      v.renderProgress = 100;
       v.stage = "complete";
       v.status = "ready";
       v.repair = null;
-      v.watch.position = Math.min(v.watch.position, v.timeline.duration);
+      v.watch.position = Math.min(v.watch.position, rendered.duration);
     }
+
     const result = await saveVideo(userId, v, token, v.status === "ready");
     saved = true;
     return result;
   } catch (error) {
     console.warn("[LAMTube] stage failed", {
-      videoId: id, stage: v?.stage, type: error instanceof Error ? error.name : "Unknown",
+      videoId: id,
+      stage: v?.stage,
+      type: error instanceof Error ? error.name : "Unknown",
+      message: error instanceof Error ? error.message.slice(0, 220) : undefined,
       code: error instanceof AIProviderError ? error.code : undefined,
       status: error instanceof AIProviderError || error instanceof ProfileError ? error.status : undefined,
-      issues: error instanceof z.ZodError ? error.issues.map(issue => ({ path: issue.path.join("."), code: issue.code })) : undefined,
-      // Stack frames locate unknown infrastructure errors without logging model output or credentials.
-      frames: error instanceof Error ? error.stack?.split("\n").filter(line => /^\s+at /.test(line)).slice(0, 4) : undefined,
+      issues: error instanceof z.ZodError ? error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code })) : undefined,
+      frames: error instanceof Error ? error.stack?.split("\n").filter((line) => /^\s+at /.test(line)).slice(0, 4) : undefined,
     });
     if (v) {
-      const coolingDown = error instanceof RateLimitError || error instanceof AIProviderError && error.status === 429;
+      const coolingDown =
+        error instanceof RateLimitError ||
+        (error instanceof AIProviderError && error.status === 429);
       const cooldownSeconds = error instanceof RateLimitError ? error.retryAfterSeconds : 60;
       v.status = coolingDown ? "generating" : "failed";
       v.retryAt = coolingDown ? Date.now() + cooldownSeconds * 1000 : null;
@@ -216,10 +373,10 @@ Return a REAL evolving explanatory scene. Use a 1000x1000 safe coordinate canvas
         coolingDown
           ? "Generation is waiting for the shared AI rate limit. Saved stages will resume automatically after the cooldown."
           : error instanceof ProfileError || error instanceof AIProviderError
-          ? error.message
-          : error instanceof z.ZodError
-          ? `The AI could not produce a valid ${v.stage === "outline" ? "lesson outline" : "animated scene"} after correction. Retry this stage; completed work is saved and no generation credit was consumed.`
-          : `The ${v.stage} stage could not finish. Completed work is saved; retry to continue without a successful-generation charge.`;
+            ? error.message
+            : error instanceof z.ZodError
+              ? `The AI could not produce a valid ${v.stage === "outline" ? "lesson outline" : "animated scene"} after correction. Retry this stage; completed work is saved and no generation credit was consumed.`
+              : `The ${v.stage} stage could not finish (${error instanceof Error ? error.message.slice(0, 140) : "error"}). Completed work is saved; retry to continue without a generation charge.`;
       try {
         await saveVideo(userId, v, token);
         saved = true;

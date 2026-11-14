@@ -22,8 +22,47 @@ import {
 import type { VideoState } from "@/lib/lamtube/model";
 import { locate, clockLabel, clamp } from "@/lib/lamtube/timeline";
 import { SceneCanvas, paintScene } from "./scene-canvas";
+import { Mp4VideoPlayer } from "./mp4-player";
 
 export function TimelinePlayer({
+  video,
+  preview = false,
+  onMoment,
+  onWatch,
+  onBookmark,
+  seekRef,
+}: {
+  video: VideoState;
+  preview?: boolean;
+  onMoment: (time: number) => void;
+  onWatch: (time: number) => void;
+  onBookmark: (time: number) => void;
+  seekRef?: Ref<{ seek: (time: number) => void }>;
+}) {
+  if (!preview && video.render?.ready) {
+    return (
+      <Mp4VideoPlayer
+        video={video}
+        onMoment={onMoment}
+        onWatch={onWatch}
+        onBookmark={onBookmark}
+        seekRef={seekRef}
+      />
+    );
+  }
+  return (
+    <TimelineSvgFallbackPlayer
+      video={video}
+      preview={preview}
+      onMoment={onMoment}
+      onWatch={onWatch}
+      onBookmark={onBookmark}
+      seekRef={seekRef}
+    />
+  );
+}
+
+function TimelineSvgFallbackPlayer({
   video,
   preview = false,
   onMoment,

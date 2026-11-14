@@ -6,15 +6,26 @@ import { authorize, fail, reply } from "@/lib/lamtube/http";
 import { listVideos, insertVideo, publicVideo } from "@/lib/lamtube/store";
 import { settingsSchema } from "@/lib/lamtube/model";
 import { validateSettings } from "@/lib/lamtube/settings";
+import {
+  devUsage,
+  isAuthorizedLocalLamtubeRequest,
+  isLocalLamtubeDevMode,
+} from "@/lib/lamtube/local-dev-store";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const user = await authorize(request);
     const [videos, usage] = await Promise.all([
       listVideos(user.id),
-      getAIVideoUsage(user.id, await resolveUserEntitlements(user.id)),
+      isLocalLamtubeDevMode()
+        ? devUsage(user.id)
+        : getAIVideoUsage(user.id, await resolveUserEntitlements(user.id)),
     ]);
-    return reply({ videos, usage });
+    return reply({
+      videos,
+      usage,
+      ...(isAuthorizedLocalLamtubeRequest(request) ? { localDev: true } : {}),
+    });
   } catch (error) {
     return fail(error);
   }

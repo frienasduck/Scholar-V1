@@ -72,11 +72,11 @@ export const SCHOLAR_WORKSPACES: Record<ScholarWorkspaceId, ScholarWorkspace> = 
   "study-media": {
     id: "study-media",
     label: "Study Media",
-    tagline: "LAMTube and Study Music, together while both services are paused.",
+    tagline: "AI Video Maker in LAMTube is live. Study Music and YouTube feeds remain paused.",
     defaultMode: "lamtube",
-    keywords: ["study media", "lamtube", "study music", "videos", "music", "media"],
+    keywords: ["study media", "lamtube", "ai video maker", "study music", "videos", "music", "media"],
     modes: [
-      { id: "lamtube", label: "LAMTube", description: "Video study sessions. Temporarily paused for licensing.", legacyIds: ["nigtube", "lamtube"], keywords: ["lamtube", "videos", "video", "lectures"] },
+      { id: "lamtube", label: "LAMTube", description: "AI Video Maker is active. Third-party YouTube feeds remain paused for licensing.", legacyIds: ["nigtube", "lamtube"], keywords: ["lamtube", "ai video maker", "video maker", "videos", "video", "lectures"] },
       { id: "music", label: "Study Music", description: "Study soundtracks and ambience. Temporarily paused for licensing.", legacyIds: ["music"], keywords: ["study music", "music", "soundtrack", "ambience"] },
     ],
   },
@@ -425,6 +425,7 @@ export const SCHOLAR_SEARCH_ALIASES: ScholarSearchAlias[] = [
     { label: "Experimental Lab Plus", keywords: ["experimental lab plus"] },
   ]),
   ...modeAlias("study-media", "lamtube", [
+    { label: "AI Video Maker", keywords: ["ai video maker", "ai video", "video maker"] },
     { label: "LAMTube", keywords: ["lamtube"] },
     { label: "Study Media", keywords: ["study media"] },
   ]),

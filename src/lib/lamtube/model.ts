@@ -16,6 +16,17 @@ export const STYLES = [
   "exam-revision",
   "worked-example",
 ] as const;
+export const ACADEMIC_LEVELS = [
+  "class-8",
+  "class-9",
+  "class-10",
+  "class-11",
+  "class-12",
+] as const;
+export const LANGUAGES = ["en", "hi-en"] as const;
+export type AcademicLevel = (typeof ACADEMIC_LEVELS)[number];
+export type VideoLanguage = (typeof LANGUAGES)[number];
+
 const cleanText = (max: number) =>
   z
     .string()
@@ -27,6 +38,8 @@ export const settingsSchema = z
   .object({
     title: cleanText(120),
     grade: z.union([z.literal(9), z.literal(11)]),
+    academicLevel: z.enum(ACADEMIC_LEVELS).optional(),
+    language: z.enum(LANGUAGES).optional(),
     subjectId: cleanText(60),
     chapters: z
       .array(z.object({ id: cleanText(90), title: cleanText(150) }).strict())
@@ -72,26 +85,46 @@ export const palette = {
 } as const;
 const coordinate = z.number().finite().min(0).max(1000);
 const point = z.object({ x: coordinate, y: coordinate }).strict();
+const plotPoint = z
+  .object({ x: z.number().finite(), y: z.number().finite() })
+  .strict();
 export const elementSchema = z
   .object({
     id: z.string().regex(/^[a-zA-Z0-9_-]{1,40}$/),
     kind: z.enum([
       "label",
       "equation",
+      "latex",
       "rect",
       "circle",
       "arrow",
       "graph",
+      "plot",
       "sketch",
       "highlight",
       "table",
+      "atom",
+      "illustration",
     ]),
     x: coordinate,
     y: coordinate,
     // Arrows use a signed displacement, not a CSS box size.
     w: z.number().finite().min(-1000).max(1000).default(100),
     h: z.number().finite().min(-1000).max(1000).default(70),
-    text: z.string().max(100).default(""),
+    text: z.string().max(120).default(""),
+    latex: z.string().max(320).optional(),
+    expr: z.string().max(120).optional(),
+    axisX: z.string().max(40).optional(),
+    axisY: z.string().max(40).optional(),
+    xRange: z.tuple([z.number().finite(), z.number().finite()]).optional(),
+    yRange: z.tuple([z.number().finite(), z.number().finite()]).optional(),
+    curve: z.array(plotPoint).max(120).optional(),
+    protons: z.number().int().min(1).max(36).optional(),
+    shells: z.array(z.number().int().min(0).max(18)).max(5).optional(),
+    charge: z.string().max(12).optional(),
+    symbol: z.string().max(8).optional(),
+    assetKey: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/).optional(),
+    illustrationPrompt: z.string().max(400).optional(),
     color: z
       .enum(
         Object.keys(palette) as [
@@ -114,9 +147,23 @@ const cue = z
     phrase: z.number().int().min(0).max(39),
     offset: z.number().min(0).max(0.85).default(0),
     duration: z.number().min(0.05).max(1).default(0.6),
-    effect: z.enum(["reveal", "draw", "move", "pulse"]).default("reveal"),
+    effect: z
+      .enum([
+        "reveal",
+        "draw",
+        "move",
+        "pulse",
+        "followPath",
+        "orbit",
+        "highlight",
+        "scaleVector",
+      ])
+      .default("reveal"),
     dx: z.number().min(-800).max(800).default(0),
     dy: z.number().min(-800).max(800).default(0),
+    target: z.string().max(40).optional(),
+    scaleX: z.number().finite().min(0.1).max(4).optional(),
+    scaleY: z.number().finite().min(0.1).max(4).optional(),
   })
   .strict();
 export const scenePlanSchema = z
@@ -139,6 +186,7 @@ export const scenePlanSchema = z
       .array(z.string().regex(/^S\d+$/))
       .max(6)
       .default([]),
+    keyTakeaway: z.string().trim().max(180).optional(),
     question: z
       .object({
         prompt: cleanText(240),
@@ -155,14 +203,19 @@ export const scenePlanSchema = z
     const ids = new Set(scene.elements.map((e) => e.id));
     if (ids.size !== scene.elements.length)
       ctx.addIssue({ code: "custom", message: "Duplicate element IDs" });
-    for (const c of scene.cues)
+    for (const c of scene.cues) {
       if (!ids.has(c.element) || c.phrase >= scene.phrases.length)
         ctx.addIssue({ code: "custom", message: "Invalid cue reference" });
+      if (c.target && !ids.has(c.target))
+        ctx.addIssue({ code: "custom", message: "Invalid cue target reference" });
+    }
     if (
       !scene.elements.some(
-        (e) => !["label", "equation", "table"].includes(e.kind)
+        (e) => !["label", "equation", "latex", "table"].includes(e.kind)
       ) ||
-      !scene.cues.some((c) => ["draw", "move"].includes(c.effect)) ||
+      !scene.cues.some((c) =>
+        ["draw", "move", "followPath", "orbit", "scaleVector"].includes(c.effect)
+      ) ||
       new Set(scene.cues.map((c) => c.phrase)).size < 2
     )
       ctx.addIssue({
@@ -209,6 +262,27 @@ export type WatchState = {
   notes: string;
   lastWatched: number | null;
 };
+export type RenderArtifactMeta = {
+  ready: boolean;
+  width: number;
+  height: number;
+  fps: number;
+  duration: number;
+  sizeBytes: number;
+  codec: string;
+  mimeType: string;
+  digest: string;
+  renderedAt: number;
+};
+
+export type AssetArtifactMeta = {
+  key: string;
+  prompt: string;
+  mimeType: string;
+  width: number;
+  height: number;
+};
+
 export type VideoState = {
   id: string;
   revision: number;
@@ -219,14 +293,19 @@ export type VideoState = {
     | "sources"
     | "outline"
     | "scenes"
+    | "illustrations"
     | "narration"
     | "assemble"
+    | "render"
     | "complete";
   sources: Source[];
   outline: Outline | null;
   plans: ScenePlan[];
   clips: NarrationClip[][];
   timeline: LessonTimeline | null;
+  assets?: AssetArtifactMeta[];
+  render?: RenderArtifactMeta | null;
+  renderProgress?: number;
   quotaKey: string | null;
   charged: boolean;
   error: string | null;
@@ -268,6 +347,9 @@ export function initialVideo(
     plans: [],
     clips: [],
     timeline: null,
+    assets: [],
+    render: null,
+    renderProgress: 0,
     quotaKey: null,
     charged: false,
     error: null,
@@ -314,22 +396,35 @@ export function assembleTimeline(
   return { version: 1, scenes, duration: start };
 }
 export function generationProgress(v: VideoState) {
-  if (v.status === "ready") return 100;
-  if (v.stage === "sources") return 2;
-  if (v.stage === "outline") return 8;
+  if (v.status === "ready" || v.stage === "complete") return 100;
+  if (v.stage === "sources") return 3;
+  if (v.stage === "outline") return 10;
   const total = v.outline?.scenes.length || 1;
   if (v.stage === "scenes")
-    return 15 + Math.floor((30 * v.plans.length) / total);
+    return 15 + Math.floor((25 * v.plans.length) / total);
+  if (v.stage === "illustrations") {
+    const requested = v.plans.filter((p) =>
+      p.elements.some((e) => e.kind === "illustration" && e.assetKey)
+    ).length;
+    if (!requested) return 48;
+    const done = v.assets?.length ?? 0;
+    return 40 + Math.floor((12 * Math.min(requested, done)) / requested);
+  }
   if (v.stage === "narration")
     return (
-      45 +
+      52 +
       Math.floor(
-        (50 * v.clips.flat().length) /
+        (28 * v.clips.flat().length) /
           Math.max(
             1,
             v.plans.reduce((n, p) => n + p.phrases.length, 0)
           )
       )
     );
+  if (v.stage === "assemble") return 82;
+  if (v.stage === "render") {
+    const pct = Math.max(0, Math.min(100, v.renderProgress ?? 0));
+    return 84 + Math.floor((14 * pct) / 100);
+  }
   return 98;
 }

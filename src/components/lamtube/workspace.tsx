@@ -18,10 +18,11 @@ import { getCurriculum } from "@/lib/curriculum-helper";
 import {
   settingsSchema,
   generationProgress,
+  ACADEMIC_LEVELS,
   STYLES,
   VOICES,
 } from "@/lib/lamtube/model";
-import type { VideoSettings, VideoState } from "@/lib/lamtube/model";
+import type { AcademicLevel, VideoLanguage, VideoSettings, VideoState } from "@/lib/lamtube/model";
 import { previewVideo } from "@/lib/lamtube/preview";
 import { clockLabel } from "@/lib/lamtube/timeline";
 import type { ResourceRecord } from "@/lib/resources/types";
@@ -51,15 +52,19 @@ function Workspace({ onBack }: { onBack: () => void }) {
   const authed = useStore((s) => s.authed && !s.guestMode);
   const scope = useStore((s) => videoScope(s.authed && !s.guestMode, s.user.email, s.user.username));
   const library = useVideoLibrary(scope);
+  const canCreate = authed || Boolean(library.localDev);
   const grade = useStore((s) => s.user.scholarClass);
   const curriculum = useMemo(() => getCurriculum(grade), [grade]);
   const [mode, setMode] = useState<"create" | "library" | "watch">("create");
+  const [titleEdited, setTitleEdited] = useState(false);
   const [settings, setSettings] = useState<VideoSettings>(() => {
     const subject = curriculum[0];
     const chapter = subject.chapters[0];
     return settingsSchema.parse({
       title: `${chapter.title} · a visual lesson`,
       grade,
+      academicLevel: grade === 9 ? "class-9" : "class-11",
+      language: "en",
       subjectId: subject.id,
       chapters: [{ id: chapter.id, title: chapter.title }],
     });
@@ -94,14 +99,13 @@ function Workspace({ onBack }: { onBack: () => void }) {
   }, [scope]);
   const loadLibrary = useCallback(
     async (signal?: AbortSignal) => {
-      if (!authed) return;
-      setLoading(true);
+      if (authed) setLoading(true);
       try {
         await refreshVideoLibrary(scope, signal);
       } catch (e) {
-        if (!signal?.aborted) setError((e as Error).message);
+        if (authed && !signal?.aborted) setError((e as Error).message);
       } finally {
-        if (!signal?.aborted) setLoading(false);
+        if (authed && !signal?.aborted) setLoading(false);
       }
     },
     [authed, scope]
@@ -113,7 +117,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
     if (id) {
       setMode("watch");
       if (id === "preview") setSelected(previewVideo());
-      else if (authed)
+      else if (canCreate)
         videoRequest(
           `/api/lamtube/${encodeURIComponent(id)}`,
           undefined,
@@ -128,7 +132,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
       controller.abort();
       runController.current?.abort();
     };
-  }, [authed, loadLibrary]);
+  }, [canCreate, loadLibrary]);
   useEffect(() => {
     const controller = new AbortController();
     const query = new URLSearchParams({
@@ -185,7 +189,27 @@ function Workspace({ onBack }: { onBack: () => void }) {
     setError("");
     try {
       const data = await videoRequest(`/api/lamtube/${id}`, { action: "retry" }, controller.signal);
-      retain(data.video);
+      let current = data.video as VideoState;
+      retain(current);
+      let lastKick = Date.now();
+      while (!controller.signal.aborted && current.status === "generating") {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        if (controller.signal.aborted) break;
+        const polled = await videoRequest(`/api/lamtube/${id}`, undefined, controller.signal);
+        current = polled.video as VideoState;
+        retain(current);
+        if (
+          current.status === "generating" &&
+          (!current.retryAt || current.retryAt <= Date.now()) &&
+          Date.now() - lastKick >= 45000
+        ) {
+          lastKick = Date.now();
+          await videoRequest(`/api/lamtube/${id}`, { action: "start" }, controller.signal);
+        }
+      }
+      if (!controller.signal.aborted && current.status === "ready") {
+        void loadLibrary();
+      }
     } catch (e) {
       if (!controller.signal.aborted) {
         setError((e as Error).message);
@@ -204,7 +228,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
     }
   }
   async function generate() {
-    if (!authed) {
+    if (!canCreate) {
       router.push("/login?next=%2Flamtube");
       return;
     }
@@ -269,9 +293,9 @@ function Workspace({ onBack }: { onBack: () => void }) {
     <section className="lt-workspace">
       <header className="lt-top">
         <button className="lt-button lt-back" onClick={onBack}>
-          <ArrowLeft size={16} /> All videos
+          <ArrowLeft size={16} /> Back to Scholar
         </button>
-        <span className="lt-eyebrow">LAMTube / Visual lessons</span>
+        <span className="lt-eyebrow">LAMTube · AI Video Maker Live (Feeds & Study Music Paused)</span>
         <button
           className="lt-button"
           onClick={() => {
@@ -281,7 +305,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
             void loadLibrary();
           }}
         >
-          <FolderOpen size={17} /> My library
+          <FolderOpen size={17} /> My library ({videos.length})
         </button>
       </header>
       {mode === "create" && (
@@ -332,8 +356,10 @@ function Workspace({ onBack }: { onBack: () => void }) {
           </button>
         </div>
         <span className="lt-quota">
-          {!authed
+          {!canCreate
             ? "10 videos / month when signed in · Plus unlimited"
+            : library.localDev
+            ? "Local dev studio · Real AI & MP4 rendering active"
             : usage
             ? usage.limit === null
               ? "Plus · unlimited full generations"
@@ -361,7 +387,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
             className="lt-panel lt-generator"
             onSubmit={(e) => {
               e.preventDefault();
-              if (authed) setConfirmOpen(true);
+              if (canCreate) setConfirmOpen(true);
               else void generate();
             }}
           >
@@ -370,11 +396,29 @@ function Workspace({ onBack }: { onBack: () => void }) {
               <div>
                 <h2>What would you like to understand?</h2>
                 <p>
-                  Choose one chapter, a connected set, or narrow it to a
-                  specific doubt.
+                  Enter any concept, choose your class level, and Scholar turns it into a narrated HD MP4 video.
                 </p>
               </div>
             </div>
+            <label className="lt-field">
+              Topic or concept
+              <input
+                value={settings.topic}
+                maxLength={1000}
+                onChange={(e) => {
+                  const nextTopic = e.target.value;
+                  setSettings((old) => ({
+                    ...old,
+                    topic: nextTopic,
+                    ...(!titleEdited && nextTopic.trim().length >= 3
+                      ? { title: nextTopic.trim().slice(0, 120) }
+                      : {}),
+                  }));
+                  setRequestKey("");
+                }}
+                placeholder="e.g. Projectile Motion, Quadratic Functions, or Ionic Bonding"
+              />
+            </label>
             <div className="lt-fields">
               <label>
                 Lesson title
@@ -382,6 +426,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
                   value={settings.title}
                   maxLength={120}
                   onChange={(e) => {
+                    setTitleEdited(true);
                     update("title", e.target.value);
                     setRequestKey("");
                   }}
@@ -399,7 +444,9 @@ function Workspace({ onBack }: { onBack: () => void }) {
                       chapters: [
                         { id: s.chapters[0].id, title: s.chapters[0].title },
                       ],
-                      title: `${s.chapters[0].title} · a visual lesson`,
+                      ...(!titleEdited
+                        ? { title: `${s.chapters[0].title} · a visual lesson` }
+                        : {}),
                       resourceIds: [],
                     }));
                     setRequestKey("");
@@ -412,9 +459,36 @@ function Workspace({ onBack }: { onBack: () => void }) {
                   ))}
                 </select>
               </label>
+              <label>
+                Academic level
+                <select
+                  value={settings.academicLevel ?? (grade === 9 ? "class-9" : "class-11")}
+                  onChange={(e) =>
+                    update("academicLevel", e.target.value as AcademicLevel)
+                  }
+                >
+                  {ACADEMIC_LEVELS.map((lvl) => (
+                    <option key={lvl} value={lvl}>
+                      {lvl.replace("class-", "Class ")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Language
+                <select
+                  value={settings.language ?? "en"}
+                  onChange={(e) =>
+                    update("language", e.target.value as VideoLanguage)
+                  }
+                >
+                  <option value="en">English</option>
+                  <option value="hi-en">Hinglish (Bilingual)</option>
+                </select>
+              </label>
             </div>
             <fieldset className="lt-chapters">
-              <legend>Class {grade} · select up to six chapters</legend>
+              <legend>Class {grade} · select up to six curriculum chapters</legend>
               {subject.chapters.map((c) => (
                 <label key={c.id}>
                   <input
@@ -438,15 +512,6 @@ function Workspace({ onBack }: { onBack: () => void }) {
                 </label>
               ))}
             </fieldset>
-            <label className="lt-field">
-              Topic or doubt <span>Optional</span>
-              <input
-                value={settings.topic}
-                maxLength={1000}
-                onChange={(e) => update("topic", e.target.value)}
-                placeholder="e.g. Why do heavier objects need more force?"
-              />
-            </label>
             <div className="lt-fields">
               <label>
                 Target length
@@ -486,16 +551,18 @@ function Workspace({ onBack }: { onBack: () => void }) {
               <summary>Advanced · voice, teaching, sources & playback</summary>
               <div className="lt-fields">
                 <label>
-                  Voice
+                  Voice (Locked)
                   <select
                     value={settings.voice}
+                    disabled
+                    aria-label="Narration voice locked to Microsoft British English Female"
                     onChange={(e) =>
                       update("voice", e.target.value as VideoSettings["voice"])
                     }
                   >
-                    {VOICES.map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
+                    <option value={settings.voice}>
+                      Microsoft British Female (en-GB · Sonia / Hazel)
+                    </option>
                   </select>
                 </label>
                 <label>
@@ -659,13 +726,13 @@ function Workspace({ onBack }: { onBack: () => void }) {
             <button
               className="lt-button lt-primary lt-generate"
               disabled={
-                loading || running || (authed && usage?.remaining === 0)
+                loading || running || (canCreate && usage?.remaining === 0)
               }
             >
               <Sparkles size={19} />
               {loading
                 ? "Saving your draft…"
-                : authed
+                : canCreate
                 ? "Create my AI video"
                 : "Sign in to create"}
               <ArrowRight size={18} />
@@ -765,7 +832,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
               </select>
             </label>
           </div>
-          {!authed ? (
+          {!canCreate ? (
             <div className="lt-empty">
               <BookOpen />
               <h3>Your lessons belong to you.</h3>
@@ -783,7 +850,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
                     <Clapperboard size={34} />
                     <span>
                       {v.status === "ready"
-                        ? clockLabel(v.timeline?.duration ?? 0)
+                        ? clockLabel(v.render?.duration ?? v.timeline?.duration ?? 0)
                         : v.status}
                     </span>
                   </div>
@@ -793,7 +860,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
                   </small>
                   <div>
                     <span>
-                      {v.watch.favorite ? "★ Favorite" : "Private AI video"}
+                      {v.watch.favorite ? "★ Favorite" : v.render?.ready ? "MP4 Ready" : "Private AI video"}
                     </span>
                     <span>
                       {v.watch.position > 0
@@ -812,7 +879,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
               ))}
             </div>
           )}
-          {authed && !loading && !visible.length && (
+          {canCreate && !loading && !visible.length && (
             <div className="lt-empty">
               <Clapperboard />
               <h3>No lessons in this collection yet.</h3>
@@ -846,7 +913,7 @@ function Workspace({ onBack }: { onBack: () => void }) {
             />
           ) : (
             <GenerationProgress video={selected} busy={running} onRun={() => void run(selected.id)}
-              onCancel={() => void cancel(selected)} onBackground={onBack}
+              onCancel={() => void cancel(selected)} onBackground={() => setMode("library")}
               onEdit={() => { setSettings(selected.settings); setMode("create"); }} />
           )}
         </>

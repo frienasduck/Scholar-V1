@@ -114,6 +114,8 @@ model AIVideo {
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   audio      AIVideoAudio[]
+  renders    AIVideoRender[]
+  assets     AIVideoAsset[]
 
   @@index([userId, updatedAt])
   @@index([leaseUntil])
@@ -129,6 +131,42 @@ model AIVideoAudio {
   video     AIVideo  @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@unique([videoId, digest])
+}
+
+model AIVideoRender {
+  id          String   @id
+  videoId     String
+  digest      String
+  bytes       Bytes
+  captionsVtt String   @default("")
+  width       Int
+  height      Int
+  fps         Int      @default(30)
+  duration    Float
+  sizeBytes   Int
+  codec       String   @default("h264+aac")
+  mimeType    String   @default("video/mp4")
+  createdAt   DateTime @default(now())
+  video       AIVideo  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, digest])
+  @@index([videoId, createdAt])
+}
+
+model AIVideoAsset {
+  id        String   @id
+  videoId   String
+  assetKey  String
+  digest    String
+  bytes     Bytes
+  mimeType  String   @default("image/png")
+  width     Int
+  height    Int
+  prompt    String   @default("")
+  createdAt DateTime @default(now())
+  video     AIVideo  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, assetKey])
 }
 
 // One bounded, versioned aggregate: plans/evidence/notes share an atomic revision.

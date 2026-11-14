@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bookmark,
+  BookOpen,
   Copy,
   Download,
   Heart,
@@ -11,6 +12,8 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { toast } from "@/lib/notifications/notification-api";
 import type { VideoState, WatchState } from "@/lib/lamtube/model";
 import { VOICES } from "@/lib/lamtube/model";
 import { clockLabel, contextAt } from "@/lib/lamtube/timeline";
@@ -197,14 +200,46 @@ export function VideoDetail({
               {video.settings.style.replace(/-/g, " ")}
             </p>
           </div>
-          <button
-            className="lt-button"
-            aria-pressed={watch.favorite}
-            onClick={() => changeWatch({ favorite: !watch.favorite })}
-          >
-            <Heart size={17} fill={watch.favorite ? "currentColor" : "none"} />
-            {watch.favorite ? "Saved" : "Favorite"}
-          </button>
+          <div className="lt-action-row">
+            {video.render?.ready && !preview && (
+              <>
+                <a
+                  className="lt-button lt-primary"
+                  href={`/api/lamtube/${encodeURIComponent(video.id)}/video?download=1`}
+                  download
+                >
+                  <Download size={16} /> Download MP4
+                </a>
+                <button
+                  type="button"
+                  className="lt-button"
+                  onClick={() => {
+                    const transcript = video
+                      .timeline!.scenes.map((s) => `### ${clockLabel(s.start)} · ${s.title}\n${s.phrases.join(" ")}`)
+                      .join("\n\n");
+                    useStore.getState().addNote({
+                      title: `AI Video Notes: ${video.title}`,
+                      tags: [video.settings.subjectId, "ai-video-maker"],
+                      content: `# ${video.title}\n\n${watch.notes ? `## My Notes\n${watch.notes}\n\n` : ""}## Lesson Breakdown\n${transcript}`,
+                    });
+                    toast.success("Saved lesson notes to Scholar", {
+                      description: "Open Notes anytime to revise key formulas and transcripts.",
+                    });
+                  }}
+                >
+                  <BookOpen size={16} /> Save to Resources
+                </button>
+              </>
+            )}
+            <button
+              className="lt-button"
+              aria-pressed={watch.favorite}
+              onClick={() => changeWatch({ favorite: !watch.favorite })}
+            >
+              <Heart size={17} fill={watch.favorite ? "currentColor" : "none"} />
+              {watch.favorite ? "Saved" : "Favorite"}
+            </button>
+          </div>
         </div>
         {preview && (
           <p className="lt-notice">
@@ -441,14 +476,16 @@ export function VideoDetail({
               ))}
             </div>
             <label className="lt-field">
-              Narration voice
+              Narration voice (Locked)
               <select
                 value={voice}
+                disabled
+                aria-label="Narration voice locked to Microsoft British English Female"
                 onChange={(e) => setVoice(e.target.value as typeof voice)}
               >
-                {VOICES.map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
+                <option value={voice}>
+                  Microsoft British Female (en-GB · Sonia / Hazel)
+                </option>
               </select>
             </label>
             <button

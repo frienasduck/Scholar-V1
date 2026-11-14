@@ -8,6 +8,10 @@ import { RequestBodyError } from "@/lib/security/request-body";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import { AIProviderError } from "@/lib/ai/errors";
 import { MonthlyQuotaError } from "@/lib/subscriptions/monthly-usage";
+import {
+  isAuthorizedLocalLamtubeRequest,
+  resolveLocalDevUserId,
+} from "./local-dev-store";
 export const reply = (data: unknown, status = 200) =>
   NextResponse.json(data, {
     status,
@@ -21,6 +25,17 @@ export async function authorize(
 ) {
   if (mutate && !mutationOrigin(request))
     throw new ProfileError("Cross-site requests are not allowed.", 403);
+  if (isAuthorizedLocalLamtubeRequest(request)) {
+    const devUserId = resolveLocalDevUserId(request);
+    return {
+      id: devUserId,
+      email: `${devUserId}@local.dev`,
+      name: "Scholar Local Dev",
+      role: "USER",
+      timezone: "Asia/Kolkata",
+      localDev: true as const,
+    };
+  }
   const user = await getSessionUser();
   if (!user)
     throw new ProfileError(
