@@ -49,6 +49,7 @@ yarn-error.log*
 next-env.d.ts
 local-*
 !src/lib/local-files.ts
+!src/lib/lamtube/local-dev-store.ts
 .claude
 .z-ai-config
 *.log
