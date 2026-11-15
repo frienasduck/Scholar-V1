@@ -42,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "doubt-lab", label: "Doubt Lab", icon: MessagesSquare, group: "Learn" },
 
   { id: "flashcards", label: "Flashcards", icon: Layers, group: "Revise" },
-  { id: "exam-prep", label: "Scholar Exam Ready", icon: PenLine, group: "Revise", badge: "EARLY BETA" },
+  { id: "exam-prep", label: "Scholar Exam Ready", icon: PenLine, group: "Revise" },
   { id: "planner", label: "Planner", icon: CalendarDays, group: "Revise" },
   { id: "focus", label: "Focus", icon: Timer, group: "Revise" },
 

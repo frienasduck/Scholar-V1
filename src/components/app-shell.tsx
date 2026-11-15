@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   GraduationCap, Sparkles, Flame, Coins, Zap, Menu, Search, Command as CmdIcon, Bot, X,
-  PanelLeftClose, AlertCircle, BookOpen, LayoutGrid,
+  PanelLeftClose, AlertCircle, BookOpen, LayoutGrid, LockKeyhole,
   ChevronUp, ChevronDown,
 } from "lucide-react";
 
@@ -351,7 +351,18 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
                       aria-label="Background task finished"
                     />
                   )}
-                  {shutdown && <span className="scholar-nav-badge rounded-full border border-rose-200/20 bg-rose-300/10 px-1.5 py-0.5 text-[9px] font-semibold text-rose-200">Paused</span>}
+                  {shutdown && (
+                    shutdown.kind === "development" ? (
+                      <span className="scholar-nav-badge inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/25 bg-gradient-to-r from-amber-300/15 to-violet-400/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-100 shadow-[0_0_10px_rgba(252,211,77,0.14)]">
+                        <LockKeyhole className="h-2.5 w-2.5" aria-hidden="true" />
+                        {shutdown.sidebarBadge}
+                      </span>
+                    ) : (
+                      <span className="scholar-nav-badge rounded-full border border-rose-200/20 bg-rose-300/10 px-1.5 py-0.5 text-[9px] font-semibold text-rose-200">
+                        {shutdown.sidebarBadge}
+                      </span>
+                    )
+                  )}
                   {item.badge && !badge && !shutdown && (
                     <span className={cn("scholar-nav-badge shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full", item.id === "exam-prep" ? "border border-cyan-300/30 bg-cyan-300/10 text-cyan-100" : "bg-red-500 text-white animate-pulse")}>{item.badge}</span>
                   )}
@@ -447,7 +458,7 @@ function TopBar({ onNavigate, onOpenMobile, onToggleSidebar, sidebarOpen }: { on
 // Lightweight command dialog wrapper using the available Dialog primitives
 
 function Footer({ active }: { active: string }) {
-  if (active === "lam-ai" || active === "exam-prep") return null;
+  if (active === "lam-ai" || (active === "exam-prep" && !getSectionShutdown(active))) return null;
   return <ScholarFooter compact={["ebook", "mock-exam", "subscription-payment"].includes(active)} />;
 }
 
@@ -795,7 +806,7 @@ export function AppShell() {
   const View = VIEW_COMPONENTS[active] ?? DashboardView;
   const shutdown = getSectionShutdown(active);
   const lockedView = Boolean(shutdown || (VIEW_ENTITLEMENTS[active] && !access.has(VIEW_ENTITLEMENTS[active].entitlement)));
-  const immersiveView = active === "group-study" || active === "lam-ai" || active === "exam-prep" || active === "experiment-lab";
+  const immersiveView = !shutdown && (active === "group-study" || active === "lam-ai" || active === "exam-prep" || active === "experiment-lab");
 
   // Per-view gradient background classes
   const viewBg: Record<string, string> = {

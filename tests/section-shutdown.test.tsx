@@ -6,13 +6,32 @@ import { musicDefaults, suspendStudyMusic, useMusicStore } from "../src/lib/musi
 import { MUSIC_CATALOG } from "../src/lib/study-music/catalog";
 import { emptyLibrary } from "../src/lib/study-music/model";
 
-test("only the two paused sections and the public LAMTube alias resolve a notice", () => {
+test("paused and under-development sections and aliases resolve while other views remain open", () => {
   expect(getSectionShutdown("lamtube")).toBe(getSectionShutdown("nigtube"));
+  expect(getSectionShutdown("exam-ready")).toBe(getSectionShutdown("exam-prep"));
   expect(getSectionShutdown("music")?.title).toBe("Study Music");
-  for (const id of ["dashboard", "ebook", "focus", "plus", "exam-prep", "toString", "__proto__"]) {
+  expect(getSectionShutdown("exam-prep")?.title).toBe("Scholar Exam Ready");
+  expect(getSectionShutdown("exam-prep")?.kind).toBe("development");
+  for (const id of ["dashboard", "ebook", "focus", "plus", "toString", "__proto__"]) {
     expect(getSectionShutdown(id)).toBeNull();
     expect(renderToStaticMarkup(<SectionShutdown viewId={id} />)).toBe("");
   }
+});
+
+test("Exam Ready under-development banner keeps the Plus-card structure and fails closed", () => {
+  const html = renderToStaticMarkup(<SectionShutdown viewId="exam-prep" />);
+  expect(html).toContain('data-section-shutdown="exam-prep"');
+  expect(html).toContain('data-tone="gold"');
+  expect(html).toContain('data-lock-kind="development"');
+  expect(html).toContain("Exam Ready is under development.");
+  expect(html).toContain("Under development");
+  expect(html).toContain("Locked while under development for all accounts, including Scholar Plus");
+  expect(html).toContain("Upgrading does not unlock this section");
+  expect(html.match(/<li[ >]/g)).toHaveLength(3);
+  expect(html.match(/<button type="button"/g)).toHaveLength(2);
+  expect(html).toContain("Open Question Practice");
+  expect(html).toContain("Back to Scholar");
+  expect(html).not.toContain("Explore Scholar Plus");
 });
 
 for (const [viewId, title, medium, tone, alternative] of [

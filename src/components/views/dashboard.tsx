@@ -28,9 +28,11 @@ import {
   ListChecks,
   FileQuestion,
   BookOpen,
+  LockKeyhole,
 } from "lucide-react";
 import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
+import { getSectionShutdown } from "@/lib/section-availability";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
 import { ScholarToday, ScholarTodaySources } from "@/components/personalization/scholar-today";
 import { useVelocityReveal } from "@/components/liquid-glass/velocity-motion";
@@ -487,7 +489,9 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             { label: "Ask LAM", view: "lam-ai", icon: Sparkles },
             { label: "Practice", view: "question-practice", icon: FileQuestion },
             { label: "Exam Ready", view: "exam-prep", icon: Layers },
-          ].map((item) => (
+          ].map((item) => {
+            const devLocked = Boolean(getSectionShutdown(item.view));
+            return (
             <button
               key={item.view}
               type="button"
@@ -496,8 +500,10 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             >
               <item.icon className="h-3.5 w-3.5 text-white/80 shrink-0" />
               <span className="truncate">{item.label}</span>
+              {devLocked && <LockKeyhole className="h-3 w-3 text-amber-200/80 shrink-0" aria-hidden="true" />}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {/* Stats row */}

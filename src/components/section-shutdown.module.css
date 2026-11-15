@@ -11,6 +11,60 @@
   --pause-border: #9785c970;
   --pause-glow: #9f88e31a;
 }
+.notice[data-tone="gold"] {
+  --pause-accent: #c8a36a;
+  --pause-light: #f2d5a1;
+  --pause-border: #a98a5666;
+  --pause-glow: #d5b47d1a;
+  color: #f5eee1;
+}
+.notice[data-tone="gold"] .shell {
+  background:
+    radial-gradient(ellipse at 0 0, #ffffff08, transparent 44%) padding-box,
+    radial-gradient(ellipse at 100% 28%, #c5a77514, transparent 30%) padding-box,
+    radial-gradient(ellipse at 86% 100%, #d5b47d20, transparent 25%) padding-box,
+    linear-gradient(125deg, #171715, #0d0e0d 46%, #151613) padding-box,
+    linear-gradient(130deg, #b69b6d, #5f5034 40%, #312b20 68%, #bca378) border-box;
+}
+.notice[data-tone="gold"] .eyebrow { color: #e5c087; }
+.notice[data-tone="gold"] .icon {
+  color: #efd8ab;
+  border-color: #c8a36a;
+  background: radial-gradient(ellipse at 30% 5%, #dec18d19, #0c0d0c 70%);
+  box-shadow: inset 0 1px 2px #fff8, 0 0 22px #d8b6741b, 0 10px 15px #0005;
+}
+.notice[data-tone="gold"] .line { background: linear-gradient(90deg, #b1915b45, #b1915b94); }
+.notice[data-tone="gold"] .line::after { background: #dcb787; }
+.notice[data-tone="gold"] .title { color: #f8f1e5; }
+.notice[data-tone="gold"] .description { color: #bcbdbd; }
+.notice[data-tone="gold"] .card {
+  border-color: #a98a5666;
+  background: linear-gradient(135deg, #c9b3870b, #0b0d0b40 65%, #b5a27c08);
+  box-shadow: inset 0 1px #e2c99a0d, 0 12px 24px #0002;
+}
+.notice[data-tone="gold"] .card p { color: #b3b6b5; }
+.notice[data-tone="gold"] .number { color: #e4be7f; }
+.notice[data-tone="gold"] .status { color: #b5b9b9; border-block-color: #b18d4745; }
+.notice[data-tone="gold"] .status svg { color: #e5c087; }
+.notice[data-tone="gold"] .primary {
+  color: #171206;
+  border-color: #edd1a0;
+  background: radial-gradient(ellipse at 28% 0, #ffedbc8c, transparent 65%), linear-gradient(115deg, #c9a363, #dbba80 43%, #927044);
+  box-shadow: inset 0 1px 1px #fff9, 0 8px 24px #bf904a16;
+}
+.notice[data-tone="gold"] .secondary {
+  color: #ecd4ae;
+  border-color: #b69d7180;
+  background: linear-gradient(120deg, #11130f99, #24241f55);
+}
+.notice[data-tone="gold"] .primary:hover,
+.notice[data-tone="gold"] .secondary:hover {
+  box-shadow: 0 7px 30px #d6af6533;
+}
+.notice[data-tone="gold"] .primary:focus-visible,
+.notice[data-tone="gold"] .secondary:focus-visible {
+  outline-color: #ffe1a8;
+}
 .notice .shell {
   background:
     radial-gradient(ellipse at 0 0, #ffffff08, transparent 44%) padding-box,

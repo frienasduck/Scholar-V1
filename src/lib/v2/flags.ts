@@ -18,8 +18,8 @@
 
 export const V2_FLAG_DEFS = {
   v2_lam_identity: { default: true, env: "V2_FLAG_LAM_IDENTITY", description: "LAM reference avatars and optional presence animations" },
-  v2_exam_ready: { default: true, env: "V2_FLAG_EXAM_READY", description: "Adaptive Scholar Exam Ready rollout" },
-  v2_exam_ready_free: { default: true, env: "V2_FLAG_EXAM_READY_FREE", description: "Temporary free access to Exam Ready; does not change billing" },
+  v2_exam_ready: { default: false, env: "V2_FLAG_EXAM_READY", description: "Adaptive Scholar Exam Ready rollout (locked while under development)" },
+  v2_exam_ready_free: { default: false, env: "V2_FLAG_EXAM_READY_FREE", description: "Temporary free access to Exam Ready; does not change billing" },
   v2_entitlements: {
     default: true,
     env: "V2_FLAG_ENTITLEMENTS",

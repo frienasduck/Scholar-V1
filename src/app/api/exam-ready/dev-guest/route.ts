@@ -4,9 +4,11 @@ import { readBoundedJson, RequestBodyError } from "@/lib/security/request-body";
 import { AIProviderError } from "@/lib/ai/errors";
 import { DEV_GUEST_COOKIE, LocalGuestError, localGuestOperation, localGuestStatus, newLocalCapability } from "@/lib/exam-ready/dev-guest";
 import { DEV_GUEST_LIMITS, localGuestRequest } from "@/lib/exam-ready/dev-guest-policy";
+import { getSectionShutdown } from "@/lib/section-availability";
 export const runtime="nodejs";
 const reply=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{"Cache-Control":"no-store, private","Vary":"Cookie","X-Content-Type-Options":"nosniff"}});
 export async function GET(request:NextRequest) {
+    if(getSectionShutdown("exam-prep"))return reply({enabled:false,locked:true,message:"Exam Ready is locked while under development."},200);
     if(!localGuestRequest(request))return reply({enabled:false},200);
     const token=request.cookies.get(DEV_GUEST_COOKIE)?.value??newLocalCapability();
     try {
@@ -15,6 +17,7 @@ export async function GET(request:NextRequest) {
     }catch {return reply({enabled:false,message:"Local development workspace could not open safely."},503);}
 }
 export async function POST(request:NextRequest) {
+    if(getSectionShutdown("exam-prep"))return reply({message:"Exam Ready is locked while under development."},403);
     if(!localGuestRequest(request))return reply({message:"Development Guest AI is unavailable on this host."},403);
     const token=request.cookies.get(DEV_GUEST_COOKIE)?.value;
     if(!token)return reply({message:"Open the local workspace first."},401);
