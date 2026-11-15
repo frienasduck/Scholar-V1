@@ -80,6 +80,18 @@ export const PLUGIN_CATEGORIES: PluginCategory[] = [
  */
 export const LAM_PLUGINS: LamPlugin[] = [
   {
+    id: "learn-with-pdf",
+    toolId: "learn-with-pdf",
+    name: "Learn with PDF",
+    description: "Upload any PDF up to 25 MB, extract text and scanned OCR pages, and turn LAM AI into a page-cited personal tutor.",
+    category: "Documents",
+    icon: BookOpen,
+    aliases: ["learn with pdf", "learn this pdf", "learn pdf", "pdf tutor", "study this document", "study pdf", "document tutor", "teach this chapter", "analyze this textbook", "prepare me for an exam using this pdf"],
+    availability: "available",
+    attachments: "optional",
+    attachmentHint: "Drop or upload a PDF up to 25 MB right inside chat, or ask about your loaded document.",
+  },
+  {
     id: "ai-pdf-studio",
     toolId: "ai-pdf-studio",
     name: "PDF Generator",

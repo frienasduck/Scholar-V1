@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { TopbarRefractionDefs } from "@/components/liquid-glass/glass-filter";
 import { NavigationLens, useNavigationLens } from "@/components/liquid-glass/velocity-motion";
 import {
   SCHOLAR_WORKSPACES,
@@ -93,13 +92,6 @@ export function WorkspaceTabs({
       data-workspace-mode={active}
       data-sg-chrome={refractiveOverlay ? "lam-topbar" : undefined}
     >
-      {refractiveOverlay ? (
-        <>
-          <TopbarRefractionDefs />
-          <span className="lam-topbar-optic" aria-hidden="true" />
-          <span className="lam-topbar-sheen" aria-hidden="true" />
-        </>
-      ) : null}
       <div
         className={cn(
           "mx-auto flex w-full items-center justify-between gap-2 sm:gap-5",

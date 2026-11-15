@@ -37,6 +37,7 @@ export function resolvePluginOutputType(pluginId: string): LamPluginOutputType {
   if (id === "flashcard-maker" || id.includes("flashcard")) return "flashcards";
   if (id === "slideshow-maker" || id.includes("slideshow")) return "slideshow";
   if (id === "formula-sheet-generator" || id.includes("formula")) return "formula-sheet";
+  if (id === "learn-with-pdf") return "pdf-tutor";
   if (id === "ai-pdf-studio" || id === "chapter-summarizer" || id === "chapter-builder") return "pdf";
   if (id === "concept-explainer") return "explainer";
   if (id === "aisig") return "image";
@@ -217,7 +218,60 @@ export function detectPluginFollowUp(
     return { shouldContinue: true, pluginId: exec.pluginId, reason: "companion_dialogue" };
   }
 
+  // Active Learn with PDF tutor session continues naturally for document questions until exit
+  if (
+    exec.pluginId === "learn-with-pdf" &&
+    exec.pdfTutor?.docId &&
+    !/^(?:exit|exit pdf|close pdf|leave pdf|back to chat|general chat|switch(?: plugin| mode)?|new topic)\b/i.test(msg)
+  ) {
+    return { shouldContinue: true, pluginId: exec.pluginId, reason: "pdf_tutor_session" };
+  }
+
   return { shouldContinue: false };
+}
+
+/**
+ * Detects natural-language intents that should launch or route into the Learn with PDF plugin.
+ */
+export function detectLearnWithPdfIntent(
+  rawMessage: string,
+  options: { hasPdfAttachment?: boolean; hasActivePdf?: boolean } = {},
+): { trigger: boolean; isExit?: boolean; reason?: string } {
+  const msg = rawMessage.trim();
+  if (!msg && options.hasPdfAttachment) {
+    return { trigger: true, reason: "pdf_attachment_no_text" };
+  }
+  if (!msg || msg.startsWith("/") || /^@/.test(msg)) {
+    return { trigger: false };
+  }
+
+  if (/^(?:exit|exit pdf|close pdf|leave pdf|back to chat|general chat|switch(?: plugin| mode)?|new topic)\b/i.test(msg)) {
+    return { trigger: false, isExit: true };
+  }
+
+  if (options.hasPdfAttachment) {
+    return { trigger: true, reason: "pdf_attachment" };
+  }
+
+  const explicitPdfIntentPatterns = [
+    /\b(?:learn|study|teach(?:\s+me)?|analy[sz]e|read|understand|walk\s+me\s+through|help\s+me\s+(?:study|learn))\b[\s\S]{0,40}\b(?:this\s+|a\s+|my\s+|the\s+)?(?:pdf|document|textbook)\b/i,
+    /\b(?:upload|open|load|import|use)\b[\s\S]{0,25}\b(?:a\s+|my\s+|this\s+)?pdf\b/i,
+    /\bteach\s+me\s+this\s+chapter\b/i,
+    /\bprepare\s+(?:me\s+)?for\s+(?:an?\s+)?exam\s+using\s+(?:this|the|my)\s+(?:pdf|document|textbook)\b/i,
+    /\blearn\s+(?:with|from)\s+(?:a\s+|this\s+|my\s+)?pdf\b/i,
+  ];
+  if (explicitPdfIntentPatterns.some((p) => p.test(msg))) {
+    return { trigger: true, reason: "explicit_natural_phrase" };
+  }
+
+  if (
+    options.hasActivePdf &&
+    /\b(?:pdf|document|textbook|page\s+\d+|p\.\s*\d+|chapter\s+\d+|section\s+[\d.]+)\b/i.test(msg)
+  ) {
+    return { trigger: true, reason: "active_pdf_reference" };
+  }
+
+  return { trigger: false };
 }
 
 /**

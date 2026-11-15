@@ -42,6 +42,11 @@ import { streamResponseToText } from "@/lib/lam/plugin-stream-helpers";
 import { retrieve } from "@/lib/resources/service";
 import { retrievalPrompt } from "@/lib/resources/engine";
 import { chapterContext } from "@/lib/resources/grounding";
+import {
+  buildPdfTutorSystemPrompt,
+  buildTutorCitationsFromPassages,
+  loadPdfTutorContext,
+} from "./pdf-retrieval";
 
 export const PLUGIN_EXECUTION_CLIENT_STATS_SCHEMA = z.object({
   xp: z.number().nonnegative().max(10_000_000).optional(),
@@ -73,6 +78,7 @@ export const PLUGIN_EXECUTE_REQUEST_SCHEMA = z.object({
   isFollowUp: z.boolean().default(false),
   attachmentText: z.string().trim().max(8_000).optional(),
   attachmentNames: z.array(z.string().trim().max(120)).max(6).optional(),
+  pdfDocId: z.string().trim().min(1).max(100).optional(),
   imageUpload: z.object({
     fileName: z.string().trim().min(1).max(120),
     mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
@@ -1389,6 +1395,148 @@ export async function executePluginServer(params: {
       content: `Completed **${plugin.name}** diagnosis:`,
       execution,
     };
+    emit({ type: "result", ...res });
+    return res;
+  }
+
+  // ==========================================================================
+  // 13b. LEARN WITH PDF (DOCUMENT INTELLIGENCE & PERSONAL AI TUTOR)
+  // ==========================================================================
+  if (outputType === "pdf-tutor") {
+    if (!input.pdfDocId) {
+      const execution: LamPluginExecution = {
+        ...makeBaseExecution(),
+        status: "completed",
+        outputType: "pdf-tutor",
+        pdfTutor: {
+          mode: "workspace",
+          learningGoal: input.prompt || undefined,
+          suggestedActions: [
+            "Upload a PDF textbook or chapter (up to 25 MB)",
+            "Study a scanned handwritten or photographed PDF with OCR",
+          ],
+        },
+      };
+      const res = {
+        content: input.attachmentNames?.some((n) => /\.pdf$/i.test(n))
+          ? "I spotted an attached PDF in this conversation — click **Upload & Study PDF** below to index all pages (including OCR for scanned pages) with page-level citations, or drop another PDF up to 25 MB."
+          : "**Learn with PDF** is ready. Drop or select a PDF up to **25 MB** below so I can inspect pages, run OCR on scanned images if needed, map chapters/formulas, and become your page-cited personal tutor.",
+        execution,
+      };
+      emit({ type: "result", ...res });
+      return res;
+    }
+
+    emit({
+      type: "status",
+      status: "running",
+      progressStage: "Retrieving relevant pages and document intelligence...",
+      currentStep: 2,
+      totalSteps: 3,
+    });
+
+    if (!userId) {
+      const errMsg = "Sign in to your Scholar account to study uploaded private PDFs.";
+      emit({ type: "error", code: "AUTH_REQUIRED", status: 401, message: errMsg });
+      throw new AIProviderError(errMsg, 401, "AUTH_REQUIRED");
+    }
+
+    const isInitialAnalysis = input.prompt === "__INITIAL_ANALYSIS__" || !input.prompt.trim();
+    const retrievalQuery = isInitialAnalysis ? "overview chapters key concepts formulas" : input.prompt;
+    const ctx = await loadPdfTutorContext(userId, input.pdfDocId, retrievalQuery, 7);
+
+    if (!ctx) {
+      const errMsg = "That PDF document could not be found, is still processing, or belongs to another account.";
+      emit({ type: "error", code: "PDF_DOC_UNAVAILABLE", status: 404, message: errMsg });
+      throw new AIProviderError(errMsg, 404, "PDF_DOC_UNAVAILABLE");
+    }
+
+    emit({
+      type: "status",
+      status: "generating",
+      progressStage: isInitialAnalysis
+        ? "Preparing concise document analysis..."
+        : `Teaching from ${ctx.title} with page citations...`,
+      currentStep: 3,
+      totalSteps: 3,
+    });
+
+    const sysPrompt = buildPdfTutorSystemPrompt(ctx);
+    const userInstruction = isInitialAnalysis
+      ? [
+          "Provide a crisp, welcoming first response after finishing PDF indexing.",
+          "Include strictly:",
+          "1. What document was processed (title, total pages, and note clearly if scanned OCR was applied to specific pages).",
+          "2. Subject and main topics / chapter organization.",
+          "3. Major key concepts & formulas identified.",
+          "4. What learning help you can provide (explanations, chapter-by-chapter tutoring, organized notes, MCQs/numericals, answer grading, study schedule).",
+          ctx.intelligence.suggestedLearningGoal
+            ? `Acknowledge their likely goal ("${ctx.intelligence.suggestedLearningGoal}") and ask one brief, natural follow-up question to begin.`
+            : `End with ONE concise conversational question: ${ctx.intelligence.followUpQuestion}`,
+          "Do NOT dump a giant summary.",
+        ].join("\n")
+      : [
+          input.conversationContext ? `Recent conversation context:\n${input.conversationContext}\n` : "",
+          `Student request: ${input.prompt}`,
+          "Teach clearly as a personal tutor. Cite page numbers inline like (p. 4) ONLY from the retrieved passages above. If something is absent from the PDF, state that clearly instead of guessing.",
+        ].join("\n\n");
+
+    const answerMarkdown = await runTextOrStream({
+      messages: [
+        { role: "system", content: sysPrompt },
+        { role: "user", content: userInstruction },
+      ],
+      temperature: 0.38,
+      signal,
+      custom: customAI,
+      onDelta: (chunk) => emit({ type: "delta", value: chunk }),
+    });
+
+    const citations = buildTutorCitationsFromPassages(ctx.passages);
+    const execution: LamPluginExecution = {
+      ...makeBaseExecution(),
+      status: "completed",
+      outputType: "pdf-tutor",
+      pdfTutor: {
+        mode: isInitialAnalysis ? "analysis" : "tutor",
+        docId: ctx.docId,
+        resourceId: ctx.resourceId,
+        fileName: ctx.fileName,
+        sizeBytes: ctx.sizeBytes,
+        pageCount: ctx.pageCount,
+        ocrPages: ctx.ocrPages,
+        mixedPages: ctx.mixedPages,
+        poorQualityPages: ctx.poorQualityPages,
+        documentTitle: ctx.intelligence.documentTitle,
+        subject: ctx.intelligence.subject,
+        difficultyLevel: ctx.intelligence.difficultyLevel,
+        mainTopics: ctx.intelligence.mainTopics,
+        chapters: ctx.intelligence.chapters,
+        keyConcepts: ctx.intelligence.importantConcepts,
+        formulasCount: ctx.intelligence.formulasSummary.length,
+        examplesCount: ctx.intelligence.examplesSummary.length,
+        exercisesCount: ctx.intelligence.exercisePatterns.length,
+        prerequisites: ctx.intelligence.prerequisites,
+        learningOutcomes: ctx.intelligence.keyLearningOutcomes,
+        learningGoal: ctx.intelligence.suggestedLearningGoal,
+        followUpQuestion: ctx.intelligence.followUpQuestion,
+        answerMarkdown,
+        citations,
+        groundingNote: "Indexed with page-level retrieval (AI model weights were not trained or modified).",
+        limitationNote: ctx.limitationNote,
+        indexedChunkCount: ctx.indexedChunkCount,
+        suggestedActions: [
+          ctx.intelligence.chapters[0]
+            ? `Teach me ${ctx.intelligence.chapters[0].title}`
+            : "Teach Chapter 1 step-by-step",
+          "Give me organized notes & formula sheet",
+          "Ask me 5 exam-level questions from this PDF",
+          "Which topics should I study first?",
+        ],
+      },
+    };
+
+    const res = { content: answerMarkdown, execution };
     emit({ type: "result", ...res });
     return res;
   }

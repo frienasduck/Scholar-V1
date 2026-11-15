@@ -56,6 +56,7 @@ export interface ExecutePluginParams {
   scholarClass: 9 | 11;
   jeeMode: boolean;
   isFollowUp?: boolean;
+  pdfDocId?: string;
   signal: AbortSignal;
   onStatus?: (update: {
     status: "queued" | "preparing" | "running" | "generating";
@@ -151,6 +152,7 @@ export async function executePluginInChatSystem({
   scholarClass,
   jeeMode,
   isFollowUp: followUpHint,
+  pdfDocId,
   signal,
   onStatus,
   onDelta,
@@ -256,6 +258,7 @@ export async function executePluginInChatSystem({
       isFollowUp,
       attachmentText,
       attachmentNames: attachments.map((a) => a.name).slice(0, 6),
+      pdfDocId: pdfDocId || undefined,
       imageUpload,
       clientStats,
     }),
@@ -433,6 +436,15 @@ export function buildPluginChainSeed(execution: LamPluginExecution): {
   title: string;
   bodyText: string;
 } {
+  if (execution.pdfTutor) {
+    const title = execution.pdfTutor.documentTitle || execution.pdfTutor.fileName || "PDF Study Session";
+    const body =
+      execution.pdfTutor.answerMarkdown ||
+      execution.pdfTutor.learningGoal ||
+      execution.pdfTutor.groundingNote ||
+      "";
+    return { title, bodyText: body.slice(0, 3_600) };
+  }
   if (execution.pdfData) {
     const body =
       execution.pdfData.fullMarkdown ||

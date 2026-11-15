@@ -63,6 +63,7 @@ import type {
   LamPluginUserInteraction,
 } from "@/lib/lam/types";
 import { ScholarAIContent } from "@/components/ai/lazy-scholar-ai-content";
+import { LearnWithPdfWidget } from "@/components/lam/learn-with-pdf-widget";
 import { LAM_IMAGE_ACCEPT } from "@/lib/lam/attachments";
 import { buildPluginChainSeed, saveArtifactToResources } from "@/lib/lam/in-chat-plugins";
 import { navigateTo } from "@/lib/nav-event";
@@ -75,12 +76,18 @@ import { openScholarPlus } from "@/lib/subscriptions/promo";
 export interface InChatPluginWidgetProps {
   execution: LamPluginExecution;
   streamedText?: string;
+  activePdfDocId?: string;
+  pendingPdfFile?: File | null;
+  pendingPdfName?: string;
   onRetry?: () => void;
   onCancel?: () => void;
   onRefine?: (prompt: string) => void;
   onChainPlugin?: (targetPluginId: string, seedPrompt: string) => void;
   onUpdateInteraction?: (patch: Partial<LamPluginUserInteraction>) => void;
   onProvideWaitingInput?: (opts: { prompt?: string; files?: File[] }) => void;
+  onActivatePdfDoc?: (docId: string, title: string, triggerAnalysis?: boolean) => void;
+  onAskPdfDoc?: (docId: string, question: string) => void;
+  onDeletePdfDoc?: (docId: string) => void;
 }
 
 const CHAIN_OPTIONS = [
@@ -95,12 +102,18 @@ const CHAIN_OPTIONS = [
 export function InChatPluginWidget({
   execution,
   streamedText,
+  activePdfDocId,
+  pendingPdfFile,
+  pendingPdfName,
   onRetry,
   onCancel,
   onRefine,
   onChainPlugin,
   onUpdateInteraction,
   onProvideWaitingInput,
+  onActivatePdfDoc,
+  onAskPdfDoc,
+  onDeletePdfDoc,
 }: InChatPluginWidgetProps) {
   if (execution.status === "locked") {
     return <ScholarPlusShowcaseCard execution={execution} />;
@@ -271,6 +284,30 @@ export function InChatPluginWidget({
       if (execution.companionData) {
         body = <InChatCompanionWidget data={execution.companionData} />;
         refinePresets = ["Make a 15-minute sprint plan", "Simplify what to do next"];
+      }
+      break;
+    case "pdf-tutor":
+      if (execution.pdfTutor) {
+        body = (
+          <LearnWithPdfWidget
+            data={execution.pdfTutor}
+            pendingPdfFile={pendingPdfFile}
+            pendingAttachmentName={pendingPdfName}
+            activeDocId={activePdfDocId}
+            onActivateDocument={(docId, title, triggerAnalysis) =>
+              onActivatePdfDoc?.(docId, title, triggerAnalysis)
+            }
+            onAskDocumentQuestion={(docId, question) => onAskPdfDoc?.(docId, question)}
+            onDeleteDocument={onDeletePdfDoc}
+          />
+        );
+        if (execution.pdfTutor.mode !== "workspace" && execution.pdfTutor.docId) {
+          refinePresets = [
+            "Explain this much more simply",
+            "Create a 5-question quiz from this PDF",
+            "Turn this section into crisp revision notes",
+          ];
+        }
       }
       break;
     default:

@@ -10,6 +10,7 @@ const { executePluginServer } = await import("../src/lib/lam/plugin-server");
 const { resolvePluginOutputType } = await import("../src/lib/lam/plugin-prompts");
 
 const SAMPLE_PROMPTS: Record<string, string> = {
+  "learn-with-pdf": "Learn this PDF",
   "ai-pdf-studio": "Newton's three laws of motion with key formulas and one worked numerical for Class 11",
   "mistake-analyzer": "I keep confusing scalar distance with vector displacement and forgetting negative deceleration signs in SUVAT numericals.",
   "memory-predictor": "Predict retention for Laws of Motion, Work Energy Power, and Mole Concept",
@@ -48,8 +49,8 @@ async function buildProblemPngBase64(): Promise<string> {
 describe.skipIf(process.env.SCHOLAR_LIVE_LAM_PLUGINS !== "1")("live execution of all 23 registered LAM AI plugins", () => {
   const plugins = availablePlugins();
 
-  test("registry exposes 23 available plugins matching sample prompts", () => {
-    expect(plugins).toHaveLength(23);
+  test("registry exposes 24 available plugins matching sample prompts", () => {
+    expect(plugins).toHaveLength(24);
     for (const plugin of plugins) {
       expect(SAMPLE_PROMPTS[plugin.id]).toBeTruthy();
     }
@@ -146,6 +147,9 @@ describe.skipIf(process.env.SCHOLAR_LIVE_LAM_PLUGINS !== "1")("live execution of
         case "pdf":
           expect(result.execution.pdfData?.sections?.length).toBeGreaterThanOrEqual(1);
           expect(result.execution.pdfData?.fullMarkdown.length).toBeGreaterThan(80);
+          break;
+        case "pdf-tutor":
+          expect(result.execution.pdfTutor?.mode).toBeTruthy();
           break;
         case "explainer":
           expect(result.execution.explainerData?.intuition.length).toBeGreaterThan(10);

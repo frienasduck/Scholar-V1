@@ -73,10 +73,16 @@ import { useScholarAccess } from "@/components/subscriptions/subscription-provid
 import { executePluginInChatSystem, PluginExecutionError } from "@/lib/lam/in-chat-plugins";
 import {
   checkPluginMissingInput,
+  detectLearnWithPdfIntent,
   detectPluginFollowUp,
   isPluginPlus,
   resolvePluginOutputType,
 } from "@/lib/lam/plugin-prompts";
+import {
+  consumePdfTutorChatLaunch,
+  LAM_PDF_CHAT_LAUNCH_EVENT,
+  type PdfTutorChatLaunchPayload,
+} from "@/lib/lam/pdf-upload-client";
 import {
   extractArtifactsAndHistory,
   hydrateSessionArtifacts,
@@ -170,6 +176,8 @@ export function LiveTutorView({
   const [prepared, setPrepared] = useState(false);
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<LamAttachment[]>([]);
+  const [activePdfDoc, setActivePdfDoc] = useState<{ docId: string; title: string } | null>(null);
+  const [pendingPdfFile, setPendingPdfFile] = useState<{ name: string; file: File } | null>(null);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [processingNames, setProcessingNames] = useState<string[]>([]);
   const [failedFiles, setFailedFiles] = useState<File[]>([]);
@@ -472,48 +480,67 @@ export function LiveTutorView({
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]);
+    const timeoutId = window.setTimeout(() => controller.abort(), 8_000);
+    const { signal } = controller;
+    const fetchJson = async (url: string) => {
+      const response = await fetch(url, { cache: "no-store", signal });
+      if (!response.ok) return null;
+      return response.json().catch(() => null);
+    };
     const prepare = async () => {
       setStatus("recalling");
-      const requests = await Promise.allSettled([
-        fetch("/api/lam/live/providers", { cache: "no-store", signal }).then((response) => response.json()),
-        fetch("/api/lam/live/memory", { cache: "no-store", signal }).then((response) => response.json()),
-        fetch(`/api/lam/live/sessions?profileId=${encodeURIComponent(profileId)}`, { cache: "no-store", signal }).then((response) => response.json()),
-      ]);
-      if (cancelled) return;
-      const [providerResult, memoryResult, sessionResult] = requests;
-      if (providerResult.status === "fulfilled" && providerResult.value.ok) {
-        const available = providerResult.value.providers as LiveTutorProviderStatus[];
-        setProviders(available);
-        setProvider((current) => (available.some((item) => item.id === current && item.available) ? current : "auto"));
-      }
-      if (memoryResult.status === "fulfilled" && memoryResult.value.ok) {
-        setMemories(memoryResult.value.memories);
-        setMemorySummary(memoryResult.value.summary);
-      }
-      if (sessionResult.status === "fulfilled" && sessionResult.value.ok) {
-        const serverSessions = (sessionResult.value.sessions ?? []) as SavedSession[];
-        if (serverSessions.length && !interacted.current && loadLocalLamSessions(profileId).sessions.length === 0) {
-          const nextChats = chats();
-          const nextIds = ids();
-          for (const persona of LIVE_TUTOR_PERSONALITIES) {
-            const latest = serverSessions.find((session) => session.personality === persona);
-            if (latest) {
-              nextChats[persona] = latest.messages;
-              nextIds[persona] = latest.id;
-            }
+      try {
+        const requests = await Promise.allSettled([
+          fetchJson("/api/lam/live/providers"),
+          fetchJson("/api/lam/live/memory"),
+          fetchJson(`/api/lam/live/sessions?profileId=${encodeURIComponent(profileId)}`),
+        ]);
+        if (cancelled) return;
+        const [providerResult, memoryResult, sessionResult] = requests;
+        if (providerResult.status === "fulfilled" && providerResult.value?.ok && Array.isArray(providerResult.value.providers)) {
+          const available = providerResult.value.providers as LiveTutorProviderStatus[];
+          setProviders(available);
+          setProvider((current) => (available.some((item) => item.id === current && item.available) ? current : "auto"));
+        }
+        if (memoryResult.status === "fulfilled" && memoryResult.value?.ok) {
+          if (Array.isArray(memoryResult.value.memories)) {
+            setMemories(memoryResult.value.memories);
           }
-          setMessagesByPersona(nextChats);
-          setSessionIds(nextIds);
-          setHistory(serverSessions);
+          if (typeof memoryResult.value.summary === "string") {
+            setMemorySummary(memoryResult.value.summary);
+          }
+        }
+        if (sessionResult.status === "fulfilled" && sessionResult.value?.ok) {
+          const serverSessions = Array.isArray(sessionResult.value.sessions)
+            ? (sessionResult.value.sessions as SavedSession[])
+            : [];
+          if (serverSessions.length && !interacted.current && loadLocalLamSessions(profileId).sessions.length === 0) {
+            const nextChats = chats();
+            const nextIds = ids();
+            for (const persona of LIVE_TUTOR_PERSONALITIES) {
+              const latest = serverSessions.find((session) => session.personality === persona);
+              if (latest) {
+                nextChats[persona] = latest.messages;
+                nextIds[persona] = latest.id;
+              }
+            }
+            setMessagesByPersona(nextChats);
+            setSessionIds(nextIds);
+            setHistory(serverSessions);
+          }
+        }
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (!cancelled) {
+          setPrepared(true);
+          if (!interacted.current) setStatus("idle");
         }
       }
-      setPrepared(true);
-      if (!interacted.current) setStatus("idle");
     };
     void prepare();
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [profileId]);
@@ -617,12 +644,23 @@ export function LiveTutorView({
         attachmentsOverride?: LamAttachment[];
         replaceMsgId?: string;
         isFollowUp?: boolean;
+        pdfDocId?: string;
+        openWorkspaceOnly?: boolean;
       },
     ) => {
       if (pluginInFlightRef.current) return;
 
       const appendUserMessage = opts?.appendUserMessage ?? true;
       const usedAttachments = opts?.attachmentsOverride ?? attachments;
+      const attachedPdf = usedAttachments.find((a) => a.kind === "pdf" && a.file);
+      if (plugin.id === "learn-with-pdf" && attachedPdf?.file) {
+        setPendingPdfFile({ name: attachedPdf.name, file: attachedPdf.file });
+      }
+      const resolvedPdfDocId =
+        opts?.pdfDocId ??
+        (plugin.id === "learn-with-pdf" && !opts?.openWorkspaceOnly && !attachedPdf
+          ? activePdfDoc?.docId
+          : undefined);
       const persona = personality;
       const userPrompt = promptText.trim();
 
@@ -785,6 +823,7 @@ export function LiveTutorView({
             ...context,
           },
           attachments: usedAttachments,
+          pdfDocId: resolvedPdfDocId,
           scholarClass: user.scholarClass,
           jeeMode: user.jeeMode ?? false,
           isFollowUp: opts?.isFollowUp,
@@ -834,6 +873,13 @@ export function LiveTutorView({
               : msg,
           ),
         }));
+        if (execution.pdfTutor?.docId) {
+          setActivePdfDoc({
+            docId: execution.pdfTutor.docId,
+            title: execution.pdfTutor.documentTitle || execution.pdfTutor.fileName || "PDF Document",
+          });
+          setPendingPdfFile(null);
+        }
         setStatus("complete");
       } catch (caught) {
         setPluginStreams((prev) => {
@@ -870,6 +916,7 @@ export function LiveTutorView({
     },
     [
       access,
+      activePdfDoc?.docId,
       append,
       attachments,
       context,
@@ -934,15 +981,47 @@ export function LiveTutorView({
         }
       }
 
+      // Detect attached PDF or natural-language Learn with PDF intent
+      const attachedPdf = outgoingAttachments.find((a) => a.kind === "pdf");
+      const pdfIntent = detectLearnWithPdfIntent(message, {
+        hasPdfAttachment: Boolean(attachedPdf),
+        hasActivePdf: Boolean(activePdfDoc?.docId),
+      });
+      if (pdfIntent.isExit) {
+        setActivePdfDoc(null);
+        setPendingPdfFile(null);
+      } else if (pdfIntent.trigger) {
+        const pdfPlugin = pluginById("learn-with-pdf");
+        if (pdfPlugin) {
+          await executePluginInChat(
+            pdfPlugin,
+            message || (attachedPdf ? `Analyze and help me study "${attachedPdf.name}"` : ""),
+            {
+              appendUserMessage: true,
+              attachmentsOverride: outgoingAttachments,
+              openWorkspaceOnly:
+                Boolean(attachedPdf) ||
+                /\b(?:upload|open|load|import)\b[\s\S]{0,20}\bpdf\b/i.test(message),
+            },
+          );
+          return;
+        }
+      }
+
       // Conversational plugin follow-up detection (refinement cues only, no length hijack!)
       const followUp = detectPluginFollowUp(message, messages);
       if (followUp.shouldContinue && followUp.pluginId) {
         const activePlugin = pluginById(followUp.pluginId);
         if (activePlugin) {
+          const fallbackPdfId =
+            followUp.pluginId === "learn-with-pdf"
+              ? activePdfDoc?.docId || messages.at(-1)?.pluginExecution?.pdfTutor?.docId
+              : undefined;
           await executePluginInChat(activePlugin, message, {
             appendUserMessage: true,
             attachmentsOverride: outgoingAttachments,
             isFollowUp: true,
+            pdfDocId: fallbackPdfId,
           });
           return;
         }
@@ -1161,6 +1240,7 @@ export function LiveTutorView({
       }
     },
     [
+      activePdfDoc?.docId,
       append,
       attachments,
       busy,
@@ -1328,9 +1408,43 @@ export function LiveTutorView({
     setError("");
     setPanel(null);
     setPluginChip(null);
+    setActivePdfDoc(null);
+    setPendingPdfFile(null);
     setDraft("");
     setAttachments([]);
   }, [personality]);
+
+  // Handle cross-tab launch from Plugins -> Learn with PDF into LAM Chat
+  useEffect(() => {
+    const handleLaunch = (payload: PdfTutorChatLaunchPayload | null) => {
+      if (!payload) return;
+      const pdfPlugin = pluginById("learn-with-pdf");
+      if (!pdfPlugin) return;
+      if (payload.docId && payload.title) {
+        setActivePdfDoc({ docId: payload.docId, title: payload.title });
+      }
+      void executePluginInChat(
+        pdfPlugin,
+        payload.prompt || (payload.docId ? "Analyze and walk me through this PDF" : ""),
+        {
+          appendUserMessage: Boolean(payload.prompt || payload.docId),
+          pdfDocId: payload.docId,
+          openWorkspaceOnly: !payload.docId,
+        },
+      );
+    };
+
+    const initial = consumePdfTutorChatLaunch();
+    if (initial) handleLaunch(initial);
+
+    const onEvent = (event: Event) => {
+      const detail = (event as CustomEvent<PdfTutorChatLaunchPayload>).detail;
+      consumePdfTutorChatLaunch();
+      handleLaunch(detail);
+    };
+    window.addEventListener(LAM_PDF_CHAT_LAUNCH_EVENT, onEvent);
+    return () => window.removeEventListener(LAM_PDF_CHAT_LAUNCH_EVENT, onEvent);
+  }, [executePluginInChat]);
 
   useEffect(() => {
     if (!pendingNewChat) return;
@@ -1364,6 +1478,7 @@ export function LiveTutorView({
     [messages, personality, sessionIds],
   );
   const hasImageAttachments = attachments.some((a) => a.kind === "image");
+  const hasPdfAttachments = attachments.some((a) => a.kind === "pdf");
 
   return (
     <section
@@ -1430,7 +1545,11 @@ export function LiveTutorView({
                       <div className={`lt-bubble ${isWidget ? "lt-bubble-widget" : ""}`}>
                         {message.role === "assistant" ? (
                           <>
-                            {message.content ? (
+                            {message.content &&
+                            !(
+                              message.pluginExecution?.outputType === "pdf-tutor" &&
+                              Boolean(message.pluginExecution.pdfTutor?.answerMarkdown)
+                            ) ? (
                               isWidget ? (
                                 <div className="mb-1.5 text-xs leading-relaxed text-white/85">
                                   <ScholarAIContent content={message.content} mode="compact" />
@@ -1443,6 +1562,47 @@ export function LiveTutorView({
                               <InChatPluginWidget
                                 execution={message.pluginExecution}
                                 streamedText={pluginStreams[message.id]}
+                                activePdfDocId={activePdfDoc?.docId}
+                                pendingPdfFile={
+                                  message.pluginExecution.pluginId === "learn-with-pdf"
+                                    ? pendingPdfFile?.file
+                                    : undefined
+                                }
+                                pendingPdfName={
+                                  message.pluginExecution.pluginId === "learn-with-pdf"
+                                    ? pendingPdfFile?.name
+                                    : undefined
+                                }
+                                onActivatePdfDoc={(docId, title, triggerAnalysis) => {
+                                  setActivePdfDoc({ docId, title });
+                                  setPendingPdfFile(null);
+                                  const pdfPlugin = pluginById("learn-with-pdf");
+                                  if (pdfPlugin && triggerAnalysis !== false) {
+                                    void executePluginInChat(
+                                      pdfPlugin,
+                                      `Analyze "${title}" and teach me the core concepts step-by-step.`,
+                                      {
+                                        appendUserMessage: false,
+                                        pdfDocId: docId,
+                                        isFollowUp: true,
+                                      },
+                                    );
+                                  }
+                                }}
+                                onAskPdfDoc={(docId, question) => {
+                                  const pdfPlugin = pluginById("learn-with-pdf");
+                                  if (pdfPlugin) {
+                                    void executePluginInChat(pdfPlugin, question, {
+                                      appendUserMessage: true,
+                                      pdfDocId: docId,
+                                      isFollowUp: true,
+                                    });
+                                  }
+                                }}
+                                onDeletePdfDoc={(docId) => {
+                                  if (activePdfDoc?.docId === docId) setActivePdfDoc(null);
+                                  setPendingPdfFile(null);
+                                }}
                                 onCancel={() => {
                                   abortRef.current?.abort();
                                   setMessagesByPersona((prev) => ({
@@ -1468,6 +1628,7 @@ export function LiveTutorView({
                                     void executePluginInChat(p, message.pluginExecution.rawPrompt ?? "", {
                                       appendUserMessage: false,
                                       replaceMsgId: message.id,
+                                      pdfDocId: message.pluginExecution.pdfTutor?.docId,
                                     });
                                   }
                                 }}
@@ -1478,6 +1639,7 @@ export function LiveTutorView({
                                     void executePluginInChat(p, refinementPrompt, {
                                       appendUserMessage: true,
                                       isFollowUp: true,
+                                      pdfDocId: message.pluginExecution.pdfTutor?.docId ?? activePdfDoc?.docId,
                                     });
                                   }
                                 }}
@@ -1589,7 +1751,7 @@ export function LiveTutorView({
               ) : null}
             </div>
           </div>
-        ) : prepared ? (
+        ) : (
           <div className="lt-empty-state">
             <LamScene size={136} placement="tutor" state={avatarState} label="" />
             <h1 className="lt-empty-title">{copy.idleHeading}</h1>
@@ -1629,7 +1791,7 @@ export function LiveTutorView({
               </button>
             </div>
           </div>
-        ) : null}
+        )}
 
         {studyPlan && (
           <div className="lt-confirm max-h-[65dvh] overflow-y-auto">
@@ -1816,6 +1978,43 @@ export function LiveTutorView({
                 className="font-bold text-cyan-300 underline"
               >
                 Select @Homework Scanner
+              </button>
+            </div>
+          ) : null}
+
+          {hasPdfAttachments && !pluginChip ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-[11px] text-cyan-100">
+              <span className="inline-flex items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5 text-cyan-300" />
+                PDF attached — pressing Send will launch Learn with PDF (extraction, OCR & page-cited tutor).
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const lp = pluginById("learn-with-pdf");
+                  if (lp) setPluginChip(lp);
+                }}
+                className="font-bold text-cyan-300 underline"
+              >
+                Select @Learn with PDF
+              </button>
+            </div>
+          ) : null}
+
+          {activePdfDoc && !hasPdfAttachments && !pluginChip ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-[11px] text-emerald-100">
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+                <span className="truncate">
+                  Active PDF: <strong>{activePdfDoc.title}</strong> — questions about pages, concepts, or quizzes stay grounded in this PDF.
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActivePdfDoc(null)}
+                className="shrink-0 font-semibold text-emerald-200 underline hover:text-white"
+              >
+                Exit PDF
               </button>
             </div>
           ) : null}

@@ -46,6 +46,8 @@ import {
   PYQSolverPlugin,
   RevisionPlannerPlugin,
 } from "@/components/views/lam-academic-plugins";
+import { LearnWithPdfWidget } from "@/components/lam/learn-with-pdf-widget";
+import { requestPdfTutorInChat } from "@/lib/lam/pdf-upload-client";
 import { profileGetJSON, profileSetJSON, profileGetItem, profileSetItem } from "@/lib/profile-storage";
 import { setLamDraft } from "@/lib/lam-context";
 import { navigateTo } from "@/lib/nav-event";
@@ -1458,9 +1460,69 @@ function ConfigSelect({ label, value, onChange, options }: {
   );
 }
 
+function LearnWithPdfDirectoryPanel({ initialPrompt }: { initialPrompt?: string }) {
+  return (
+    <div className="mx-auto max-w-4xl px-3 py-5 sm:px-5">
+      <div className="rounded-3xl border border-white/10 bg-[#07090d] p-4 text-white shadow-2xl sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
+              Document Intelligence & AI Tutor
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-white">Learn with PDF</h2>
+            <p className="mt-0.5 text-xs text-white/65">
+              Upload any PDF (up to 25 MB, including scanned notes) or pick a saved PDF to launch an interactive tutoring session in LAM Chat.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() =>
+              requestPdfTutorInChat({
+                prompt: initialPrompt || "",
+              })
+            }
+            className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+          >
+            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+            Open in LAM Chat
+          </Button>
+        </div>
+
+        <LearnWithPdfWidget
+          data={{
+            mode: "workspace",
+            learningGoal: initialPrompt,
+            groundingNote:
+              "Select or upload a PDF here, then continue directly in LAM AI Chat for page-cited explanations, notes, and quizzes.",
+          }}
+          onActivateDocument={(docId, title, triggerAnalysis) => {
+            requestPdfTutorInChat({
+              docId,
+              title,
+              prompt:
+                initialPrompt ||
+                (triggerAnalysis
+                  ? `Analyze and walk me through "${title}"`
+                  : `Study "${title}" with me`),
+            });
+          }}
+          onAskDocumentQuestion={(docId, question) => {
+            requestPdfTutorInChat({
+              docId,
+              prompt: question,
+            });
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ===== Tool content router =====
 export function ToolContent({ id, initialPrompt }: { id: string; initialPrompt?: string }) {
   switch (id) {
+    case "learn-with-pdf": return <LearnWithPdfDirectoryPanel key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
     case "ai-pdf-studio": return <AIPDFStudio key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
     case "mistake-analyzer": return <MistakeAnalyzer key={initialPrompt || "blank"} initialPrompt={initialPrompt} />;
     case "memory-predictor": return <MemoryPredictor />;

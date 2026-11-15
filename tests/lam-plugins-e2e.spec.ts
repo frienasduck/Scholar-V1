@@ -278,7 +278,7 @@ test("3. Desktop & Mobile full journeys, all 23 live plugins in-chat, reload per
   await input.fill("@");
   const menu = page.getByRole("listbox", { name: "LAM plugins" });
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole("button", { name: "All (23)" })).toBeVisible();
+  await expect(menu.getByRole("button", { name: "All (24)" })).toBeVisible();
   await page.screenshot({ path: shotPath("02-at-plugin-picker.png"), fullPage: false });
 
   // Screenshot 03: Select Notes-to-Quiz chip

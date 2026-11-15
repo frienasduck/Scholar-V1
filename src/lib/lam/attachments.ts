@@ -23,6 +23,7 @@ export const LAM_ATTACHMENT_ACCEPT = ".txt,.md,.markdown,.csv,.json,.pdf,text/pl
 export const LAM_IMAGE_ACCEPT = ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
 export const LAM_PLUGIN_ATTACHMENT_ACCEPT = `${LAM_ATTACHMENT_ACCEPT},${LAM_IMAGE_ACCEPT}`;
 export const LAM_ATTACHMENT_MAX_BYTES = 15 * 1024 * 1024;
+export const LAM_PDF_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
 export const LAM_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const LAM_ATTACHMENT_EXCERPT_CHARS = 6_000;
 const MAX_PDF_PAGES = 30;
@@ -45,7 +46,16 @@ async function readPdf(file: File): Promise<{ text: string; pages: number }> {
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
-  const document = await task.promise;
+  let document;
+  try {
+    document = await task.promise;
+  } catch (err) {
+    const name = err instanceof Error ? err.name : "";
+    if (name === "PasswordException") {
+      throw new Error(`${file.name} is password-protected or encrypted. Please upload an unlocked PDF.`);
+    }
+    throw new Error(`${file.name} appears corrupted or unreadable as a PDF.`);
+  }
   try {
     const pageCount = document.numPages;
     const chunks: string[] = [];
@@ -118,10 +128,16 @@ export async function readLamAttachment(
     };
   }
 
-  if (file.size > LAM_ATTACHMENT_MAX_BYTES) {
-    throw new Error(`${file.name} is larger than 15 MB. Please attach a smaller file.`);
-  }
   const isPdf = ext === "pdf" || file.type === "application/pdf";
+  if (file.size === 0) throw new Error(`${file.name} is empty (0 bytes).`);
+  const maxBytes = isPdf ? LAM_PDF_ATTACHMENT_MAX_BYTES : LAM_ATTACHMENT_MAX_BYTES;
+  if (file.size > maxBytes) {
+    throw new Error(
+      isPdf
+        ? `${file.name} (${formatAttachmentSize(file.size)}) exceeds the 25 MB PDF limit.`
+        : `${file.name} is larger than 15 MB. Please attach a smaller file.`,
+    );
+  }
   const isText = ["txt", "md", "markdown", "csv", "json"].includes(ext) || file.type.startsWith("text/");
   if (!isPdf && !isText) {
     throw new Error(
@@ -131,13 +147,23 @@ export async function readLamAttachment(
     );
   }
 
+  if (isPdf) {
+    const head = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+    const hasMagic = head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46 && head[4] === 0x2d;
+    if (!hasMagic) {
+      throw new Error(`${file.name} is not a genuine PDF file (invalid %PDF- header).`);
+    }
+  }
+
   const pdf = isPdf ? await readPdf(file) : null;
   const text = pdf ? pdf.text : cleanText(await file.text());
   const pages = pdf?.pages;
-  if (!text.trim()) {
-    throw new Error(`${file.name} has no readable text. Scanned image-only PDFs need OCR first.`);
+  if (!text.trim() && !isPdf) {
+    throw new Error(`${file.name} has no readable text.`);
   }
-  const excerpt = text.slice(0, LAM_ATTACHMENT_EXCERPT_CHARS);
+  const excerpt = text.trim()
+    ? text.slice(0, LAM_ATTACHMENT_EXCERPT_CHARS)
+    : "[Scanned or image-based PDF — ready for Learn with PDF OCR extraction]";
   return {
     id: crypto.randomUUID(),
     name: file.name.slice(0, 120),
@@ -146,6 +172,8 @@ export async function readLamAttachment(
     chars: text.length,
     pages,
     excerpt,
+    mimeType: isPdf ? "application/pdf" : file.type,
+    file: isPdf ? file : undefined,
   };
 }
 

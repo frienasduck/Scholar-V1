@@ -182,6 +182,44 @@ export interface LamPluginPdfData {
   sections: Array<{ heading: string; body: string }>;
 }
 
+export interface LamPluginPdfTutorCitation {
+  id: string;
+  page: number;
+  section: string;
+  snippet: string;
+}
+
+export interface LamPluginPdfTutorData {
+  docId?: string;
+  resourceId?: string;
+  fileName?: string;
+  sizeBytes?: number;
+  pageCount?: number;
+  ocrPages?: number[];
+  mixedPages?: number[];
+  poorQualityPages?: number[];
+  documentTitle?: string;
+  subject?: string;
+  difficultyLevel?: string;
+  mainTopics?: string[];
+  chapters?: Array<{ title: string; startPage: number; endPage?: number; summary?: string }>;
+  keyConcepts?: string[];
+  formulasCount?: number;
+  examplesCount?: number;
+  exercisesCount?: number;
+  prerequisites?: string[];
+  learningOutcomes?: string[];
+  learningGoal?: string;
+  followUpQuestion?: string;
+  mode: "workspace" | "analysis" | "tutor";
+  answerMarkdown?: string;
+  citations?: LamPluginPdfTutorCitation[];
+  suggestedActions?: string[];
+  groundingNote?: string;
+  limitationNote?: string;
+  indexedChunkCount?: number;
+}
+
 export interface LamPluginExplainerData {
   concept: string;
   intuition: string;
@@ -234,6 +272,7 @@ export type LamPluginOutputType =
   | "slideshow"
   | "formula-sheet"
   | "pdf"
+  | "pdf-tutor"
   | "explainer"
   | "image"
   | "homework"
@@ -273,6 +312,7 @@ export interface LamPluginExecution {
   slideshowData?: LamPluginSlideshowData;
   formulas?: LamPluginFormula[];
   pdfData?: LamPluginPdfData;
+  pdfTutor?: LamPluginPdfTutorData;
   explainerData?: LamPluginExplainerData;
   imageData?: LamPluginImageData;
   homeworkData?: LamPluginHomeworkData;

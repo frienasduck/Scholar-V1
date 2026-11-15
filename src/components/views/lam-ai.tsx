@@ -26,6 +26,7 @@ import {
   type ScholarWorkspaceId,
 } from "@/lib/shrinking-scholar";
 import { WorkspacePanel, WorkspaceTabs, useWorkspaceMode } from "@/components/workspaces/workspace-tabs";
+import { LAM_PDF_CHAT_LAUNCH_EVENT } from "@/lib/lam/pdf-upload-client";
 import "@/components/live-tutor/live-tutor.css";
 import { cn } from "@/lib/utils";
 
@@ -286,8 +287,17 @@ export function LamAIView() {
       setPluginTarget({ pluginId: detail.pluginId, prompt: typeof detail.prompt === "string" ? detail.prompt : "" });
       select("plugins");
     };
+    const onOpenPdfChat = () => {
+      consumeLamPluginTarget();
+      setPluginTarget(null);
+      select("chat");
+    };
     window.addEventListener(LAM_PLUGIN_TARGET_EVENT, onTarget);
-    return () => window.removeEventListener(LAM_PLUGIN_TARGET_EVENT, onTarget);
+    window.addEventListener(LAM_PDF_CHAT_LAUNCH_EVENT, onOpenPdfChat);
+    return () => {
+      window.removeEventListener(LAM_PLUGIN_TARGET_EVENT, onTarget);
+      window.removeEventListener(LAM_PDF_CHAT_LAUNCH_EVENT, onOpenPdfChat);
+    };
   }, [select]);
 
   const openPlugin = useCallback((pluginId: string, prompt: string) => {
