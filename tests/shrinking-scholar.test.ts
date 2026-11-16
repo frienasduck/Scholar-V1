@@ -245,6 +245,7 @@ describe("In-Chat LAM Plugin Unified Execution", () => {
       "analytics",
       "pyq",
       "companion",
+      "pdf-tutor",
       "generic",
     ]);
 

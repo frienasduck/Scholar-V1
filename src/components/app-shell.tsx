@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { InlineSearch } from "@/components/inline-search";
 import { AiVideoBackgroundJobs, LamTubeBackgroundJobs } from "@/components/lamtube/background-jobs";
 import { ScholarFooter } from "@/components/scholar-footer";
-import { useState, useEffect, useMemo, useCallback, useRef, Component, ReactNode } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore, Component, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore, getLevelInfo } from "@/lib/store";
 import { NAV_ITEMS, NAV_GROUPS } from "@/lib/nav";
@@ -202,6 +202,11 @@ const PLUS_SOURCE_BY_NAV: Record<string, "achievements" | "mind-map" | "concept-
   galaxy: "concept-galaxy",
 };
 
+const NAV_COLLAPSED_KEY = "scholar:nav-collapsed:v1";
+const NAV_COLLAPSED_EVENT = "scholar:nav-collapsed";
+function subscribeNavCollapsed(cb: () => void) { window.addEventListener(NAV_COLLAPSED_EVENT, cb); window.addEventListener("storage", cb); return () => { window.removeEventListener(NAV_COLLAPSED_EVENT, cb); window.removeEventListener("storage", cb); }; }
+function readNavCollapsed(): string { try { return localStorage.getItem(NAV_COLLAPSED_KEY) ?? ""; } catch { return ""; } }
+
 function NavList({ active, onNavigate, badges, selectionId }: { active: string; onNavigate: (id: string) => void; badges: ReturnType<typeof useNavBadges>; selectionId: "desktop" | "mobile" }) {
   const backgroundTasks = useBackgroundTasks();
   const access = useScholarAccess();
@@ -213,6 +218,11 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
   const [drawerQuery, setDrawerQuery] = useState("");
   const [drawerGroup, setDrawerGroup] = useState<string>("all");
   const isMobileDrawer = selectionId === "mobile";
+  // Desktop groups collapse so 30+ destinations stay scannable. The group holding the active view always stays open.
+  const collapsedRaw = useSyncExternalStore(subscribeNavCollapsed, readNavCollapsed, () => "");
+  const collapsedGroups = useMemo<string[]>(() => { try { const parsed = collapsedRaw ? JSON.parse(collapsedRaw) : null; return Array.isArray(parsed) ? parsed.filter((g): g is string => typeof g === "string") : ["Extra", "More"]; } catch { return ["Extra", "More"]; } }, [collapsedRaw]);
+  const activeGroup = NAV_ITEMS.find((n) => n.id === active)?.group;
+  const toggleGroup = (group: string) => { const next = collapsedGroups.includes(group) ? collapsedGroups.filter((g) => g !== group) : [...collapsedGroups, group]; try { localStorage.setItem(NAV_COLLAPSED_KEY, JSON.stringify(next)); } catch { /* preference is optional */ } window.dispatchEvent(new Event(NAV_COLLAPSED_EVENT)); };
   const normalizedQuery = isMobileDrawer ? drawerQuery.trim().toLowerCase() : "";
   const visibleGroups = isMobileDrawer && drawerGroup !== "all"
     ? NAV_GROUPS.filter((g) => g === drawerGroup)
@@ -284,8 +294,8 @@ function NavList({ active, onNavigate, badges, selectionId }: { active: string; 
         if (items.length === 0) return null;
         return (
         <div key={group}>
-          <p className="scholar-nav-section px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p>
-          <div className={cn("flex flex-col", isMobileDrawer ? "gap-1" : "gap-0.5")}>
+          {isMobileDrawer ? <p className="scholar-nav-section px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{group}</p> : <button type="button" onClick={() => toggleGroup(group)} aria-expanded={!(collapsedGroups.includes(group) && group !== activeGroup)} aria-label={`${group} section`} className="scholar-nav-section flex w-full items-center justify-between rounded-lg px-3 mb-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 hover:text-foreground transition-colors"><span>{group}</span><ChevronDown className={cn("h-3 w-3 transition-transform", collapsedGroups.includes(group) && group !== activeGroup && "-rotate-90")} aria-hidden="true" /></button>}
+          <div className={cn("flex flex-col", isMobileDrawer ? "gap-1" : "gap-0.5", !isMobileDrawer && collapsedGroups.includes(group) && group !== activeGroup && "hidden")}>
             {items.map((item) => {
               const isActive = active === item.id;
               const shutdown = getSectionShutdown(item.id);

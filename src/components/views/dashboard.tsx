@@ -34,6 +34,7 @@ import { toast } from "@/lib/notifications/notification-api";
 import { navigateTo } from "@/lib/nav-event";
 import { getSectionShutdown } from "@/lib/section-availability";
 import { ReadyBackgroundVideo } from "@/components/ready-background-video";
+import { TodayBrief } from "@/components/dashboard/today-brief";
 import { ScholarToday, ScholarTodaySources } from "@/components/personalization/scholar-today";
 import { useVelocityReveal } from "@/components/liquid-glass/velocity-motion";
 
@@ -567,6 +568,8 @@ ${CURRICULUM.map((s) => `- ${s.name}: ${mastery[s.id] ?? 0}%`).join("\n")}
             </motion.div>
           )}
         </div>
+
+        <TodayBrief />
 
         {/* Main grid */}
         <div className="order-4 md:order-none relative z-10 px-4 sm:px-8 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
